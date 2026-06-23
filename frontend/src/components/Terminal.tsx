@@ -11,7 +11,7 @@ export function Terminal({ onConnected }: Props) {
     const containerRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
-        const term = new XTerm({ cursorBlink: true })
+        const term = new XTerm({ cursorBlink: true, fontSize: 14, fontFamily: 'monospace', lineHeight: 1.2 })
         const fitAddon = new FitAddon()
         term.loadAddon(fitAddon)
         term.open(containerRef.current!)
@@ -20,9 +20,7 @@ export function Terminal({ onConnected }: Props) {
         const ws = new WebSocket('ws://localhost:3001/ws/terminal')
         ws.binaryType = 'arraybuffer'
 
-        ws.onopen = () => {
-            term.writeln('Connected.')
-        }
+        ws.onopen = () => {}
 
         ws.onmessage = (e) => {
             // binary면 터미널 출력, string이면 JSON 메시지
@@ -51,5 +49,5 @@ export function Terminal({ onConnected }: Props) {
         }
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-    return <div ref={containerRef} style={{ height: '100vh', background: '#000'}} />
+    return <div ref={containerRef} style={{ height: '100vh', background: '#000', padding: '4px' }} />
 }

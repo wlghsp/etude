@@ -18,15 +18,21 @@ interface Props {
 
 export function QuestPanel({ quest, containerId, total, index, onPrev, onNext }: Props) {
     const [result, setResult] = useState<boolean | null>(null)
+    const [loading, setLoading] = useState(false)
 
     const grade = async () => {
-        const res = await fetch('http://localhost:3001/grade', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ containerId, questId: quest.id }),
-        })
-        const data = await res.json()
-        setResult(data.passed)
+        setLoading(true)
+        try {
+            const res = await fetch('http://localhost:3001/grade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ containerId, questId: quest.id }),
+            })
+            const data = await res.json()
+            setResult(data.passed)
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -44,20 +50,22 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext }:
             </details>
             <button
                 onClick={grade}
+                disabled={loading}
                 style={{
                     marginTop: '8px',
                     padding: '10px 20px',
-                    background: '#7c3aed',
+                    background: loading ? '#5b21b6' : '#7c3aed',
                     color: '#fff',
                     border: 'none',
                     borderRadius: '6px',
                     fontSize: '14px',
                     fontWeight: 600,
-                    cursor: 'pointer',
+                    cursor: loading ? 'default' : 'pointer',
                     alignSelf: 'flex-start',
+                    opacity: loading ? 0.7 : 1,
                 }}
             >
-                채점하기
+                {loading ? '채점 중...' : '채점하기'}
             </button>
             {result !== null && (
                 <div style={{
@@ -69,7 +77,12 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext }:
                     color: result ? '#4ade80' : '#f87171',
                     border: `1px solid ${result ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
                 }}>
-                    {result ? '✅ 성공!' : '❌ 아직이에요. 다시 시도해보세요.'}
+                    {result
+                        ? index === total - 1
+                            ? '🎉 모든 퀘스트를 완료했습니다!'
+                            : '✅ 성공!'
+                        : '❌ 아직이에요. 다시 시도해보세요.'
+                    }
                 </div>
             )}
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
