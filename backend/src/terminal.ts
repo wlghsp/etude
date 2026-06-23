@@ -15,17 +15,15 @@ export async function handleTerminal(socket: WebSocket) {
         Tty: true,
     })
 
-    await container.start()
-
-    const exec = await container.exec({
-        Cmd: ['/bin/bash'],
-        AttachStdin: true,
-        AttachStdout: true,
-        AttachStderr: true,
-        Tty: true,
+    const stream = await container.attach({
+        stream: true,
+        stdin: true,
+        stdout: true,
+        stderr: true,
+        hijack: true,
     })
 
-    const stream = await exec.start({ hijack: true, stdin: true })
+    await container.start()
 
     // 컨테이너 출력 → 브라우저
     stream.on('data', (chunk: Buffer) => {
@@ -39,6 +37,6 @@ export async function handleTerminal(socket: WebSocket) {
 
     // 연결 종료 시 컨테이너 제거
     socket.on('close', () => {
-        container.stop().then(() => container.remove().catch(() => {}))
+        container.stop().then(() => container.remove()).catch(() => {})
     })
 }

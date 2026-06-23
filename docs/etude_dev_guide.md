@@ -198,7 +198,8 @@ npm install
 npm install @xterm/xterm @xterm/addon-fit
 ```
 
-> `@xterm/xterm`은 구 `xterm` 패키지의 scoped 버전이다. `xterm`으로 설치하면 안 된다.
+> - `@xterm/xterm`은 구 `xterm` 패키지의 scoped 버전이다. `xterm`으로 설치하면 안 된다.
+> - Vite 초기화 시 현재 디렉토리(`.`)를 target으로 쓰면 "디렉토리가 비어있지 않다"는 경고가 뜰 수 있다. `y`로 진행하면 된다.
 
 ### 1-5. 프론트엔드 파일 작성
 
@@ -299,6 +300,8 @@ cd frontend && npm run dev
 `backend/src/quest.ts`:
 
 ```typescript
+import Docker from 'dockerode'
+
 export interface Quest {
   id: string
   title: string
@@ -323,10 +326,9 @@ export const quests: Quest[] = [
 
 export async function gradeQuest(
   containerId: string,
-  questId: string
+  questId: string,
+  docker: Docker
 ): Promise<boolean> {
-  const Docker = require('dockerode')
-  const docker = new Docker()
   const container = docker.getContainer(containerId)
 
   if (questId === 'q1') {
@@ -360,7 +362,10 @@ export async function gradeQuest(
 index.ts에 퀘스트 API 추가:
 
 ```typescript
-import { quests, gradeQuest } from './quest'
+import Docker from 'dockerode'
+import { quests, gradeQuest } from './quest.js'
+
+const docker = new Docker()
 
 // 퀘스트 목록
 fastify.get('/quests', async () => quests)
@@ -370,7 +375,7 @@ fastify.post<{ Body: { containerId: string; questId: string } }>(
   '/grade',
   async (req) => {
     const { containerId, questId } = req.body
-    const passed = await gradeQuest(containerId, questId)
+    const passed = await gradeQuest(containerId, questId, docker)
     return { passed }
   }
 )
@@ -476,15 +481,19 @@ interface Props {
 export function Terminal({ onConnected }: Props) {
   // ...
   ws.onmessage = (e) => {
+    // binary면 터미널 출력, string이면 JSON 메시지
+    if (e.data instanceof ArrayBuffer) {
+      term.write(new Uint8Array(e.data))
+      return
+    }
     try {
       const msg = JSON.parse(e.data)
       if (msg.type === 'connected') {
         onConnected(msg.containerId)
-        return
       }
-    } catch {}
-    // 바이너리 터미널 데이터
-    term.write(new Uint8Array(e.data))
+    } catch {
+      term.write(e.data)
+    }
   }
 }
 ```
