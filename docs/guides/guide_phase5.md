@@ -39,40 +39,146 @@ docker-compose up -d
 
 ---
 
-## 세트 1 — 리눅스 기초
-
-### 완성된 퀘스트
+## 세트 1 — 리눅스 기초 1: 파일 탐색과 생성
 
 | order | 제목 | grade_cmd |
 |-------|------|-----------|
-| 1 | /tmp/hello 디렉토리 만들기 | `["test", "-d", "/tmp/hello"]` |
-| 2 | 파일에 내용 쓰기 | `["grep", "-q", "done", "/tmp/answer.txt"]` |
-| 3 | 숨김 파일 만들기 | `["test", "-f", "/tmp/.hidden"]` |
-
-### 추가 예정 주제
-
-- 파일 복사 (cp)
-- 파일 이동/이름 변경 (mv)
-- 파일 삭제 (rm)
-- 파일 내용 확인 (cat, head, tail)
-- 특정 문자열 검색 (grep)
-- 파일 권한 변경 (chmod)
-- 심볼릭 링크 생성 (ln -s)
-- 프로세스 확인 (ps)
-- 디스크 사용량 확인 (df, du)
-- 네트워크 연결 확인 (curl)
+| 1 | 현재 위치 확인하기 | `["sh", "-c", "pwd \| grep -q /"]` |
+| 2 | 디렉토리 이동하기 | `["test", "-d", "/tmp"]` |
+| 3 | 파일 목록 확인하기 | `["test", "-d", "/tmp"]` |
+| 4 | 파일 상세 목록 확인하기 | `["test", "-d", "/tmp"]` |
+| 5 | 디렉토리 만들기 | `["test", "-d", "/tmp/hello"]` |
+| 6 | 빈 파일 만들기 | `["test", "-f", "/tmp/empty.txt"]` |
+| 7 | 파일에 내용 쓰기 | `["grep", "-q", "done", "/tmp/answer.txt"]` |
+| 8 | 숨김 파일 만들기 | `["test", "-f", "/tmp/.hidden"]` |
+| 9 | 파일 복사하기 | `["test", "-f", "/tmp/backup.txt"]` |
+| 10 | 파일 이름 바꾸기 | `["test", "-f", "/tmp/renamed.txt"]` |
 
 ---
 
-## 세트 2 — Docker 기초
+## 세트 2 — 리눅스 기초 2: 삭제·검색·권한
 
-Docker-in-Docker 환경 구성이 필요하므로 리눅스 기초 세트 완성 후 진행.
+| order | 제목 | grade_cmd |
+|-------|------|-----------|
+| 1 | 파일 삭제하기 | `["sh", "-c", "test ! -f /tmp/renamed.txt"]` |
+| 2 | 디렉토리 삭제하기 | `["sh", "-c", "test ! -d /tmp/hello"]` |
+| 3 | 파일 내용 출력하기 | `["test", "-f", "/tmp/answer.txt"]` |
+| 4 | 파일에서 문자열 검색하기 | `["grep", "-q", "done", "/tmp/answer.txt"]` |
+| 5 | 여러 줄 파일 만들기 | `["grep", "-q", "line2", "/tmp/multiline.txt"]` |
+| 6 | 파일 실행 권한 부여하기 | `["sh", "-c", "test -x /tmp/answer.txt"]` |
+| 7 | 심볼릭 링크 만들기 | `["sh", "-c", "test -L /tmp/link.txt"]` |
+| 8 | 중첩 디렉토리 만들기 | `["test", "-d", "/tmp/a/b/c"]` |
+| 9 | 파일 찾기 | `["sh", "-c", "find /tmp -name '*.txt' \| grep -q ."]` |
+| 10 | 디스크 사용량 확인하기 | `["sh", "-c", "du -sh /tmp \| grep -q /tmp"]` |
 
-현재 샌드박스(ubuntu 컨테이너)에서 docker 명령어를 실행하려면:
-- DinD(Docker-in-Docker) 이미지 사용 필요 (`docker:dind`)
-- 또는 호스트 Docker 소켓을 컨테이너에 마운트 (`/var/run/docker.sock`)
+---
 
-→ 보안/구조 검토 후 방향 확정.
+## 세트별 이미지 분기 구현
+
+세트마다 다른 환경이 필요하므로 `terminal.ts`에서 `questSetId`를 받아 이미지를 분기한다.
+
+### 구현 순서
+
+1. `backend/src/terminal.ts` — `handleTerminal(socket, docker, questSetId)` 시그니처 변경, 이미지 분기 추가
+2. `backend/src/index.ts` — WebSocket 연결 시 쿼리 파라미터 `?setId=1` 파싱 후 전달
+3. `frontend/src/components/Terminal.tsx` — WebSocket URL에 `?setId=${selectedSetId}` 추가
+
+### terminal.ts 이미지 분기
+
+```typescript
+function getContainerConfig(questSetId: number) {
+  if (questSetId === 4) {
+    return {
+      Image: 'docker:cli',
+      HostConfig: { Binds: ['/var/run/docker.sock:/var/run/docker.sock'] },
+    }
+  }
+  if (questSetId === 3) {
+    return { Image: 'etude-ssh', HostConfig: {} }
+  }
+  return { Image: 'ubuntu', HostConfig: {} }
+}
+```
+
+### index.ts WebSocket 쿼리 파라미터 파싱
+
+```typescript
+app.get('/ws/terminal', { websocket: true }, (socket, req) => {
+  const setId = Number(new URL(req.url, 'http://localhost').searchParams.get('setId') ?? '1')
+  handleTerminal(socket, docker, setId).catch((err) => {
+    console.error('terminal error:', err)
+    socket.close()
+  })
+})
+```
+
+### Terminal.tsx WebSocket URL
+
+```typescript
+const ws = new WebSocket(`ws://localhost:3001/ws/terminal?setId=${setId}`)
+```
+
+---
+
+## 세트 3 — 리눅스 네트워크/파일 전송
+
+**방법: SSH 데몬 포함 커스텀 이미지**
+
+컨테이너 안에서 `localhost`를 원격 서버로 삼아 scp/rsync를 실습한다.
+
+### 커스텀 이미지 빌드 (Dockerfile)
+
+`backend/docker/Dockerfile.ssh`:
+
+```dockerfile
+FROM ubuntu:22.04
+RUN apt-get update && apt-get install -y \
+    openssh-server rsync curl iputils-ping iproute2 \
+    && rm -rf /var/lib/apt/lists/*
+RUN mkdir /var/run/sshd \
+    && echo 'root:root' | chpasswd \
+    && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
+    && sed -i 's/#StrictModes yes/StrictModes no/' /etc/ssh/sshd_config
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D"]
+```
+
+빌드:
+
+```bash
+cd backend
+docker build -f docker/Dockerfile.ssh -t etude-ssh .
+```
+
+| order | 제목 | grade_cmd |
+|-------|------|-----------|
+| 1 | HTTP 요청 보내기 | `["sh", "-c", "curl -s http://example.com \| grep -q html"]` |
+| 2 | 파일 다운로드하기 | `["test", "-f", "/tmp/index.html"]` |
+| 3 | 네트워크 연결 확인하기 | `ping -c 1 8.8.8.8` 성공 여부 |
+| 4 | 열린 포트 확인하기 | `["test", "-f", "/tmp/ports.txt"]` |
+| 5 | SSH로 원격 파일 복사하기 | `["test", "-f", "/tmp/remote_copy.html"]` |
+| 6 | rsync로 디렉토리 동기화하기 | `["test", "-f", "/tmp/sync_dst/file.txt"]` |
+| 7 | 원격 명령 실행 결과 저장하기 | `["test", "-s", "/tmp/hostname.txt"]` |
+| 8 | 프로세스 목록 저장하기 | `["test", "-s", "/tmp/ps_result.txt"]` |
+
+---
+
+## 세트 4 — Docker 기초
+
+**방법: 호스트 Docker 소켓 마운트**
+
+호스트의 `/var/run/docker.sock`을 마운트하면 컨테이너 안에서 docker 명령어를 사용할 수 있다.
+
+| order | 제목 | grade_cmd |
+|-------|------|-----------|
+| 1 | 로컬 이미지 목록 확인하기 | `["test", "-f", "/tmp/images.txt"]` |
+| 2 | 이미지 받아오기 | `docker images hello-world \| grep -q hello-world` |
+| 3 | 컨테이너 실행하기 | `docker ps -a \| grep -q hello-world` |
+| 4 | 백그라운드 컨테이너 실행하기 | `docker ps \| grep -q my-nginx` |
+| 5 | 실행 중인 컨테이너 목록 저장하기 | `["test", "-s", "/tmp/containers.txt"]` |
+| 6 | 컨테이너 로그 확인하기 | `["test", "-f", "/tmp/nginx_logs.txt"]` |
+| 7 | 컨테이너 중지하기 | `docker ps \| grep -qv my-nginx` |
+| 8 | 컨테이너 삭제하고 결과 저장하기 | `docker ps -a \| grep -qv my-nginx` |
 
 ---
 

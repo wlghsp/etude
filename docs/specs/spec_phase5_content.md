@@ -3,7 +3,7 @@
 ## 목표
 
 플랫폼을 실제로 써보는 팀원이 "이거 쓸 만한데"라는 느낌을 받을 수 있는 수준의 퀘스트 콘텐츠를 작성한다.
-기술적 변경 없이 DB(init.sql)에 퀘스트를 추가하는 것이 전부다.
+세트별로 다른 Docker 이미지를 사용하는 구조를 포함한다.
 
 ---
 
@@ -18,38 +18,80 @@
 
 ## 퀘스트 세트 구성
 
-### 세트 1 — 리눅스 기초 (quest_set_id: 1)
+### 세트 1 — 리눅스 기초 1: 파일 탐색과 생성 (quest_set_id: 1)
 
-현재 3개 완성. 아래 주제로 확장.
-
-| 주제 | 내용 |
-|------|------|
-| 파일/디렉토리 조작 | mkdir, touch, cp, mv, rm |
-| 파일 내용 확인 | cat, head, tail, grep |
-| 권한 관리 | chmod, chown |
-| 프로세스 관리 | ps, kill, top |
-| 네트워크 확인 | curl, ping, netstat |
-
-목표 퀘스트 수: **15개 이상**
+| order | 주제 | 명령어 |
+|-------|------|--------|
+| 1 | 현재 위치 확인 | pwd |
+| 2 | 디렉토리 이동 | cd |
+| 3 | 파일 목록 | ls |
+| 4 | 상세 목록 | ls -al |
+| 5 | 디렉토리 만들기 | mkdir |
+| 6 | 빈 파일 만들기 | touch |
+| 7 | 파일에 내용 쓰기 | echo > |
+| 8 | 숨김 파일 만들기 | touch .hidden |
+| 9 | 파일 복사 | cp |
+| 10 | 파일 이름 변경 | mv |
 
 ---
 
-### 세트 2 — Docker 기초 (quest_set_id: 2)
+### 세트 2 — 리눅스 기초 2: 삭제·검색·권한 (quest_set_id: 2)
 
-새 세트 추가. Docker가 설치된 환경에서 실습.
+| order | 주제 | 명령어 |
+|-------|------|--------|
+| 1 | 파일 삭제 | rm |
+| 2 | 디렉토리 삭제 | rm -r |
+| 3 | 파일 내용 출력 | cat |
+| 4 | 문자열 검색 | grep |
+| 5 | 여러 줄 파일 | printf |
+| 6 | 실행 권한 부여 | chmod +x |
+| 7 | 심볼릭 링크 | ln -s |
+| 8 | 중첩 디렉토리 | mkdir -p |
+| 9 | 파일 찾기 | find |
+| 10 | 디스크 사용량 | du -sh |
 
-| 주제 | 내용 |
-|------|------|
-| 컨테이너 실행 | docker run, docker ps |
-| 컨테이너 조작 | docker stop, docker rm |
-| 이미지 관리 | docker images, docker pull, docker rmi |
-| 로그 확인 | docker logs |
-| 컨테이너 접속 | docker exec |
+---
 
-목표 퀘스트 수: **10개 이상**
+### 세트 3 — 리눅스 네트워크/파일 전송 (quest_set_id: 3)
 
-> Docker 세트는 샌드박스 컨테이너 안에서 Docker를 실행해야 하므로 (Docker-in-Docker)
-> 환경 구성 검토 후 진행. 우선 리눅스 기초 세트를 완성하는 것이 우선.
+네트워크 확인 및 서버 간 파일 전송을 실습한다.
+SSH 데몬이 포함된 전용 이미지 사용 — 컨테이너 내 `localhost`를 대상 서버로 삼아 scp/rsync 실습.
+
+| order | 주제 | 명령어 |
+|-------|------|--------|
+| 1 | HTTP 요청 | curl |
+| 2 | 파일 다운로드 | curl -O |
+| 3 | 네트워크 연결 확인 | ping |
+| 4 | 포트 확인 | ss -tlnp |
+| 5 | 원격 파일 복사 | scp |
+| 6 | 디렉토리 동기화 | rsync |
+
+목표 퀘스트 수: **6개 이상**
+
+> 사용 이미지: openssh-server + rsync + curl 포함 커스텀 이미지 (또는 `rastasheep/ubuntu-sshd` 계열)
+> 세트 ID 기반 이미지 분기 구현 필요 (아래 기술 변경 항목 참고)
+
+---
+
+### 세트 4 — Docker 기초 (quest_set_id: 4)
+
+Docker가 설치된 환경에서 컨테이너 조작을 실습한다.
+
+| order | 주제 | 명령어 |
+|-------|------|--------|
+| 1 | 이미지 목록 | docker images |
+| 2 | 이미지 받기 | docker pull |
+| 3 | 컨테이너 실행 | docker run |
+| 4 | 컨테이너 목록 | docker ps |
+| 5 | 컨테이너 중지 | docker stop |
+| 6 | 컨테이너 삭제 | docker rm |
+| 7 | 로그 확인 | docker logs |
+| 8 | 컨테이너 접속 | docker exec |
+
+목표 퀘스트 수: **8개 이상**
+
+> 사용 이미지: `docker:cli` + 호스트 소켓 마운트 (`/var/run/docker.sock`)
+> 리눅스 기초 세트 완성 후 진행.
 
 ---
 
@@ -69,15 +111,46 @@
 
 | 파일 | 변경 내용 |
 |------|-----------|
-| `backend/db/init.sql` | 퀘스트 추가 |
+| `backend/db/init.sql` | 퀘스트/세트 추가 |
+| `backend/src/terminal.ts` | 세트 ID 기반 이미지 분기 |
+| `backend/src/index.ts` | WebSocket 핸들러에 questSetId 전달 |
+| `frontend/src/components/Terminal.tsx` | 연결 시 selectedSetId 포함 |
 
-백엔드/프론트엔드 코드 변경 없음.
+## 세트별 이미지 분기 설계
+
+세트 ID에 따라 샌드박스 컨테이너 이미지와 설정을 다르게 적용한다.
+
+| quest_set_id | 이미지 | 특이사항 |
+|---|---|---|
+| 1, 2 | `ubuntu` | 기본 |
+| 3 | SSH + rsync + curl 이미지 | SSH 데몬 기동 필요 |
+| 4 | `docker:cli` | `/var/run/docker.sock` 마운트 |
+
+`backend/src/terminal.ts` — `questSetId` 파라미터를 받아 이미지/HostConfig 분기:
+
+```typescript
+function getContainerConfig(questSetId: number) {
+  if (questSetId === 4) {
+    return {
+      Image: 'docker:cli',
+      HostConfig: { Binds: ['/var/run/docker.sock:/var/run/docker.sock'] },
+    }
+  }
+  if (questSetId === 3) {
+    return { Image: 'etude-ssh', HostConfig: {} }  // 커스텀 이미지
+  }
+  return { Image: 'ubuntu', HostConfig: {} }
+}
+```
 
 ---
 
 ## 검증 기준
 
-- [ ] 리눅스 기초 세트 15개 이상 퀘스트 완성
+- [x] 리눅스 기초 세트 1 (파일 탐색과 생성) 10개 완성
+- [x] 리눅스 기초 세트 2 (삭제·검색·권한) 10개 완성
 - [ ] 각 퀘스트 지문만 보고 풀 수 있는 수준인지 직접 확인
 - [ ] grade_cmd가 정확히 동작하는지 터미널에서 검증 완료
-- [ ] Docker 기초 세트 환경 구성 방향 확정
+- [ ] 세트별 이미지 분기 구현 (terminal.ts)
+- [ ] 세트 3 (네트워크/파일 전송) 퀘스트 완성 및 검증
+- [ ] 세트 4 (Docker 기초) 퀘스트 완성 및 검증
