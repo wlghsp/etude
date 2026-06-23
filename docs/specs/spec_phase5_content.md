@@ -116,31 +116,56 @@ Docker가 설치된 환경에서 컨테이너 조작을 실습한다.
 | `backend/src/index.ts` | WebSocket 핸들러에 questSetId 전달 |
 | `frontend/src/components/Terminal.tsx` | 연결 시 selectedSetId 포함 |
 
-## 세트별 이미지 분기 설계
+## 샌드박스 설계
 
-세트 ID에 따라 샌드박스 컨테이너 이미지와 설정을 다르게 적용한다.
+환경 정보를 `sandbox` 테이블에서 관리한다. `quest_set`은 `sandbox_type`으로 FK 참조만 하면 되고, 새 환경 추가 시 `sandbox` INSERT 한 줄로 끝난다.
 
-| quest_set_id | 이미지 | 특이사항 |
+```
+sandbox (type PK, image, binds, description)
+    ↑ FK
+quest_set (sandbox_type)
+```
+
+| sandbox_type | image | 설명 |
 |---|---|---|
-| 1, 2 | `ubuntu` | 기본 |
-| 3 | SSH + rsync + curl 이미지 | SSH 데몬 기동 필요 |
-| 4 | `docker:cli` | `/var/run/docker.sock` 마운트 |
+| `linux` | `ubuntu` | 기본 리눅스 환경 |
+| `network` | `etude-ssh` | SSH 데몬 포함, scp/rsync 실습용 |
+| `docker` | `docker:cli` | 호스트 소켓 마운트, docker 명령어 실습용 |
+| `k8s` | `etude-k8s` | kubectl 포함 (향후 추가) |
 
-`backend/src/terminal.ts` — `questSetId` 파라미터를 받아 이미지/HostConfig 분기:
+`backend/src/terminal.ts` — DB에서 sandbox 설정을 조회해 컨테이너 생성:
 
 ```typescript
-function getContainerConfig(questSetId: number) {
-  if (questSetId === 4) {
-    return {
-      Image: 'docker:cli',
-      HostConfig: { Binds: ['/var/run/docker.sock:/var/run/docker.sock'] },
-    }
-  }
-  if (questSetId === 3) {
-    return { Image: 'etude-ssh', HostConfig: {} }  // 커스텀 이미지
-  }
-  return { Image: 'ubuntu', HostConfig: {} }
-}
+// sandbox 테이블에서 image, binds 조회
+const [rows] = await db.query<any[]>('SELECT image, binds FROM sandbox WHERE type = ?', [sandboxType])
+const { image, binds } = rows[0]
+
+const container = await docker.createContainer({
+  Image: image,
+  // ...
+  HostConfig: { Binds: binds ?? [] },
+})
+```
+
+`backend/src/index.ts` — WebSocket 연결 시 `sandboxType` 쿼리 파라미터 파싱:
+
+```typescript
+app.get('/ws/terminal', { websocket: true }, (socket, req) => {
+  const sandboxType = new URL(req.url, 'http://localhost').searchParams.get('sandboxType') ?? 'linux'
+  handleTerminal(socket, docker, sandboxType).catch(...)
+})
+```
+
+`frontend/src/components/Terminal.tsx` — 세트의 `sandbox_type`을 URL에 포함:
+
+```typescript
+const ws = new WebSocket(`ws://localhost:3001/ws/terminal?sandboxType=${sandboxType}`)
+```
+
+`frontend/src/App.tsx` — 퀘스트 세트 조회 시 `sandbox_type` 포함해서 Terminal에 전달:
+
+```typescript
+const [sandboxType, setSandboxType] = useState<string>('linux')
 ```
 
 ---

@@ -1,7 +1,16 @@
-CREATE TABLE quest_set (
-  id          INT AUTO_INCREMENT PRIMARY KEY,
-  title       VARCHAR(100) NOT NULL,
+CREATE TABLE sandbox (
+  type        VARCHAR(20) PRIMARY KEY,
+  image       VARCHAR(100) NOT NULL,
+  binds       JSON,
   description TEXT
+);
+
+CREATE TABLE quest_set (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  title        VARCHAR(100) NOT NULL,
+  description  TEXT,
+  sandbox_type VARCHAR(20) NOT NULL DEFAULT 'linux',
+  FOREIGN KEY (sandbox_type) REFERENCES sandbox(type)
 );
 
 CREATE TABLE quest (
@@ -16,11 +25,17 @@ CREATE TABLE quest (
   FOREIGN KEY (quest_set_id) REFERENCES quest_set(id)
 );
 
-INSERT INTO quest_set (title, description) VALUES
-  ('리눅스 기초 1 — 파일 탐색과 생성', '현재 위치 확인, 디렉토리 이동, 파일/디렉토리 생성과 복사를 실습합니다.'),
-  ('리눅스 기초 2 — 삭제·검색·권한', '파일 삭제, 내용 확인, 문자열 검색, 권한 변경, 링크 생성을 실습합니다.'),
-  ('리눅스 네트워크/파일 전송', 'curl, ping, scp, rsync 등 네트워크 확인과 서버 간 파일 전송을 실습합니다.'),
-  ('Docker 기초', '컨테이너 실행·중지·삭제, 이미지 관리, 로그 확인 등 Docker 기본 조작을 실습합니다.');
+INSERT INTO sandbox (type, image, binds, description) VALUES
+  ('linux',   'ubuntu',     NULL,                                                          '기본 리눅스 환경. 파일 조작, 검색, 권한 등 일반 실습용.'),
+  ('network', 'etude-ssh',  NULL,                                                          'SSH 데몬 포함 환경. curl, ping, scp, rsync 등 네트워크/파일 전송 실습용.'),
+  ('docker',  'docker:cli', '["/var/run/docker.sock:/var/run/docker.sock"]',               '호스트 Docker 소켓 마운트. docker 명령어 실습용.'),
+  ('k8s',     'etude-k8s',  NULL,                                                          'kubectl 포함 환경. Kubernetes 실습용. (향후 추가)');
+
+INSERT INTO quest_set (title, description, sandbox_type) VALUES
+  ('리눅스 기초 1 — 파일 탐색과 생성', '현재 위치 확인, 디렉토리 이동, 파일/디렉토리 생성과 복사를 실습합니다.', 'linux'),
+  ('리눅스 기초 2 — 삭제·검색·권한', '파일 삭제, 내용 확인, 문자열 검색, 권한 변경, 링크 생성을 실습합니다.', 'linux'),
+  ('리눅스 네트워크/파일 전송', 'curl, ping, scp, rsync 등 네트워크 확인과 서버 간 파일 전송을 실습합니다.', 'network'),
+  ('Docker 기초', '컨테이너 실행·중지·삭제, 이미지 관리, 로그 확인 등 Docker 기본 조작을 실습합니다.', 'docker');
 
 -- 세트 1: 파일 탐색과 생성 (order 1~10)
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, grade_cmd) VALUES

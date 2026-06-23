@@ -79,24 +79,27 @@ docker-compose up -d
 
 ### 구현 순서
 
-1. `backend/src/terminal.ts` — `handleTerminal(socket, docker, questSetId)` 시그니처 변경, 이미지 분기 추가
-2. `backend/src/index.ts` — WebSocket 연결 시 쿼리 파라미터 `?setId=1` 파싱 후 전달
-3. `frontend/src/components/Terminal.tsx` — WebSocket URL에 `?setId=${selectedSetId}` 추가
+1. `backend/src/quest.ts` — `getQuestSets()` 쿼리에 `sandbox_type` 포함
+2. `backend/src/terminal.ts` — `handleTerminal`에 `sandboxType` 파라미터 추가, DB에서 sandbox 조회
+3. `backend/src/index.ts` — WebSocket에서 `?sandboxType=` 파싱 후 전달
+4. `frontend/src/App.tsx` — `sandboxType` state 추가, `SetSelect`에서 함께 받기
+5. `frontend/src/components/Terminal.tsx` — WebSocket URL에 `?sandboxType=` 추가
 
 ### terminal.ts 이미지 분기
 
+`sandbox` 테이블에서 image/binds를 조회해 컨테이너를 생성한다. 새 환경 추가 시 이 코드는 건드리지 않아도 된다.
+
 ```typescript
-function getContainerConfig(questSetId: number) {
-  if (questSetId === 4) {
-    return {
-      Image: 'docker:cli',
-      HostConfig: { Binds: ['/var/run/docker.sock:/var/run/docker.sock'] },
-    }
+async function getContainerConfig(sandboxType: string) {
+  const [rows] = await db.query<any[]>(
+    'SELECT image, binds FROM sandbox WHERE type = ?',
+    [sandboxType]
+  )
+  const { image, binds } = rows[0] ?? { image: 'ubuntu', binds: null }
+  return {
+    Image: image,
+    HostConfig: { Binds: binds ?? [] },
   }
-  if (questSetId === 3) {
-    return { Image: 'etude-ssh', HostConfig: {} }
-  }
-  return { Image: 'ubuntu', HostConfig: {} }
 }
 ```
 
@@ -104,8 +107,8 @@ function getContainerConfig(questSetId: number) {
 
 ```typescript
 app.get('/ws/terminal', { websocket: true }, (socket, req) => {
-  const setId = Number(new URL(req.url, 'http://localhost').searchParams.get('setId') ?? '1')
-  handleTerminal(socket, docker, setId).catch((err) => {
+  const sandboxType = new URL(req.url, 'http://localhost').searchParams.get('sandboxType') ?? 'linux'
+  handleTerminal(socket, docker, sandboxType as SandboxType).catch((err) => {
     console.error('terminal error:', err)
     socket.close()
   })
@@ -115,7 +118,47 @@ app.get('/ws/terminal', { websocket: true }, (socket, req) => {
 ### Terminal.tsx WebSocket URL
 
 ```typescript
-const ws = new WebSocket(`ws://localhost:3001/ws/terminal?setId=${setId}`)
+const ws = new WebSocket(`ws://localhost:3001/ws/terminal?sandboxType=${sandboxType}`)
+```
+
+### quest.ts — getQuestSets에 sandbox_type 포함
+
+```typescript
+export async function getQuestSets() {
+  const [rows] = await db.query('SELECT id, title, description, sandbox_type FROM quest_set')
+  return rows
+}
+```
+
+### App.tsx — sandboxType 상태 관리
+
+`SetSelect`의 `onSelect`가 `{ id, sandboxType }` 을 넘기도록 변경:
+
+```typescript
+// App.tsx
+const [sandboxType, setSandboxType] = useState<string>('linux')
+
+// onSelect 핸들러
+function handleSetSelect(id: number, sandboxType: string) {
+  setSelectedSetId(id)
+  setSandboxType(sandboxType)
+}
+
+// SetSelect에 전달
+<SetSelect onSelect={handleSetSelect} />
+
+// Terminal에 전달
+<Terminal key={selectedSetId} sandboxType={sandboxType} onConnected={setContainerId} />
+```
+
+```typescript
+// SetSelect.tsx — onSelect 시그니처 변경
+interface Props {
+  onSelect: (id: number, sandboxType: string) => void
+}
+
+// 버튼 클릭 시
+onClick={() => onSelect(s.id, s.sandbox_type)}
 ```
 
 ---
@@ -179,6 +222,81 @@ docker build -f docker/Dockerfile.ssh -t etude-ssh .
 | 6 | 컨테이너 로그 확인하기 | `["test", "-f", "/tmp/nginx_logs.txt"]` |
 | 7 | 컨테이너 중지하기 | `docker ps \| grep -qv my-nginx` |
 | 8 | 컨테이너 삭제하고 결과 저장하기 | `docker ps -a \| grep -qv my-nginx` |
+
+---
+
+## 리팩토링 (구현 완료 후)
+
+세트별 이미지 분기 구현이 완료된 뒤 아래 순서로 정리한다.
+
+### 백엔드
+
+**`backend/src/sandbox.ts` 분리**
+
+`terminal.ts`에 있는 sandbox 조회 로직을 별도 파일로 분리:
+
+```typescript
+// backend/src/sandbox.ts
+export async function getSandboxConfig(sandboxType: string) {
+  const [rows] = await db.query<any[]>(
+    'SELECT image, binds FROM sandbox WHERE type = ?',
+    [sandboxType]
+  )
+  return rows[0] ?? { image: 'ubuntu', binds: null }
+}
+```
+
+**타입 정의 분리**
+
+`backend/src/types.ts` 신규 생성 — 여러 파일에서 공유하는 인터페이스 모음:
+
+```typescript
+export interface QuestSet {
+  id: number
+  title: string
+  description: string
+  sandbox_type: string
+}
+
+export interface Quest {
+  id: number
+  title: string
+  description: string
+  hint: string
+  solution: string
+}
+```
+
+### 프론트엔드
+
+**`frontend/src/api.ts` 분리**
+
+`App.tsx`, `SetSelect.tsx`에 흩어진 fetch 호출을 한 곳으로 모음:
+
+```typescript
+// frontend/src/api.ts
+const BASE = 'http://localhost:3001'
+
+export async function fetchQuestSets() {
+  return fetch(`${BASE}/quest-sets`).then((r) => r.json())
+}
+
+export async function fetchQuests(setId: number) {
+  return fetch(`${BASE}/quest-sets/${setId}/quests`).then((r) => r.json())
+}
+
+export async function gradeQuest(containerId: string, questId: number) {
+  return fetch(`${BASE}/grade`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ containerId, questId }),
+  }).then((r) => r.json())
+}
+```
+
+**`sandboxType` Context 검토**
+
+`App` → `Terminal`로 내려가는 `sandboxType` prop chain이 불편하면 Context로 올리는 것을 검토한다. 지금은 단순하므로 props로 충분하다.
 
 ---
 
