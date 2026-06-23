@@ -5,6 +5,7 @@ interface Quest {
     title: string
     description: string
     hint: string
+    solution: string
 }
 
 interface Props {
@@ -14,9 +15,10 @@ interface Props {
     index: number
     onPrev: () => void
     onNext: () => void
+    onReset: () => void
 }
 
-export function QuestPanel({ quest, containerId, total, index, onPrev, onNext }: Props) {
+export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, onReset }: Props) {
     const [result, setResult] = useState<boolean | null>(null)
     const [loading, setLoading] = useState(false)
 
@@ -47,6 +49,10 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext }:
             <details>
                 <summary style={{ cursor: 'pointer', color: '#666', fontSize: '13px', userSelect: 'none' }}>힌트 보기</summary>
                 <p style={{ color: '#888', fontSize: '13px', marginTop: '8px', paddingLeft: '4px' }}>{quest.hint}</p>
+            </details>
+            <details>
+                <summary style={{ cursor: 'pointer', color: '#666', fontSize: '13px', userSelect: 'none' }}>풀이 보기</summary>
+                <p style={{ color: '#888', fontSize: '13px', marginTop: '8px', paddingLeft: '4px', fontFamily: 'monospace' }}>{quest.solution}</p>
             </details>
             <button
                 onClick={grade}
@@ -117,6 +123,21 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext }:
                     }}
                 >
                     다음
+                </button>
+                <button
+                    onClick={onReset}
+                    style={{
+                        padding: '8px 16px',
+                        background: 'transparent',
+                        color: '#aaa',
+                        border: '1px solid #555',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        marginLeft: 'auto',
+                    }}
+                >
+                    홈으로
                 </button>
             </div>
         </div>

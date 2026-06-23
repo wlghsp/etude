@@ -1,4 +1,5 @@
 import Docker from 'dockerode'
+import { db } from './db.js'
 
 export interface Quest {
   id: number
@@ -19,29 +20,30 @@ async function execCheck(container: Docker.Container, cmd: string[]): Promise<bo
   }
 }
 
-export const quests: Quest[] = [
-  {
-    id: 1,
-    title: '/tmp/hello 디렉토리 만들기',
-    description: '/tmp 경로 안에 hello라는 이름의 디렉토리를 만드세요.',
-    hint: 'mkdir 명령어를 사용하세요.',
-    grade: (container) => execCheck(container, ['test', '-d', '/tmp/hello']),
-  },
-  {
-    id: 2,
-    title: '파일에 내용 쓰기',
-    description: '/tmp/answer.txt 파일을 만들고 첫 줄에 "done"을 입력하세요.',
-    hint: 'echo 명령어와 리다이렉션(>)을 사용하세요.',
-    grade: (container) => execCheck(container, ['grep', '-q', 'done', '/tmp/answer.txt']),
-  },
-]
+export async function getQuestSets() {
+  const [rows] = await db.query('SELECT id, title, description FROM quest_set')
+  return rows
+}
+
+export async function getQuests(questSetId: number) {
+  const [rows] = await db.query(
+    'SELECT id, title, description, hint, solution FROM quest WHERE quest_set_id = ? ORDER BY order_index',
+    [questSetId]
+  )
+  return rows
+}
+
 
 export async function gradeQuest(
   containerId: string,
   questId: number,
   docker: Docker
 ): Promise<boolean> {
-  const quest = quests.find((q) => q.id === questId)
-  if (!quest) return false
-  return quest.grade(docker.getContainer(containerId))
+  const [rows] = await db.query<any[]>(
+    'SELECT grade_cmd FROM quest WHERE id = ?',
+    [questId]
+  )
+  if (!rows.length) return false
+  const cmd: string[] = JSON.parse(rows[0].grade_cmd)
+  return execCheck(docker.getContainer(containerId), cmd)
 }

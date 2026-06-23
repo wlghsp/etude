@@ -1,0 +1,15 @@
+services:
+  db:
+    image: mariadb:11
+    container_name: etude-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: etude
+    ports:
+      - "3306:3306"
+    volumes:
+      - etude-db-data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  etude-db-data:

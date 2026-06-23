@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Terminal } from './components/Terminal'
 import { QuestPanel } from './components/QuestPanel'
+import { SetSelect } from './pages/SetSelect'
 
 interface Quest {
   id: number
@@ -10,15 +11,24 @@ interface Quest {
 }
 
 function App() {
+  const [selectedSetId, setSelectedSetId] = useState<number | null>(null)
   const [quests, setQuests] = useState<Quest[]>([])
   const [questIndex, setQuestIndex] = useState(0)
   const [containerId, setContainerId] = useState('')
 
   useEffect(() => {
-    fetch('http://localhost:3001/quests')
+    if (selectedSetId === null) return
+    fetch(`http://localhost:3001/quest-sets/${selectedSetId}/quests`)
       .then((r) => r.json())
-      .then((data: Quest[]) => setQuests(data))
-  }, [])
+      .then((data: Quest[]) => {
+        setQuests(data)
+        setQuestIndex(0)
+      })
+  }, [selectedSetId])
+
+  if (selectedSetId === null) {
+    return <SetSelect onSelect={setSelectedSetId} />
+  }
 
   const quest = quests[questIndex] ?? null
 
@@ -34,6 +44,7 @@ function App() {
             index={questIndex}
             onPrev={() => setQuestIndex((i) => i - 1)}
             onNext={() => setQuestIndex((i) => i + 1)}
+            onReset={() => setSelectedSetId(null)}
           />
         )}
       </div>

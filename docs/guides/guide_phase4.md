@@ -1,7 +1,7 @@
 # Phase 4 구현 가이드 — MariaDB 연동 + 퀘스트 세트 구조
 
 명세: `docs/specs/spec_phase4_db.md`
-상태: **대기**
+상태: **완료**
 
 ---
 
@@ -13,15 +13,11 @@
 
 ## 4-1. 사전 준비
 
-Docker로 MariaDB 실행 (개발용):
+MariaDB 실행:
 
 ```bash
-docker run -d \
-  --name etude-db \
-  -e MYSQL_ROOT_PASSWORD=root \
-  -e MYSQL_DATABASE=etude \
-  -p 3306:3306 \
-  mariadb:11
+cd backend
+docker compose up -d
 ```
 
 패키지 설치:
@@ -51,38 +47,15 @@ export const db = mysql.createPool({
 
 ---
 
-## 4-3. 스키마 + Seed 실행
+## 4-3. 스키마 + Seed
 
-```sql
-CREATE TABLE quest_set (
-  id          INT AUTO_INCREMENT PRIMARY KEY,
-  title       VARCHAR(100) NOT NULL,
-  description TEXT
-);
+`backend/db/init.sql`에 작성되어 있으며, `docker compose up -d` 시 컨테이너 최초 실행 때 자동으로 실행된다.
 
-CREATE TABLE quest (
-  id           INT AUTO_INCREMENT PRIMARY KEY,
-  quest_set_id INT NOT NULL,
-  order_index  INT NOT NULL DEFAULT 0,
-  title        VARCHAR(200) NOT NULL,
-  description  TEXT NOT NULL,
-  hint         TEXT,
-  grade_cmd    JSON NOT NULL,
-  FOREIGN KEY (quest_set_id) REFERENCES quest_set(id)
-);
+퀘스트를 추가하려면 `init.sql`에 INSERT 문을 추가하고 볼륨을 초기화한 뒤 다시 올리면 된다:
 
-INSERT INTO quest_set (title, description) VALUES
-  ('리눅스 기초', '기본적인 리눅스 명령어를 실습합니다.');
-
-INSERT INTO quest (quest_set_id, order_index, title, description, hint, grade_cmd) VALUES
-  (1, 1, '/tmp/hello 디렉토리 만들기',
-   '/tmp 경로 안에 hello라는 이름의 디렉토리를 만드세요.',
-   'mkdir 명령어를 사용하세요.',
-   '["test", "-d", "/tmp/hello"]'),
-  (1, 2, '파일에 내용 쓰기',
-   '/tmp/answer.txt 파일을 만들고 첫 줄에 "done"을 입력하세요.',
-   'echo 명령어와 리다이렉션(>)을 사용하세요.',
-   '["grep", "-q", "done", "/tmp/answer.txt"]');
+```bash
+docker compose down -v   # 볼륨 삭제 (데이터 초기화)
+docker compose up -d     # 재실행 — init.sql 다시 적용
 ```
 
 ---
@@ -112,7 +85,7 @@ export async function getQuestSets() {
 
 export async function getQuests(questSetId: number) {
   const [rows] = await db.query(
-    'SELECT id, title, description, hint FROM quest WHERE quest_set_id = ? ORDER BY order_index',
+    'SELECT id, title, description, hint, solution FROM quest WHERE quest_set_id = ? ORDER BY order_index',
     [questSetId]
   )
   return rows
@@ -290,9 +263,65 @@ export default App
 
 ---
 
-## 4-6. 검증
+## 4-6. 퀘스트 완료 후 처음으로 돌아가기
 
-- [ ] 세트 선택 화면에서 "리눅스 기초" 세트가 표시됨
-- [ ] 세트 클릭 → 퀘스트 진행 화면으로 이동
-- [ ] 터미널에서 퀘스트 풀고 채점까지 한 사이클 완료
-- [ ] DB에 퀘스트 1개 추가 후 코드 수정 없이 화면에 반영됨
+마지막 퀘스트 성공 시 세트 선택 화면으로 돌아가는 버튼을 추가한다.
+
+`frontend/src/App.tsx` — `QuestPanel`에 `onReset` prop 추가:
+
+```typescript
+<QuestPanel
+  key={quest.id}
+  quest={quest}
+  containerId={containerId}
+  total={quests.length}
+  index={questIndex}
+  onPrev={() => setQuestIndex((i) => i - 1)}
+  onNext={() => setQuestIndex((i) => i + 1)}
+  onReset={() => setSelectedSetId(null)}
+/>
+```
+
+`frontend/src/components/QuestPanel.tsx` — Props에 `onReset` 추가, 마지막 퀘스트 성공 시 버튼 표시:
+
+```typescript
+interface Props {
+  quest: Quest
+  containerId: string
+  total: number
+  index: number
+  onPrev: () => void
+  onNext: () => void
+  onReset: () => void  // 추가
+}
+
+// 완료 메시지 아래에 버튼 추가
+{result && index === total - 1 && (
+  <button
+    onClick={onReset}
+    style={{
+      padding: '10px 20px',
+      background: 'transparent',
+      color: '#aaa',
+      border: '1px solid #555',
+      borderRadius: '6px',
+      fontSize: '13px',
+      cursor: 'pointer',
+      alignSelf: 'flex-start',
+    }}
+  >
+    처음으로
+  </button>
+)}
+```
+
+---
+
+## 4-7. 검증
+
+- [x] 세트 선택 화면에서 "리눅스 기초" 세트가 표시됨
+- [x] 세트 클릭 → 퀘스트 진행 화면으로 이동
+- [x] 터미널에서 퀘스트 풀고 채점까지 한 사이클 완료
+- [x] 홈으로 버튼 → 세트 선택 화면으로 복귀
+- [x] DB에 퀘스트 1개 추가 후 코드 수정 없이 화면에 반영됨
+- [x] 힌트/풀이 보기 토글 표시

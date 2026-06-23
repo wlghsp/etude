@@ -23,6 +23,7 @@ CREATE TABLE quest (
   title        VARCHAR(200) NOT NULL,
   description  TEXT NOT NULL,
   hint         TEXT,
+  solution     TEXT,
   grade_cmd    JSON NOT NULL,  -- 채점 명령어 배열 ex) ["test", "-d", "/tmp/hello"]
   FOREIGN KEY (quest_set_id) REFERENCES quest_set(id)
 );
@@ -49,15 +50,22 @@ CREATE TABLE quest (
 INSERT INTO quest_set (title, description) VALUES
   ('리눅스 기초', '기본적인 리눅스 명령어를 실습합니다.');
 
-INSERT INTO quest (quest_set_id, order_index, title, description, hint, grade_cmd) VALUES
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, grade_cmd) VALUES
   (1, 1, '/tmp/hello 디렉토리 만들기',
    '/tmp 경로 안에 hello라는 이름의 디렉토리를 만드세요.',
    'mkdir 명령어를 사용하세요.',
+   'mkdir /tmp/hello',
    '["test", "-d", "/tmp/hello"]'),
   (1, 2, '파일에 내용 쓰기',
    '/tmp/answer.txt 파일을 만들고 첫 줄에 "done"을 입력하세요.',
    'echo 명령어와 리다이렉션(>)을 사용하세요.',
-   '["grep", "-q", "done", "/tmp/answer.txt"]');
+   'echo "done" > /tmp/answer.txt',
+   '["grep", "-q", "done", "/tmp/answer.txt"]'),
+  (1, 3, '숨김 파일 만들기',
+   '/tmp 경로에 .hidden 이라는 이름의 빈 파일을 만드세요.',
+   'touch 명령어를 사용하세요. 파일명 앞에 .을 붙이면 숨김 파일이 됩니다.',
+   'touch /tmp/.hidden',
+   '["test", "-f", "/tmp/.hidden"]');
 ```
 
 ---
@@ -78,7 +86,7 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, grade_cm
 
 ```json
 [
-  { "id": 1, "title": "/tmp/hello 디렉토리 만들기", "description": "...", "hint": "..." }
+  { "id": 1, "title": "/tmp/hello 디렉토리 만들기", "description": "...", "hint": "...", "solution": "..." }
 ]
 ```
 
@@ -121,7 +129,9 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, grade_cm
 
 ## 검증 기준
 
-- [ ] 세트 선택 화면에서 "리눅스 기초" 세트가 표시됨
-- [ ] 세트 선택 → 퀘스트 진행 화면으로 이동
-- [ ] 터미널에서 퀘스트 풀고 채점까지 한 사이클 완료
-- [ ] DB에 퀘스트 1개 추가 후 코드 수정 없이 화면에 반영됨
+- [x] 세트 선택 화면에서 "리눅스 기초" 세트가 표시됨
+- [x] 세트 선택 → 퀘스트 진행 화면으로 이동
+- [x] 터미널에서 퀘스트 풀고 채점까지 한 사이클 완료
+- [x] DB에 퀘스트 1개 추가 후 코드 수정 없이 화면에 반영됨
+- [x] 힌트/풀이 보기 토글 표시
+- [x] 퀘스트 진행 중 언제든 홈으로 버튼으로 세트 선택 화면 복귀

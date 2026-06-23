@@ -230,6 +230,8 @@ quest_progress  — 퀘스트 완료 이력 (user_id, quest_id, completed_at)
 
 - **퀘스트 관리 UI** — 어드민에서 퀘스트/세트 CRUD (채점 로직 작성 방식 확정 후)
 - **AI 퀘스트 생성** — 실무자 입력 → Claude API → 퀘스트 자동 변환 (플랫폼 안정화 후)
+- **UI 개선** — KodeKloud 레이아웃 참고 (상단 헤더바, 탭 구조, 진행 표시, 하단 네비게이션)
+- **로딩 화면** — 세트 선택 후 컨테이너 준비 중 로딩 표시 (containerId 수신 전까지). KodeKloud "Lab provisioned. Getting ready..." 스타일 참고
 
 ---
 
@@ -274,6 +276,7 @@ etude/
 
 - [ ] DB 스키마 확정 — quest_set/quest/user/quest_progress 관계 설계
 - [ ] 채점 로직 DB 저장 방식 — 채점 함수는 코드에 있고 quest_id로 매핑, 또는 채점 명령어를 DB에 저장
-- [ ] k8s 샌드박스 격리 수준 — namespace 공유 vs 클러스터 per user (Phase 6 명세 시점에 확정)
-- [ ] 로그인 방식 — 사내 이메일 자체 발급 vs SSO 연동 (Phase 5 명세 시점에 확정)
+- [ ] k8s 샌드박스 격리 수준 — namespace 공유 vs 클러스터 per user (Phase 7 명세 시점에 확정)
+- [ ] 로그인 방식 — 사내 이메일 자체 발급 vs SSO 연동 (Phase 6 명세 시점에 확정)
 - [ ] Docker 이미지 — 현재 ubuntu 기본 이미지 사용 중, Docker 세트용 커스텀 이미지 필요 여부
+- [ ] 테스트 코드 도입 시점 — Phase 6 (인증) 전후가 적기. DB + API 구조가 확정되고 인증이 붙으면 검증 필요성이 높아짐. Fastify `inject()` + vitest 조합 사용 예정

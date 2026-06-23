@@ -3,7 +3,7 @@ import websocket from '@fastify/websocket'
 import cors from '@fastify/cors'
 import Docker from 'dockerode'
 import { handleTerminal } from './terminal.js'
-import { quests, gradeQuest } from './quest.js'
+import { gradeQuest, getQuests, getQuestSets } from './quest.js'
 
 const fastify = Fastify({ logger: true })
 const docker = new Docker()
@@ -20,7 +20,11 @@ await fastify.register(async function (app){
     })
 })
 
-fastify.get('/quests', async () => quests)
+fastify.get('/quest-sets', async () => getQuestSets())
+
+fastify.get<{ Params: { id: string }}>('/quest-sets/:id/quests', async (req) => {
+    return getQuests(Number(req.params.id))
+})
 
 fastify.post<{ Body: { containerId: string; questId: number }}>(
     '/grade',
