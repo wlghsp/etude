@@ -4,7 +4,7 @@ import type { WebSocket } from 'ws'
 
 const docker = new Docker()
 
-export async function handleTerminal(socket: WebSocket) {
+export async function handleTerminal(socket: WebSocket, docker: Docker) {
     const container = await docker.createContainer({
         Image: 'ubuntu',
         Cmd: ['/bin/bash'],
@@ -25,6 +25,9 @@ export async function handleTerminal(socket: WebSocket) {
 
     await container.start()
 
+    // containerId를 브라우저로 전달 (채점에 필요)
+    socket.send(JSON.stringify({ type: 'connected', containerId: container.id }))
+
     // 컨테이너 출력 → 브라우저
     stream.on('data', (chunk: Buffer) => {
         socket.send(chunk)
@@ -37,6 +40,8 @@ export async function handleTerminal(socket: WebSocket) {
 
     // 연결 종료 시 컨테이너 제거
     socket.on('close', () => {
-        container.stop().then(() => container.remove()).catch(() => {})
+        container.stop()
+            .then(() => container.remove())
+            .catch(() => {})
     })
 }

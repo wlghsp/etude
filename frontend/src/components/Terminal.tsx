@@ -3,8 +3,11 @@ import { Terminal as XTerm } from '@xterm/xterm'
 import { FitAddon } from "@xterm/addon-fit";
 import '@xterm/xterm/css/xterm.css'
 
+interface Props {
+    onConnected: (containerId: string) => void
+}
 
-export function Terminal() {
+export function Terminal({ onConnected }: Props) {
     const containerRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -22,10 +25,20 @@ export function Terminal() {
         }
 
         ws.onmessage = (e) => {
-            const data = e.data instanceof ArrayBuffer
-                ? new Uint8Array(e.data)
-                : e.data 
-            term.write(data)
+            // binary면 터미널 출력, string이면 JSON 메시지
+            if (e.data instanceof ArrayBuffer) {
+                term.write(new Uint8Array(e.data))
+                return
+            }
+
+            try {
+                const msg = JSON.parse(e.data)
+                if (msg.type === 'connected') {
+                    onConnected(msg.containerId)
+                }
+            } catch {
+                term.write(e.data)
+            }
         }
 
         term.onData((data) => {
@@ -36,7 +49,7 @@ export function Terminal() {
             ws.close()
             term.dispose()
         }
-    }, [])
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     return <div ref={containerRef} style={{ height: '100vh', background: '#000'}} />
 }
