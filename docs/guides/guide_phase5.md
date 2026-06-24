@@ -1,29 +1,68 @@
 # Phase 5 구현 가이드 — 퀘스트 콘텐츠 확장
 
 명세: `docs/specs/spec_phase5_content.md`
-상태: **진행 중**
+상태: **구현 완료**
 
 ---
 
-## 목표
+## 구현 완료 항목
 
-코드 수정 없이 `backend/db/init.sql`에 퀘스트를 추가한다.
-퀘스트 작성 → 검증 → 추가의 사이클을 반복한다.
+- sandbox_type별 이미지 분기 (`sandbox` 테이블 + `getSandboxConfig`)
+- DinD 환경 (`docker:dind` + waitForDocker + exec shell)
+- setup_cmd 실행 (`runSetupCmd` — linux/docker 공통)
+- 터미널 로딩 UI (`connected` 메시지 기준)
+- 퀘스트 세트 5개 / 총 43개 퀘스트
+
+---
+
+## 아키텍처
+
+### 레이어 흐름
+
+```
+init.sql → DB (sandbox, quest_set, quest 테이블)
+    ↓
+quest.ts    — getQuestSets / getQuests / gradeQuest / getSetupCmd
+sandbox.ts  — getSandboxConfig
+    ↓
+terminal.ts — handleTerminal → handleDefaultTerminal / handleDockerTerminal
+    ↓
+index.ts    — WebSocket 라우팅 (/ws/terminal?sandboxType=&questId=)
+    ↓
+Terminal.tsx — WebSocket 연결 + xterm.js 렌더링 + 로딩 UI
+```
+
+### sandbox_type 분기
+
+`terminal.ts`의 `handleTerminal`이 sandboxType에 따라 분기한다:
+
+- `linux`, `linux-ssh` → `handleDefaultTerminal` (attach 방식)
+- `docker` → `handleDockerTerminal` (exec 방식 — dockerd가 attach 스트림 점유)
 
 ---
 
 ## 퀘스트 추가 방법
 
-### 1. init.sql에 INSERT 추가
+새 퀘스트 세트 추가 시 건드는 파일은 `init.sql` 하나다.
+
+### 1. init.sql에 세트/퀘스트 INSERT
 
 ```sql
-INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, grade_cmd) VALUES
-  (1, 4, '퀘스트 제목',
+-- 세트 추가 시 id 명시 (중간 삽입 시 FK 안전)
+INSERT INTO quest_set (id, title, description, sandbox_type) VALUES
+  (6, '새 세트 제목', '설명', 'linux');
+
+-- 퀘스트 추가
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
+  (6, 1, '퀘스트 제목',
    '지문',
    '힌트',
    '풀이 명령어',
+   NULL,
    '["grade", "cmd"]');
 ```
+
+`setup_cmd`는 퀘스트 실행 전 컨테이너에서 선행 실행되는 명령어 배열이다. 불필요하면 `NULL`.
 
 ### 2. DB 재초기화
 
@@ -35,425 +74,142 @@ docker-compose up -d
 
 ### 3. 브라우저에서 확인
 
-프론트/백엔드 재시작 없이 퀘스트 목록에 반영된다.
+백엔드/프론트 재시작 없이 퀘스트 목록에 반영된다.
 
 ---
 
-## 세트 1 — 리눅스 기초 1: 파일 탐색과 생성
+## 새 sandbox_type 추가 방법
+
+새 이미지 환경이 필요한 경우:
+
+1. `init.sql`의 `sandbox` INSERT에 새 타입 추가
+2. `terminal.ts`의 `SandboxType` union에 추가
+3. docker 계열이면 `handleTerminal`의 분기 조건 확인
+4. 커스텀 이미지면 `backend/docker/` 에 Dockerfile 추가 후 빌드
+
+코드 변경 최소화 원칙: 기본 linux 계열은 코드 변경 없이 `sandbox` INSERT만으로 추가 가능.
+
+---
+
+## 세트 1 — 리눅스 기초 1 (파일 탐색과 생성)
+
+sandbox_type: `linux` | 퀘스트: 10개
 
 | order | 제목 | grade_cmd |
 |-------|------|-----------|
-| 1 | 현재 위치 확인하기 | `["sh", "-c", "pwd \| grep -q /"]` |
-| 2 | 디렉토리 이동하기 | `["test", "-d", "/tmp"]` |
-| 3 | 파일 목록 확인하기 | `["test", "-d", "/tmp"]` |
-| 4 | 파일 상세 목록 확인하기 | `["test", "-d", "/tmp"]` |
-| 5 | 디렉토리 만들기 | `["test", "-d", "/tmp/hello"]` |
-| 6 | 빈 파일 만들기 | `["test", "-f", "/tmp/empty.txt"]` |
-| 7 | 파일에 내용 쓰기 | `["grep", "-q", "done", "/tmp/answer.txt"]` |
-| 8 | 숨김 파일 만들기 | `["test", "-f", "/tmp/.hidden"]` |
-| 9 | 파일 복사하기 | `["test", "-f", "/tmp/backup.txt"]` |
-| 10 | 파일 이름 바꾸기 | `["test", "-f", "/tmp/renamed.txt"]` |
+| 1 | 현재 위치 확인하기 | `grep -q / /tmp/pwd_result.txt` |
+| 2 | 디렉토리 이동하기 | `grep -q /tmp /tmp/pwd_result.txt` |
+| 3 | 파일 목록 확인하기 | `grep -q passwd /tmp/ls_result.txt` |
+| 4 | 파일 상세 목록 확인하기 | `grep -q ^total /tmp/ls_detail.txt` |
+| 5 | 디렉토리 만들기 | `test -d /tmp/hello` |
+| 6 | 빈 파일 만들기 | `test -f /tmp/empty.txt` |
+| 7 | 파일에 내용 쓰기 | `grep -q done /tmp/answer.txt` |
+| 8 | 숨김 파일 만들기 | `test -f /tmp/.hidden` |
+| 9 | 파일 복사하기 | `test -f /tmp/backup.txt` |
+| 10 | 파일 이름 바꾸기 | `test -f /tmp/renamed.txt` |
 
 ---
 
-## 세트 2 — 리눅스 기초 2: 삭제·검색·권한
+## 세트 2 — 리눅스 기초 2 (삭제·검색·권한)
+
+sandbox_type: `linux` | 퀘스트: 10개
 
 | order | 제목 | grade_cmd |
 |-------|------|-----------|
-| 1 | 파일 삭제하기 | `["sh", "-c", "test ! -f /tmp/renamed.txt"]` |
-| 2 | 디렉토리 삭제하기 | `["sh", "-c", "test ! -d /tmp/hello"]` |
-| 3 | 파일 내용 출력하기 | `["test", "-f", "/tmp/answer.txt"]` |
-| 4 | 파일에서 문자열 검색하기 | `["grep", "-q", "done", "/tmp/answer.txt"]` |
-| 5 | 여러 줄 파일 만들기 | `["grep", "-q", "line2", "/tmp/multiline.txt"]` |
-| 6 | 파일 실행 권한 부여하기 | `["sh", "-c", "test -x /tmp/answer.txt"]` |
-| 7 | 심볼릭 링크 만들기 | `["sh", "-c", "test -L /tmp/link.txt"]` |
-| 8 | 중첩 디렉토리 만들기 | `["test", "-d", "/tmp/a/b/c"]` |
-| 9 | 파일 찾기 | `["sh", "-c", "find /tmp -name '*.txt' \| grep -q ."]` |
-| 10 | 디스크 사용량 확인하기 | `["sh", "-c", "du -sh /tmp \| grep -q /tmp"]` |
+| 1 | 파일 삭제하기 | `test ! -f /tmp/renamed.txt` |
+| 2 | 디렉토리 삭제하기 | `test ! -d /tmp/hello` |
+| 3 | 파일 내용 출력하기 | `grep -q done /tmp/cat_result.txt` |
+| 4 | 파일에서 문자열 검색하기 | `grep -q done /tmp/answer.txt` |
+| 5 | 여러 줄 파일 만들기 | `grep -q line2 /tmp/multiline.txt` |
+| 6 | 파일 실행 권한 부여하기 | `test -x /tmp/answer.txt` |
+| 7 | 심볼릭 링크 만들기 | `test -L /tmp/link.txt` |
+| 8 | 중첩 디렉토리 만들기 | `test -d /tmp/a/b/c` |
+| 9 | 파일 찾기 | `grep -q .txt /tmp/find_result.txt` |
+| 10 | 디스크 사용량 확인하기 | `grep -q /tmp /tmp/du_result.txt` |
 
 ---
 
-## 세트별 이미지 분기 구현
+## 세트 3 — 리눅스 기초 3 (프로세스와 시스템)
 
-세트마다 다른 환경이 필요하므로 `terminal.ts`에서 `questSetId`를 받아 이미지를 분기한다.
+sandbox_type: `linux` | 퀘스트: 8개
 
-### 구현 순서
-
-1. `backend/src/quest.ts` — `getQuestSets()` 쿼리에 `sandbox_type` 포함
-2. `backend/src/terminal.ts` — `handleTerminal`에 `sandboxType` 파라미터 추가, DB에서 sandbox 조회
-3. `backend/src/index.ts` — WebSocket에서 `?sandboxType=` 파싱 후 전달
-4. `frontend/src/App.tsx` — `sandboxType` state 추가, `SetSelect`에서 함께 받기
-5. `frontend/src/components/Terminal.tsx` — WebSocket URL에 `?sandboxType=` 추가
-
-### terminal.ts 이미지 분기
-
-`sandbox` 테이블에서 image/binds를 조회해 컨테이너를 생성한다. 새 환경 추가 시 이 코드는 건드리지 않아도 된다.
-
-`SandboxType`은 `terminal.ts` 상단에 선언한다. 새 세트 추가 시 union에 추가하면 된다.
-
-```typescript
-type SandboxType = 'linux' | 'linux-ssh' | 'docker'
-```
-
-```typescript
-async function getContainerConfig(sandboxType: string) {
-  const [rows] = await db.query<any[]>(
-    'SELECT image, binds FROM sandbox WHERE type = ?',
-    [sandboxType]
-  )
-  const { image, binds } = rows[0] ?? { image: 'ubuntu', binds: null }
-  return {
-    Image: image,
-    HostConfig: { Binds: binds ?? [] },
-  }
-}
-```
-
-`handleTerminal`에 `sandboxType` 파라미터 추가 후 `getContainerConfig`를 호출해 `createContainer`에 spread한다:
-
-```typescript
-export async function handleTerminal(socket: WebSocket, docker: Docker, sandboxType: SandboxType) {
-  const config = await getContainerConfig(sandboxType)
-  const container = await docker.createContainer({
-    ...config,
-    Cmd: ['/bin/bash'],
-    AttachStdin: true,
-    AttachStdout: true,
-    AttachStderr: true,
-    OpenStdin: true,
-    Tty: true,
-  })
-  // ...
-}
-```
-
-### index.ts WebSocket 쿼리 파라미터 파싱
-
-```typescript
-app.get('/ws/terminal', { websocket: true }, (socket, req) => {
-  const sandboxType = new URL(req.url, 'http://localhost').searchParams.get('sandboxType') ?? 'linux'
-  handleTerminal(socket, docker, sandboxType as SandboxType).catch((err) => {
-    console.error('terminal error:', err)
-    socket.close()
-  })
-})
-```
-
-### Terminal.tsx WebSocket URL
-
-`Props`에 `sandboxType` 추가 후 WebSocket URL에 전달:
-
-```typescript
-interface Props {
-  sandboxType: string
-  onConnected: (id: string) => void
-}
-
-export function Terminal({ sandboxType, onConnected }: Props) {
-  // ...
-  const ws = new WebSocket(`ws://localhost:3001/ws/terminal?sandboxType=${sandboxType}`)
-}
-```
-
-### quest.ts — getQuestSets에 sandbox_type 포함
-
-```typescript
-export async function getQuestSets() {
-  const [rows] = await db.query('SELECT id, title, description, sandbox_type FROM quest_set')
-  return rows
-}
-```
-
-### App.tsx — sandboxType 상태 관리
-
-`SetSelect`의 `onSelect`가 `{ id, sandboxType }` 을 넘기도록 변경:
-
-```typescript
-// App.tsx
-const [sandboxType, setSandboxType] = useState<string>('linux')
-
-// onSelect 핸들러
-function handleSetSelect(id: number, sandboxType: string) {
-  setSelectedSetId(id)
-  setSandboxType(sandboxType)
-}
-
-// SetSelect에 전달
-<SetSelect onSelect={handleSetSelect} />
-
-// Terminal에 전달
-<Terminal key={selectedSetId} sandboxType={sandboxType} onConnected={setContainerId} />
-```
-
-```typescript
-// SetSelect.tsx — onSelect 시그니처 변경
-interface Props {
-  onSelect: (id: number, sandboxType: string) => void
-}
-
-// 버튼 클릭 시
-onClick={() => onSelect(s.id, s.sandbox_type)}
-```
+| order | 제목 | grade_cmd |
+|-------|------|-----------|
+| 1 | 실행 중인 프로세스 확인하기 | `test -s /tmp/ps_result.txt` |
+| 2 | 특정 프로세스 찾기 | `grep -q bash /tmp/bash_proc.txt` |
+| 3 | 백그라운드 프로세스 실행하기 | `test -s /tmp/sleep_pid.txt` |
+| 4 | 프로세스 종료하기 | `! kill -0 $(cat /tmp/sleep_pid.txt) 2>/dev/null` |
+| 5 | 디스크 사용량 확인하기 | `grep -q Filesystem /tmp/df_result.txt` |
+| 6 | 메모리 사용량 확인하기 | `grep -q Mem /tmp/mem_result.txt` |
+| 7 | 환경변수 설정하기 | `grep -q etude /tmp/env_result.txt` |
+| 8 | 전체 환경변수 저장하기 | `grep -q PATH /tmp/all_env.txt` |
 
 ---
 
-## 세트 3 — 리눅스 네트워크/파일 전송
+## 세트 4 — 리눅스 네트워크/파일 전송
 
-**방법: SSH 데몬 포함 커스텀 이미지**
+sandbox_type: `linux-ssh` / 이미지: `etude-ssh` | 퀘스트: 7개
 
-컨테이너 안에서 `localhost`를 원격 서버로 삼아 scp/rsync를 실습한다.
-
-### 커스텀 이미지 빌드 (Dockerfile)
-
-`backend/docker/Dockerfile.ssh`:
-
-```dockerfile
-FROM ubuntu:22.04
-RUN apt-get update && apt-get install -y \
-    openssh-server rsync curl iputils-ping iproute2 \
-    && rm -rf /var/lib/apt/lists/*
-RUN mkdir /var/run/sshd \
-    && echo 'root:root' | chpasswd \
-    && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
-    && sed -i 's/#StrictModes yes/StrictModes no/' /etc/ssh/sshd_config
-EXPOSE 22
-CMD ["/usr/sbin/sshd", "-D"]
-```
-
-빌드:
+SSH 데몬이 포함된 커스텀 이미지. 컨테이너 내 `localhost`를 원격 서버로 삼아 scp/rsync 실습.
+`etude-ssh` 이미지에 sshd가 설치되어 있지만 Cmd를 bash로 오버라이드하므로, setup_cmd에서 직접 기동한다.
 
 ```bash
+# etude-ssh 이미지 빌드 (최초 1회)
 cd backend
 docker build -f docker/Dockerfile.ssh -t etude-ssh .
 ```
 
-| order | 제목 | grade_cmd |
-|-------|------|-----------|
-| 1 | HTTP 요청 보내기 | `["sh", "-c", "curl -s http://example.com \| grep -q html"]` |
-| 2 | 파일 다운로드하기 | `["test", "-f", "/tmp/index.html"]` |
-| 3 | 네트워크 연결 확인하기 | `ping -c 1 8.8.8.8` 성공 여부 |
-| 4 | 열린 포트 확인하기 | `["test", "-f", "/tmp/ports.txt"]` |
-| 5 | SSH로 원격 파일 복사하기 | `["test", "-f", "/tmp/remote_copy.html"]` |
-| 6 | rsync로 디렉토리 동기화하기 | `["test", "-f", "/tmp/sync_dst/file.txt"]` |
-| 7 | 원격 명령 실행 결과 저장하기 | `["test", "-s", "/tmp/hostname.txt"]` |
-| 8 | 프로세스 목록 저장하기 | `["test", "-s", "/tmp/ps_result.txt"]` |
+| order | 제목 | setup_cmd | grade_cmd |
+|-------|------|-----------|-----------|
+| 1 | HTTP 요청 보내기 | — | `curl -s http://example.com \| grep -q html` |
+| 2 | 파일 다운로드하기 | — | `test -f /tmp/index.html` |
+| 3 | 네트워크 연결 확인하기 | — | `ping -c 1 8.8.8.8 > /dev/null 2>&1` |
+| 4 | 열린 포트 확인하기 | `nginx &` | `grep -q :80 /tmp/ports.txt` |
+| 5 | SSH로 원격 파일 복사하기 | `/usr/sbin/sshd && curl -s -o /tmp/index.html ...` | `test -f /tmp/remote_copy.html` |
+| 6 | rsync로 원격 디렉토리 동기화하기 | `/usr/sbin/sshd && mkdir -p /tmp/sync_src && ...` | `test -f /tmp/sync_dst/file.txt` |
+| 7 | 원격 명령 실행 결과 저장하기 | `/usr/sbin/sshd` | `test -s /tmp/hostname.txt` |
 
 ---
 
-## 세트 4 — Docker 기초
+## 세트 5 — Docker 기초
 
-**방법: 호스트 Docker 소켓 마운트**
+sandbox_type: `docker` / 이미지: `docker:dind` | 퀘스트: 8개
 
-호스트의 `/var/run/docker.sock`을 마운트하면 컨테이너 안에서 docker 명령어를 사용할 수 있다.
+Docker-in-Docker 환경. `waitForDocker`가 dockerd 소켓(`/var/run/docker.sock`)이 생길 때까지 대기 후 shell exec으로 연결.
+구현 상세는 `docs/guides/guide_docker_sandbox.md` 참고.
 
-| order | 제목 | grade_cmd |
-|-------|------|-----------|
-| 1 | 로컬 이미지 목록 확인하기 | `["test", "-f", "/tmp/images.txt"]` |
-| 2 | 이미지 받아오기 | `docker images hello-world \| grep -q hello-world` |
-| 3 | 컨테이너 실행하기 | `docker ps -a \| grep -q hello-world` |
-| 4 | 백그라운드 컨테이너 실행하기 | `docker ps \| grep -q my-nginx` |
-| 5 | 실행 중인 컨테이너 목록 저장하기 | `["test", "-s", "/tmp/containers.txt"]` |
-| 6 | 컨테이너 로그 확인하기 | `["test", "-f", "/tmp/nginx_logs.txt"]` |
-| 7 | 컨테이너 중지하기 | `docker ps \| grep -qv my-nginx` |
-| 8 | 컨테이너 삭제하고 결과 저장하기 | `docker ps -a \| grep -qv my-nginx` |
-
----
-
-## 리팩토링 (구현 완료 후)
-
-세트별 이미지 분기 구현이 완료된 뒤 아래 순서로 정리한다.
-
-### 백엔드
-
-**`backend/src/sandbox.ts` 분리**
-
-`terminal.ts`에 있는 sandbox 조회 로직을 별도 파일로 분리:
-
-```typescript
-// backend/src/sandbox.ts
-import { db } from './db.js'
-
-export async function getSandboxConfig(sandboxType: string) {
-  const [rows] = await db.query<any[]>(
-    'SELECT image, binds FROM sandbox WHERE type = ?',
-    [sandboxType]
-  )
-  const row = rows[0] ?? { image: 'ubuntu', binds: null }
-  return {
-    image: row.image,
-    binds: typeof row.binds === 'string' ? JSON.parse(row.binds) : row.binds,
-  }
-}
-```
-
-`binds`는 MariaDB JSON 컬럼이지만 드라이버에 따라 문자열로 올 수 있으므로 파싱을 명시적으로 처리한다.
-
-`terminal.ts`에서는 `getContainerConfig`를 삭제하고 `getSandboxConfig`를 import해 호출:
-
-```typescript
-// terminal.ts
-import { getSandboxConfig } from './sandbox.js'
-
-export async function handleTerminal(socket: WebSocket, docker: Docker, sandboxType: SandboxType) {
-  const { image, binds } = await getSandboxConfig(sandboxType)
-  const container = await docker.createContainer({
-    Image: image,
-    HostConfig: { Binds: binds ?? [] },
-    Cmd: ['/bin/bash'],
-    AttachStdin: true,
-    AttachStdout: true,
-    AttachStderr: true,
-    OpenStdin: true,
-    Tty: true,
-  })
-  // ...
-}
-```
-
-**타입 정의 분리**
-
-`backend/src/types.ts` 신규 생성 — 여러 파일에서 공유하는 인터페이스 모음:
-
-```typescript
-export interface QuestSet {
-  id: number
-  title: string
-  description: string
-  sandbox_type: string
-}
-
-export interface Quest {
-  id: number
-  title: string
-  description: string
-  hint: string
-  solution: string
-}
-```
-
-`quest.ts`에서 기존 `export interface Quest` 삭제 후 import 추가, 반환 타입 명시:
-
-```typescript
-import type { Quest, QuestSet } from './types.js'
-
-export async function getQuestSets(): Promise<QuestSet[]> {
-  const [rows] = await db.query('SELECT id, title, description, sandbox_type FROM quest_set')
-  return rows as QuestSet[]
-}
-
-export async function getQuests(questSetId: number): Promise<Quest[]> {
-  const [rows] = await db.query(
-    'SELECT id, title, description, hint, solution FROM quest WHERE quest_set_id = ? ORDER BY order_index',
-    [questSetId]
-  )
-  return rows as Quest[]
-}
-```
-
-### 프론트엔드
-
-**`frontend/src/types.ts` 분리**
-
-`App.tsx`, `QuestPanel.tsx`, `SetSelect.tsx`에 중복 선언된 인터페이스를 한 곳으로 모음:
-
-```typescript
-// frontend/src/types.ts
-export interface Quest {
-  id: number
-  title: string
-  description: string
-  hint: string
-  solution: string
-}
-
-export interface QuestSet {
-  id: number
-  title: string
-  description: string
-  sandbox_type: string
-}
-```
-
-각 파일에서 기존 인터페이스 선언을 삭제하고 import로 교체:
-
-```typescript
-import type { Quest } from '../types'   // QuestPanel.tsx
-import type { Quest } from './types'    // App.tsx
-import type { QuestSet } from '../types' // SetSelect.tsx
-```
-
-**`frontend/src/api.ts` 분리**
-
-`App.tsx`, `SetSelect.tsx`, `QuestPanel.tsx`에 흩어진 fetch 호출을 한 곳으로 모음:
-
-```typescript
-// frontend/src/api.ts
-const BASE = 'http://localhost:3001'
-
-export async function fetchQuestSets() {
-  return fetch(`${BASE}/quest-sets`).then((r) => r.json())
-}
-
-export async function fetchQuests(setId: number) {
-  return fetch(`${BASE}/quest-sets/${setId}/quests`).then((r) => r.json())
-}
-
-export async function gradeQuest(containerId: string, questId: number) {
-  return fetch(`${BASE}/grade`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ containerId, questId }),
-  }).then((r) => r.json())
-}
-```
-
-생성 후 각 파일에서 기존 fetch 호출을 삭제하고 import로 교체:
-
-```typescript
-// SetSelect.tsx — fetchQuestSets 사용
-import { fetchQuestSets } from '../api'
-
-// 기존
-fetch('http://localhost:3001/quest-sets').then((r) => r.json()).then(setSets)
-// 변경
-fetchQuestSets().then(setSets)
-```
-
-```typescript
-// App.tsx — fetchQuests 사용
-import { fetchQuests } from './api'
-
-// 기존
-fetch(`http://localhost:3001/quest-sets/${selectedSetId}/quests`).then((r) => r.json()).then(...)
-// 변경
-fetchQuests(selectedSetId).then(...)
-```
-
-```typescript
-// QuestPanel.tsx — gradeQuest 사용
-import { gradeQuest } from '../api'
-
-// 기존
-fetch('http://localhost:3001/grade', { method: 'POST', ... })
-// 변경
-gradeQuest(containerId, quest.id)
-```
-
-**`sandboxType` Context 검토**
-
-`App` → `Terminal`로 내려가는 `sandboxType` prop chain이 불편하면 Context로 올리는 것을 검토한다. 지금은 단순하므로 props로 충분하다.
+| order | 제목 | setup_cmd | grade_cmd |
+|-------|------|-----------|-----------|
+| 1 | 로컬 이미지 목록 확인하기 | `docker pull hello-world` | `grep -q hello-world /tmp/images.txt` |
+| 2 | 이미지 받아오기 | — | `docker images hello-world \| grep -q hello-world` |
+| 3 | 컨테이너 실행하기 | — | `docker ps -a \| grep -q hello-world` |
+| 4 | 백그라운드 컨테이너 실행하기 | — | `docker ps \| grep -q my-nginx` |
+| 5 | 실행 중인 컨테이너 목록 저장하기 | `docker run -d --name my-nginx nginx` | `test -s /tmp/containers.txt` |
+| 6 | 컨테이너 로그 확인하기 | `docker run -d --name my-nginx nginx` | `test -f /tmp/nginx_logs.txt` |
+| 7 | 컨테이너 중지하기 | `docker run -d --name my-nginx nginx` | `docker ps \| grep -qv my-nginx` |
+| 8 | 컨테이너 삭제하고 결과 저장하기 | `docker run -d --name my-nginx nginx && docker stop my-nginx` | `test -s /tmp/final.txt && ! grep -q my-nginx /tmp/final.txt` |
 
 ---
 
 ## 퀘스트 작성 요청 방법
 
-AI에게 퀘스트 생성을 요청할 때 아래 형식으로 전달하면 된다:
+AI에게 퀘스트 생성을 요청할 때 아래 형식으로 전달:
 
 ```
 주제: [파일 복사]
-조건: ubuntu 컨테이너 환경, /tmp 디렉토리 사용
+sandbox_type: linux
+조건: /tmp 디렉토리 사용
 난이도: 기초
 ```
 
-AI가 지문 + 힌트 + 풀이 + grade_cmd를 포함한 INSERT 쿼리를 생성해준다.
+AI가 지문 + 힌트 + 풀이 + setup_cmd + grade_cmd를 포함한 INSERT 쿼리를 생성해준다.
 직접 터미널에서 실행해서 grade_cmd가 정확한지 검증 후 init.sql에 추가한다.
+
+---
+
+## 미결 사항
+
+### 컨테이너 고아 처리
+
+서버 재시작 또는 브라우저 강제 종료 시 컨테이너가 stop/remove 되지 않고 남는다.
+구현 방법: `docs/guides/guide_container_cleanup.md` 참고.
