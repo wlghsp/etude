@@ -7,7 +7,7 @@
 ## Stack
 
 - Frontend: React + TypeScript
-- Backend: Node.js + Fastify + TypeScript
+- Backend: Fastify + TypeScript
 - Terminal: xterm.js + WebSocket
 - Sandbox: Docker
 - DB: MariaDB

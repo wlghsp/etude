@@ -4,10 +4,12 @@ import { FitAddon } from "@xterm/addon-fit";
 import '@xterm/xterm/css/xterm.css'
 
 interface Props {
+    sandboxType: string
+    questId: number | null
     onConnected: (containerId: string) => void
 }
 
-export function Terminal({ onConnected }: Props) {
+export function Terminal({ sandboxType, questId, onConnected }: Props) {
     const containerRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -17,7 +19,9 @@ export function Terminal({ onConnected }: Props) {
         term.open(containerRef.current!)
         fitAddon.fit()
 
-        const ws = new WebSocket('ws://localhost:3001/ws/terminal')
+        const ws = new WebSocket(
+            `ws://localhost:3001/ws/terminal?sandboxType=${sandboxType}${questId !== null ? `&questId=${questId}` : ''}`
+        )
         ws.binaryType = 'arraybuffer'
 
         ws.onopen = () => {}

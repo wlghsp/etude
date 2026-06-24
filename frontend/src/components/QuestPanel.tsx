@@ -1,12 +1,6 @@
 import { useState } from 'react'
-
-interface Quest {
-    id: number
-    title: string
-    description: string
-    hint: string
-    solution: string
-}
+import type { Quest } from '../types'
+import { gradeQuest } from '../api'
 
 interface Props {
     quest: Quest
@@ -25,12 +19,7 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, o
     const grade = async () => {
         setLoading(true)
         try {
-            const res = await fetch('http://localhost:3001/grade', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ containerId, questId: quest.id }),
-            })
-            const data = await res.json()
+            const data = await gradeQuest(containerId, quest.id)
             setResult(data.passed)
         } finally {
             setLoading(false)
@@ -85,7 +74,7 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, o
                 }}>
                     {result
                         ? index === total - 1
-                            ? '🎉 모든 퀘스트를 완료했습니다!'
+                            ? '✅ 성공! 마지막 퀘스트를 완료했습니다.'
                             : '✅ 성공!'
                         : '❌ 아직이에요. 다시 시도해보세요.'
                     }

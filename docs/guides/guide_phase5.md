@@ -89,6 +89,12 @@ docker-compose up -d
 
 `sandbox` 테이블에서 image/binds를 조회해 컨테이너를 생성한다. 새 환경 추가 시 이 코드는 건드리지 않아도 된다.
 
+`SandboxType`은 `terminal.ts` 상단에 선언한다. 새 세트 추가 시 union에 추가하면 된다.
+
+```typescript
+type SandboxType = 'linux' | 'linux-ssh' | 'docker'
+```
+
 ```typescript
 async function getContainerConfig(sandboxType: string) {
   const [rows] = await db.query<any[]>(
@@ -100,6 +106,24 @@ async function getContainerConfig(sandboxType: string) {
     Image: image,
     HostConfig: { Binds: binds ?? [] },
   }
+}
+```
+
+`handleTerminal`에 `sandboxType` 파라미터 추가 후 `getContainerConfig`를 호출해 `createContainer`에 spread한다:
+
+```typescript
+export async function handleTerminal(socket: WebSocket, docker: Docker, sandboxType: SandboxType) {
+  const config = await getContainerConfig(sandboxType)
+  const container = await docker.createContainer({
+    ...config,
+    Cmd: ['/bin/bash'],
+    AttachStdin: true,
+    AttachStdout: true,
+    AttachStderr: true,
+    OpenStdin: true,
+    Tty: true,
+  })
+  // ...
 }
 ```
 
@@ -117,8 +141,18 @@ app.get('/ws/terminal', { websocket: true }, (socket, req) => {
 
 ### Terminal.tsx WebSocket URL
 
+`Props`에 `sandboxType` 추가 후 WebSocket URL에 전달:
+
 ```typescript
-const ws = new WebSocket(`ws://localhost:3001/ws/terminal?sandboxType=${sandboxType}`)
+interface Props {
+  sandboxType: string
+  onConnected: (id: string) => void
+}
+
+export function Terminal({ sandboxType, onConnected }: Props) {
+  // ...
+  const ws = new WebSocket(`ws://localhost:3001/ws/terminal?sandboxType=${sandboxType}`)
+}
 ```
 
 ### quest.ts — getQuestSets에 sandbox_type 포함
@@ -237,12 +271,42 @@ docker build -f docker/Dockerfile.ssh -t etude-ssh .
 
 ```typescript
 // backend/src/sandbox.ts
+import { db } from './db.js'
+
 export async function getSandboxConfig(sandboxType: string) {
   const [rows] = await db.query<any[]>(
     'SELECT image, binds FROM sandbox WHERE type = ?',
     [sandboxType]
   )
-  return rows[0] ?? { image: 'ubuntu', binds: null }
+  const row = rows[0] ?? { image: 'ubuntu', binds: null }
+  return {
+    image: row.image,
+    binds: typeof row.binds === 'string' ? JSON.parse(row.binds) : row.binds,
+  }
+}
+```
+
+`binds`는 MariaDB JSON 컬럼이지만 드라이버에 따라 문자열로 올 수 있으므로 파싱을 명시적으로 처리한다.
+
+`terminal.ts`에서는 `getContainerConfig`를 삭제하고 `getSandboxConfig`를 import해 호출:
+
+```typescript
+// terminal.ts
+import { getSandboxConfig } from './sandbox.js'
+
+export async function handleTerminal(socket: WebSocket, docker: Docker, sandboxType: SandboxType) {
+  const { image, binds } = await getSandboxConfig(sandboxType)
+  const container = await docker.createContainer({
+    Image: image,
+    HostConfig: { Binds: binds ?? [] },
+    Cmd: ['/bin/bash'],
+    AttachStdin: true,
+    AttachStdout: true,
+    AttachStderr: true,
+    OpenStdin: true,
+    Tty: true,
+  })
+  // ...
 }
 ```
 
@@ -267,11 +331,60 @@ export interface Quest {
 }
 ```
 
+`quest.ts`에서 기존 `export interface Quest` 삭제 후 import 추가, 반환 타입 명시:
+
+```typescript
+import type { Quest, QuestSet } from './types.js'
+
+export async function getQuestSets(): Promise<QuestSet[]> {
+  const [rows] = await db.query('SELECT id, title, description, sandbox_type FROM quest_set')
+  return rows as QuestSet[]
+}
+
+export async function getQuests(questSetId: number): Promise<Quest[]> {
+  const [rows] = await db.query(
+    'SELECT id, title, description, hint, solution FROM quest WHERE quest_set_id = ? ORDER BY order_index',
+    [questSetId]
+  )
+  return rows as Quest[]
+}
+```
+
 ### 프론트엔드
+
+**`frontend/src/types.ts` 분리**
+
+`App.tsx`, `QuestPanel.tsx`, `SetSelect.tsx`에 중복 선언된 인터페이스를 한 곳으로 모음:
+
+```typescript
+// frontend/src/types.ts
+export interface Quest {
+  id: number
+  title: string
+  description: string
+  hint: string
+  solution: string
+}
+
+export interface QuestSet {
+  id: number
+  title: string
+  description: string
+  sandbox_type: string
+}
+```
+
+각 파일에서 기존 인터페이스 선언을 삭제하고 import로 교체:
+
+```typescript
+import type { Quest } from '../types'   // QuestPanel.tsx
+import type { Quest } from './types'    // App.tsx
+import type { QuestSet } from '../types' // SetSelect.tsx
+```
 
 **`frontend/src/api.ts` 분리**
 
-`App.tsx`, `SetSelect.tsx`에 흩어진 fetch 호출을 한 곳으로 모음:
+`App.tsx`, `SetSelect.tsx`, `QuestPanel.tsx`에 흩어진 fetch 호출을 한 곳으로 모음:
 
 ```typescript
 // frontend/src/api.ts
@@ -292,6 +405,38 @@ export async function gradeQuest(containerId: string, questId: number) {
     body: JSON.stringify({ containerId, questId }),
   }).then((r) => r.json())
 }
+```
+
+생성 후 각 파일에서 기존 fetch 호출을 삭제하고 import로 교체:
+
+```typescript
+// SetSelect.tsx — fetchQuestSets 사용
+import { fetchQuestSets } from '../api'
+
+// 기존
+fetch('http://localhost:3001/quest-sets').then((r) => r.json()).then(setSets)
+// 변경
+fetchQuestSets().then(setSets)
+```
+
+```typescript
+// App.tsx — fetchQuests 사용
+import { fetchQuests } from './api'
+
+// 기존
+fetch(`http://localhost:3001/quest-sets/${selectedSetId}/quests`).then((r) => r.json()).then(...)
+// 변경
+fetchQuests(selectedSetId).then(...)
+```
+
+```typescript
+// QuestPanel.tsx — gradeQuest 사용
+import { gradeQuest } from '../api'
+
+// 기존
+fetch('http://localhost:3001/grade', { method: 'POST', ... })
+// 변경
+gradeQuest(containerId, quest.id)
 ```
 
 **`sandboxType` Context 검토**

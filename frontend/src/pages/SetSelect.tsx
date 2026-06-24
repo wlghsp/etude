@@ -1,21 +1,16 @@
 import { useEffect, useState } from "react";
-
-interface QuestSet {
-    id: number
-    title: string
-    description: string
-}
+import type { QuestSet } from "../types";
+import { fetchQuestSets } from "../api";
 
 interface Props {
-    onSelect: (setId: number) => void
+    onSelect: (setId: number, sandboxType: string) => void
 }
 
 export function SetSelect({ onSelect }: Props) {
-    const [sets, setSets] = useState<QuerySet[]>([])
+    const [sets, setSets] = useState<QuestSet[]>([])
 
     useEffect(() => {
-        fetch('http://localhost:3001/quest-sets')
-          .then((r) => r.json())
+        fetchQuestSets()
           .then(setSets)
     }, [])
 
@@ -27,7 +22,7 @@ export function SetSelect({ onSelect }: Props) {
                 {sets.map((s) => (
                 <button
                     key={s.id}
-                    onClick={() => onSelect(s.id)}
+                    onClick={() => onSelect(s.id, s.sandbox_type)}
                     style={{
                     padding: '20px 24px',
                     background: '#1e1e1e',

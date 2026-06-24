@@ -2,24 +2,20 @@ import { useState, useEffect } from 'react'
 import { Terminal } from './components/Terminal'
 import { QuestPanel } from './components/QuestPanel'
 import { SetSelect } from './pages/SetSelect'
+import type { Quest } from './types'
+import { fetchQuests } from './api'
 
-interface Quest {
-  id: number
-  title: string
-  description: string
-  hint: string
-}
 
 function App() {
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null)
   const [quests, setQuests] = useState<Quest[]>([])
   const [questIndex, setQuestIndex] = useState(0)
   const [containerId, setContainerId] = useState('')
+  const [sandboxType, setSandboxType] = useState<string>('linux')
 
   useEffect(() => {
     if (selectedSetId === null) return
-    fetch(`http://localhost:3001/quest-sets/${selectedSetId}/quests`)
-      .then((r) => r.json())
+    fetchQuests(selectedSetId)
       .then((data: Quest[]) => {
         setQuests(data)
         setQuestIndex(0)
@@ -27,7 +23,11 @@ function App() {
   }, [selectedSetId])
 
   if (selectedSetId === null) {
-    return <SetSelect onSelect={setSelectedSetId} />
+    function handleSetSelect(id: number, sandboxType: string) {
+      setSelectedSetId(id)
+      setSandboxType(sandboxType)
+    }
+    return <SetSelect onSelect={handleSetSelect} />
   }
 
   const quest = quests[questIndex] ?? null
@@ -49,7 +49,9 @@ function App() {
         )}
       </div>
       <div style={{ flex: 1 }}>
-        <Terminal key={questIndex} onConnected={setContainerId} />
+        {
+          quest && <Terminal key={questIndex} sandboxType={sandboxType} questId={quest?.id ?? null}  onConnected={setContainerId} />
+        }
       </div>
     </div>
   )

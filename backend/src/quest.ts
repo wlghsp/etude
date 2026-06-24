@@ -1,13 +1,6 @@
 import Docker from 'dockerode'
 import { db } from './db.js'
-
-export interface Quest {
-  id: number
-  title: string
-  description: string
-  hint: string
-  grade: (container: Docker.Container) => Promise<boolean>
-}
+import type { Quest, QuestSet } from './types.js'
 
 async function execCheck(container: Docker.Container, cmd: string[]): Promise<boolean> {
   const exec = await container.exec({ Cmd: cmd })
@@ -20,19 +13,31 @@ async function execCheck(container: Docker.Container, cmd: string[]): Promise<bo
   }
 }
 
-export async function getQuestSets() {
-  const [rows] = await db.query('SELECT id, title, description FROM quest_set')
-  return rows
+export async function getQuestSets(): Promise<QuestSet[]> {
+  const [rows] = await db.query('SELECT id, title, description, sandbox_type FROM quest_set')
+  return rows as QuestSet[]
 }
 
-export async function getQuests(questSetId: number) {
+export async function getQuests(questSetId: number): Promise<Quest[]> {
   const [rows] = await db.query(
-    'SELECT id, title, description, hint, solution FROM quest WHERE quest_set_id = ? ORDER BY order_index',
+    'SELECT id, title, description, hint, solution, setup_cmd FROM quest WHERE quest_set_id = ? ORDER BY order_index',
     [questSetId]
   )
-  return rows
+  return (rows as any[]).map((r) => ({
+    ...r,
+    setup_cmd: r.setup_cmd ? JSON.parse(r.setup_cmd) : null,
+  })) as Quest[]
 }
 
+export async function getSetupCmd(questId: number): Promise<string[] | null> {
+  const [rows] = await db.query<any[]>(
+    'SELECT setup_cmd FROM quest WHERE id = ?',
+    [questId]
+  )
+  if (!rows.length || !rows[0].setup_cmd) return null
+  const raw = rows[0].setup_cmd
+  return typeof raw === 'string' ? JSON.parse(raw) : raw
+}
 
 export async function gradeQuest(
   containerId: string,
