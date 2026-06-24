@@ -299,8 +299,8 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    'Docker에 저장된 이미지 목록을 확인하고, 결과를 /tmp/images.txt 에 저장하세요.',
    'docker images 명령어를 사용하세요.',
    'docker images > /tmp/images.txt',
-   NULL,
-   '["test", "-f", "/tmp/images.txt"]'),
+   '["sh", "-c", "docker pull hello-world"]',
+   '["sh", "-c", "grep -q hello-world /tmp/images.txt"]'),
 
   (5,  2, '이미지 받아오기',
    'Docker Hub에서 hello-world 이미지를 받아오세요.',

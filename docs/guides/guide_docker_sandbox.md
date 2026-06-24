@@ -38,30 +38,50 @@ async function waitForDocker(container: Docker.Container): Promise<void> {
 
 500ms × 20회 = 최대 10초 대기. `docker info` 성공 시 즉시 반환.
 
-### 2. terminal.ts — handleTerminal 분기 처리
+### 2. terminal.ts — runSetupCmd 헬퍼 함수 추가
 
-docker 타입은 컨테이너 생성/연결 방식이 달라서 분기한다:
+`waitForDocker` 아래에 추가. `handleDefaultTerminal`과 `handleDockerTerminal` 양쪽에서 공통으로 쓴다:
 
 ```typescript
-export async function handleTerminal(socket: WebSocket, docker: Docker, sandboxType: SandboxType) {
+async function runSetupCmd(container: Docker.Container, questId: number | null): Promise<void> {
+    if (questId === null) return
+    const setupCmd = await getSetupCmd(questId)
+    if (!setupCmd) return
+    const exec = await container.exec({ Cmd: setupCmd, AttachStdout: false, AttachStderr: false })
+    await exec.start({})
+    while (true) {
+        const info = await exec.inspect()
+        if (!info.Running) break
+        await new Promise((r) => setTimeout(r, 100))
+    }
+}
+```
+
+### 3. terminal.ts — handleTerminal 분기 처리
+
+docker 타입은 컨테이너 생성/연결 방식이 달라서 분기한다. `questId`를 양쪽에 전달한다:
+
+```typescript
+export async function handleTerminal(socket: WebSocket, docker: Docker, sandboxType: SandboxType, questId: number | null) {
   const config = await getSandboxConfig(sandboxType)
 
   if (sandboxType === 'docker') {
-    await handleDockerTerminal(socket, docker, config)
+    await handleDockerTerminal(socket, docker, config, questId)
   } else {
-    await handleDefaultTerminal(socket, docker, config, sandboxType)
+    await handleDefaultTerminal(socket, docker, config, questId)
   }
 }
 ```
 
-### 3. terminal.ts — handleDefaultTerminal (기존 로직)
+### 4. terminal.ts — handleDefaultTerminal (기존 로직)
 
-기존 `handleTerminal` 내용을 함수로 분리:
+기존 `handleTerminal` 내용을 함수로 분리. `getSandboxConfig`가 `{ image, binds }`를 반환하므로 spread 없이 직접 넣는다. `container.start()` 후 `runSetupCmd` 호출:
 
 ```typescript
-async function handleDefaultTerminal(socket: WebSocket, docker: Docker, config: any, sandboxType: SandboxType) {
+async function handleDefaultTerminal(socket: WebSocket, docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null) {
   const container = await docker.createContainer({
-    ...config,
+    Image: config.image,
+    HostConfig: { Binds: config.binds ?? [] },
     Cmd: ['/bin/bash'],
     AttachStdin: true,
     AttachStdout: true,
@@ -79,6 +99,7 @@ async function handleDefaultTerminal(socket: WebSocket, docker: Docker, config: 
   })
 
   await container.start()
+  await runSetupCmd(container, questId)
 
   socket.send(JSON.stringify({ type: 'connected', containerId: container.id }))
 
@@ -90,29 +111,29 @@ async function handleDefaultTerminal(socket: WebSocket, docker: Docker, config: 
 }
 ```
 
-### 4. terminal.ts — handleDockerTerminal (DinD 전용)
+### 5. terminal.ts — handleDockerTerminal (DinD 전용)
+
+`Privileged: true`는 `HostConfig`에 직접 명시. `waitForDocker` 후 `runSetupCmd` 호출:
 
 ```typescript
-async function handleDockerTerminal(socket: WebSocket, docker: Docker, config: any) {
+async function handleDockerTerminal(socket: WebSocket, docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null) {
   const container = await docker.createContainer({
-    ...config,
+    Image: config.image,
     AttachStdin: false,
     AttachStdout: false,
     AttachStderr: false,
     OpenStdin: false,
     Tty: false,
     HostConfig: {
-      ...config.HostConfig,
+      Binds: config.binds ?? [],
       Privileged: true,
     },
   })
 
   await container.start()
-
-  // dockerd 기동 대기 (로딩 중)
   await waitForDocker(container)
+  await runSetupCmd(container, questId)
 
-  // exec으로 shell 연결
   const exec = await container.exec({
     Cmd: ['/bin/sh'],
     AttachStdin: true,

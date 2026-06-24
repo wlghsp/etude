@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Terminal as XTerm } from '@xterm/xterm'
 import { FitAddon } from "@xterm/addon-fit";
 import '@xterm/xterm/css/xterm.css'
@@ -11,6 +11,7 @@ interface Props {
 
 export function Terminal({ sandboxType, questId, onConnected }: Props) {
     const containerRef = useRef<HTMLDivElement>(null)
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         const term = new XTerm({ cursorBlink: true, fontSize: 14, fontFamily: 'monospace', lineHeight: 1.2 })
@@ -37,6 +38,7 @@ export function Terminal({ sandboxType, questId, onConnected }: Props) {
                 const msg = JSON.parse(e.data)
                 if (msg.type === 'connected') {
                     onConnected(msg.containerId)
+                    setLoading(false)
                 }
             } catch {
                 term.write(e.data)
@@ -53,5 +55,14 @@ export function Terminal({ sandboxType, questId, onConnected }: Props) {
         }
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-    return <div ref={containerRef} style={{ height: '100vh', background: '#000', padding: '4px' }} />
+    return (
+        <div style={{ height: '100vh', background: '#000' }}>
+            {loading && (
+                <div style={{ color: '#666', padding: '1rem', fontSize: '13px' }}>
+                    환경 준비 중...
+                </div>
+            )}
+            <div ref={containerRef} style={{ height: '100%', padding: '4px', display: loading ? 'none' : 'block' }} />
+        </div>
+    )
 }
