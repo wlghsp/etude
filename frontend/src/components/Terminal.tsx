@@ -21,7 +21,7 @@ export function Terminal({ sandboxType, questId, onConnected }: Props) {
         fitAddon.fit()
 
         const ws = new WebSocket(
-            `ws://localhost:3001/ws/terminal?sandboxType=${sandboxType}${questId !== null ? `&questId=${questId}` : ''}`
+            `ws://${window.location.hostname}:3001/ws/terminal?sandboxType=${sandboxType}${questId !== null ? `&questId=${questId}` : ''}`
         )
         ws.binaryType = 'arraybuffer'
 

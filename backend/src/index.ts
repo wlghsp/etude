@@ -9,7 +9,7 @@ import { gradeQuest, getQuests, getQuestSets } from './quest.js'
 const fastify = Fastify({ logger: true })
 const docker = new Docker()
 
-await fastify.register(cors, { origin: 'http://localhost:5173' })
+await fastify.register(cors, { origin: true })
 await fastify.register(websocket)
 
 await fastify.register(async function (app){

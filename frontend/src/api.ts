@@ -1,5 +1,5 @@
 
-const BASE = 'http://localhost:3001'
+const BASE = `http://${window.location.hostname}:3001`
 
 export async function fetchQuestSets() {
   return fetch(`${BASE}/quest-sets`).then((r) => r.json())
