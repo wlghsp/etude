@@ -2,8 +2,8 @@ import Fastify from 'fastify'
 import websocket from '@fastify/websocket'
 import cors from '@fastify/cors'
 import Docker from 'dockerode'
+import 'dotenv/config'
 import { handleTerminal } from './terminal.js'
-import type { SandboxType } from './terminal.js'
 import { gradeQuest, getQuests, getQuestSets } from './quest.js'
 
 const fastify = Fastify({ logger: true })
@@ -17,7 +17,7 @@ await fastify.register(async function (app){
         const params = new URL(req.url, 'http://localhost').searchParams
         const sandboxType = params.get('sandboxType') ?? 'linux'
         const questId = params.get('questId') ? Number(params.get('questId')) : null
-        handleTerminal(socket, docker, sandboxType as SandboxType, questId).catch((err) => {
+        handleTerminal(socket, docker, sandboxType, questId).catch((err) => {
             console.error('terminal error:', err)
             socket.close()
         })

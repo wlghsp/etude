@@ -50,5 +50,9 @@ export async function gradeQuest(
   )
   if (!rows.length) return false
   const cmd: string[] = JSON.parse(rows[0].grade_cmd)
-  return execCheck(docker.getContainer(containerId), cmd)
+
+  const ns = `quest-${containerId.slice(0, 8)}`
+  const resolveCmd = cmd.map((s: string) => s.replace(/\$NS/g, ns))
+
+  return execCheck(docker.getContainer(containerId), resolveCmd)
 }

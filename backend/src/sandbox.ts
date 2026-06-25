@@ -7,8 +7,17 @@ export async function getSandboxConfig(sandboxType: string) {
         [sandboxType]
     )
     const row = rows[0] ?? { image: 'ubuntu', binds: null }
-    return {
+    const config = {
         image: row.image,
         binds: typeof row.binds === 'string' ? JSON.parse(row.binds) : row.binds,
     }
+
+    if (config.binds) {
+        const kubeconfig = process.env.KUBECONFIG_PATH ?? `${process.env.HOME}/.kube/config`
+        config.binds = config.binds.map((b: string) => 
+            b.replace('{KUBECONFIG_HOST_PATH}', kubeconfig)
+        )
+    }
+
+    return config
 }

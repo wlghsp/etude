@@ -15,6 +15,8 @@ interface Props {
 export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, onReset }: Props) {
     const [result, setResult] = useState<boolean | null>(null)
     const [loading, setLoading] = useState(false)
+    const ns = containerId ? `quest-${containerId.slice(0, 8)}` : '$NS'
+    const resolve = (text: string) => text.replace(/\$NS/g, ns)
 
     const grade = async () => {
         setLoading(true)
@@ -34,14 +36,14 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, o
                 </div>
                 <h2 style={{ fontSize: '20px', color: '#f0f0f0', margin: 0 }}>{quest.title}</h2>
             </div>
-            <p style={{ color: '#bbb', lineHeight: '1.6', fontSize: '14px' }}>{quest.description}</p>
+            <p style={{ color: '#bbb', lineHeight: '1.6', fontSize: '14px' }}>{resolve(quest.description)}</p>
             <details>
                 <summary style={{ cursor: 'pointer', color: '#666', fontSize: '13px', userSelect: 'none' }}>힌트 보기</summary>
-                <p style={{ color: '#888', fontSize: '13px', marginTop: '8px', paddingLeft: '4px' }}>{quest.hint}</p>
+                <p style={{ color: '#888', fontSize: '13px', marginTop: '8px', paddingLeft: '4px' }}>{resolve(quest.hint ?? '')}</p>
             </details>
             <details>
                 <summary style={{ cursor: 'pointer', color: '#666', fontSize: '13px', userSelect: 'none' }}>풀이 보기</summary>
-                <p style={{ color: '#888', fontSize: '13px', marginTop: '8px', paddingLeft: '4px', fontFamily: 'monospace' }}>{quest.solution}</p>
+                <p style={{ color: '#888', fontSize: '13px', marginTop: '8px', paddingLeft: '4px', fontFamily: 'monospace' }}>{resolve(quest.solution ?? '')}</p>
             </details>
             <button
                 onClick={grade}

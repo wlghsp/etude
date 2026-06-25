@@ -35,6 +35,11 @@ export function SetSelect({ onSelect }: Props) {
                 >
                     <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>{s.title}</div>
                     <div style={{ fontSize: '13px', color: '#888' }}>{s.description}</div>
+                    {s.sandbox_type === 'k8s' && (
+                        <div style={{ fontSize: '12px', color: '#555', marginTop: '8px' }}>
+                            퀘스트를 이동해도 터미널 환경(네임스페이스)이 유지됩니다.
+                        </div>
+                    )}
                 </button>
                 ))}
             </div>

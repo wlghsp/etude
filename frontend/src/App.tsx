@@ -50,7 +50,7 @@ function App() {
       </div>
       <div style={{ flex: 1 }}>
         {
-          quest && <Terminal key={questIndex} sandboxType={sandboxType} questId={quest?.id ?? null}  onConnected={setContainerId} />
+          quest && <Terminal key={sandboxType === 'k8s' ? 'k8s' : questIndex} sandboxType={sandboxType} questId={quest?.id ?? null}  onConnected={setContainerId} />
         }
       </div>
     </div>

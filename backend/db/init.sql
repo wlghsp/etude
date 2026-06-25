@@ -30,14 +30,15 @@ INSERT INTO sandbox (type, image, binds, description) VALUES
   ('linux',     'ubuntu',      NULL, '기본 리눅스 환경. 파일 조작, 검색, 권한 등 일반 실습용.'),
   ('linux-ssh', 'etude-ssh',   NULL, 'SSH 데몬 포함 환경. curl, ping, scp, rsync 등 네트워크/파일 전송 실습용.'),
   ('docker',    'docker:dind', NULL, 'Docker-in-Docker 환경. 호스트와 격리된 독립 Docker 데몬. docker 명령어 실습용.'),
-  ('k8s',       'etude-k8s',   NULL, 'kubectl 포함 환경. Kubernetes 실습용. (향후 추가)');
+  ('k8s',       'etude-k8s',   '["{KUBECONFIG_HOST_PATH}:/root/.kube/config:ro"]', 'kubectl 실습 환경. k3d 로컬 클러스터 연결.');
 
 INSERT INTO quest_set (id, title, description, sandbox_type) VALUES
   (1, '리눅스 기초 1 — 파일 탐색과 생성', '현재 위치 확인, 디렉토리 이동, 파일/디렉토리 생성과 복사를 실습합니다.', 'linux'),
   (2, '리눅스 기초 2 — 삭제·검색·권한',  '파일 삭제, 내용 확인, 문자열 검색, 권한 변경, 링크 생성을 실습합니다.',  'linux'),
   (3, '리눅스 기초 3 — 프로세스와 시스템', '프로세스 확인/종료, 디스크/메모리 확인, 환경변수 설정을 실습합니다.', 'linux'),
   (4, '리눅스 네트워크/파일 전송',         'curl, ping, scp, rsync 등 네트워크 확인과 서버 간 파일 전송을 실습합니다.', 'linux-ssh'),
-  (5, 'Docker 기초',                       '컨테이너 실행·중지·삭제, 이미지 관리, 로그 확인 등 Docker 기본 조작을 실습합니다.', 'docker');
+  (5, 'Docker 기초',                       '컨테이너 실행·중지·삭제, 이미지 관리, 로그 확인 등 Docker 기본 조작을 실습합니다.', 'docker'),
+  (6, 'k8s 기초',                          'kubectl로 Pod, Deployment, Service를 직접 조작해봅니다.', 'k8s');
 
 -- 세트 1: 파일 탐색과 생성 (order 1~10)
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
@@ -351,3 +352,76 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
 docker ps -a > /tmp/final.txt',
    '["sh", "-c", "docker run -d --name my-nginx nginx && docker stop my-nginx"]',
    '["sh", "-c", "test -s /tmp/final.txt && ! grep -q my-nginx /tmp/final.txt"]');
+
+-- 세트 6: k8s 기초 (order 1~10)
+-- $NS 는 런타임에 quest-{containerId 앞 8자리} 로 치환됨
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
+  (6,  1, '클러스터 노드 확인하기',
+   '현재 클러스터에 어떤 노드가 있는지 확인하세요.',
+   'kubectl get nodes 명령어를 사용하세요.',
+   'kubectl get nodes',
+   NULL,
+   '["sh", "-c", "kubectl get nodes | grep -i ready"]'),
+
+  (6,  2, '네임스페이스 목록 확인하기',
+   '클러스터에 존재하는 네임스페이스 목록을 확인하세요.',
+   'kubectl get namespaces 또는 kubectl get ns',
+   'kubectl get namespaces',
+   NULL,
+   '["sh", "-c", "kubectl get ns | grep quest-"]'),
+
+  (6,  3, 'Pod 실행하기',
+   '$NS 네임스페이스에 nginx 이미지로 nginx라는 이름의 Pod를 실행하세요.',
+   'kubectl run <name> --image=<image> -n <namespace>',
+   'kubectl run nginx --image=nginx -n $NS',
+   NULL,
+   '["sh", "-c", "kubectl get pod nginx -n $NS 2>/dev/null | grep -E ''Running|ContainerCreating''"]'),
+
+  (6,  4, 'Pod 목록 확인하기',
+   '$NS 네임스페이스의 Pod 목록을 확인하세요.',
+   'kubectl get pods -n <namespace>',
+   'kubectl get pods -n $NS',
+   '["sh", "-c", "kubectl run nginx --image=nginx -n $NS 2>/dev/null; true"]',
+   '["sh", "-c", "kubectl get pods -n $NS | grep nginx"]'),
+
+  (6,  5, 'Pod 로그 확인하기',
+   '$NS 네임스페이스의 nginx Pod 로그를 확인하세요.',
+   'kubectl logs <pod-name> -n <namespace>',
+   'kubectl logs nginx -n $NS',
+   '["sh", "-c", "kubectl run nginx --image=nginx -n $NS 2>/dev/null; kubectl wait --for=condition=ready pod/nginx -n $NS --timeout=30s 2>/dev/null; true"]',
+   '["sh", "-c", "kubectl logs nginx -n $NS 2>/dev/null; exit 0"]'),
+
+  (6,  6, 'Pod 삭제하기',
+   '$NS 네임스페이스의 nginx Pod를 삭제하세요.',
+   'kubectl delete pod <name> -n <namespace>',
+   'kubectl delete pod nginx -n $NS',
+   '["sh", "-c", "kubectl run nginx --image=nginx -n $NS 2>/dev/null; true"]',
+   '["sh", "-c", "! kubectl get pod nginx -n $NS 2>/dev/null | grep -q nginx"]'),
+
+  (6,  7, 'Deployment 생성하기',
+   '$NS 네임스페이스에 nginx 이미지로 my-app이라는 Deployment를 생성하세요.',
+   'kubectl create deployment <name> --image=<image> -n <namespace>',
+   'kubectl create deployment my-app --image=nginx -n $NS',
+   NULL,
+   '["sh", "-c", "kubectl get deploy my-app -n $NS | grep my-app"]'),
+
+  (6,  8, 'Deployment 스케일 조정하기',
+   '$NS 네임스페이스의 my-app Deployment를 3개로 스케일 아웃하세요.',
+   'kubectl scale deployment <name> --replicas=<n> -n <namespace>',
+   'kubectl scale deployment my-app --replicas=3 -n $NS',
+   '["sh", "-c", "kubectl create deployment my-app --image=nginx -n $NS 2>/dev/null; true"]',
+   '["sh", "-c", "kubectl get deploy my-app -n $NS | grep -E ''3/3|3 ''"]'),
+
+  (6,  9, 'Service 생성하기',
+   '$NS 네임스페이스의 my-app Deployment를 포트 80으로 노출하는 Service를 생성하세요.',
+   'kubectl expose deployment <name> --port=<port> -n <namespace>',
+   'kubectl expose deployment my-app --port=80 -n $NS',
+   '["sh", "-c", "kubectl create deployment my-app --image=nginx -n $NS 2>/dev/null; true"]',
+   '["sh", "-c", "kubectl get svc my-app -n $NS | grep my-app"]'),
+
+  (6, 10, '리소스 전체 확인하기',
+   '$NS 네임스페이스의 모든 리소스를 한 번에 확인하세요.',
+   'kubectl get all -n <namespace>',
+   'kubectl get all -n $NS',
+   '["sh", "-c", "kubectl create deployment my-app --image=nginx -n $NS 2>/dev/null; kubectl expose deployment my-app --port=80 -n $NS 2>/dev/null; true"]',
+   '["sh", "-c", "kubectl get all -n $NS | grep -c my-app | xargs -I{} test {} -ge 2"]');

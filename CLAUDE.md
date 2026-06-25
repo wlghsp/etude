@@ -14,12 +14,6 @@
 - **DB**: MariaDB (MVP 이후 도입, 현재는 하드코딩)
 - **AI**: Claude API (퀘스트 자동 생성, MVP 이후)
 
-### 현재 MVP 범위
-
-브라우저 터미널 실행 + 퀘스트 2개 하드코딩 + 채점. 로그인/DB/AI 없음.
-
-Phase 1 (터미널 작동) → Phase 2 (퀘스트 + 채점) → Phase 3 (UX 개선)
-
 ### 문서
 
 - `docs/product/okestro_training_platform.md` — 제품 기획/요구사항
