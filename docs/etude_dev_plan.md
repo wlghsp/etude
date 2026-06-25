@@ -177,7 +177,45 @@ quest     — 개별 퀘스트 (id, quest_set_id, title, description, hint, grad
 
 ---
 
-## Phase 6 — 사용자 인증 + 진행 추적
+## Phase 6 — k8s 기초 실습 세트
+
+목표: kubectl 실습 환경 제공. k3d로 로컬 클러스터를 띄우고, kubectl이 설치된 컨테이너를 터미널로 연결해 k8s 기초 퀘스트를 풀 수 있게 한다.
+
+### 샌드박스 구조
+
+```
+[k3d 로컬 클러스터]  ← kubeconfig 마운트
+       ↑
+[etude-k8s 컨테이너]  ← 사용자 터미널 접속
+  kubectl get pods → 클러스터에 실제 요청
+```
+
+- k3d로 로컬에 단일 노드 k3s 클러스터 구동 (Docker 위, ~500MB)
+- `etude-k8s` 이미지: kubectl + kubeconfig만 포함 (경량)
+- kubeconfig는 컨테이너 시작 시 볼륨 마운트로 주입
+- 사용자별 namespace 격리 (user-{id} 형식)
+
+### sandbox 테이블 추가
+
+```
+sandbox_type: k8s
+image: etude-k8s
+binds: ["{kubeconfig_path}:/root/.kube/config:ro"]
+```
+
+### 퀘스트 세트
+
+6. **k8s 기초 세트** — pod/deployment/service 조작, kubectl 기본 명령어
+
+### 검증
+
+- k3d 클러스터 기동 확인
+- etude-k8s 컨테이너에서 kubectl get nodes 실행
+- 퀘스트 채점 (grade_cmd: kubectl 명령어 결과 확인)
+
+---
+
+## Phase 7 — 사용자 인증 + 진행 추적
 
 목표: 누가 어떤 퀘스트를 완료했는지 추적, 팀원/팀장이 현황 확인 가능
 
@@ -201,28 +239,19 @@ quest_progress  — 퀘스트 완료 이력 (user_id, quest_id, completed_at)
 
 ---
 
-## Phase 7 — k8s 샌드박스 + 현장 실무 세트
+## Phase 8 — 현장 실무 세트
 
-목표: kubectl 실습 환경 제공, 현장 밀착형 퀘스트 세트 추가
+목표: k8s 환경 위에 현장 밀착형 퀘스트 세트 추가
 
-### 샌드박스 구조 (검토 중)
+### 퀘스트 세트
 
-- 공용 k3s 클러스터 + 사용자별 namespace 격리 방식
-- kubectl이 설치된 컨테이너를 터미널로 제공, 해당 namespace만 접근 가능
-- 완전한 클러스터 격리(kind/minikube per user)는 리소스 문제로 후순위
-
-### 초기 퀘스트 세트 (seed)
-
-3. **k8s 기초 세트** — pod/deployment/service 조작, kubectl 기본 명령어
-4. **현장 실무 세트**
-   - 배포 작업
-   - 이관 작업
-   - 트러블슈팅 (502, OOM, CrashLoopBackOff 등)
+- **배포 작업** — deployment 롤링 업데이트, 롤백
+- **이관 작업** — configmap/secret 관리
+- **트러블슈팅** — 502, OOM, CrashLoopBackOff 등
 
 ### 검증
 
-- k8s 퀘스트에서 kubectl 명령어 실행 및 채점 완료
-- namespace 격리 확인 (다른 사용자 리소스 접근 불가)
+- 지문만 보고 퀘스트를 처음부터 끝까지 풀 수 있음
 
 ---
 
