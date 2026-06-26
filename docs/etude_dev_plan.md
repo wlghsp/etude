@@ -2,23 +2,20 @@
 
 ## 확정 스택
 
-- 프론트: React (TypeScript)
-- 백엔드: Node.js + Fastify (TypeScript)
+- 프론트: React + TypeScript (Vite)
+- 백엔드: Node.js + Fastify + TypeScript
 - DB: MariaDB
 - 터미널: xterm.js (프론트) + WebSocket (Fastify)
 - Docker 제어: dockerode
 - 샌드박스: Docker 컨테이너 (퀘스트마다 독립 환경)
-- 배포: 프론트 Vercel / 백엔드 Railway 무료 티어
-
-TypeScript로 프론트와 백엔드 언어가 통일된다.
+- 배포: 사내 서버 (추후)
 
 ---
 
 ## MVP 범위
 
 - 브라우저 터미널 실행 (xterm.js + WebSocket + Docker 샌드박스)
-- 퀘스트 1~2개 하드코딩 (DB 없이 시작)
-- 채점 — 특정 명령어 실행 결과를 서버가 확인해서 성공/실패 판정
+- 퀘스트 세트 선택 → 퀘스트 진행 → 채점
 - 로그인 없음, 리더보드 없음, AI 퀘스트 생성 없음
 
 핵심 검증 목표: "브라우저에서 터미널을 열고, 명령어를 실행하고, 채점까지 되는가"
@@ -39,77 +36,30 @@ Fastify 서버 (Node.js + TypeScript)
     └── 채점 API — 컨테이너 상태 확인 후 성공/실패 반환
 
 Docker 컨테이너 (샌드박스)
-    └── 사용자별 격리된 Linux 환경
+    └── 퀘스트마다 격리된 Linux 환경
         명령어 실행 결과가 여기서 나옴
-        퀘스트 종료 시 컨테이너 제거
+        퀘스트 종료 시 컨테이너 제거 (persistent 타입 제외)
 ```
 
 ---
 
-## Phase 1 — 터미널 샌드박스 단독 작동
+## Phase 1 — 터미널 샌드박스 단독 작동 ✅ 완료
 
 목표: 브라우저에서 터미널 열고 명령어 실행되는 것만 확인
 
-### 백엔드 (Fastify)
-- Fastify 프로젝트 초기화 (TypeScript)
-- dockerode로 컨테이너 생성/실행/제거 기본 구현
-- `@fastify/websocket` 플러그인으로 WebSocket 엔드포인트 구현
-- 입력 받아서 컨테이너에 전달, 출력 브라우저로 스트리밍
-
-```typescript
-// 핵심 흐름
-fastify.get('/ws/terminal', { websocket: true }, (socket, req) => {
-  const container = await docker.createContainer({ Image: 'ubuntu' })
-  // 입력 → 컨테이너 exec → 출력 → 브라우저
-})
-```
-
-### 프론트 (React + TypeScript)
-- React 프로젝트 초기화 (Vite + TypeScript)
-- xterm.js 설치 및 터미널 컴포넌트 구현
-- WebSocket 연결해서 입출력 연동
-
-### 검증
-- 브라우저 터미널에서 `ls`, `pwd`, `echo hello` 실행되면 Phase 1 완료
+- Fastify + dockerode로 컨테이너 생성/실행/제거
+- WebSocket 엔드포인트 구현, 입출력 스트리밍
+- xterm.js 터미널 컴포넌트 구현
 
 ---
 
-## Phase 2 — 퀘스트 붙이기
+## Phase 2 — 퀘스트 붙이기 ✅ 완료
 
 목표: 퀘스트 지문 + 터미널 레이아웃 + 채점
 
-### 화면 구성
-```
-┌─────────────────┬─────────────────┐
-│   퀘스트 지문    │    터미널        │
-│                 │                 │
-│ 미션: /tmp에    │ $ mkdir /tmp/   │
-│ hello 디렉토리  │ hello           │
-│ 를 만드세요     │ $               │
-│                 │                 │
-│ [채점하기]      │                 │
-└─────────────────┴─────────────────┘
-```
-
-### 백엔드
 - 퀘스트 하드코딩 (TypeScript 객체)
 - 채점 API — 컨테이너 안에서 조건 확인 후 성공/실패 반환
-
-```typescript
-// 채점 예시: /tmp/hello 디렉토리 존재 여부 확인
-async function gradeQuest(container: Container, questId: string) {
-  const exec = await container.exec({ Cmd: ['test', '-d', '/tmp/hello'] })
-  const result = await exec.start({})
-  return result.StatusCode === 0
-}
-```
-
-### 퀘스트 예시 2개
-1. 리눅스 기초 — `/tmp/hello` 디렉토리 만들기
-2. 파일 조작 — 특정 파일에 특정 내용 쓰기
-
-### 검증
-- 퀘스트 읽고 터미널에서 풀고 채점까지 한 사이클 완료되면 Phase 2 완료
+- 퀘스트 지문 패널 + 터미널 좌우 레이아웃
 
 ---
 
@@ -123,101 +73,67 @@ async function gradeQuest(container: Container, questId: string) {
 
 ---
 
-## Phase 4 — MariaDB 연동 + 퀘스트 세트 구조
+## Phase 4 — MariaDB 연동 + 퀘스트 세트 구조 ✅ 완료
 
-목표: 퀘스트를 DB에서 관리하는 인프라 교체. 기존 2개 퀘스트를 DB로 마이그레이션하고 세트 선택 화면 추가. 기능은 지금과 동일하게 동작하는 것이 목표.
+목표: 퀘스트를 DB에서 관리하는 인프라 교체. 기존 2개 퀘스트를 DB로 마이그레이션하고 세트 선택 화면 추가.
 
-### DB 스키마
+- MariaDB 연결 (mysql2), `init.sql`로 스키마 + 시드 관리
+- `/quest-sets`, `/quest-sets/:id/quests`, `/grade` API
+- 세트 선택 화면 → 퀘스트 진행 흐름
+
+### DB 스키마 (현재)
 
 ```
-quest_set — 퀘스트 세트 (id, title, description)
-quest     — 개별 퀘스트 (id, quest_set_id, title, description, hint, grade_cmd)
+sandbox   — 샌드박스 환경 (type, image, binds, persistent)
+quest_set — 퀘스트 세트 (id, title, description, sandbox_type, category)
+quest     — 개별 퀘스트 (id, quest_set_id, title, description, hint, grade_cmd, setup_cmd)
 ```
-
-### 백엔드
-
-- MariaDB 연결 (mysql2 드라이버)
-- `/quest-sets` API — 세트 목록
-- `/quest-sets/:id/quests` API — 세트별 퀘스트 목록
-- `/grade` API — 기존 유지, containerId + questId 방식
-- 기존 하드코딩 퀘스트 2개 → DB seed로 이전
-
-### 프론트
-
-- 세트 선택 화면 추가 (세트 목록 → 세트 선택 → 퀘스트 진행)
-- 기존 퀘스트 진행 화면 재활용
-
-### 검증
-
-- 세트 선택 → 퀘스트 진행 → 채점 한 사이클 완료
-- 퀘스트 추가 시 코드 수정 없이 DB에만 추가하면 반영됨
 
 ---
 
-## Phase 5 — 퀘스트 콘텐츠 확장
+## Phase 5 — 퀘스트 콘텐츠 확장 ✅ 완료
 
-목표: DB 구조 위에 리눅스 기초 세트, Docker 기초 세트 퀘스트를 충실하게 작성. 팀원이 실제로 써보고 "쓸 만하다"는 느낌을 받을 수 있는 수준.
+목표: 팀원이 실제로 써보고 "쓸 만하다"는 느낌을 받을 수 있는 수준의 퀘스트 세트 구축.
 
-### 퀘스트 세트
+### 퀘스트 세트 현황
 
-1. **리눅스 기초 세트** — 파일 조작, 권한 설정, 프로세스 관리, 네트워크 확인
-2. **Docker 기초 세트** — 컨테이너 실행/중지/삭제, 이미지 관리, 로그 확인
+| 세트 | 제목 | sandbox | 퀘스트 수 |
+|------|------|---------|---------|
+| 1 | 리눅스 기초 1 — 파일 탐색과 생성 | linux | 10 |
+| 2 | 리눅스 기초 2 — 삭제·검색·권한 | linux | 10 |
+| 3 | 리눅스 기초 3 — 프로세스와 시스템 | linux | 8 |
+| 4 | 리눅스 네트워크/파일 전송 | linux-ssh | 8 |
+| 5 | Docker 기초 | docker | 10 |
+| 7 | 리눅스 압축과 아카이브 | linux | 9 |
+| 8 | Docker 이미지 오프라인 반입 | docker-persistent | 7 |
 
-### 작업 기준
+### Persistent Sandbox
 
-- 퀘스트마다 지문/힌트/채점이 완성된 것만 추가
-- 난이도 순서로 배치 (쉬운 것부터)
-- 채점은 기존 방식 (명령어 실행 결과 확인) 유지
+퀘스트를 넘겨도 동일 컨테이너 유지. `docker save → load → tag → push` 같이 상태가 이어져야 하는 실습에 사용.
 
-### 검증
+- `sandbox.persistent` 컬럼으로 제어
+- `docker-persistent` 타입: 퀘스트 간 컨테이너 재사용, 세트 종료 시 `/session/end`로 정리
 
-- 리눅스 세트 전체 퀘스트를 처음부터 끝까지 풀 수 있음
-- Docker 세트 전체 퀘스트를 처음부터 끝까지 풀 수 있음
-- 지문만 보고 힌트 없이 풀 수 있는 수준인지 확인
+### SetSelect UI
+
+- `quest_set.category` 컬럼 기준 카테고리 아코디언 (리눅스 🐧 / 도커 🐳 / k8s ☸️)
 
 ---
 
-## Phase 6 — k8s 기초 실습 세트
+## Phase 6 — k8s 기초 실습 세트 ✅ 완료
 
-목표: kubectl 실습 환경 제공. k3d로 로컬 클러스터를 띄우고, kubectl이 설치된 컨테이너를 터미널로 연결해 k8s 기초 퀘스트를 풀 수 있게 한다.
+목표: kubectl 실습 환경 제공. k3d 로컬 클러스터 + etude-k8s 컨테이너.
 
-### 샌드박스 구조
-
-```
-[k3d 로컬 클러스터]  ← kubeconfig 마운트
-       ↑
-[etude-k8s 컨테이너]  ← 사용자 터미널 접속
-  kubectl get pods → 클러스터에 실제 요청
-```
-
-- k3d로 로컬에 단일 노드 k3s 클러스터 구동 (Docker 위, ~500MB)
-- `etude-k8s` 이미지: kubectl + kubeconfig만 포함 (경량)
-- kubeconfig는 컨테이너 시작 시 볼륨 마운트로 주입
-- 사용자별 namespace 격리 (user-{id} 형식)
-
-### sandbox 테이블 추가
-
-```
-sandbox_type: k8s
-image: etude-k8s
-binds: ["{kubeconfig_path}:/root/.kube/config:ro"]
-```
-
-### 퀘스트 세트
-
-6. **k8s 기초 세트** — pod/deployment/service 조작, kubectl 기본 명령어
-
-### 검증
-
-- k3d 클러스터 기동 확인
-- etude-k8s 컨테이너에서 kubectl get nodes 실행
-- 퀘스트 채점 (grade_cmd: kubectl 명령어 결과 확인)
+- k3d로 로컬 단일 노드 k3s 클러스터 구동
+- `etude-k8s` 이미지: kubectl + kubeconfig 마운트
+- 사용자별 namespace 격리
+- 세트 6: k8s 기초 (pod/deployment/service/namespace 조작)
 
 ---
 
 ## Phase 7 — 사용자 인증 + 진행 추적
 
-목표: 누가 어떤 퀘스트를 완료했는지 추적, 팀원/팀장이 현황 확인 가능
+목표: 누가 어떤 퀘스트를 완료했는지 추적. 팀원/팀장이 현황 확인 가능. 이게 있어야 팀원들이 실제로 쓸 수 있는 제품이 된다.
 
 ### DB 스키마 추가
 
@@ -239,28 +155,85 @@ quest_progress  — 퀘스트 완료 이력 (user_id, quest_id, completed_at)
 
 ---
 
-## Phase 8 — 현장 실무 세트
+## Phase 8 — 서버 확보 + 실배포 + 피드백 수집
 
-목표: k8s 환경 위에 현장 밀착형 퀘스트 세트 추가
+목표: 팀원 전체가 언제든 접속할 수 있는 상태로 배포하고, 실사용 피드백을 수집한다.
 
-### 퀘스트 세트
+### 서버 배포
 
-- **배포 작업** — deployment 롤링 업데이트, 롤백
-- **이관 작업** — configmap/secret 관리
-- **트러블슈팅** — 502, OOM, CrashLoopBackOff 등
+- 사내 서버 또는 VM 1대 확보 (Docker-in-Docker 실행 권한 필요)
+- 백엔드 + MariaDB 배포
+- 현재는 로컬에서만 동작 → 팀원이 쓰려면 이 단계 필요
+
+### 피드백 수집
+
+피드백은 누가 쓰는지 알아야 의미가 있으므로 인증 + 배포 이후에 붙인다.
+
+- 화면 우하단 고정 피드백 버튼
+- 클릭 시 textarea 팝업 (현재 페이지 + 로그인 사용자 자동 포함)
+- `POST /feedback` → `feedback.jsonl` 에 append
+
+저장 형식:
+
+```json
+{"ts": "2025-06-26T10:30:00Z", "user": "홍길동", "page": "quest", "text": "채점 버튼이 어디있는지 모르겠음"}
+```
 
 ### 검증
 
-- 지문만 보고 퀘스트를 처음부터 끝까지 풀 수 있음
+- 팀원이 실제로 접속해서 퀘스트를 풀고 피드백을 남길 수 있음
+
+---
+
+## Phase 9 — 퀘스트 콘텐츠 확장 2
+
+목표: 현장 밀착형 + 시험 준비용 퀘스트 세트 추가.
+
+### 현장 실무 세트
+
+- **CMP 배포 세트** — KLID CMP 배포 가이드 기반, 이미지 반입 → 배포 → 재시작 흐름
+- **k8s 현장 세트** — deployment 업데이트, 롤백, 트러블슈팅 (502/OOM/CrashLoop)
+
+### 시험 준비 세트
+
+- **CKA 준비 세트** — kubectl 심화, pod/deployment/pv/pvc/rbac 등 CKA 시험 빈출 영역
+  - k8s 기초 세트(세트 6) 위에 난이도를 높인 구성
+
+---
+
+## MVP 이후 로드맵
+
+### 1단계 — 사용자 인증 + 실배포 (Phase 7~8)
+
+팀원들이 실제로 쓸 수 있는 환경을 만드는 단계.
+
+- 로그인 → 진행 추적 → 서버 배포
+- 이 단계 완료 = "팀원 누구나 언제든 접속해서 퀘스트를 풀 수 있다"
+
+### 2단계 — 피드백 수집 후 안정화 (Phase 8 이후)
+
+실사용 데이터를 바탕으로 품질을 올리는 단계.
+
+- 피드백으로 불편한 점 수집
+- 퀘스트 품질 개선 — 지문 모호한 거, 채점 안 되는 거 수정
+- 목표: 외부 플랫폼(KodeKloud) 없이 우리 현장 퀘스트를 풀 수 있다는 것 확인
+
+### 3단계 — 콘텐츠 심화 (Phase 9~)
+
+플랫폼이 안정화된 뒤 콘텐츠를 쌓는 단계.
+
+- CKA 준비 세트, CMP 배포 세트 등 현장/시험 밀착형 퀘스트
 
 ---
 
 ## 향후 (시점 미정)
 
-- **퀘스트 관리 UI** — 어드민에서 퀘스트/세트 CRUD (채점 로직 작성 방식 확정 후)
-- **AI 퀘스트 생성** — 실무자 입력 → Claude API → 퀘스트 자동 변환 (플랫폼 안정화 후)
-- **UI 개선** — KodeKloud 레이아웃 참고 (상단 헤더바, 탭 구조, 진행 표시, 하단 네비게이션)
-- **로딩 화면** — 세트 선택 후 컨테이너 준비 중 로딩 표시 (containerId 수신 전까지). KodeKloud "Lab provisioned. Getting ready..." 스타일 참고
+- **퀘스트 관리 UI** — 어드민에서 퀘스트/세트 CRUD
+- **AI 퀘스트 생성** — 실무자 입력 → Claude API → 퀘스트 자동 변환 (플랫폼 안정화 후 가장 마지막 단계)
+- **게임 모드 (Token Scrooge)** — 적은 AI 토큰으로 퀘스트를 완수한 사람이 이기는 경쟁 게임 모드. 팀 행사/평가 자리에서 사용. AI 채팅 인터페이스 + 토큰 측정 + 리더보드 + 결과 리포트 필요. 플랫폼 안정화 후 추가.
+- **로딩 화면** — 세트 선택 후 컨테이너 준비 중 로딩 표시
+- **고아 컨테이너 GC** — 브라우저 강제 종료 시 `docker-persistent` 컨테이너 미정리 문제
+- **UI 개선** — KodeKloud 레이아웃 참고 (상단 헤더바, 탭 구조, 진행 표시)
 
 ---
 
@@ -268,21 +241,22 @@ quest_progress  — 퀘스트 완료 이력 (user_id, quest_id, completed_at)
 
 ```
 etude/
-├── frontend/                   # React + TypeScript
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Terminal.tsx    # xterm.js 터미널
-│   │   │   └── QuestPanel.tsx  # 퀘스트 지문 + 채점 버튼
-│   │   └── App.tsx
-│   └── package.json
+├── frontend/src/
+│   ├── components/
+│   │   ├── Terminal.tsx        # xterm.js 터미널, containerId prop
+│   │   ├── QuestPanel.tsx      # 퀘스트 지문 + 채점 버튼
+│   │   └── FeedbackButton.tsx  # (Phase 8) 전역 피드백 버튼
+│   ├── pages/
+│   │   └── SetSelect.tsx       # 카테고리 아코디언 세트 선택 화면
+│   ├── App.tsx                 # persistent sandbox 세션 관리
+│   ├── api.ts                  # fetchQuestSets, fetchQuests, gradeQuest, endSession, submitFeedback
+│   └── types.ts
 │
-└── backend/                    # Fastify + TypeScript
-    ├── src/
-    │   ├── index.ts            # Fastify 앱 진입점
-    │   ├── terminal.ts         # WebSocket + Docker 제어
-    │   └── quest.ts            # 퀘스트 데이터 + 채점 로직
-    ├── package.json
-    └── tsconfig.json
+└── backend/src/
+    ├── index.ts      # Fastify 앱, /session/end, /feedback 엔드포인트
+    ├── terminal.ts   # WebSocket + Docker 제어, persistent 분기
+    ├── sandbox.ts    # sandbox 설정 조회
+    └── quest.ts      # 퀘스트 데이터 + 채점 로직
 ```
 
 ---
@@ -297,15 +271,13 @@ etude/
 - fastify — 웹 프레임워크
 - @fastify/websocket — WebSocket 플러그인
 - dockerode — Docker 컨테이너 제어
-- @types/dockerode — TypeScript 타입 지원
+- mysql2 — MariaDB 드라이버
 
 ---
 
 ## 미결 사항
 
-- [ ] DB 스키마 확정 — quest_set/quest/user/quest_progress 관계 설계
-- [ ] 채점 로직 DB 저장 방식 — 채점 함수는 코드에 있고 quest_id로 매핑, 또는 채점 명령어를 DB에 저장
+- [ ] `init.sql` 재초기화 — `sandbox.persistent`, `quest_set.category` 컬럼 신규 반영 필요
 - [ ] k8s 샌드박스 격리 수준 — namespace 공유 vs 클러스터 per user (Phase 7 명세 시점에 확정)
-- [ ] 로그인 방식 — 사내 이메일 자체 발급 vs SSO 연동 (Phase 6 명세 시점에 확정)
-- [ ] Docker 이미지 — 현재 ubuntu 기본 이미지 사용 중, Docker 세트용 커스텀 이미지 필요 여부
-- [ ] 테스트 코드 도입 시점 — Phase 6 (인증) 전후가 적기. DB + API 구조가 확정되고 인증이 붙으면 검증 필요성이 높아짐. Fastify `inject()` + vitest 조합 사용 예정
+- [ ] 로그인 방식 — 사내 이메일 자체 발급 vs SSO 연동 (Phase 7 명세 시점에 확정)
+- [ ] 테스트 코드 도입 시점 — 인증 붙기 전. Fastify inject() + vitest 조합 예정
