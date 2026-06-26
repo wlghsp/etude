@@ -42,3 +42,4 @@ ln -sf ~/.colima/default/docker.sock ~/.docker/run/docker.sock
 - `docs/product/okestro_training_platform.md` — 제품 기획/요구사항
 - `docs/research/ai_dlc.md` — AI-DLC 개발 방법론
 - `docs/research/ai_efficiency_talk_roadmap.md` — AI 효율 활용법 연구
+- `docs/research/k8s_cluster_isolation.md` — k8s 샌드박스 격리 설계 검토 (namespace vs 클러스터 per user)
