@@ -234,6 +234,7 @@ quest_progress  — 퀘스트 완료 이력 (user_id, quest_id, completed_at)
 - **로딩 화면** — 세트 선택 후 컨테이너 준비 중 로딩 표시
 - **고아 컨테이너 GC** — 브라우저 강제 종료 시 `docker-persistent` 컨테이너 미정리 문제
 - **UI 개선** — KodeKloud 레이아웃 참고 (상단 헤더바, 탭 구조, 진행 표시)
+- **오픈스택 퀘스트** — 서버 자원이 충분할 때. 공유 DevStack 1개 + 사용자별 프로젝트(테넌트) 격리. VM/네트워크/볼륨은 프로젝트 단위로 분리되어 다른 사용자 실습에 영향 없음. 컴퓨트 자원은 quota로 제한. k8s namespace 격리와 같은 맥락 (자원 제약으로 인한 공유 인프라 위 논리적 격리)
 
 ---
 
@@ -278,6 +279,6 @@ etude/
 ## 미결 사항
 
 - [ ] `init.sql` 재초기화 — `sandbox.persistent`, `quest_set.category` 컬럼 신규 반영 필요
-- [ ] k8s 샌드박스 격리 수준 — namespace 공유 vs 클러스터 per user (Phase 7 명세 시점에 확정)
+- [ ] k8s 샌드박스 격리 수준 — 현재는 서버 자원 제약으로 namespace 격리 채택. 자원이 확보되면 클러스터 per user로 전환 검토
 - [ ] 로그인 방식 — 사내 이메일 자체 발급 vs SSO 연동 (Phase 7 명세 시점에 확정)
 - [ ] 테스트 코드 도입 시점 — 인증 붙기 전. Fastify inject() + vitest 조합 예정

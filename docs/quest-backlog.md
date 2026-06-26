@@ -30,6 +30,23 @@
 
 ---
 
+## Vim 기초
+
+현장에서 vi/vim 없이 서버 파일을 편집할 수 없다. 가장 자주 막히는 상황 위주로 구성.
+
+| # | 퀘스트 제목 | 핵심 실습 내용 | 난이도 | 상태 |
+|---|-------------|---------------|--------|------|
+| VIM-01 | vim 열고 저장하고 나가기 | `i` 입력 모드, `ESC`, `:wq` / `:q!` | 🟢 | [ ] |
+| VIM-02 | 커서 이동과 텍스트 탐색 | `hjkl`, `gg` / `G`, `/검색어`, `n` / `N` | 🟢 | [ ] |
+| VIM-03 | 줄 편집 — 삭제·복사·붙여넣기 | `dd`, `yy`, `p`, `u` (undo), `Ctrl+r` (redo) | 🟢 | [ ] |
+| VIM-04 | 파일 전체 교체 | `gg` → `dG`로 전체 삭제 → `i`로 붙여넣기. 설정 파일을 통째로 갈아끼울 때 가장 빠른 패턴 | 🟢 | [ ] |
+| VIM-05 | 설정 파일 특정 줄 수정 | `:숫자` 줄 이동, `cw` 단어 교체, `:set number` | 🟡 | [ ] |
+| VIM-06 | 치환 (sed 없이 vim으로) | `:%s/old/new/g`, 범위 지정 치환 | 🟡 | [ ] |
+| VIM-07 | 검색 후 수정 | `/검색어` → `n`으로 이동 → `cw`로 교체. 긴 설정 파일에서 특정 값만 찾아 바꾸기 | 🟡 | [ ] |
+| VIM-08 | 비주얼 모드로 여러 줄 처리 | `V`로 줄 선택, `d` 삭제 / `y` 복사 / `>` 들여쓰기. 블록 주석 처리 | 🟡 | [ ] |
+
+---
+
 ## 리눅스 기초
 
 | # | 퀘스트 제목 | 핵심 실습 내용 | 출처 | 난이도 | 상태 |
@@ -71,6 +88,24 @@
 | K8S-09 | ImagePullBackOff 트러블슈팅 | 이미지 경로 오류, pull secret, 레지스트리 인증 | 13 | 🟡 | [ ] |
 | K8S-10 | vm.max_map_count 커널 파라미터 | `sysctl -w`, `/etc/sysctl.conf` 영구 적용, ES 요구사항 | 13 | 🟢 | [ ] |
 | K8S-11 | Istio Gateway 트래픽 흐름 | Gateway + VirtualService 구조, 도메인 기반 라우팅 | CMP | 🔴 | [ ] |
+
+---
+
+## 서버 접속 패턴
+
+"서비스를 띄웠는데 어떻게 접속하나?" — 레이어별 접속 구조를 순서대로 이해하는 시리즈.
+같은 서비스에 접속하는 방법이 레이어마다 다르다는 것을 체득하는 것이 목표.
+
+| # | 퀘스트 제목 | 핵심 실습 내용 | 난이도 | 상태 |
+|---|-------------|---------------|--------|------|
+| ACC-01 | Pod 기동 후 URL로 접속 | Pod 띄우고 `kubectl port-forward`로 로컬 접속. 가장 기본적인 접속 확인 방법 | 🟢 | [ ] |
+| ACC-02 | /etc/hosts로 도메인 접속 | 서비스 IP를 `/etc/hosts`에 등록 → 도메인으로 `curl`. DNS 없이 도메인 매핑하는 현장 패턴 | 🟢 | [ ] |
+| ACC-03 | HAProxy로 포트 포워딩 접속 | HAProxy TCP 모드로 외부 포트 → 내부 서비스 연결. 미들웨어 레이어에서 접속 경로 만들기 | 🟡 | [ ] |
+| ACC-04 | ClusterIP + port-forward 접속 | ClusterIP Service 생성 → `kubectl port-forward`로 접속. 클러스터 내부 서비스 접근 구조 이해 | 🟢 | [ ] |
+| ACC-05 | NodePort로 외부 접속 | NodePort Service 생성 → 노드 IP:포트로 직접 접속. ClusterIP와 NodePort의 차이 이해 | 🟡 | [ ] |
+| ACC-06 | Ingress로 도메인 기반 라우팅 | Ingress 리소스 생성 → 도메인으로 접속. `/etc/hosts` + Ingress 조합 | 🟡 | [ ] |
+| ACC-07 | Istio Gateway + VirtualService로 접속 | Gateway/VirtualService 생성 → 도메인 라우팅. Ingress와 Istio 방식 비교 | 🔴 | [ ] |
+| ACC-08 | 접속 안 될 때 트러블슈팅 | `curl -v`, `kubectl describe`, `kubectl logs`, 포트/셀렉터/엔드포인트 확인 순서 | 🟡 | [ ] |
 
 ---
 
@@ -122,6 +157,26 @@
 | OBS-03 | Logstash 설치 및 파이프라인 기동 | `logstash -t` 검증, `/_node/pipelines` API | 08 | 🟡 | [ ] |
 | OBS-04 | Elasticsearch ILM 정책 설정 | hot/warm/cold/delete phase, rollover 조건 | 19 | 🔴 | [ ] |
 | OBS-05 | log4j2 파이프라인별 로그 분리 | RoutingAppender, MDC pipeline.id | 10 | 🟡 | [ ] |
+
+---
+
+## 미들웨어 설치
+
+바이너리/패키지로 직접 설치하고 기동까지 확인하는 실습. "설치 → 설정 → 기동 → 상태 확인" 한 사이클이 목표.
+오프라인 환경(에어갭) 기준으로 구성 — tar/rpm 파일을 가져다 설치하는 패턴이 현장 표준.
+
+| # | 퀘스트 제목 | 핵심 실습 내용 | 난이도 | 상태 |
+|---|-------------|---------------|--------|------|
+| MID-01 | HAProxy 설치 및 기동 | rpm/바이너리 설치, `haproxy.cfg` 기본 설정, systemd 등록, `haproxy -c`로 설정 검증 | 🟡 | [ ] |
+| MID-02 | Nginx 설치 및 기동 | rpm 설치, `nginx.conf` 기본 구조, `nginx -t`, 포트 확인 | 🟢 | [ ] |
+| MID-03 | Elasticsearch 설치 및 기동 | tar 압축 해제, `elasticsearch.yml` 설정, `vm.max_map_count` 커널 파라미터, 클러스터 상태 확인 | 🟡 | [ ] |
+| MID-04 | Logstash 설치 및 파이프라인 기동 | tar 설치, pipeline.yml, input/filter/output 기본 구성, `logstash -t` 검증 | 🟡 | [ ] |
+| MID-05 | Kafka 설치 및 브로커 기동 | tar 설치, KRaft 모드 초기화, `server.properties`, systemd 등록, 토픽 생성으로 기동 확인 | 🟡 | [ ] |
+| MID-06 | Jenkins 설치 및 초기 설정 | war/rpm 설치, 초기 admin 패스워드 확인, 플러그인 오프라인 설치 | 🟡 | [ ] |
+| MID-07 | Nexus Repository 설치 및 기동 | tar 설치, `nexus.properties`, systemd 등록, 웹 콘솔 접속 확인 | 🟡 | [ ] |
+| MID-08 | Harbor 설치 및 기동 | `install.sh` 실행, `harbor.yml` 설정 (hostname, 인증서), Docker Compose 기반 기동 확인 | 🔴 | [ ] |
+| MID-09 | Vault 설치 및 초기화 | 바이너리 설치, dev/prod 모드 차이, `vault operator init`, unseal 키 관리 | 🔴 | [ ] |
+| MID-10 | Redis 설치 및 기동 | rpm/tar 설치, `redis.conf` 기본 설정, `redis-cli ping`으로 확인 | 🟢 | [ ] |
 
 ---
 
