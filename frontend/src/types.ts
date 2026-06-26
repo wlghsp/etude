@@ -12,4 +12,5 @@ export interface QuestSet {
   title: string
   description: string
   sandbox_type: string
+  category: string
 }

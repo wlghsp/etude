@@ -17,7 +17,8 @@ await fastify.register(async function (app){
         const params = new URL(req.url, 'http://localhost').searchParams
         const sandboxType = params.get('sandboxType') ?? 'linux'
         const questId = params.get('questId') ? Number(params.get('questId')) : null
-        handleTerminal(socket, docker, sandboxType, questId).catch((err) => {
+        const containerId = params.get('containerId') ?? null
+        handleTerminal(socket, docker, sandboxType, questId, containerId).catch((err) => {
             console.error('terminal error:', err)
             socket.close()
         })
@@ -36,6 +37,17 @@ fastify.post<{ Body: { containerId: string; questId: number }}>(
         const { containerId, questId } = req.body
         const passed = await gradeQuest(containerId, questId, docker)
         return { passed }
+    }
+)
+
+fastify.post<{ Body: { containerId: string } }>(
+    '/session/end',
+    async (req) => {
+        const { containerId } = req.body
+        const container = docker.getContainer(containerId)
+        await container.stop().catch(() => {})
+        await container.remove().catch(() => {})
+        return { ok: true }
     }
 )
 

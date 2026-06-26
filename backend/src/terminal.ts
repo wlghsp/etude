@@ -48,12 +48,13 @@ export async function handleTerminal(
     socket: WebSocket,
     docker: Docker,
     sandboxType: string,
-    questId: number | null
+    questId: number | null,
+    existingContainerId: string | null,
 ) {
     const config = await getSandboxConfig(sandboxType)
 
-    if (sandboxType == 'docker') {
-        await handleDockerTerminal(socket, docker, config, questId)
+    if (sandboxType === 'docker' || sandboxType === 'docker-persistent') {
+        await handleDockerTerminal(socket, docker, config, questId, existingContainerId)
     } else if (sandboxType === 'k8s') {
         await handleK8sTerminal(socket, docker, config, questId)
     } else {
@@ -93,30 +94,34 @@ async function handleDefaultTerminal(socket: WebSocket, docker: Docker, config: 
   })
 }
 
-async function handleDockerTerminal(socket: WebSocket, docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null) {
-  const container = await docker.createContainer({
-    Image: config.image,
-    AttachStdin: false,
-    AttachStdout: false,
-    AttachStderr: false,
-    OpenStdin: false,
-    Tty: false,
-    HostConfig: {
-      Binds: config.binds ?? [],
-      Privileged: true,
-    },
-  })
+async function handleDockerTerminal(
+  socket: WebSocket, 
+  docker: Docker, 
+  config: { image: string, binds: string[] | null, persistent: boolean }, 
+  questId: number | null,
+  existingContainerId: string | null
+) {
+  let container: Docker.Container
 
-  await container.start()
-  await waitForDocker(container)
+  if (existingContainerId) {
+    // 기존 컨테이너 재사용
+    container = docker.getContainer(existingContainerId) 
+  } else {
+    // 새 컨테이너 생성
+    container = await docker.createContainer({
+      Image: config.image, OpenStdin: false, Tty: false,
+      AttachStdin: false, AttachStdout: false, AttachStderr: false,
+      HostConfig: { Binds: config.binds ?? [], Privileged: true },
+    })
+    await container.start()
+    await waitForDocker(container)
+  }
+
   await runSetupCmd(container, questId)
 
   const exec = await container.exec({
     Cmd: ['/bin/sh'],
-    AttachStdin: true,
-    AttachStdout: true,
-    AttachStderr: true,
-    Tty: true,
+    AttachStdin: true, AttachStdout: true, AttachStderr: true, Tty: true,
   })
   const stream = await exec.start({ hijack: true, stdin: true, Tty: true })
 
@@ -125,7 +130,9 @@ async function handleDockerTerminal(socket: WebSocket, docker: Docker, config: {
   stream.on('data', (chunk: Buffer) => socket.send(chunk))
   socket.on('message', (msg: Buffer) => stream.write(msg))
   socket.on('close', () => {
-    container.stop().then(() => container.remove()).catch(() => {})
+    if (!config.persistent) {
+      container.stop().then(() => container.remove()).catch(() => {})
+    }
   })
 }
 

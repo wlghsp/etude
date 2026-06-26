@@ -2,6 +2,7 @@ CREATE TABLE sandbox (
   type        VARCHAR(20) PRIMARY KEY,
   image       VARCHAR(100) NOT NULL,
   binds       JSON,
+  persistent  BOOLEAN NOT NULL DEFAULT FALSE,
   description TEXT
 );
 
@@ -10,6 +11,7 @@ CREATE TABLE quest_set (
   title        VARCHAR(100) NOT NULL,
   description  TEXT,
   sandbox_type VARCHAR(20) NOT NULL DEFAULT 'linux',
+  category     VARCHAR(50) NOT NULL DEFAULT '기타',
   FOREIGN KEY (sandbox_type) REFERENCES sandbox(type)
 );
 
@@ -26,19 +28,22 @@ CREATE TABLE quest (
   FOREIGN KEY (quest_set_id) REFERENCES quest_set(id)
 );
 
-INSERT INTO sandbox (type, image, binds, description) VALUES
-  ('linux',     'ubuntu',      NULL, '기본 리눅스 환경. 파일 조작, 검색, 권한 등 일반 실습용.'),
-  ('linux-ssh', 'etude-ssh',   NULL, 'SSH 데몬 포함 환경. curl, ping, scp, rsync 등 네트워크/파일 전송 실습용.'),
-  ('docker',    'docker:dind', NULL, 'Docker-in-Docker 환경. 호스트와 격리된 독립 Docker 데몬. docker 명령어 실습용.'),
-  ('k8s',       'etude-k8s',   '["{KUBECONFIG_HOST_PATH}:/root/.kube/config:ro"]', 'kubectl 실습 환경. k3d 로컬 클러스터 연결.');
+INSERT INTO sandbox (type, image, binds, persistent, description) VALUES
+  ('linux',             'ubuntu',      NULL,                                               FALSE, '기본 리눅스 환경. 파일 조작, 검색, 권한 등 일반 실습용.'),
+  ('linux-ssh',         'etude-ssh',   NULL,                                               FALSE, 'SSH 데몬 포함 환경. curl, ping, scp, rsync 등 네트워크/파일 전송 실습용.'),
+  ('docker',            'docker:dind', NULL,                                               FALSE, 'Docker-in-Docker 환경. 호스트와 격리된 독립 Docker 데몬. docker 명령어 실습용.'),
+  ('docker-persistent', 'docker:dind', NULL,                                               TRUE,  'Docker-in-Docker 환경 (persistent). 퀘스트를 넘겨도 동일 컨테이너 유지. 이미지 반입 등 상태가 이어지는 실습용.'),
+  ('k8s',               'etude-k8s',   '["{KUBECONFIG_HOST_PATH}:/root/.kube/config:ro"]', FALSE, 'kubectl 실습 환경. k3d 로컬 클러스터 연결.');
 
-INSERT INTO quest_set (id, title, description, sandbox_type) VALUES
-  (1, '리눅스 기초 1 — 파일 탐색과 생성', '현재 위치 확인, 디렉토리 이동, 파일/디렉토리 생성과 복사를 실습합니다.', 'linux'),
-  (2, '리눅스 기초 2 — 삭제·검색·권한',  '파일 삭제, 내용 확인, 문자열 검색, 권한 변경, 링크 생성을 실습합니다.',  'linux'),
-  (3, '리눅스 기초 3 — 프로세스와 시스템', '프로세스 확인/종료, 디스크/메모리 확인, 환경변수 설정을 실습합니다.', 'linux'),
-  (4, '리눅스 네트워크/파일 전송',         'curl, ping, scp, rsync 등 네트워크 확인과 서버 간 파일 전송을 실습합니다.', 'linux-ssh'),
-  (5, 'Docker 기초',                       '컨테이너 실행·중지·삭제, 이미지 관리, 로그 확인 등 Docker 기본 조작을 실습합니다.', 'docker'),
-  (6, 'k8s 기초',                          'kubectl로 Pod, Deployment, Service를 직접 조작해봅니다.', 'k8s');
+INSERT INTO quest_set (id, title, description, sandbox_type, category) VALUES
+  (1, '리눅스 기초 1 — 파일 탐색과 생성', '현재 위치 확인, 디렉토리 이동, 파일/디렉토리 생성과 복사를 실습합니다.', 'linux',             '리눅스'),
+  (2, '리눅스 기초 2 — 삭제·검색·권한',  '파일 삭제, 내용 확인, 문자열 검색, 권한 변경, 링크 생성을 실습합니다.',  'linux',             '리눅스'),
+  (3, '리눅스 기초 3 — 프로세스와 시스템', '프로세스 확인/종료, 디스크/메모리 확인, 환경변수 설정을 실습합니다.', 'linux',             '리눅스'),
+  (4, '리눅스 네트워크/파일 전송',         'curl, ping, scp, rsync 등 네트워크 확인과 서버 간 파일 전송을 실습합��다.', 'linux-ssh',      '리눅스'),
+  (5, 'Docker 기초',                       '컨테이너 실행·중지·삭제, 이미지 관리, 로그 확인 등 Docker 기본 조작을 실습합니다.', 'docker',    '도커'),
+  (6, 'k8s 기초',                          'kubectl로 Pod, Deployment, Service를 직접 조작해봅니다.', 'k8s',                           'k8s'),
+  (7, '리눅스 압축과 아카이브',            'tar, gzip, zip 등 압축/아카이브 명령어를 실습합니다. 오프라인 패키지 반입의 기초입니다.', 'linux', '리눅스'),
+  (8, 'Docker 이미지 오프라인 반입',       'tar 파일로 이미지를 save/load하고 로컬 레지스트리에 push하는 현장 패턴을 실습합니다.', 'docker-persistent', '도커');
 
 -- 세트 1: 파일 탐색과 생성 (order 1~10)
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
@@ -425,3 +430,123 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    'kubectl get all -n $NS',
    '["sh", "-c", "kubectl create deployment my-app --image=nginx -n $NS 2>/dev/null; kubectl expose deployment my-app --port=80 -n $NS 2>/dev/null; true"]',
    '["sh", "-c", "kubectl get all -n $NS | grep -c my-app | xargs -I{} test {} -ge 2"]');
+
+-- 세트 7: 리눅스 압축과 아카이브 (order 1~9)
+-- 실무 조합: -cvf, -tvf, -xvf, -czvf, -xzvf 중심
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
+  (7,  1, 'tar로 파일 묶기 (-cvf)',
+   '/tmp/files 디렉토리를 tar로 묶어 /tmp/files.tar 로 저장하세요. 묶이는 파일 목록이 출력되어야 합니다.',
+   'tar -cvf <출력파일> <대상> 형식을 사용하세요. c=생성, v=목록출력, f=파일명 지정. "tar: Removing leading /" 메시지가 출력되어도 정상입니다.',
+   'tar -cvf /tmp/files.tar /tmp/files',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && echo world > /tmp/files/b.txt"]',
+   '["sh", "-c", "tar -tf /tmp/files.tar | grep -q a.txt"]'),
+
+  (7,  2, 'tar 아카이브 내용 확인하기 (-tvf)',
+   '/tmp/files.tar 아카이브에 어떤 파일이 들어있는지 목록을 확인하세요.',
+   'tar -tvf 옵션을 사용하세요. t=목록확인, v=상세출력(권한/날짜 포함), f=파일명 지정.',
+   'tar -tvf /tmp/files.tar',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && tar -cf /tmp/files.tar /tmp/files"]',
+   '["sh", "-c", "tar -tf /tmp/files.tar | grep -q files"]'),
+
+  (7,  3, 'tar 해제하기 (-xvf)',
+   '/tmp/files.tar 를 /tmp/extract 디렉토리에 압축 해제하세요. 해제되는 파일 목록이 출력되어야 합니다.',
+   'tar -xvf <파일> -C <대상 디렉토리> 형식을 사용하세요. x=해제, v=목록출력, f=파일명 지정. 대상 디렉토리는 먼저 만들어야 합니다.',
+   'mkdir -p /tmp/extract && tar -xvf /tmp/files.tar -C /tmp/extract',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && tar -cf /tmp/files.tar /tmp/files"]',
+   '["sh", "-c", "find /tmp/extract -name a.txt | grep -q a.txt"]'),
+
+  (7,  4, 'tar.gz 한 번에 만들기 (-czvf)',
+   '/tmp/files 디렉토리를 gzip 압축까지 적용해 /tmp/archive.tar.gz 로 만드세요. 묶이는 파일 목록이 출력되어야 합니다.',
+   'tar -czvf <출력파일> <대상> 형식을 사용하세요. z=gzip 압축 추가. 현장에서 가장 많이 쓰는 조합입니다.',
+   'tar -czvf /tmp/archive.tar.gz /tmp/files',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && echo world > /tmp/files/b.txt"]',
+   '["sh", "-c", "tar -tzf /tmp/archive.tar.gz | grep -q a.txt"]'),
+
+  (7,  5, 'tar.gz 내용 확인하기 (-tzvf)',
+   '/tmp/archive.tar.gz 아카이브의 내용을 확인하세요.',
+   'tar -tzvf 옵션을 사용하세요. z 옵션이 있어야 .gz 파일을 읽을 수 있습니다.',
+   'tar -tzvf /tmp/archive.tar.gz',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && tar -czvf /tmp/archive.tar.gz /tmp/files"]',
+   '["sh", "-c", "tar -tzf /tmp/archive.tar.gz | grep -q files"]'),
+
+  (7,  6, 'tar.gz 압축 해제하기 (-xzvf)',
+   '/tmp/archive.tar.gz 를 /tmp/extract 디렉토리에 압축 해제하세요. 해제되는 파일 목록이 출력되어야 합니다.',
+   'tar -xzvf <파일> -C <대상 디렉토리> 형식을 사용하세요.',
+   'mkdir -p /tmp/extract && tar -xzvf /tmp/archive.tar.gz -C /tmp/extract',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && tar -czvf /tmp/archive.tar.gz /tmp/files"]',
+   '["sh", "-c", "find /tmp/extract -name a.txt | grep -q a.txt"]'),
+
+  (7,  7, 'zip으로 압축하기',
+   '/tmp/files 디렉토리를 zip으로 압축해 /tmp/files.zip 으로 만드세요.',
+   'zip -r <출력파일> <대상> 형식을 사용하세요. -r은 디렉토리를 재귀적으로 포함합니다.',
+   'zip -r /tmp/files.zip /tmp/files',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && echo world > /tmp/files/b.txt"]',
+   '["sh", "-c", "unzip -l /tmp/files.zip | grep -q a.txt"]'),
+
+  (7,  8, 'unzip으로 압축 해제하기',
+   '/tmp/files.zip 을 /tmp/unzipped 디렉토리에 압축 해제하세요.',
+   'unzip <파일> -d <대상 디렉토리> 형식을 사용하세요.',
+   'unzip /tmp/files.zip -d /tmp/unzipped',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && zip -r /tmp/files.zip /tmp/files"]',
+   '["sh", "-c", "find /tmp/unzipped -name a.txt | grep -q a.txt"]'),
+
+  (7,  9, '압축 파일 크기 비교하기',
+   '/tmp/files 디렉토리를 tar.gz와 zip 두 가지로 압축한 뒤, 두 파일의 크기를 확인하고 결과를 /tmp/size_compare.txt 에 저장하세요.',
+   'tar -czvf로 tar.gz를, zip -r로 zip을 만든 뒤 ls -lh 로 크기를 비교하세요.',
+   'tar -czvf /tmp/compare.tar.gz /tmp/files && zip -r /tmp/compare.zip /tmp/files && ls -lh /tmp/compare.tar.gz /tmp/compare.zip > /tmp/size_compare.txt',
+   '["sh", "-c", "mkdir -p /tmp/files && for i in $(seq 1 10); do echo content$i > /tmp/files/file$i.txt; done"]',
+   '["sh", "-c", "grep -q compare /tmp/size_compare.txt"]');
+
+-- 세트 8: Docker 이미지 오프라인 반입 (order 1~7)
+-- persistent sandbox — 퀘스트를 넘겨도 동일 컨테이너 유지
+-- setup_cmd 없음 (재마운트가 없으므로 실행 타이밍이 없음)
+-- 실습 흐름: pull → save → load → tag → push → deploy → 확인
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
+  (8,  1, '이미지 tar 파일로 저장하기 (save)',
+   'alpine 이미지를 pull한 뒤 /tmp/alpine.tar 파일로 저장하세요. 현장에서 인터넷 연결 없이 이미지를 반입할 때 사용하는 첫 번째 단계입니다.',
+   'docker pull alpine 후 docker save -o <파일> <이미지> 형식을 사용하세요.',
+   'docker pull alpine && docker save -o /tmp/alpine.tar alpine',
+   NULL,
+   '["sh", "-c", "test -f /tmp/alpine.tar"]'),
+
+  (8,  2, '로컬 이미지 삭제하기',
+   'alpine 이미지를 로컬에서 삭제하세요. 다음 퀘스트에서 tar 파일로 다시 불러오는 실습을 위한 준비입니다.',
+   'docker rmi 명령어를 사용하세요.',
+   'docker rmi alpine',
+   NULL,
+   '["sh", "-c", "! docker images alpine | grep -q alpine"]'),
+
+  (8,  3, 'tar 파일에서 이미지 불러오기 (load)',
+   '/tmp/alpine.tar 파일에서 이미지를 불러오세요. 이것이 실제 현장에서 반입한 tar 파일을 서버에 올리는 단계입니다.',
+   'docker load -i <파일> 형식을 사용하세요.',
+   'docker load -i /tmp/alpine.tar',
+   NULL,
+   '["sh", "-c", "docker images alpine | grep -q alpine"]'),
+
+  (8,  4, '로컬 레지스트리 실행하기',
+   'Docker 공식 registry 이미지로 로컬 레지스트리를 포트 5000으로 실행하세요. 현장에서는 Nexus나 Harbor 같은 내부 레지스트리가 이 역할을 합니다.',
+   'docker run -d -p 5000:5000 --name registry registry:2',
+   'docker run -d -p 5000:5000 --name registry registry:2',
+   NULL,
+   '["sh", "-c", "docker ps | grep -q registry"]'),
+
+  (8,  5, '이미지 태깅하기',
+   'alpine 이미지에 로컬 레지스트리 주소를 포함한 태그를 붙이세요: localhost:5000/alpine:latest',
+   'docker tag <원본이미지> <새태그> 형식을 사용하세요.',
+   'docker tag alpine localhost:5000/alpine:latest',
+   NULL,
+   '["sh", "-c", "docker images localhost:5000/alpine | grep -q alpine"]'),
+
+  (8,  6, '레지스트리에 이미지 올리기 (push)',
+   'localhost:5000/alpine:latest 이미지를 로컬 레지스트리에 push하세요.',
+   'docker push <이미지> 형식을 사용하세요.',
+   'docker push localhost:5000/alpine:latest',
+   NULL,
+   '["sh", "-c", "curl -s http://localhost:5000/v2/alpine/tags/list | grep -q latest"]'),
+
+  (8,  7, '레지스트리에서 이미지 받아 컨테이너 실행하기',
+   '로컬 레지스트리(localhost:5000)에서 alpine 이미지를 받아 echo hello 명령어를 실행하세요. 이것이 실제 배포 환경에서 내부 레지스트리 이미지를 사용하는 패턴입니다.',
+   'docker run localhost:5000/alpine:latest echo hello',
+   'docker run localhost:5000/alpine:latest echo hello',
+   NULL,
+   '["sh", "-c", "docker images localhost:5000/alpine | grep -q alpine"]');

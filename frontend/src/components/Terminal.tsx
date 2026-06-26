@@ -6,10 +6,11 @@ import '@xterm/xterm/css/xterm.css'
 interface Props {
     sandboxType: string
     questId: number | null
+    containerId: string | null
     onConnected: (containerId: string) => void
 }
 
-export function Terminal({ sandboxType, questId, onConnected }: Props) {
+export function Terminal({ sandboxType, questId, containerId, onConnected }: Props) {
     const containerRef = useRef<HTMLDivElement>(null)
     const [loading, setLoading] = useState(true)
 
@@ -20,9 +21,11 @@ export function Terminal({ sandboxType, questId, onConnected }: Props) {
         term.open(containerRef.current!)
         fitAddon.fit()
 
-        const ws = new WebSocket(
-            `ws://${window.location.hostname}:3001/ws/terminal?sandboxType=${sandboxType}${questId !== null ? `&questId=${questId}` : ''}`
-        )
+        const params = new URLSearchParams({ sandboxType })
+        if (questId !== null) params.set('questId', String(questId))
+        if (containerId) params.set('containerId', containerId)  // 추가
+
+        const ws = new WebSocket(`ws://${window.location.hostname}:3001/ws/terminal?${params}`)
         ws.binaryType = 'arraybuffer'
 
         ws.onopen = () => {}

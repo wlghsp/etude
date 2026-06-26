@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Terminal } from './components/Terminal'
 import { QuestPanel } from './components/QuestPanel'
 import { SetSelect } from './pages/SetSelect'
 import type { Quest } from './types'
-import { fetchQuests } from './api'
+import { fetchQuests, endSession } from './api'
 
 
 function App() {
@@ -12,6 +12,11 @@ function App() {
   const [questIndex, setQuestIndex] = useState(0)
   const [containerId, setContainerId] = useState('')
   const [sandboxType, setSandboxType] = useState<string>('linux')
+  const containerIdRef = useRef(containerId)
+  const sandboxTypeRef = useRef(sandboxType)
+
+  useEffect(() => { containerIdRef.current = containerId }, [containerId])
+  useEffect(() => { sandboxTypeRef.current = sandboxType }, [sandboxType])
 
   useEffect(() => {
     if (selectedSetId === null) return
@@ -20,6 +25,11 @@ function App() {
         setQuests(data)
         setQuestIndex(0)
       })
+    return () => {
+      if (containerIdRef.current && sandboxTypeRef.current === 'docker-persistent') {
+        endSession(containerIdRef.current).catch(() => {})
+      }
+    }
   }, [selectedSetId])
 
   if (selectedSetId === null) {
@@ -50,7 +60,13 @@ function App() {
       </div>
       <div style={{ flex: 1 }}>
         {
-          quest && <Terminal key={sandboxType === 'k8s' ? 'k8s' : questIndex} sandboxType={sandboxType} questId={quest?.id ?? null}  onConnected={setContainerId} />
+          quest && <Terminal
+                key={sandboxType === 'docker-persistent' ? `set-${selectedSetId}` : sandboxType === 'k8s' ? 'k8s' : questIndex}
+                sandboxType={sandboxType}
+                questId={quest?.id ?? null}
+                containerId={containerId || null}
+                onConnected={setContainerId}
+                />
         }
       </div>
     </div>

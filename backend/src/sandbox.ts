@@ -3,13 +3,14 @@ import { db } from "./db.js"
 
 export async function getSandboxConfig(sandboxType: string) {
     const [rows] = await db.query<any[]>(
-        'SELECT image, binds FROM sandbox WHERE type = ?',
+        'SELECT image, binds, persistent FROM sandbox WHERE type = ?',
         [sandboxType]
     )
     const row = rows[0] ?? { image: 'ubuntu', binds: null }
     const config = {
         image: row.image,
         binds: typeof row.binds === 'string' ? JSON.parse(row.binds) : row.binds,
+        persistent: row.persistent === 1,
     }
 
     if (config.binds) {

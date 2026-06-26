@@ -14,7 +14,7 @@ async function execCheck(container: Docker.Container, cmd: string[]): Promise<bo
 }
 
 export async function getQuestSets(): Promise<QuestSet[]> {
-  const [rows] = await db.query('SELECT id, title, description, sandbox_type FROM quest_set')
+  const [rows] = await db.query('SELECT id, title, description, sandbox_type, category FROM quest_set')
   return rows as QuestSet[]
 }
 

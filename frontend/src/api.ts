@@ -16,3 +16,11 @@ export async function gradeQuest(containerId: string, questId: number) {
     body: JSON.stringify({ containerId, questId }),
   }).then((r) => r.json())
 }
+
+export async function endSession(containerId: string) {
+  return fetch(`${BASE}/session/end`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ containerId }),
+  }).then((r) => r.json())
+}
