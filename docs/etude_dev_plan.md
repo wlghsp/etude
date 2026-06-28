@@ -155,19 +155,28 @@ quest_progress  — 퀘스트 완료 이력 (user_id, quest_id, completed_at)
 
 ---
 
-## Phase 8 — 서버 확보 + 실배포 + 피드백 수집
+## Phase 8 — 서버 배포 (OCI Free Tier)
 
-목표: 팀원 전체가 언제든 접속할 수 있는 상태로 배포하고, 실사용 피드백을 수집한다.
+목표: OCI Always Free VM에 Etude를 배포한다. 팀원이 브라우저로 접속해서 퀘스트를 풀 수 있는 상태를 만든다.
+Phase 7 (인증) 완료 후 배포한다.
 
-### 서버 배포
+### 인프라
 
-- 사내 서버 또는 VM 1대 확보 (Docker-in-Docker 실행 권한 필요)
-- 백엔드 + MariaDB 배포
-- 현재는 로컬에서만 동작 → 팀원이 쓰려면 이 단계 필요
+- **서버**: OCI Always Free ARM VM (4 OCPU / 24GB RAM)
+- **프로비저닝**: Terraform (`infra/terraform/`)
+- **앱 구성**: docker-compose.prod.yml — nginx + backend + MariaDB
+- **배포 방식**: 수동 (`git pull` + `docker compose up`) — CI/CD는 추후 검토
+
+### 구성
+
+- nginx — 프론트 정적 서빙 + `/api`, `/ws` 리버스 프록시
+- backend — Fastify 빌드 이미지
+- MariaDB — 기존과 동일
+- k3d 클러스터 — VM에 별도 설치, k8s 퀘스트용
 
 ### 피드백 수집
 
-피드백은 누가 쓰는지 알아야 의미가 있으므로 인증 + 배포 이후에 붙인다.
+피드백은 누가 쓰는지 알아야 의미가 있으므로 인증 완료 후 붙인다.
 
 - 화면 우하단 고정 피드백 버튼
 - 클릭 시 textarea 팝업 (현재 페이지 + 로그인 사용자 자동 포함)
@@ -181,6 +190,8 @@ quest_progress  — 퀘스트 완료 이력 (user_id, quest_id, completed_at)
 
 ### 검증
 
+- `http://{공인IP}` 접속 → 세트 선택 화면 로드
+- linux / docker / k8s 퀘스트 세트 터미널 + 채점 동작 확인
 - 팀원이 실제로 접속해서 퀘스트를 풀고 피드백을 남길 수 있음
 
 ---
@@ -253,11 +264,20 @@ etude/
 │   ├── api.ts                  # fetchQuestSets, fetchQuests, gradeQuest, endSession, submitFeedback
 │   └── types.ts
 │
-└── backend/src/
-    ├── index.ts      # Fastify 앱, /session/end, /feedback 엔드포인트
-    ├── terminal.ts   # WebSocket + Docker 제어, persistent 분기
-    ├── sandbox.ts    # sandbox 설정 조회
-    └── quest.ts      # 퀘스트 데이터 + 채점 로직
+├── backend/src/
+│   ├── index.ts      # Fastify 앱, /session/end, /feedback 엔드포인트
+│   ├── terminal.ts   # WebSocket + Docker 제어, persistent 분기
+│   ├── sandbox.ts    # sandbox 설정 조회
+│   └── quest.ts      # 퀘스트 데이터 + 채점 로직
+│
+├── infra/
+│   ├── terraform/    # OCI VM + 네트워크 프로비저닝
+│   └── scripts/
+│       └── setup.sh  # 서버 초기 세팅 (Docker, k3d, kubectl)
+│
+└── deploy/
+    ├── docker-compose.prod.yml  # 프로덕션 compose
+    └── nginx.conf               # 리버스 프록시 설정
 ```
 
 ---
@@ -278,7 +298,8 @@ etude/
 
 ## 미결 사항
 
-- [ ] `init.sql` 재초기화 — `sandbox.persistent`, `quest_set.category` 컬럼 신규 반영 필요
-- [ ] k8s 샌드박스 격리 수준 — 현재는 서버 자원 제약으로 namespace 격리 채택. 자원이 확보되면 클러스터 per user로 전환 검토
+- [x] `init.sql` 재초기화 — `sandbox.persistent`, `quest_set.category` 컬럼 반영 완료
+- [ ] k8s 샌드박스 격리 수준 — 현재 namespace 격리. OCI 서버(24GB RAM)에서 vcluster per user 검토 가능
 - [ ] 로그인 방식 — 사내 이메일 자체 발급 vs SSO 연동 (Phase 7 명세 시점에 확정)
 - [ ] 테스트 코드 도입 시점 — 인증 붙기 전. Fastify inject() + vitest 조합 예정
+- [ ] frontend API URL — 배포 전 `localhost:3001` → 상대경로(`/api`, `/ws`) 수정 필요

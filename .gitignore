@@ -42,3 +42,13 @@ Thumbs.db
 
 # Test coverage
 coverage/
+
+# Terraform
+infra/terraform/terraform.tfvars
+infra/terraform/.terraform/
+infra/terraform/terraform.tfstate
+infra/terraform/terraform.tfstate.backup
+infra/terraform/.terraform.lock.hcl
+
+# Server-only env
+backend/.env.prod

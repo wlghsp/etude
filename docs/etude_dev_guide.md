@@ -30,7 +30,7 @@ ln -sf ~/.colima/default/docker.sock ~/.docker/run/docker.sock
 | Phase 5 — 퀘스트 콘텐츠 확장 | [guides/guide_phase5.md](guides/guide_phase5.md) | [specs/spec_phase5_content.md](specs/spec_phase5_content.md) | ✅ 완료 |
 | Phase 6 — k8s 기초 실습 세트 | [guides/guide_phase6.md](guides/guide_phase6.md) | [specs/spec_phase6_k8s.md](specs/spec_phase6_k8s.md) | ✅ 완료 |
 | Phase 7 — 사용자 인증 + 진행 추적 | (작성 예정) | (작성 예정) | 대기 |
-| Phase 8 — 서버 배포 + 피드백 수집 | (Phase 7 완료 후 작성) | (Phase 7 완료 후 작성) | 대기 |
+| Phase 8 — 서버 배포 (OCI) | [guides/guide_phase8_deploy.md](guides/guide_phase8_deploy.md) | [specs/spec_phase8_deploy.md](specs/spec_phase8_deploy.md) | 대기 |
 | Phase 9 — 퀘스트 콘텐츠 확장 2 | (Phase 8 완료 후 작성) | (Phase 8 완료 후 작성) | 대기 |
 
 ---
