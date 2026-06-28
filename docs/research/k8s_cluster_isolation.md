@@ -190,8 +190,11 @@ k3d 대신 [vcluster](https://www.vcluster.com/)를 쓰면 기동이 **3~5초** 
 | 가능한 퀘스트 | pod/deploy/svc 기초 | RBAC, CRD, 클러스터 운영 | RBAC, CRD, 클러스터 운영 |
 | 기동 시간 | 즉시 (컨테이너만) | 5~15초 | 3~5초 |
 | 구현 복잡도 | 낮음 (현재 구현됨) | 중간 (k3d CLI 호출) | 중간~높음 (vcluster CLI) |
-| 전환 조건 | — | 32GB 이상 서버 확보 시 | 16GB 이상 서버 확보 시 |
+| 전환 조건 | — | 32GB 이상 서버 확보 시 | 16GB 이상 서버 확보 시 ✅ OCI 24GB로 충족 |
 
 서버 자원이 확보되면 sandbox 타입을 `k8s-isolated`로 추가하고 세션형으로 구현하는 것이 자연스러운 전환 경로다.
 기존 `k8s` 타입(namespace 격리)은 그대로 유지하면서 병행 운영 가능.
 자원이 넉넉하면 vcluster가 기동 시간과 리소스 효율 모두에서 유리하다.
+
+> **2026-06-28 업데이트**: OCI Always Free VM (24GB RAM) 확보로 vcluster 전환 조건 충족.
+> RBAC / CRD / 클러스터 운영 퀘스트 추가 시점에 `k8s-isolated` (vcluster) 타입 도입 검토.

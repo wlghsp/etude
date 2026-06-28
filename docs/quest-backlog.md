@@ -180,8 +180,83 @@
 
 ---
 
+---
+
+## CKA 준비 세트
+
+CNCF CKA 시험 도메인 기준 (2025). 세트 6 (k8s 기초) 이후 난이도.
+RBAC, NetworkPolicy, PV 등 클러스터 레벨 리소스가 포함되므로 **vcluster per user 환경 필요**.
+
+> 난이도 표기는 CKA 수험생 기준 (세트 6보다 전체적으로 높음)
+
+### Storage (10%)
+
+| # | 퀘스트 제목 | 핵심 실습 내용 | 난이도 | 상태 |
+|---|-------------|---------------|--------|------|
+| CKA-ST-01 | StorageClass 생성 | StorageClass 정의, `provisioner`, `reclaimPolicy` 설정 | 🟡 | [ ] |
+| CKA-ST-02 | 동적 PV 프로비저닝 | StorageClass 기반 PVC 생성 → PV 자동 바인딩 확인 | 🟡 | [ ] |
+| CKA-ST-03 | PV/PVC 수동 연결 | static PV 생성, accessMode, capacity, PVC 바인딩 | 🟡 | [ ] |
+| CKA-ST-04 | PV Reclaim Policy | `Retain` / `Delete` / `Recycle` 차이, PV 재사용 시나리오 | 🟡 | [ ] |
+| CKA-ST-05 | Pod에 볼륨 마운트 | `emptyDir`, `hostPath`, PVC 마운트 패턴 비교 | 🟢 | [ ] |
+
+### Troubleshooting (30%)
+
+| # | 퀘스트 제목 | 핵심 실습 내용 | 난이도 | 상태 |
+|---|-------------|---------------|--------|------|
+| CKA-TS-01 | CrashLoopBackOff 진단 | `kubectl logs --previous`, `describe`, exit code 해석 | 🟡 | [ ] |
+| CKA-TS-02 | Pod Pending 원인 분석 | 리소스 부족 / nodeSelector 불일치 / PVC 미바인딩 케이스 | 🟡 | [ ] |
+| CKA-TS-03 | 노드 NotReady 대응 | `kubectl describe node`, kubelet 상태 확인, 재기동 | 🔴 | [ ] |
+| CKA-TS-04 | 클러스터 컴포넌트 진단 | kube-apiserver / scheduler / controller-manager 상태 확인 | 🔴 | [ ] |
+| CKA-TS-05 | 리소스 사용량 모니터링 | `kubectl top pod/node`, OOMKilled 원인 파악 | 🟡 | [ ] |
+| CKA-TS-06 | 컨테이너 로그 수집 | `kubectl logs`, `-c` 컨테이너 지정, `--since`, 로그 파일 직접 접근 | 🟢 | [ ] |
+| CKA-TS-07 | Service → Pod 연결 트러블슈팅 | selector 불일치, endpoint 확인, `curl` 내부 접속 테스트 | 🟡 | [ ] |
+| CKA-TS-08 | etcd 백업 및 복원 | `etcdctl snapshot save/restore`, 백업 주기 이해 | 🔴 | [ ] |
+
+### Workloads & Scheduling (15%)
+
+| # | 퀘스트 제목 | 핵심 실습 내용 | 난이도 | 상태 |
+|---|-------------|---------------|--------|------|
+| CKA-WS-01 | Rolling Update / Rollback | `kubectl rollout`, `--record`, `rollout undo` | 🟢 | [ ] |
+| CKA-WS-02 | ConfigMap으로 앱 설정 주입 | `envFrom`, `volumeMount` 두 가지 방식 | 🟢 | [ ] |
+| CKA-WS-03 | Secret 생성 및 주입 | `generic` / `tls` / `docker-registry` 타입, base64 인코딩 | 🟡 | [ ] |
+| CKA-WS-04 | HorizontalPodAutoscaler | CPU 기반 HPA, `kubectl autoscale`, metrics-server 연동 | 🟡 | [ ] |
+| CKA-WS-05 | DaemonSet / StatefulSet | 각 워크로드 특성 비교, 헤드리스 서비스 | 🟡 | [ ] |
+| CKA-WS-06 | Liveness / Readiness Probe | HTTP / exec / tcpSocket 방식, 재시작 정책 | 🟡 | [ ] |
+| CKA-WS-07 | Resource Limits & Requests | `resources.requests/limits`, LimitRange, QoS 클래스 | 🟡 | [ ] |
+| CKA-WS-08 | nodeSelector / nodeAffinity | 라벨 기반 스케줄링, `requiredDuringScheduling` vs `preferred` | 🟡 | [ ] |
+| CKA-WS-09 | Taint & Toleration | `kubectl taint`, NoSchedule / NoExecute, Pod 격리 패턴 | 🟡 | [ ] |
+
+### Cluster Architecture, Installation & Configuration (25%)
+
+| # | 퀘스트 제목 | 핵심 실습 내용 | 난이도 | 상태 |
+|---|-------------|---------------|--------|------|
+| CKA-CA-01 | Role / RoleBinding 생성 | namespace 범위 RBAC, `kubectl create role`, 권한 검증 | 🟡 | [ ] |
+| CKA-CA-02 | ClusterRole / ClusterRoleBinding | 클러스터 범위 RBAC, ServiceAccount 연결 | 🟡 | [ ] |
+| CKA-CA-03 | kubeadm으로 클러스터 설치 | `kubeadm init`, CNI 설치, `kubeadm join` | 🔴 | [ ] |
+| CKA-CA-04 | 클러스터 업그레이드 | `kubeadm upgrade plan/apply`, kubelet/kubectl 업그레이드 순서 | 🔴 | [ ] |
+| CKA-CA-05 | 노드 drain / cordon | 노드 유지보수 절차, `kubectl drain --ignore-daemonsets` | 🟡 | [ ] |
+| CKA-CA-06 | Helm으로 컴포넌트 설치 | `helm repo add/install/upgrade`, `values.yaml` 오버라이드 | 🟡 | [ ] |
+| CKA-CA-07 | Kustomize 기초 | `kustomization.yaml`, `kubectl apply -k`, overlay 패턴 | 🟡 | [ ] |
+| CKA-CA-08 | CRD 생성 및 커스텀 리소스 적용 | CRD yaml 작성, CR 생성, `kubectl get <crd>` | 🔴 | [ ] |
+| CKA-CA-09 | CNI / CSI / CRI 이해 | 각 인터페이스 역할, 플러그인 교체 시 영향 범위 | 🟡 | [ ] |
+
+### Services & Networking (20%)
+
+| # | 퀘스트 제목 | 핵심 실습 내용 | 난이도 | 상태 |
+|---|-------------|---------------|--------|------|
+| CKA-SN-01 | Pod 간 통신 확인 | Pod IP 직접 통신, 같은 namespace / 다른 namespace | 🟢 | [ ] |
+| CKA-SN-02 | NetworkPolicy로 트래픽 제한 | ingress/egress 규칙, podSelector, namespaceSelector | 🔴 | [ ] |
+| CKA-SN-03 | ClusterIP / NodePort / LoadBalancer | 서비스 타입별 동작 차이, endpoint 확인 | 🟢 | [ ] |
+| CKA-SN-04 | Ingress 리소스 생성 | Ingress Controller 전제, 호스트/경로 기반 라우팅 | 🟡 | [ ] |
+| CKA-SN-05 | Gateway API | HTTPRoute, GatewayClass, Ingress와 차이점 | 🔴 | [ ] |
+| CKA-SN-06 | CoreDNS 동작 이해 | `nslookup`, `dig`, 서비스 DNS 규칙 (`svc.cluster.local`) | 🟡 | [ ] |
+| CKA-SN-07 | DNS 트러블슈팅 | CoreDNS Pod 상태 확인, `resolv.conf`, 이름 해석 실패 원인 분석 | 🟡 | [ ] |
+
+---
+
 ## 메모
 
 - **CMP 시리즈**는 실제 배포 순서(CMP-01 → CMP-12)를 따르면 하나의 스토리 퀘스트 세트가 된다
 - LNX-01~LNX-08은 다른 퀘스트들의 사전 요구 조건이 되므로 먼저 완성 권장
 - K8S-02(Pod 진단), K8S-09(ImagePullBackOff)는 CMP 퀘스트 실습 중 자연스럽게 연계 가능
+- **CKA 세트는 vcluster per user 환경 필요** — RBAC, NetworkPolicy, CRD 등 클러스터 레벨 리소스 포함. Phase 8 이후 vcluster 도입 시점에 구현 시작.
