@@ -9,6 +9,20 @@ import { gradeQuest, getQuests, getQuestSets } from './quest.js'
 const fastify = Fastify({ logger: true })
 const docker = new Docker()
 
+async function cleanupOrphanContainers() {
+    const containers = await docker.listContainers({
+        all: true,
+        filters: JSON.stringify({ label: ['etude=sandbox'] }),
+    })
+    for (const c of containers) {
+        const container = docker.getContainer(c.Id)
+        await container.stop().catch(() => {})
+        await container.remove().catch(() => {})
+    }
+}
+
+await cleanupOrphanContainers()
+
 await fastify.register(cors, { origin: true })
 await fastify.register(websocket)
 
@@ -50,5 +64,23 @@ fastify.post<{ Body: { containerId: string } }>(
         return { ok: true }
     }
 )
+
+fastify.addHook('onClose', async () => {
+    const containers = await docker.listContainers({
+        filters: JSON.stringify({ label: ['etude=sandbox'] }),
+    })
+    for (const c of containers) {
+        const container = docker.getContainer(c.Id)
+        await container.stop().catch(() => {})
+        await container.remove().catch(() => {})
+    }
+})
+
+const shutdown = async () => {
+    await fastify.close()
+    process.exit()
+}
+process.on('SIGTERM', shutdown)
+process.on('SIGINT', shutdown)
 
 await fastify.listen({ port: 3001, host:'0.0.0.0'})

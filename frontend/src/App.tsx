@@ -36,6 +36,7 @@ function App() {
     function handleSetSelect(id: number, sandboxType: string) {
       setSelectedSetId(id)
       setSandboxType(sandboxType)
+      setContainerId('')
     }
     return <SetSelect onSelect={handleSetSelect} />
   }

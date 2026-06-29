@@ -65,6 +65,7 @@ export async function handleTerminal(
 async function handleDefaultTerminal(socket: WebSocket, docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null) {
   const container = await docker.createContainer({
     Image: config.image,
+    Labels: { etude: 'sandbox'},
     HostConfig: { Binds: config.binds ?? [] },
     Cmd: ['/bin/bash'],
     AttachStdin: true,
@@ -109,7 +110,9 @@ async function handleDockerTerminal(
   } else {
     // 새 컨테이너 생성
     container = await docker.createContainer({
-      Image: config.image, OpenStdin: false, Tty: false,
+      Image: config.image, 
+      Labels: { etude: 'sandbox'},
+      OpenStdin: false, Tty: false,
       AttachStdin: false, AttachStdout: false, AttachStderr: false,
       HostConfig: { Binds: config.binds ?? [], Privileged: true },
     })
@@ -139,6 +142,7 @@ async function handleDockerTerminal(
 async function handleK8sTerminal(socket: WebSocket, docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null) {
   const container = await docker.createContainer({
     Image: config.image,
+    Labels: { etude: 'sandbox'},
     HostConfig: {
       Binds: config.binds ?? [],
       NetworkMode: process.env.K3D_NETWORK ?? 'k3d-etude',

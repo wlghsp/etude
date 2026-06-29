@@ -299,8 +299,8 @@ etude/
 ## 미결 사항
 
 - [x] `init.sql` 재초기화 — `sandbox.persistent`, `quest_set.category` 컬럼 반영 완료
-- [ ] 컨테이너 label 누락 — `terminal.ts`의 `createContainer` 3곳에 `Labels: { etude: 'sandbox' }` 미추가. phase5c 가이드 참고
-- [ ] 컨테이너 정리 미구현 — 서버 시작 시 고아 정리(phase5c), 서버 종료 시 정리(phase5e) 모두 `index.ts`에 미반영
+- [x] 컨테이너 label 누락 — `terminal.ts`의 `createContainer` 3곳에 `Labels: { etude: 'sandbox' }` 미추가. phase5c 가이드 참고
+- [x] 컨테이너 정리 미구현 — 서버 시작 시 고아 정리(phase5c), 서버 종료 시 정리(phase5e) 모두 `index.ts`에 미반영
 - [ ] k8s 샌드박스 격리 수준 — 현재 namespace 격리. OCI 서버(24GB RAM)에서 vcluster per user 검토 가능
 - [ ] 로그인 방식 — 사내 이메일 자체 발급 vs SSO 연동 (Phase 7 명세 시점에 확정)
 - [ ] 테스트 코드 도입 시점 — 인증 붙기 전. Fastify inject() + vitest 조합 예정
