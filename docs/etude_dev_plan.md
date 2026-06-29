@@ -133,25 +133,28 @@ quest     — 개별 퀘스트 (id, quest_set_id, title, description, hint, grad
 
 ## Phase 7 — 사용자 인증 + 진행 추적
 
-목표: 누가 어떤 퀘스트를 완료했는지 추적. 팀원/팀장이 현황 확인 가능. 이게 있어야 팀원들이 실제로 쓸 수 있는 제품이 된다.
+목표: 팀원이 로그인하고 퀘스트를 풀면 시도 이력이 기록된다. 관리자는 전체 팀원 현황을 조회할 수 있다.
 
 ### DB 스키마 추가
 
 ```
-user            — 사용자 (이름, 이메일, 역할)
-quest_progress  — 퀘스트 완료 이력 (user_id, quest_id, completed_at)
+user            — 사용자 (이름, 이메일, 역할: member/admin)
+quest_attempt   — 퀘스트 시도 이력 (user_id, quest_id, session_id, elapsed_sec, hint_used, solution_used, passed)
 ```
+
+`quest_attempt`는 중복 허용 — 반복 시도가 쌓이는 구조. Phase 9 분석의 원본 데이터.
 
 ### 기능
 
-- 로그인 (사내 이메일 기반, JWT)
-- 퀘스트 완료 시 progress 기록
-- 대시보드 — 내 완료 현황, 세트별 진행률
-- 팀장 뷰 — 팀원 전체 완료 현황
+- 로그인 (사내 이메일 기반, JWT) + 관리자가 계정 직접 생성
+- 퀘스트 채점 시 attempt 기록 (소요 시간, 힌트/풀이 사용 여부 포함)
+- 대시보드 — 내 세트별 진행률 (passed attempt 기준)
+- 관리자 뷰 — 전체 팀원 세트별 진행 현황
 
 ### 검증
 
-- 로그인 → 퀘스트 풀기 → 완료 기록 → 대시보드에서 확인
+- 로그인 → 퀘스트 풀기 → attempt 기록 → 대시보드 확인
+- 관리자 계정으로 /admin/progress 조회
 
 ---
 

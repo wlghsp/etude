@@ -9,10 +9,10 @@
 ## 구현 순서
 
 ```
-1. init.sql — user, quest_progress 테이블 추가    → DB 재초기화로 확인
-2. 패키지 설치 — bcrypt, jsonwebtoken              → tsc 오류 없음 확인
-3. auth.ts — JWT 발급/검증, 로그인 로직            → 단독 함수 호출로 확인
-4. index.ts — 라우트 추가, authMiddleware 적용     → curl로 API 확인
+1. init.sql — user, quest_attempt 테이블 추가       → DB 재초기화로 확인
+2. 패키지 설치 — bcrypt, jsonwebtoken               → tsc 오류 없음 확인
+3. auth.ts — JWT 발급/검증, 로그인 로직             → 단독 함수 호출로 확인
+4. index.ts — 라우트 추가, 미들웨어 적용            → curl로 API 확인
 ```
 
 ---
@@ -31,18 +31,25 @@ CREATE TABLE user (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE quest_progress (
-  id           INT AUTO_INCREMENT PRIMARY KEY,
-  user_id      INT NOT NULL,
-  quest_id     INT NOT NULL,
-  completed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_user_quest (user_id, quest_id),
-  FOREIGN KEY (user_id) REFERENCES user(id),
-  FOREIGN KEY (quest_id) REFERENCES quest(id)
+-- 중복 허용 — 반복 시도가 쌓이는 구조 (Phase 9 분석의 원본 데이터)
+CREATE TABLE quest_attempt (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  user_id        INT NOT NULL,
+  quest_id       INT NOT NULL,
+  quest_set_id   INT NOT NULL,
+  session_id     VARCHAR(36) NOT NULL,
+  elapsed_sec    INT,
+  hint_used      BOOLEAN NOT NULL DEFAULT FALSE,
+  solution_used  BOOLEAN NOT NULL DEFAULT FALSE,
+  passed         BOOLEAN NOT NULL DEFAULT FALSE,
+  attempted_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id)      REFERENCES user(id),
+  FOREIGN KEY (quest_id)     REFERENCES quest(id),
+  FOREIGN KEY (quest_set_id) REFERENCES quest_set(id)
 );
 ```
 
-시드 계정도 추가 (비밀번호 `password123`의 bcrypt 해시):
+시드 계정 추가 (비밀번호 `password123`의 bcrypt 해시):
 
 ```sql
 INSERT INTO user (name, email, password, role) VALUES
@@ -85,7 +92,6 @@ export interface JwtPayload {
   role: string
 }
 
-// 로그인: 이메일/비밀번호 확인 후 JWT 발급
 export async function login(email: string, password: string) {
   const [rows] = await pool.query(
     'SELECT id, name, email, password, role FROM user WHERE email = ?',
@@ -110,7 +116,6 @@ export async function login(email: string, password: string) {
   }
 }
 
-// 토큰 검증 — 유효하면 payload 반환, 아니면 throw
 export function verifyToken(token: string): JwtPayload {
   return jwt.verify(token, JWT_SECRET) as JwtPayload
 }
@@ -120,15 +125,15 @@ export function verifyToken(token: string): JwtPayload {
 
 ## Step 4. index.ts — 라우트 + 미들웨어 추가
 
-### 4-1. authMiddleware 작성
+### 4-1. import 추가
 
-`backend/src/index.ts` 상단 import에 추가:
 ```typescript
 import { login, verifyToken } from './auth'
 import type { JwtPayload } from './auth'
 ```
 
-미들웨어 함수 추가 (fastify 선언 아래):
+### 4-2. 미들웨어 작성 (fastify 선언 아래)
+
 ```typescript
 async function authMiddleware(request: any, reply: any) {
   const auth = request.headers['authorization'] ?? ''
@@ -140,23 +145,29 @@ async function authMiddleware(request: any, reply: any) {
     return reply.code(401).send({ error: '토큰이 유효하지 않습니다.' })
   }
 }
+
+async function adminMiddleware(request: any, reply: any) {
+  await authMiddleware(request, reply)
+  if (request.user?.role !== 'admin') {
+    return reply.code(403).send({ error: '관리자 권한이 필요합니다.' })
+  }
+}
 ```
 
-### 4-2. 로그인 API 추가
+### 4-3. 로그인 API
 
 ```typescript
 fastify.post('/auth/login', async (request, reply) => {
   const { email, password } = request.body as { email: string; password: string }
   try {
-    const result = await login(email, password)
-    return result
+    return await login(email, password)
   } catch (e: any) {
     return reply.code(401).send({ error: e.message })
   }
 })
 ```
 
-### 4-3. /me API 추가
+### 4-4. /me API
 
 ```typescript
 fastify.get('/me', { preHandler: authMiddleware }, async (request: any) => {
@@ -164,7 +175,9 @@ fastify.get('/me', { preHandler: authMiddleware }, async (request: any) => {
 })
 ```
 
-### 4-4. /progress API 추가
+### 4-5. /progress API
+
+`passed = true`인 attempt 기준으로 세트별 완료 수 집계:
 
 ```typescript
 fastify.get('/progress', { preHandler: authMiddleware }, async (request: any) => {
@@ -174,11 +187,11 @@ fastify.get('/progress', { preHandler: authMiddleware }, async (request: any) =>
       qs.id AS quest_set_id,
       qs.title,
       qs.category,
-      COUNT(q.id) AS total,
-      COUNT(qp.id) AS completed
+      COUNT(DISTINCT q.id) AS total,
+      COUNT(DISTINCT CASE WHEN qa.passed = 1 THEN qa.quest_id END) AS completed
     FROM quest_set qs
     JOIN quest q ON q.quest_set_id = qs.id
-    LEFT JOIN quest_progress qp ON qp.quest_id = q.id AND qp.user_id = ?
+    LEFT JOIN quest_attempt qa ON qa.quest_id = q.id AND qa.user_id = ?
     GROUP BY qs.id
     ORDER BY qs.id
   `, [userId]) as any[]
@@ -186,28 +199,84 @@ fastify.get('/progress', { preHandler: authMiddleware }, async (request: any) =>
 })
 ```
 
-### 4-5. /grade에 progress 기록 추가
+### 4-6. /leaderboard API
 
-기존 `/grade` 라우트에서 `passed === true`일 때 아래 코드 추가:
+전체 팀원 공개 리더보드 — 로그인한 모든 팀원이 접근 가능.
 
 ```typescript
-// 기존 채점 로직 아래에 추가
-if (passed) {
-  const auth = request.headers['authorization'] ?? ''
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : ''
-  if (token) {
-    try {
-      const payload = verifyToken(token)
-      await pool.query(
-        'INSERT IGNORE INTO quest_progress (user_id, quest_id) VALUES (?, ?)',
-        [payload.userId, questId]
-      )
-    } catch {}  // 토큰 없거나 만료돼도 채점 결과는 정상 반환
+fastify.get('/leaderboard', { preHandler: authMiddleware }, async () => {
+  const [rows] = await pool.query(`
+    SELECT
+      u.name AS userName,
+      qs.title AS questSetTitle,
+      qs.category,
+      COUNT(DISTINCT q.id) AS total,
+      COUNT(DISTINCT CASE WHEN qa.passed = 1 THEN qa.quest_id END) AS completed
+    FROM user u
+    CROSS JOIN quest_set qs
+    JOIN quest q ON q.quest_set_id = qs.id
+    LEFT JOIN quest_attempt qa ON qa.quest_id = q.id AND qa.user_id = u.id
+    WHERE u.role = 'member'
+    GROUP BY u.id, qs.id
+    ORDER BY u.name, qs.id
+  `) as any[]
+  return rows
+})
+```
+
+### 4-7. /admin/users API (계정 생성)
+
+```typescript
+import bcrypt from 'bcrypt'
+
+fastify.post('/admin/users', { preHandler: adminMiddleware }, async (request, reply) => {
+  const { name, email, password } = request.body as { name: string; email: string; password: string }
+  const hashed = await bcrypt.hash(password, 10)
+  const [result] = await pool.query(
+    'INSERT INTO user (name, email, password, role) VALUES (?, ?, ?, ?)',
+    [name, email, hashed, 'member']
+  ) as any[]
+  return { id: result.insertId, name, email, role: 'member' }
+})
+```
+
+### 4-8. /grade에 attempt 기록 추가
+
+기존 `/grade` 라우트의 요청 파싱 부분에 새 필드 추가:
+
+```typescript
+const { containerId, questId, questSetId, sessionId, elapsedSec, hintUsed, solutionUsed }
+  = request.body as {
+    containerId: string
+    questId: number
+    questSetId: number
+    sessionId: string
+    elapsedSec?: number
+    hintUsed?: boolean
+    solutionUsed?: boolean
   }
+```
+
+채점 후 항상 attempt 기록 (성공/실패 모두):
+
+```typescript
+const auth = request.headers['authorization'] ?? ''
+const token = auth.startsWith('Bearer ') ? auth.slice(7) : ''
+if (token) {
+  try {
+    const payload = verifyToken(token)
+    await pool.query(
+      `INSERT INTO quest_attempt
+        (user_id, quest_id, quest_set_id, session_id, elapsed_sec, hint_used, solution_used, passed)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [payload.userId, questId, questSetId, sessionId, elapsedSec ?? null,
+       hintUsed ?? false, solutionUsed ?? false, passed]
+    )
+  } catch {}  // 토큰 없거나 만료돼도 채점 결과는 정상 반환
 }
 ```
 
-> `INSERT IGNORE` — 같은 퀘스트를 재채점해도 중복 기록 안 됨
+> 성공/실패 모두 기록 — "몇 번 시도 후 성공했는지"를 Phase 9에서 분석할 수 있어야 하기 때문.
 
 ---
 
@@ -220,17 +289,15 @@ curl -X POST http://localhost:3001/auth/login \
   -d '{"email":"test@okestro.com","password":"password123"}'
 # → {"token":"eyJ...","user":{...}}
 
-# 내 정보 (토큰 교체)
-curl http://localhost:3001/me \
-  -H "Authorization: Bearer <토큰>"
-# → {"userId":2,"email":"test@okestro.com","role":"member"}
-
-# 진행 현황 (빈 상태)
+# 내 진행 현황
 curl http://localhost:3001/progress \
   -H "Authorization: Bearer <토큰>"
 # → [{quest_set_id:1, total:10, completed:0}, ...]
 
-# 토큰 없이 호출
+# 전체 팀원 리더보드 (모든 로그인 사용자 접근 가능)
+curl http://localhost:3001/leaderboard \
+  -H "Authorization: Bearer <토큰>"
+
+# 토큰 없이 → 401
 curl http://localhost:3001/me
-# → 401 {"error":"인증이 필요합니다."}
 ```

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Team Progress | OKESTRO TRAINING</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-container": "#b7b5b4",
+            "primary-fixed": "#e5e2e1",
+            "secondary-fixed": "#e5e2e1",
+            "on-tertiary-fixed": "#1d1b1a",
+            "surface-container-lowest": "#0e0e0e",
+            "on-secondary": "#313030",
+            "on-primary-fixed": "#1c1b1b",
+            "on-primary": "#313030",
+            "tertiary": "#cac6c3",
+            "surface-container": "#201f1f",
+            "surface-tint": "#c8c6c5",
+            "surface-container-high": "#2b2a2a",
+            "on-error": "#690005",
+            "background": "#141313",
+            "on-error-container": "#ffdad6",
+            "inverse-primary": "#5f5e5e",
+            "primary": "#c8c6c5",
+            "on-tertiary": "#32302f",
+            "on-background": "#e5e2e1",
+            "outline-variant": "#444748",
+            "on-tertiary-fixed-variant": "#484645",
+            "error-container": "#93000a",
+            "surface-container-highest": "#353434",
+            "on-surface-variant": "#c4c7c7",
+            "surface-dim": "#141313",
+            "tertiary-fixed": "#e6e1df",
+            "secondary-fixed-dim": "#c8c6c5",
+            "primary-fixed-dim": "#c8c6c5",
+            "on-tertiary-container": "#7f7c7a",
+            "primary-container": "#111111",
+            "error": "#ffb4ab",
+            "surface-variant": "#353434",
+            "surface": "#141313",
+            "on-primary-fixed-variant": "#474646",
+            "surface-bright": "#3a3939",
+            "inverse-on-surface": "#313030",
+            "secondary": "#c8c6c5",
+            "on-primary-container": "#7e7c7c",
+            "on-secondary-fixed-variant": "#474746",
+            "tertiary-container": "#121110",
+            "secondary-container": "#474746",
+            "on-secondary-fixed": "#1c1b1b",
+            "inverse-surface": "#e5e2e1",
+            "surface-container-low": "#1c1b1b",
+            "tertiary-fixed-dim": "#cac6c3",
+            "on-surface": "#e5e2e1",
+            "outline": "#8e9192"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "container-max": "1280px",
+            "unit": "4px",
+            "gutter": "16px",
+            "margin-page": "24px"
+          },
+          "fontFamily": {
+            "headline-md": ["JetBrains Mono"],
+            "body-md": ["JetBrains Mono"],
+            "label-caps": ["JetBrains Mono"],
+            "code-sm": ["JetBrains Mono"],
+            "body-lg": ["JetBrains Mono"],
+            "headline-lg": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+            "code-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+            "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+            "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #111111;
+      color: #e5e2e1;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      vertical-align: middle;
+      font-size: 1.25rem;
+    }
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #141313; }
+    ::-webkit-scrollbar-thumb { background: #333333; }
+    ::-webkit-scrollbar-thumb:hover { background: #444444; }
+
+    .terminal-button {
+      border: 1px solid #333333;
+      transition: all 0.15s ease;
+    }
+    .terminal-button:hover {
+      background-color: #2b2a2a;
+      border-color: #c8c6c5;
+    }
+    .status-completed { color: #22c55e; border: 1px solid #22c55e; }
+    .status-progress { color: #3b82f6; border: 1px solid #3b82f6; }
+    .status-notstarted { color: #6b7280; border: 1px solid #6b7280; }
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+<!-- Side Navigation Bar -->
+<aside class="hidden md:flex flex-col h-screen w-60 left-0 bg-surface-container dark:bg-surface-container border-r border-outline-variant dark:border-outline-variant py-4 gap-2 shrink-0">
+<div class="px-4 mb-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-primary rounded flex items-center justify-center text-background">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div>
+<h1 class="text-headline-md font-headline-md text-on-surface">Etude</h1>
+<p class="text-[10px] opacity-50 uppercase tracking-widest">v1.0.4-stable</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-2 space-y-1">
+<!-- Dashboard - Active -->
+<a class="flex items-center gap-3 h-10 bg-transparent text-primary border-l-2 border-primary pl-3 hover:text-on-surface hover:bg-surface-container-highest transition-all group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-label-caps font-label-caps">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 h-10 text-on-surface-variant pl-4 hover:text-on-surface hover:bg-surface-container-highest transition-all" href="#">
+<span class="material-symbols-outlined">exercise</span>
+<span class="text-label-caps font-label-caps">Training Sets</span>
+</a>
+<a class="flex items-center gap-3 h-10 text-on-surface-variant pl-4 hover:text-on-surface hover:bg-surface-container-highest transition-all" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="text-label-caps font-label-caps">Quests</span>
+</a>
+<a class="flex items-center gap-3 h-10 text-on-surface-variant pl-4 hover:text-on-surface hover:bg-surface-container-highest transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-label-caps font-label-caps">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-4 space-y-4">
+<button class="w-full h-10 bg-primary text-background text-label-caps font-label-caps rounded flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined text-sm">add</span>
+        New Session
+      </button>
+<div class="pt-4 border-t border-outline-variant/30 space-y-1">
+<a class="flex items-center gap-3 h-8 text-on-surface-variant pl-0 text-[12px] hover:text-on-surface transition-all" href="#">
+<span class="material-symbols-outlined text-sm">description</span>
+<span>Documentation</span>
+</a>
+<a class="flex items-center gap-3 h-8 text-on-surface-variant pl-0 text-[12px] hover:text-on-surface transition-all" href="#">
+<span class="material-symbols-outlined text-sm">help_outline</span>
+<span>Support</span>
+</a>
+</div>
+</div>
+</aside>
+<div class="flex-1 flex flex-col min-w-0 bg-background overflow-hidden">
+<!-- Top Navigation Bar -->
+<header class="flex justify-between items-center w-full px-gutter h-14 bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant shrink-0">
+<div class="flex items-center gap-4">
+<span class="text-body-lg font-headline-lg tracking-tighter text-on-surface dark:text-on-surface">OKESTRO TRAINING | Etude</span>
+<span class="h-4 w-px bg-outline-variant"></span>
+<span class="text-primary font-bold border-b border-primary text-body-md py-1">Team Progress</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container-high rounded border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+<span class="font-code-sm text-code-sm text-on-surface-variant">Progress Status</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors duration-150 rounded active:opacity-80 active:scale-[0.99]">
+<span class="material-symbols-outlined">terminal</span>
+</button>
+<button class="p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors duration-150 rounded relative active:opacity-80 active:scale-[0.99]">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-surface"></span>
+</button>
+</div>
+<button class="px-4 h-8 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-150 rounded">
+          Logout
+        </button>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional user profile avatar in a dark-themed UI, featuring a stylized abstract representation of a developer or engineer, with soft glowing edges and a high-contrast monochromatic color scheme of slate grays and cool whites, consistent with a technical dashboard aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXQy8QMMgTZZEboDwwv7spRYVJjustz4ittYszV6NLI4cPJ07yJs2BasNM_x_BEDPcaHGy5uMKJ2PMSJc8OXY0lf94Q3L-PaBAkRdEOkHeIdc8JzwqN9dl7Zmh8L-lCXsGQixuuPpp9XvdQwOyMziRt9Mv9oPP68YCPpCq1-4TvPXktNZ9ghlYCDr2O1z4Vp9CwmauzPrTfdYKP-PkW4jwsEbt0ccSqS6lMGTYNIMRXqwDnxmltYDFkcWICFDz7w58M0kr3HSvk-C2"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto p-gutter">
+<div class="max-w-[1000px] mx-auto space-y-8">
+<!-- Header with Back Button -->
+<div class="flex justify-between items-end">
+<div>
+<h2 class="text-headline-lg font-headline-lg text-on-surface">Team Progress</h2>
+<p class="text-on-surface-variant font-body-md mt-1">Real-time completion metrics for current workspace members.</p>
+</div>
+<button class="flex items-center gap-2 px-3 py-1.5 terminal-button font-code-sm text-code-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">arrow_back</span>
+            Back
+          </button>
+</div>
+<!-- Summary Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Card 1 -->
+<div class="bg-[#1a1a1a] border border-[#333333] p-4 flex flex-col gap-2">
+<span class="text-label-caps font-label-caps text-on-surface-variant opacity-60">Total Members</span>
+<div class="flex items-end justify-between">
+<span class="text-headline-lg font-headline-lg text-on-surface">5 Members</span>
+<span class="material-symbols-outlined text-primary-fixed opacity-40">group</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-[#1a1a1a] border border-[#333333] p-4 flex flex-col gap-2">
+<span class="text-label-caps font-label-caps text-on-surface-variant opacity-60">Training Sets</span>
+<div class="flex items-end justify-between">
+<span class="text-headline-lg font-headline-lg text-on-surface">14 Sets</span>
+<span class="material-symbols-outlined text-primary-fixed opacity-40">inventory_2</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-[#1a1a1a] border border-[#333333] p-4 flex flex-col gap-2">
+<span class="text-label-caps font-label-caps text-on-surface-variant opacity-60">Avg. Completion</span>
+<div class="flex items-end justify-between">
+<span class="text-headline-lg font-headline-lg text-on-surface">38%</span>
+<span class="material-symbols-outlined text-primary-fixed opacity-40">analytics</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-[#1a1a1a] border border-[#333333] p-4 flex flex-col gap-2">
+<span class="text-label-caps font-label-caps text-on-surface-variant opacity-60">Top Performer</span>
+<div class="flex flex-col">
+<span class="text-body-md font-bold text-on-surface truncate">Gildong Hong</span>
+<span class="text-code-sm font-code-sm text-[#22c55e]">8 Quests solved</span>
+</div>
+</div>
+</div>
+<!-- Progress Table Section -->
+<div class="bg-[#1a1a1a] border border-[#333333] overflow-hidden">
+<div class="px-4 py-3 border-b border-[#333333] bg-[#1a1a1a] flex items-center justify-between">
+<h3 class="text-label-caps font-label-caps text-on-surface">Progress Breakdown</h3>
+<div class="flex gap-2">
+<span class="px-2 py-0.5 bg-[#111] border border-[#333] text-[10px] text-on-surface-variant">FILTER: ALL</span>
+<span class="px-2 py-0.5 bg-[#111] border border-[#333] text-[10px] text-on-surface-variant">SORT: NAME</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left font-code-sm text-code-sm border-collapse">
+<thead>
+<tr class="bg-[#111] text-on-surface-variant border-b border-[#333]">
+<th class="px-4 py-3 font-semibold w-48">Member</th>
+<th class="px-4 py-3 font-semibold">Set Name</th>
+<th class="px-4 py-3 font-semibold w-32 text-center">Category</th>
+<th class="px-4 py-3 font-semibold w-64">Progress</th>
+<th class="px-4 py-3 font-semibold w-40 text-right">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#333]/50">
+<!-- User: Hong Gildong Group -->
+<tr class="hover:bg-[#201f1f] group transition-colors">
+<td class="px-4 py-3 align-top border-l-2 border-[#22c55e]">
+<div class="flex items-center gap-2">
+<span class="font-bold text-on-surface">Hong Gildong</span>
+</div>
+</td>
+<td class="px-4 py-3 text-on-surface-variant">Linux Fundamentals</td>
+<td class="px-4 py-3">
+<div class="flex items-center justify-center gap-1.5 px-2 py-1 rounded bg-[#111] border border-[#333] text-on-secondary-container">
+<span class="material-symbols-outlined text-[14px]">potted_plant</span> <!-- Representing Penguin/Linux via generic icon proxy -->
+<span class="text-[10px] uppercase font-bold">Linux</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="space-y-1.5">
+<div class="flex justify-between text-[11px]">
+<span>10/10</span>
+<span>100%</span>
+</div>
+<div class="w-full bg-[#333] h-1 overflow-hidden">
+<div class="bg-[#22c55e] h-full" style="width: 100%"></div>
+</div>
+</div>
+</td>
+<td class="px-4 py-3 text-right">
+<span class="px-2 py-0.5 text-[10px] font-bold status-completed rounded uppercase">COMPLETED</span>
+</td>
+</tr>
+<tr class="hover:bg-[#201f1f] group transition-colors">
+<td class="px-4 py-3 opacity-0 border-l-2 border-[#22c55e]">Hong Gildong</td>
+<td class="px-4 py-3 text-on-surface-variant">Docker Advanced</td>
+<td class="px-4 py-3">
+<div class="flex items-center justify-center gap-1.5 px-2 py-1 rounded bg-[#111] border border-blue-500/30 text-blue-400">
+<span class="material-symbols-outlined text-[14px]">sailing</span> <!-- Whale/Ship proxy -->
+<span class="text-[10px] uppercase font-bold">Docker</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="space-y-1.5">
+<div class="flex justify-between text-[11px]">
+<span>5/8</span>
+<span>62%</span>
+</div>
+<div class="w-full bg-[#333] h-1 overflow-hidden">
+<div class="bg-[#3b82f6] h-full" style="width: 62%"></div>
+</div>
+</div>
+</td>
+<td class="px-4 py-3 text-right">
+<span class="px-2 py-0.5 text-[10px] font-bold status-progress rounded uppercase">IN PROGRESS</span>
+</td>
+</tr>
+<!-- User: Kim Chulsoo Group -->
+<tr class="hover:bg-[#201f1f] group transition-colors border-t border-[#333]">
+<td class="px-4 py-4 align-top border-l-2 border-transparent">
+<div class="flex items-center gap-2">
+<span class="font-bold text-on-surface">Kim Chulsoo</span>
+</div>
+</td>
+<td class="px-4 py-4 text-on-surface-variant">Linux Fundamentals</td>
+<td class="px-4 py-4">
+<div class="flex items-center justify-center gap-1.5 px-2 py-1 rounded bg-[#111] border border-[#333] text-on-secondary-container">
+<span class="material-symbols-outlined text-[14px]">potted_plant</span>
+<span class="text-[10px] uppercase font-bold">Linux</span>
+</div>
+</td>
+<td class="px-4 py-4">
+<div class="space-y-1.5">
+<div class="flex justify-between text-[11px]">
+<span>0/10</span>
+<span>0%</span>
+</div>
+<div class="w-full bg-[#333] h-1 overflow-hidden">
+<div class="bg-gray-600 h-full" style="width: 0%"></div>
+</div>
+</div>
+</td>
+<td class="px-4 py-4 text-right">
+<span class="px-2 py-0.5 text-[10px] font-bold status-notstarted rounded uppercase">NOT STARTED</span>
+</td>
+</tr>
+<!-- User: Lee Younghee Group -->
+<tr class="hover:bg-[#201f1f] group transition-colors border-t border-[#333]">
+<td class="px-4 py-4 align-top border-l-2 border-[#22c55e]">
+<div class="flex items-center gap-2">
+<span class="font-bold text-on-surface">Lee Younghee</span>
+</div>
+</td>
+<td class="px-4 py-4 text-on-surface-variant">K8s Basics</td>
+<td class="px-4 py-4">
+<div class="flex items-center justify-center gap-1.5 px-2 py-1 rounded bg-[#111] border border-purple-500/30 text-purple-400">
+<span class="material-symbols-outlined text-[14px]">settings_input_component</span> <!-- Steering wheel proxy -->
+<span class="text-[10px] uppercase font-bold">K8s</span>
+</div>
+</td>
+<td class="px-4 py-4">
+<div class="space-y-1.5">
+<div class="flex justify-between text-[11px]">
+<span>12/12</span>
+<span>100%</span>
+</div>
+<div class="w-full bg-[#333] h-1 overflow-hidden">
+<div class="bg-[#22c55e] h-full" style="width: 100%"></div>
+</div>
+</div>
+</td>
+<td class="px-4 py-4 text-right">
+<span class="px-2 py-0.5 text-[10px] font-bold status-completed rounded uppercase">COMPLETED</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer -->
+<div class="px-4 py-2 border-t border-[#333333] bg-[#111] flex justify-between items-center">
+<div class="flex items-center gap-4 text-[10px] text-on-surface-variant">
+<span>Rows per page: 25</span>
+<span>1-4 of 4 items</span>
+</div>
+<div class="flex gap-1">
+<button class="w-6 h-6 flex items-center justify-center border border-[#333] hover:bg-[#2b2a2a]"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
+<button class="w-6 h-6 flex items-center justify-center border border-[#333] hover:bg-[#2b2a2a]"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
+</div>
+</div>
+</div>
+<!-- Terminal View Placeholder (Simulating Dev Environment) -->
+<div class="bg-[#111] border border-[#333] rounded-lg overflow-hidden">
+<div class="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border-b border-[#333]">
+<span class="w-2.5 h-2.5 rounded-full bg-red-500/50"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-yellow-500/50"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-green-500/50"></span>
+<span class="ml-2 text-label-caps font-label-caps text-on-surface-variant">output.log</span>
+</div>
+<div class="p-4 font-code-sm text-code-sm space-y-1.5 text-on-secondary-container">
+<p><span class="text-green-500">[INFO]</span> Successfully fetched real-time metrics from okestro-core-v2...</p>
+<p><span class="text-blue-500">[DEBUG]</span> Member "Hong Gildong" heartbeat detected (30s ago)</p>
+<p><span class="text-gray-500">[LOG]</span> Calculating average completion: 38.4421%</p>
+<p><span class="text-yellow-500 animate-pulse">_</span></p>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Status Bar -->
+<footer class="h-6 bg-[#1a1a1a] border-t border-[#333] flex items-center justify-between px-4 text-[10px] text-on-surface-variant">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">sync</span>
+<span>Synced</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">dns</span>
+<span>Cluster: training-ap-northeast-2</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span>UTF-8</span>
+<span>Line 24, Col 12</span>
+<div class="flex items-center gap-1 text-green-500">
+<span class="material-symbols-outlined text-[12px]">check_circle</span>
+<span>Connected</span>
+</div>
+</div>
+</footer>
+</div>
+<!-- Floating Action Button (Suppressed as per rules for Details/Settings/Transactional screens) -->
+<script>
+    // Micro-interaction for table rows
+    document.querySelectorAll('tbody tr').forEach(row => {
+      row.addEventListener('mousedown', () => {
+        row.style.opacity = '0.8';
+        row.style.transform = 'scale(0.998)';
+      });
+      row.addEventListener('mouseup', () => {
+        row.style.opacity = '1';
+        row.style.transform = 'scale(1)';
+      });
+    });
+  </script>
+</body></html>

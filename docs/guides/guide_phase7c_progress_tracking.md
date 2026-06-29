@@ -5,7 +5,7 @@
 
 Stitch 참고 화면:
 - `docs/stitch_etude_auth_progress_ui/training_sets_etude/screen.png` — 세트 선택 + 진행률
-- `docs/stitch_etude_auth_progress_ui/learning_progress_etude/screen.png` — 대시보드
+- `docs/stitch_etude_auth_progress_ui/learning_progress_etude/screen.png` — 대시보드 (개인 + 관리자)
 
 ---
 
@@ -13,7 +13,8 @@ Stitch 참고 화면:
 
 ```
 1. SetSelect.tsx — 진행률 배지 추가
-2. Progress.tsx — 대시보드 화면 (신규)
+2. Progress.tsx — 내 진행 현황 대시보드 (신규)
+3. Leaderboard.tsx — 전체 팀원 리더보드 (신규, 모든 팀원 접근 가능)
 ```
 
 ---
@@ -158,13 +159,93 @@ export function Progress({ onBack }: Props) {
 
 ---
 
+## Step 3. Leaderboard.tsx 작성
+
+`frontend/src/pages/Leaderboard.tsx` 신규 작성:
+
+```typescript
+import { useEffect, useState } from 'react'
+import { fetchLeaderboard } from '../api'
+
+interface Row {
+  userName: string
+  questSetTitle: string
+  category: string
+  total: number
+  completed: number
+}
+
+interface Props {
+  onBack: () => void
+}
+
+export function Leaderboard({ onBack }: Props) {
+  const [rows, setRows] = useState<Row[]>([])
+
+  useEffect(() => {
+    fetchLeaderboard().then((data) =>
+      setRows(data.map((r: any) => ({ ...r, total: Number(r.total), completed: Number(r.completed) })))
+    )
+  }, [])
+
+  return (
+    <div>
+      <h2>팀 리더보드</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>팀원</th>
+            <th>세트명</th>
+            <th>카테고리</th>
+            <th>진행률</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => {
+            const pct = r.total > 0 ? Math.round((r.completed / r.total) * 100) : 0
+            const status = r.completed === 0 ? 'NOT STARTED' : r.completed === r.total ? 'COMPLETED' : 'IN PROGRESS'
+            return (
+              <tr key={i}>
+                <td>{r.userName}</td>
+                <td>{r.questSetTitle}</td>
+                <td>{r.category}</td>
+                <td>{r.completed}/{r.total} ({pct}%)</td>
+                <td>{status}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+      <button onClick={onBack}>← 돌아가기</button>
+    </div>
+  )
+}
+```
+
+`api.ts`에 추가:
+```typescript
+export async function fetchLeaderboard() {
+  const res = await fetch(`${BASE}/leaderboard`, { headers: authHeaders() })
+  return res.json()
+}
+```
+
+`App.tsx`에서 Leaderboard 버튼 추가 (role 구분 없이 모두 접근):
+```typescript
+// SetSelect.tsx 헤더에 버튼 추가
+<button onClick={onLeaderboard}>🏆 Leaderboard</button>
+```
+
+---
+
 ## 검증
 
-1. 퀘스트 하나 채점 성공 → `quest_progress` 테이블에 행 추가 확인
+1. 퀘스트 채점 성공 → `quest_attempt` 테이블에 행 추가 확인
    ```sql
-   SELECT * FROM quest_progress;
+   SELECT * FROM quest_attempt;
    ```
-2. `/progress` API 응답에서 해당 세트 `completed` 값이 1 이상
-3. 세트 선택 화면에서 완료한 퀘스트 수 배지 표시
-4. Progress 화면에서 요약 카드 수치 정확성 확인
-5. 같은 퀘스트 재채점 → `quest_progress` 중복 행 없음 (UNIQUE 제약)
+2. 같은 퀘스트 재채점 → `quest_attempt` 행 추가됨 (중복 허용)
+3. `/progress` API 응답에서 해당 세트 `completed` 값이 1 이상
+4. 세트 선택 화면에서 완료한 퀘스트 수 배지 표시
+5. Leaderboard 버튼 클릭 → 전체 팀원 현황 테이블 표시 (admin/member 모두)

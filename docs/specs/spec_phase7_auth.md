@@ -2,7 +2,8 @@
 
 ## 목표
 
-팀원이 로그인하고, 퀘스트를 풀면 완료 이력이 기록되며, 세트별 진행률을 대시보드에서 확인할 수 있다.
+팀원이 로그인하고, 퀘스트를 풀면 시도 이력이 기록되며, 세트별 진행률을 대시보드에서 확인할 수 있다.
+관리자는 전체 팀원의 진행 현황을 조회할 수 있다.
 이게 있어야 팀원들이 실제로 쓸 수 있는 제품이 된다.
 
 ---
@@ -21,20 +22,32 @@ CREATE TABLE user (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE quest_progress (
-  id           INT AUTO_INCREMENT PRIMARY KEY,
-  user_id      INT NOT NULL,
-  quest_id     INT NOT NULL,
-  completed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_user_quest (user_id, quest_id),
-  FOREIGN KEY (user_id) REFERENCES user(id),
-  FOREIGN KEY (quest_id) REFERENCES quest(id)
+-- quest_progress 대신 quest_attempt 사용
+-- 반복 시도 이력 전체를 기록 (완료 여부 + 소요 시간 + 힌트 사용 여부)
+CREATE TABLE quest_attempt (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  user_id        INT NOT NULL,
+  quest_id       INT NOT NULL,
+  quest_set_id   INT NOT NULL,
+  session_id     VARCHAR(36) NOT NULL,  -- 세트 1회차를 묶는 UUID
+  elapsed_sec    INT,                   -- 퀘스트 진입 → 채점 성공까지 소요 시간 (초)
+  hint_used      BOOLEAN NOT NULL DEFAULT FALSE,
+  solution_used  BOOLEAN NOT NULL DEFAULT FALSE,
+  passed         BOOLEAN NOT NULL DEFAULT FALSE,
+  attempted_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id)      REFERENCES user(id),
+  FOREIGN KEY (quest_id)     REFERENCES quest(id),
+  FOREIGN KEY (quest_set_id) REFERENCES quest_set(id)
 );
 ```
 
 ### 설계 결정
 
-- `quest_progress`는 `UNIQUE(user_id, quest_id)` — 같은 퀘스트를 여러 번 풀어도 최초 완료만 기록
+- `quest_attempt`는 중복 허용 — 같은 퀘스트를 반복해서 풀면 행이 쌓임
+- `session_id`: 세트를 처음부터 다시 시작할 때마다 새 UUID 생성 (프론트에서 생성해서 전달)
+- `elapsed_sec`: 프론트에서 퀘스트 진입 시각 기록 → 채점 성공 시 서버에 전달
+- `hint_used` / `solution_used`: 힌트/풀이 열람 시 프론트에서 플래그 세팅
+- **Phase 9에서 활용할 것**: 회차별 비교, 속도 향상 그래프, 관리자 팀원 분석 뷰
 - 비밀번호는 bcrypt (cost 10)로 해시 저장
 - JWT는 `userId`, `email`, `role`을 payload에 포함, 만료 24시간
 
@@ -76,7 +89,7 @@ CREATE TABLE quest_progress (
 ```
 
 #### GET /progress
-내 진행 현황 반환. 세트별 완료 퀘스트 수 포함.
+내 진행 현황 반환. 세트별 통과한 퀘스트 수 (passed=true인 최신 attempt 기준).
 ```json
 [
   {
@@ -90,13 +103,42 @@ CREATE TABLE quest_progress (
 ```
 
 #### POST /grade
-기존과 동일하지만, 채점 성공 시 `quest_progress`에 기록 추가.
+기존과 동일하지만, 채점 결과를 `quest_attempt`에 기록.
 ```json
-// 요청 (기존과 동일)
-{ "containerId": "abc123", "questId": 1 }
+// 요청
+{
+  "containerId": "abc123",
+  "questId": 1,
+  "questSetId": 1,
+  "sessionId": "uuid-v4",
+  "elapsedSec": 142,
+  "hintUsed": false,
+  "solutionUsed": false
+}
 
 // 응답 (기존과 동일)
 { "passed": true }
+```
+
+#### GET /leaderboard
+인증 필요. 전체 팀원의 세트별 진행 현황 (리더보드 — 모든 팀원 공개).
+```json
+[
+  { "userName": "홍길동", "questSetTitle": "k8s 기초", "completed": 8, "total": 14 },
+  { "userName": "김철수", "questSetTitle": "k8s 기초", "completed": 3, "total": 14 }
+]
+```
+
+> 현재는 로그인한 모든 팀원이 볼 수 있는 공개 리더보드. 향후 필요 시 admin 전용으로 제한 가능.
+
+#### POST /admin/users
+관리자 전용. 팀원 계정 생성 (가입 화면 없음, 관리자가 직접 생성).
+```json
+// 요청
+{ "name": "홍길동", "email": "hong@okestro.com", "password": "임시비번" }
+
+// 응답
+{ "id": 3, "name": "홍길동", "email": "hong@okestro.com", "role": "member" }
 ```
 
 ---
@@ -108,7 +150,8 @@ CREATE TABLE quest_progress (
   └─ 로그인 성공
        └─ / (세트 선택 — 진행률 배지 추가)
             ├─ 세트 클릭 → /quest (실습 화면 — 리셋 버튼, 프로그레스 바 추가)
-            └─ 상단 Progress Status 클릭 → /progress (신규)
+            ├─ Progress Status 클릭 → /progress (내 진행 현황)
+            └─ Leaderboard 클릭 → /leaderboard (전체 팀원 리더보드, 모두 접근 가능)
 ```
 
 ---
@@ -117,15 +160,25 @@ CREATE TABLE quest_progress (
 
 | 파일 | 변경 내용 |
 |------|-----------|
-| `backend/db/init.sql` | `user`, `quest_progress` 테이블 + 시드 계정 추가 |
-| `backend/src/auth.ts` | 신규 — JWT 발급/검증, bcrypt 비교 |
-| `backend/src/index.ts` | `/auth/login`, `/me`, `/progress` 라우트 추가. `/grade`에 progress 기록 추가. `authMiddleware` 적용 |
-| `frontend/src/api.ts` | 토큰 헤더 자동 첨부, `/auth/login`, `/me`, `/progress` API 함수 추가 |
-| `frontend/src/App.tsx` | 로그인 상태 관리, 라우팅 추가 |
+| `backend/db/init.sql` | `user`, `quest_attempt` 테이블 + 시드 계정 추가 |
+| `backend/src/auth.ts` | 신규 — JWT 발급/검증, bcrypt 비교, adminOnly 미들웨어 |
+| `backend/src/index.ts` | `/auth/login`, `/me`, `/progress`, `/leaderboard`, `/admin/users` 라우트 추가. `/grade`에 attempt 기록 추가. `authMiddleware` 적용 |
+| `frontend/src/api.ts` | 토큰 헤더 자동 첨부, 인증/진행 API 함수 추가 |
+| `frontend/src/App.tsx` | 로그인 상태 관리, 라우팅 추가, sessionId 생성 |
 | `frontend/src/pages/Login.tsx` | 신규 — 로그인 화면 |
-| `frontend/src/pages/Progress.tsx` | 신규 — 진행 현황 대시보드 |
+| `frontend/src/pages/Progress.tsx` | 신규 — 내 진행 현황 대시보드 |
+| `frontend/src/pages/Leaderboard.tsx` | 신규 — 전체 팀원 리더보드 (모든 팀원 접근 가능) |
 | `frontend/src/pages/SetSelect.tsx` | 진행률 배지 추가 |
-| `frontend/src/components/QuestPanel.tsx` | 환경 리셋 버튼, 프로그레스 바, 성공 시 NEXT QUEST 버튼 추가 |
+| `frontend/src/components/QuestPanel.tsx` | 환경 리셋 버튼, 프로그레스 바, 성공 시 NEXT QUEST 버튼, elapsed/hint/solution 추적 |
+
+---
+
+## Phase 9 예정 (백로그)
+
+- 회차별 기록 비교 (1회차 vs 2회차 소요 시간)
+- 퀘스트별 평균 풀이 시간 / 첫 시도 성공률
+- 관리자 팀원별 상세 분석 뷰
+- 퀘스트 부여 기능 (특정 팀원에게 세트 할당 + 마감일)
 
 ---
 
@@ -133,7 +186,10 @@ CREATE TABLE quest_progress (
 
 - [ ] 로그인 성공 → JWT 발급 → 세트 선택 화면 진입
 - [ ] 잘못된 이메일/비밀번호 → 에러 메시지 표시
-- [ ] 퀘스트 채점 성공 → DB `quest_progress`에 기록
+- [ ] 퀘스트 채점 성공 → `quest_attempt`에 행 추가 (elapsed_sec, hint_used 포함)
+- [ ] 같은 퀘스트 재채점 → attempt 행 추가 (중복 허용)
 - [ ] `/progress` 에서 세트별 완료 수 확인
+- [ ] admin 계정 → `/admin/progress` 에서 전체 팀원 현황 확인
+- [ ] member 계정 → `/admin/progress` 호출 시 403 반환
 - [ ] 로그아웃 → 토큰 삭제 → `/login` 리다이렉트
 - [ ] 토큰 없이 인증 필요 API 호출 → 401 반환

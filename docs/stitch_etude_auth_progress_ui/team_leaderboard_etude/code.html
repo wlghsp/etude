@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Team Leaderboard | OKESTRO TRAINING</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      vertical-align: middle;
+      font-size: 1.25rem;
+    }
+    body {
+      background-color: #141313;
+      color: #e5e2e1;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #141313;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #333333;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #444444;
+    }
+  </style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-fixed": "#e5e2e1",
+            "on-secondary": "#313030",
+            "surface-tint": "#c8c6c5",
+            "error": "#ffb4ab",
+            "on-primary-container": "#7e7c7c",
+            "surface": "#141313",
+            "on-error-container": "#ffdad6",
+            "tertiary-container": "#121110",
+            "on-tertiary": "#32302f",
+            "on-primary-fixed-variant": "#474646",
+            "surface-container-lowest": "#0e0e0e",
+            "secondary-fixed": "#e5e2e1",
+            "inverse-primary": "#5f5e5e",
+            "outline": "#8e9192",
+            "secondary-container": "#474746",
+            "background": "#141313",
+            "on-tertiary-container": "#7f7c7a",
+            "on-primary": "#313030",
+            "inverse-surface": "#e5e2e1",
+            "on-surface-variant": "#c4c7c7",
+            "surface-container-high": "#2b2a2a",
+            "secondary-fixed-dim": "#c8c6c5",
+            "on-error": "#690005",
+            "secondary": "#c8c6c5",
+            "primary": "#c8c6c5",
+            "tertiary-fixed-dim": "#cac6c3",
+            "tertiary": "#cac6c3",
+            "surface-dim": "#141313",
+            "on-surface": "#e5e2e1",
+            "on-tertiary-fixed-variant": "#484645",
+            "on-primary-fixed": "#1c1b1b",
+            "surface-variant": "#353434",
+            "on-secondary-container": "#b7b5b4",
+            "on-secondary-fixed": "#1c1b1b",
+            "tertiary-fixed": "#e6e1df",
+            "outline-variant": "#444748",
+            "primary-container": "#111111",
+            "inverse-on-surface": "#313030",
+            "on-secondary-fixed-variant": "#474746",
+            "on-background": "#e5e2e1",
+            "surface-container-highest": "#353434",
+            "surface-container-low": "#1c1b1b",
+            "surface-container": "#201f1f",
+            "error-container": "#93000a",
+            "on-tertiary-fixed": "#1d1b1a",
+            "surface-bright": "#3a3939",
+            "primary-fixed-dim": "#c8c6c5"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "container-max": "1280px",
+            "unit": "4px",
+            "gutter": "16px",
+            "margin-page": "24px"
+          },
+          "fontFamily": {
+            "code-sm": ["JetBrains Mono"],
+            "body-lg": ["JetBrains Mono"],
+            "body-md": ["JetBrains Mono"],
+            "label-caps": ["JetBrains Mono"],
+            "headline-lg": ["JetBrains Mono"],
+            "headline-md": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "code-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+            "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+            "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+            "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-background text-on-background overflow-hidden">
+<!-- Shell Layout: SideNav (Fixed) + Main Wrapper -->
+<div class="flex h-screen w-full">
+<!-- SideNavBar Component -->
+<aside class="hidden md:flex flex-col h-full w-60 bg-surface-container border-r border-outline-variant py-4 gap-2 shrink-0">
+<div class="px-4 mb-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-primary rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-surface" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div>
+<h2 class="text-headline-md font-headline-md text-on-surface leading-none">Etude</h2>
+<p class="text-label-caps font-label-caps text-on-surface-variant mt-1">v1.0.4-stable</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 py-2 text-on-surface-variant pl-4 hover:text-on-surface hover:bg-surface-container-highest transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-label-caps font-label-caps uppercase">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 py-2 text-primary border-l-2 border-primary pl-3 bg-transparent" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="text-label-caps font-label-caps uppercase">Leaderboard</span>
+</a>
+<a class="flex items-center gap-3 py-2 text-on-surface-variant pl-4 hover:text-on-surface hover:bg-surface-container-highest transition-all" href="#">
+<span class="material-symbols-outlined">exercise</span>
+<span class="text-label-caps font-label-caps uppercase">Training Sets</span>
+</a>
+<a class="flex items-center gap-3 py-2 text-on-surface-variant pl-4 hover:text-on-surface hover:bg-surface-container-highest transition-all" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="text-label-caps font-label-caps uppercase">Quests</span>
+</a>
+<a class="flex items-center gap-3 py-2 text-on-surface-variant pl-4 hover:text-on-surface hover:bg-surface-container-highest transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-label-caps font-label-caps uppercase">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-4 space-y-4">
+<button class="w-full py-2 bg-primary-container border border-outline text-primary text-label-caps font-label-caps uppercase hover:bg-surface-container-highest transition-colors">
+          New Training Session
+        </button>
+<div class="space-y-1">
+<a class="flex items-center gap-3 py-1 text-on-surface-variant text-label-caps font-label-caps uppercase hover:text-on-surface" href="#">
+<span class="material-symbols-outlined text-[18px]">description</span>
+            Documentation
+          </a>
+<a class="flex items-center gap-3 py-1 text-on-surface-variant text-label-caps font-label-caps uppercase hover:text-on-surface" href="#">
+<span class="material-symbols-outlined text-[18px]">help_outline</span>
+            Support
+          </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="flex flex-col flex-1 min-w-0">
+<!-- TopNavBar Component -->
+<header class="flex justify-between items-center w-full px-gutter h-14 bg-surface border-b border-outline-variant shrink-0">
+<div class="flex items-center gap-4">
+<h1 class="text-body-lg font-headline-lg tracking-tighter text-on-surface uppercase">OKESTRO TRAINING | Etude</h1>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<span class="text-code-sm font-code-sm text-primary">Progress Status</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-high p-1 rounded transition-colors cursor-pointer">terminal</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-high p-1 rounded transition-colors cursor-pointer">notifications</span>
+</div>
+</div>
+<div class="h-6 w-[1px] bg-outline-variant"></div>
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest border border-outline-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A cinematic, high-resolution portrait of a professional software engineer in a dark tech-focused environment. He is wearing a dark hoodie, and his face is partially illuminated by the blue and green glow of multiple server monitors. The aesthetic is sharp, digital, and minimalist with high contrast, mirroring a developer tool interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxMSVl1gbYs7uLqYU_qNH3MlIdE4SYhJzOOKQAk5f0kpwv9-D0aUOurdTCSZevtKnGZNaen28-0GU8qqGvhu24T66Igqy9RU6UPBGfPZaKidx_d6u3JTWOqd90muNOwZLA1DvjhsAb6TVcFKNbCVzIUNOe6rSROu41LOpDou_uceCDuucUgzDU1irVnuJJtp0RC3_GEvpQEmoTrKFIYuyFFbELVJDqFGwJJq0lfD301u2m2cGQTdrC2S8e2vLAAmx-oTz3svxpVDMR"/>
+</div>
+<button class="text-body-md font-body-md text-on-surface-variant hover:text-primary transition-colors">Logout</button>
+</div>
+</div>
+</header>
+<!-- Dashboard Canvas -->
+<main class="flex-1 overflow-y-auto p-margin-page custom-scrollbar bg-background">
+<!-- Page Header -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<nav class="flex gap-2 text-label-caps font-label-caps text-on-surface-variant mb-2 uppercase tracking-widest">
+<span>Etude</span>
+<span>/</span>
+<span class="text-primary">Team Leaderboard</span>
+</nav>
+<h1 class="text-headline-lg font-headline-lg text-on-surface border-l-4 border-primary pl-4">Team Leaderboard</h1>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 border border-outline-variant text-body-md font-body-md hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+            Back
+          </button>
+</div>
+<!-- Summary Cards: Bento Grid Style -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter mb-8">
+<div class="bg-surface-container border border-outline-variant p-4">
+<div class="flex items-center justify-between mb-4">
+<span class="text-label-caps font-label-caps text-on-surface-variant uppercase">Total Members</span>
+<span class="material-symbols-outlined text-primary text-sm">groups</span>
+</div>
+<div class="text-headline-lg font-headline-lg">5 <span class="text-body-md font-body-md text-on-surface-variant">Members</span></div>
+</div>
+<div class="bg-surface-container border border-outline-variant p-4">
+<div class="flex items-center justify-between mb-4">
+<span class="text-label-caps font-label-caps text-on-surface-variant uppercase">Training Sets</span>
+<span class="material-symbols-outlined text-primary text-sm">inventory_2</span>
+</div>
+<div class="text-headline-lg font-headline-lg">14 <span class="text-body-md font-body-md text-on-surface-variant">Sets</span></div>
+</div>
+<div class="bg-surface-container border border-outline-variant p-4">
+<div class="flex items-center justify-between mb-4">
+<span class="text-label-caps font-label-caps text-on-surface-variant uppercase">Avg. Completion</span>
+<span class="material-symbols-outlined text-[#3b82f6] text-sm">bolt</span>
+</div>
+<div class="text-headline-lg font-headline-lg">38<span class="text-primary-fixed">%</span></div>
+<div class="mt-2 h-1 w-full bg-[#333333]">
+<div class="h-full bg-[#3b82f6]" style="width: 38%;"></div>
+</div>
+</div>
+<div class="bg-surface-container border border-outline-variant p-4">
+<div class="flex items-center justify-between mb-4">
+<span class="text-label-caps font-label-caps text-on-surface-variant uppercase">Top Performer</span>
+<span class="material-symbols-outlined text-[#22c55e] text-sm">workspace_premium</span>
+</div>
+<div class="text-body-lg font-headline-lg">Hong Gildong</div>
+<div class="text-label-caps font-label-caps text-[#22c55e] mt-1 uppercase">8 Quests solved</div>
+</div>
+</div>
+<!-- Main Content: Table -->
+<div class="bg-surface-container border border-outline-variant overflow-hidden">
+<div class="p-4 border-b border-outline-variant bg-surface-container-high flex justify-between items-center">
+<h3 class="text-label-caps font-label-caps uppercase tracking-widest text-on-surface">Member Progress Matrix</h3>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-sm cursor-pointer hover:text-primary">filter_list</span>
+<span class="material-symbols-outlined text-on-surface-variant text-sm cursor-pointer hover:text-primary">download</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant bg-surface-container-lowest">
+<th class="p-4 text-label-caps font-label-caps uppercase text-on-surface-variant border-r border-outline-variant w-48">Member</th>
+<th class="p-4 text-label-caps font-label-caps uppercase text-on-surface-variant">Training Set Name</th>
+<th class="p-4 text-label-caps font-label-caps uppercase text-on-surface-variant">Category</th>
+<th class="p-4 text-label-caps font-label-caps uppercase text-on-surface-variant w-64">Progress</th>
+<th class="p-4 text-label-caps font-label-caps uppercase text-on-surface-variant text-right">Status</th>
+</tr>
+</thead>
+<tbody class="text-body-md font-body-md">
+<!-- Group: Hong Gildong -->
+<tr class="border-b border-outline-variant hover:bg-surface-container-high transition-colors group">
+<td class="p-4 border-r border-outline-variant bg-surface-container-lowest align-top" rowspan="2">
+<div class="flex flex-col gap-1">
+<span class="font-bold text-on-surface">Hong Gildong</span>
+<span class="text-label-caps text-on-surface-variant text-[10px] uppercase">Senior Dev</span>
+</div>
+</td>
+<td class="p-4 text-on-surface">Linux Fundamentals</td>
+<td class="p-4">
+<div class="inline-flex items-center gap-2 px-2 py-1 bg-surface-container-highest border border-outline-variant rounded">
+<span class="material-symbols-outlined text-[14px]">grid_view</span>
+<span class="text-label-caps">LINUX</span>
+</div>
+</td>
+<td class="p-4">
+<div class="flex flex-col gap-1">
+<div class="flex justify-between text-code-sm">
+<span>10/10</span>
+<span>100%</span>
+</div>
+<div class="h-1 bg-surface-variant w-full overflow-hidden">
+<div class="h-full bg-[#22c55e]" style="width: 100%;"></div>
+</div>
+</div>
+</td>
+<td class="p-4 text-right">
+<span class="inline-block px-2 py-0.5 bg-[#22c55e20] border border-[#22c55e] text-[#22c55e] text-label-caps">COMPLETED</span>
+</td>
+</tr>
+<tr class="border-b border-outline-variant hover:bg-surface-container-high transition-colors">
+<td class="p-4 text-on-surface pl-4">Docker Advanced</td>
+<td class="p-4">
+<div class="inline-flex items-center gap-2 px-2 py-1 bg-surface-container-highest border border-outline-variant rounded">
+<span class="material-symbols-outlined text-[14px]">layers</span>
+<span class="text-label-caps">DOCKER</span>
+</div>
+</td>
+<td class="p-4">
+<div class="flex flex-col gap-1">
+<div class="flex justify-between text-code-sm">
+<span>5/8</span>
+<span>62%</span>
+</div>
+<div class="h-1 bg-surface-variant w-full overflow-hidden">
+<div class="h-full bg-[#3b82f6]" style="width: 62%;"></div>
+</div>
+</div>
+</td>
+<td class="p-4 text-right">
+<span class="inline-block px-2 py-0.5 bg-[#3b82f620] border border-[#3b82f6] text-[#3b82f6] text-label-caps">IN PROGRESS</span>
+</td>
+</tr>
+<!-- Group: Kim Chulsoo -->
+<tr class="border-b border-outline-variant hover:bg-surface-container-high transition-colors group">
+<td class="p-4 border-r border-outline-variant bg-surface-container-lowest align-top">
+<div class="flex flex-col gap-1">
+<span class="font-bold text-on-surface">Kim Chulsoo</span>
+<span class="text-label-caps text-on-surface-variant text-[10px] uppercase">Junior QA</span>
+</div>
+</td>
+<td class="p-4 text-on-surface">Linux Fundamentals</td>
+<td class="p-4">
+<div class="inline-flex items-center gap-2 px-2 py-1 bg-surface-container-highest border border-outline-variant rounded">
+<span class="material-symbols-outlined text-[14px]">grid_view</span>
+<span class="text-label-caps">LINUX</span>
+</div>
+</td>
+<td class="p-4">
+<div class="flex flex-col gap-1 opacity-50">
+<div class="flex justify-between text-code-sm">
+<span>0/10</span>
+<span>0%</span>
+</div>
+<div class="h-1 bg-surface-variant w-full"></div>
+</div>
+</td>
+<td class="p-4 text-right">
+<span class="inline-block px-2 py-0.5 bg-surface-variant border border-outline-variant text-on-surface-variant text-label-caps">NOT STARTED</span>
+</td>
+</tr>
+<!-- Group: Lee Younghee -->
+<tr class="border-b border-outline-variant hover:bg-surface-container-high transition-colors group">
+<td class="p-4 border-r border-outline-variant bg-surface-container-lowest align-top">
+<div class="flex flex-col gap-1">
+<span class="font-bold text-on-surface">Lee Younghee</span>
+<span class="text-label-caps text-on-surface-variant text-[10px] uppercase">DevOps Eng</span>
+</div>
+</td>
+<td class="p-4 text-on-surface">K8s Basics</td>
+<td class="p-4">
+<div class="inline-flex items-center gap-2 px-2 py-1 bg-surface-container-highest border border-outline-variant rounded">
+<span class="material-symbols-outlined text-[14px]">hub</span>
+<span class="text-label-caps">K8S</span>
+</div>
+</td>
+<td class="p-4">
+<div class="flex flex-col gap-1">
+<div class="flex justify-between text-code-sm">
+<span>12/12</span>
+<span>100%</span>
+</div>
+<div class="h-1 bg-surface-variant w-full overflow-hidden">
+<div class="h-full bg-[#22c55e]" style="width: 100%;"></div>
+</div>
+</div>
+</td>
+<td class="p-4 text-right">
+<span class="inline-block px-2 py-0.5 bg-[#22c55e20] border border-[#22c55e] text-[#22c55e] text-label-caps">COMPLETED</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- System Activity (Small Footer Log) -->
+<div class="mt-8 pt-4 border-t border-outline-variant">
+<div class="flex items-center gap-4 text-label-caps text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span> System Online</span>
+<span class="flex items-center gap-1 uppercase">Last Sync: 2 mins ago</span>
+<span class="flex items-center gap-1 uppercase">Database: PRD-CLUSTER-01</span>
+</div>
+</div>
+</main>
+</div>
+</div>
+<script>
+    // Micro-interaction: Console logging simulated for developer feel
+    console.log("%c ETUDE | LEADERBOARD LOADED ", "background: #c8c6c5; color: #141313; font-weight: bold;");
+    console.log("%c > Fetching team metrics... OK", "color: #22c55e");
+    console.log("%c > Refreshing member status... OK", "color: #22c55e");
+
+    // Add hover effects for table rows to highlight members
+    document.querySelectorAll('tbody tr').forEach(row => {
+      row.addEventListener('mouseenter', () => {
+        // Logic to highlight related member rows if needed
+      });
+    });
+  </script>
+</body></html>
