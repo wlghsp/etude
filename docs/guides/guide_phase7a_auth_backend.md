@@ -81,7 +81,7 @@ npm install -D @types/bcrypt @types/jsonwebtoken
 ```typescript
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
-import { pool } from './db'
+import { db } from './db'
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret'
 const JWT_EXPIRES = '24h'
@@ -93,7 +93,7 @@ export interface JwtPayload {
 }
 
 export async function login(email: string, password: string) {
-  const [rows] = await pool.query(
+  const [rows] = await db.query(
     'SELECT id, name, email, password, role FROM user WHERE email = ?',
     [email]
   ) as any[]
@@ -177,12 +177,13 @@ fastify.get('/me', { preHandler: authMiddleware }, async (request: any) => {
 
 ### 4-5. /progress API
 
-`passed = true`인 attempt 기준으로 세트별 완료 수 집계:
+`passed = true`인 attempt 기준으로 세트별 완료 수 집계.
+쿼리 로직은 `user.ts`의 `getProgress`에 분리:
 
 ```typescript
-fastify.get('/progress', { preHandler: authMiddleware }, async (request: any) => {
-  const userId = request.user.userId
-  const [rows] = await pool.query(`
+// user.ts
+export async function getProgress(userId: number) {
+  const [rows] = await db.query(`
     SELECT
       qs.id AS quest_set_id,
       qs.title,
@@ -196,6 +197,15 @@ fastify.get('/progress', { preHandler: authMiddleware }, async (request: any) =>
     ORDER BY qs.id
   `, [userId]) as any[]
   return rows
+}
+```
+
+```typescript
+// index.ts
+import { getProgress, getLeaderboard } from './user.js'
+
+fastify.get('/progress', { preHandler: authMiddleware }, async (request: any) => {
+  return getProgress(request.user.userId)
 })
 ```
 
@@ -204,8 +214,9 @@ fastify.get('/progress', { preHandler: authMiddleware }, async (request: any) =>
 전체 팀원 공개 리더보드 — 로그인한 모든 팀원이 접근 가능.
 
 ```typescript
-fastify.get('/leaderboard', { preHandler: authMiddleware }, async () => {
-  const [rows] = await pool.query(`
+// user.ts
+export async function getLeaderboard() {
+  const [rows] = await db.query(`
     SELECT
       u.name AS userName,
       qs.title AS questSetTitle,
@@ -221,71 +232,114 @@ fastify.get('/leaderboard', { preHandler: authMiddleware }, async () => {
     ORDER BY u.name, qs.id
   `) as any[]
   return rows
+}
+```
+
+```typescript
+// index.ts
+fastify.get('/leaderboard', { preHandler: authMiddleware }, async () => {
+  return getLeaderboard()
 })
 ```
 
 ### 4-7. /admin/users API (계정 생성)
 
 ```typescript
-import bcrypt from 'bcrypt'
-
-fastify.post('/admin/users', { preHandler: adminMiddleware }, async (request, reply) => {
-  const { name, email, password } = request.body as { name: string; email: string; password: string }
+// user.ts
+export async function createUser(name: string, email: string, password: string) {
   const hashed = await bcrypt.hash(password, 10)
-  const [result] = await pool.query(
+  const [result] = await db.query(
     'INSERT INTO user (name, email, password, role) VALUES (?, ?, ?, ?)',
     [name, email, hashed, 'member']
   ) as any[]
   return { id: result.insertId, name, email, role: 'member' }
+}
+```
+
+```typescript
+// index.ts
+fastify.post('/admin/users', { preHandler: adminMiddleware }, async (request) => {
+  const { name, email, password } = request.body as { name: string; email: string; password: string }
+  return createUser(name, email, password)
 })
 ```
 
 ### 4-8. /admin/users/:id/password API (비밀번호 초기화)
 
 ```typescript
-fastify.patch('/admin/users/:id/password', { preHandler: adminMiddleware }, async (request, reply) => {
+// user.ts
+export async function resetPassword(id: string, password: string) {
+  const hashed = await bcrypt.hash(password, 10)
+  await db.query('UPDATE user SET password = ? WHERE id = ?', [hashed, id])
+}
+```
+
+```typescript
+// index.ts
+fastify.patch('/admin/users/:id/password', { preHandler: adminMiddleware }, async (request) => {
   const { id } = request.params as { id: string }
   const { password } = request.body as { password: string }
-  const hashed = await bcrypt.hash(password, 10)
-  await pool.query('UPDATE user SET password = ? WHERE id = ?', [hashed, id])
+  await resetPassword(id, password)
   return { ok: true }
 })
 ```
 
 ### 4-9. /grade에 attempt 기록 추가
 
-기존 `/grade` 라우트의 요청 파싱 부분에 새 필드 추가:
+`recordAttempt`는 `user.ts`에 분리:
 
 ```typescript
-const { containerId, questId, questSetId, sessionId, elapsedSec, hintUsed, solutionUsed }
-  = request.body as {
-    containerId: string
-    questId: number
-    questSetId: number
-    sessionId: string
-    elapsedSec?: number
-    hintUsed?: boolean
+// user.ts
+export async function recordAttempt(
+    userId: number,
+    questId: number,
+    questSetId: number,
+    sessionId: string,
+    passed: boolean,
+    elapsedSec?: number,
+    hintUsed?: boolean,
     solutionUsed?: boolean
-  }
+) {
+    await db.query(
+        `INSERT INTO quest_attempt
+            (user_id, quest_id, quest_set_id, session_id, elapsed_sec, hint_used, solution_used, passed)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, questId, questSetId, sessionId, elapsedSec ?? null,
+         hintUsed ?? false, solutionUsed ?? false, passed]
+    )
+}
 ```
 
-채점 후 항상 attempt 기록 (성공/실패 모두):
+기존 `/grade` 라우트를 아래와 같이 교체:
 
 ```typescript
-const auth = request.headers['authorization'] ?? ''
-const token = auth.startsWith('Bearer ') ? auth.slice(7) : ''
-if (token) {
-  try {
-    const payload = verifyToken(token)
-    await pool.query(
-      `INSERT INTO quest_attempt
-        (user_id, quest_id, quest_set_id, session_id, elapsed_sec, hint_used, solution_used, passed)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [payload.userId, questId, questSetId, sessionId, elapsedSec ?? null,
-       hintUsed ?? false, solutionUsed ?? false, passed]
-    )
-  } catch {}  // 토큰 없거나 만료돼도 채점 결과는 정상 반환
-}
+// index.ts
+import { recordAttempt, ... } from './user.js'
+
+fastify.post('/grade', async (req) => {
+    const { containerId, questId, questSetId, sessionId, elapsedSec, hintUsed, solutionUsed }
+        = req.body as {
+            containerId: string
+            questId: number
+            questSetId: number
+            sessionId: string
+            elapsedSec?: number
+            hintUsed?: boolean
+            solutionUsed?: boolean
+        }
+    const passed = await gradeQuest(containerId, questId, docker)
+
+    const auth = req.headers['authorization'] ?? ''
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : ''
+    if (token) {
+        try {
+            const payload = verifyToken(token)
+            await recordAttempt(payload.userId, questId, questSetId, sessionId, passed, elapsedSec, hintUsed, solutionUsed)
+        } catch {}  // 토큰 없거나 만료돼도 채점 결과는 정상 반환
+    }
+
+    return { passed }
+})
 ```
 
 > 성공/실패 모두 기록 — "몇 번 시도 후 성공했는지"를 Phase 9에서 분석할 수 있어야 하기 때문.

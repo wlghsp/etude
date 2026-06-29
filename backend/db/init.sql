@@ -1154,3 +1154,33 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    'helm uninstall my-nginx -n $NS',
    '["sh", "-c", "helm repo add bitnami https://charts.bitnami.com/bitnami 2>/dev/null && helm repo update 2>/dev/null && helm install my-nginx bitnami/nginx -n $NS 2>/dev/null; true"]',
    '["sh", "-c", "! helm list -n $NS | grep -q my-nginx"]');
+
+CREATE TABLE user (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  name       VARCHAR(100) NOT NULL,
+  email      VARCHAR(200) NOT NULL UNIQUE,
+  password   VARCHAR(200) NOT NULL,
+  role       ENUM('member', 'admin') NOT NULL DEFAULT 'member',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 중복 허용 — 반복 시도가 쌓이는 구조 (Phase 9 분석의 원본 데이터)
+CREATE TABLE quest_attempt (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  user_id        INT NOT NULL,
+  quest_id       INT NOT NULL,
+  quest_set_id   INT NOT NULL,
+  session_id     VARCHAR(36) NOT NULL,
+  elapsed_sec    INT,
+  hint_used      BOOLEAN NOT NULL DEFAULT FALSE,
+  solution_used  BOOLEAN NOT NULL DEFAULT FALSE,
+  passed         BOOLEAN NOT NULL DEFAULT FALSE,
+  attempted_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id)      REFERENCES user(id),
+  FOREIGN KEY (quest_id)     REFERENCES quest(id),
+  FOREIGN KEY (quest_set_id) REFERENCES quest_set(id)
+);
+
+INSERT INTO user (name, email, password, role) VALUES
+  ('관리자', 'admin@okestro.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin'),
+  ('테스트', 'test@okestro.com',  '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'member');
