@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Etude Workspace | Quest</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#c8c6c5",
+                    "on-primary-fixed": "#1c1b1b",
+                    "inverse-on-surface": "#313030",
+                    "secondary": "#c8c6c5",
+                    "tertiary-container": "#121110",
+                    "surface-container-low": "#1c1b1b",
+                    "primary-fixed": "#e5e2e1",
+                    "surface-container-lowest": "#0e0e0e",
+                    "surface-bright": "#3a3939",
+                    "on-primary": "#313030",
+                    "error-container": "#93000a",
+                    "on-tertiary-fixed-variant": "#484645",
+                    "on-surface": "#e5e2e1",
+                    "secondary-fixed": "#e5e2e1",
+                    "on-surface-variant": "#c4c7c7",
+                    "inverse-primary": "#5f5e5e",
+                    "on-error-container": "#ffdad6",
+                    "primary": "#c8c6c5",
+                    "on-tertiary-fixed": "#1d1b1a",
+                    "surface-container-highest": "#353434",
+                    "on-primary-fixed-variant": "#474646",
+                    "tertiary": "#cac6c3",
+                    "on-error": "#690005",
+                    "on-secondary": "#313030",
+                    "on-tertiary-container": "#7f7c7a",
+                    "outline": "#8e9192",
+                    "on-background": "#e5e2e1",
+                    "on-tertiary": "#32302f",
+                    "error": "#ffb4ab",
+                    "tertiary-fixed-dim": "#cac6c3",
+                    "outline-variant": "#444748",
+                    "surface-container": "#201f1f",
+                    "surface-container-high": "#2b2a2a",
+                    "surface": "#141313",
+                    "tertiary-fixed": "#e6e1df",
+                    "background": "#141313",
+                    "secondary-container": "#474746",
+                    "primary-fixed-dim": "#c8c6c5",
+                    "secondary-fixed-dim": "#c8c6c5",
+                    "surface-variant": "#353434",
+                    "on-secondary-fixed": "#1c1b1b",
+                    "primary-container": "#111111",
+                    "on-secondary-fixed-variant": "#474746",
+                    "on-primary-container": "#7e7c7c",
+                    "inverse-surface": "#e5e2e1",
+                    "on-secondary-container": "#b7b5b4",
+                    "surface-dim": "#141313"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "container-max": "1280px",
+                    "margin-page": "24px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["JetBrains Mono"],
+                    "code-sm": ["JetBrains Mono"],
+                    "headline-md": ["JetBrains Mono"],
+                    "body-md": ["JetBrains Mono"],
+                    "label-caps": ["JetBrains Mono"],
+                    "body-lg": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "code-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'JetBrains Mono', monospace; background-color: #141313; color: #e5e2e1; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .border-technical { border: 1px solid #333333; }
+        .success-accent { border-left: 4px solid #22c55e; }
+        .terminal-bg { background-color: #0e0e0e; }
+        .terminal-text { color: #22c55e; }
+        .thin-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .thin-scrollbar::-webkit-scrollbar-track { background: #1a1a1a; }
+        .thin-scrollbar::-webkit-scrollbar-thumb { background: #333333; }
+        .hover-lift { transition: transform 0.1s ease; }
+        .hover-lift:active { transform: scale(0.98); }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-gutter h-14 bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant shrink-0">
+<div class="flex items-center gap-4">
+<span class="text-body-lg font-headline-lg tracking-tighter text-on-surface dark:text-on-surface">OKESTRO TRAINING | Etude</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<button class="text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-150 px-2 py-1">Dashboard</button>
+<button class="text-primary font-bold border-b border-primary px-2 py-1">Quests</button>
+</div>
+<div class="flex items-center gap-3">
+<button class="material-symbols-outlined text-on-surface-variant">terminal</button>
+<button class="material-symbols-outlined text-on-surface-variant">notifications</button>
+<div class="h-6 w-[1px] bg-outline-variant mx-1"></div>
+<span class="text-code-sm font-code-sm text-on-surface-variant">Progress Status</span>
+<button class="text-body-md font-body-md text-primary hover:underline">Logout</button>
+</div>
+</div>
+</header>
+<main class="flex flex-1 overflow-hidden">
+<!-- Quest Panel (40%) -->
+<section class="w-[40%] flex flex-col border-r border-outline-variant bg-surface relative">
+<!-- Progress Bar -->
+<div class="w-full h-1 bg-surface-container-lowest shrink-0">
+<div class="h-full bg-[#22c55e]" style="width: 25%;"></div>
+</div>
+<div class="p-6 flex-1 overflow-y-auto thin-scrollbar">
+<div class="mb-4">
+<span class="text-label-caps font-label-caps text-on-surface-variant">CURRENT SESSION</span>
+<h1 class="text-headline-lg font-headline-lg mt-1 text-on-surface">Quest 3: Persistent Volumes</h1>
+<p class="text-on-surface-variant text-body-md mt-2">Quest Index: 3/12</p>
+</div>
+<div class="space-y-6">
+<div class="border-technical bg-surface-container p-4">
+<h3 class="text-label-caps font-label-caps text-primary mb-2">DESCRIPTION</h3>
+<p class="text-body-md text-on-surface leading-relaxed">
+                            Configure a PersistentVolume (PV) named <code class="text-code-sm bg-surface-container-highest px-1">task-pv-volume</code> with a storage capacity of 10Gi and AccessModes set to ReadWriteOnce. Ensure the hostPath is mapped to <code class="text-code-sm bg-surface-container-highest px-1">/mnt/data</code>.
+                        </p>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 border-technical hover:bg-surface-container-high py-2 text-label-caps font-label-caps transition-all" onclick="toggleHint()">
+                            VIEW HINT
+                        </button>
+<button class="flex-1 border-technical hover:bg-surface-container-high py-2 text-label-caps font-label-caps transition-all" onclick="toggleSolution()">
+                            VIEW SOLUTION
+                        </button>
+</div>
+<div class="hidden border-technical border-l-4 border-l-primary bg-surface-container-low p-4 animate-in fade-in duration-300" id="hint-box">
+<span class="text-label-caps font-label-caps text-primary">HINT</span>
+<p class="text-body-md text-on-surface-variant mt-1">Use the storageClassName: manual for this local hostPath volume.</p>
+</div>
+<!-- Grading Result (Conditional State Mockup) -->
+<div class="border-technical bg-[#0a2012] p-4 success-accent animate-in slide-in-from-bottom-4 duration-500" id="success-box">
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-[#22c55e]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<h4 class="text-body-md font-bold text-[#22c55e]">QUEST COMPLETE</h4>
+<p class="text-label-caps text-[#22c55e]/80">Status: Validated via Kubernetes API</p>
+</div>
+</div>
+<button class="w-full bg-[#22c55e] text-on-primary-fixed py-3 font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2">
+                            NEXT QUEST <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Bottom Fixed Controls -->
+<div class="mt-auto border-t border-outline-variant p-4 grid grid-cols-4 gap-2 bg-surface">
+<button class="border-technical hover:bg-surface-container-high py-2 flex items-center justify-center group" title="Go Home">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-on-surface">home</span>
+</button>
+<button class="border-technical hover:bg-surface-container-high py-2 flex items-center justify-center group" title="Reset Environment">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-on-surface">restart_alt</span>
+</button>
+<button class="border-technical hover:bg-surface-container-high py-2 flex items-center justify-center text-label-caps font-label-caps group">
+<span class="material-symbols-outlined mr-1">chevron_left</span> PREV
+                </button>
+<button class="border-technical hover:bg-surface-container-high py-2 flex items-center justify-center text-label-caps font-label-caps group">
+                    NEXT <span class="material-symbols-outlined ml-1">chevron_right</span>
+</button>
+</div>
+</section>
+<!-- Terminal Panel (60%) -->
+<section class="w-[60%] flex flex-col bg-surface-container-lowest">
+<div class="h-9 border-b border-outline-variant flex items-center px-4 bg-surface justify-between">
+<div class="flex items-center gap-4">
+<span class="text-label-caps font-label-caps text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">terminal</span> TERMINAL — node-01
+                    </span>
+<span class="h-4 w-[1px] bg-outline-variant"></span>
+<span class="text-label-caps font-label-caps text-on-surface-variant">bash</span>
+</div>
+<div class="flex gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-[#333]"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-[#333]"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-[#333]"></span>
+</div>
+</div>
+<div class="flex-1 terminal-bg p-4 font-mono text-[13px] leading-relaxed overflow-y-auto thin-scrollbar" id="terminal">
+<div class="terminal-text mb-1">etude@node-01:~$ kubectl get nodes</div>
+<div class="text-[#8e9192] mb-3">
+                    NAME      STATUS   ROLES           AGE   VERSION<br/>
+                    node-01   Ready    control-plane   14m   v1.27.3
+                </div>
+<div class="terminal-text mb-1">etude@node-01:~$ vi pv.yaml</div>
+<div class="text-[#8e9192] mb-3 italic"># Editing pv.yaml...</div>
+<div class="terminal-text mb-1">etude@node-01:~$ kubectl apply -f pv.yaml</div>
+<div class="text-[#8e9192] mb-3">persistentvolume/task-pv-volume created</div>
+<div class="terminal-text mb-1">etude@node-01:~$ <span class="animate-pulse bg-[#22c55e] w-2 h-4 inline-block translate-y-0.5"></span></div>
+</div>
+<!-- Terminal Footer Actions -->
+<div class="h-10 border-t border-outline-variant bg-surface flex items-center px-4 gap-4">
+<button class="text-label-caps text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">content_copy</span> COPY
+                </button>
+<button class="text-label-caps text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">upload</span> UPLOAD FILE
+                </button>
+<div class="ml-auto flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-[#22c55e]"></span>
+<span class="text-label-caps text-on-surface-variant">CONNECTED</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Micro-interactions Script -->
+<script>
+        function toggleHint() {
+            const hint = document.getElementById('hint-box');
+            hint.classList.toggle('hidden');
+        }
+
+        function toggleSolution() {
+            alert('Loading secure solution repository... [SIMULATED]');
+        }
+
+        // Mock Terminal Typing Effect for immersion
+        const terminal = document.getElementById('terminal');
+        document.addEventListener('keydown', (e) => {
+            if(e.ctrlKey && e.key === 'c') {
+                const br = document.createElement('br');
+                const span = document.createElement('span');
+                span.className = 'terminal-text';
+                span.innerText = 'etude@node-01:~$ ^C';
+                terminal.appendChild(span);
+                terminal.appendChild(br);
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+        });
+    </script>
+</body></html>

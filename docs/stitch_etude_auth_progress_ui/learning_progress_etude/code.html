@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Progress Dashboard | Etude</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#c8c6c5",
+                    "on-primary-fixed": "#1c1b1b",
+                    "inverse-on-surface": "#313030",
+                    "secondary": "#c8c6c5",
+                    "tertiary-container": "#121110",
+                    "surface-container-low": "#1c1b1b",
+                    "primary-fixed": "#e5e2e1",
+                    "surface-container-lowest": "#0e0e0e",
+                    "surface-bright": "#3a3939",
+                    "on-primary": "#313030",
+                    "error-container": "#93000a",
+                    "on-tertiary-fixed-variant": "#484645",
+                    "on-surface": "#e5e2e1",
+                    "secondary-fixed": "#e5e2e1",
+                    "on-surface-variant": "#c4c7c7",
+                    "inverse-primary": "#5f5e5e",
+                    "on-error-container": "#ffdad6",
+                    "primary": "#c8c6c5",
+                    "on-tertiary-fixed": "#1d1b1a",
+                    "surface-container-highest": "#353434",
+                    "on-primary-fixed-variant": "#474646",
+                    "tertiary": "#cac6c3",
+                    "on-error": "#690005",
+                    "on-secondary": "#313030",
+                    "on-tertiary-container": "#7f7c7a",
+                    "outline": "#8e9192",
+                    "on-background": "#e5e2e1",
+                    "on-tertiary": "#32302f",
+                    "error": "#ffb4ab",
+                    "tertiary-fixed-dim": "#cac6c3",
+                    "outline-variant": "#444748",
+                    "surface-container": "#201f1f",
+                    "surface-container-high": "#2b2a2a",
+                    "surface": "#141313",
+                    "tertiary-fixed": "#e6e1df",
+                    "background": "#141313",
+                    "secondary-container": "#474746",
+                    "primary-fixed-dim": "#c8c6c5",
+                    "secondary-fixed-dim": "#c8c6c5",
+                    "surface-variant": "#353434",
+                    "on-secondary-fixed": "#1c1b1b",
+                    "primary-container": "#111111",
+                    "on-secondary-fixed-variant": "#474746",
+                    "on-primary-container": "#7e7c7c",
+                    "inverse-surface": "#e5e2e1",
+                    "on-secondary-container": "#b7b5b4",
+                    "surface-dim": "#141313"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "container-max": "1280px",
+                    "margin-page": "24px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["JetBrains Mono"],
+                    "code-sm": ["JetBrains Mono"],
+                    "headline-md": ["JetBrains Mono"],
+                    "body-md": ["JetBrains Mono"],
+                    "label-caps": ["JetBrains Mono"],
+                    "body-lg": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "code-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        vertical-align: middle;
+      }
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: #141313; }
+      ::-webkit-scrollbar-thumb { background: #333333; border-radius: 2px; }
+      ::-webkit-scrollbar-thumb:hover { background: #444444; }
+      
+      .terminal-glow {
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.05);
+      }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary selection:text-on-primary">
+<!-- TopNavBar -->
+<header class="fixed top-0 z-50 w-full h-14 bg-surface border-b border-outline-variant flex justify-between items-center px-gutter">
+<div class="flex items-center gap-4">
+<a class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors" href="/">
+<span class="material-symbols-outlined">arrow_back</span>
+<span class="font-headline-lg text-body-lg tracking-tighter text-on-surface">OKESTRO TRAINING | Etude</span>
+</a>
+</div>
+<div class="hidden md:flex items-center gap-8 h-full">
+<nav class="flex h-full gap-6">
+<a class="flex items-center h-full text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-150 px-2" href="/">Dashboard</a>
+<a class="flex items-center h-full text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-150 px-2" href="#">Training Sets</a>
+<a class="flex items-center h-full text-primary font-bold border-b border-primary px-2" href="/progress">Quests</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container-low border border-outline-variant rounded">
+<span class="material-symbols-outlined text-primary scale-75">terminal</span>
+<span class="font-code-sm text-code-sm text-on-surface-variant">Progress Status</span>
+</div>
+<button class="flex items-center gap-2 hover:bg-surface-container-high px-3 py-1 transition-colors duration-150 rounded group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary">notifications</span>
+</button>
+<button class="bg-primary text-on-primary px-4 py-1 font-label-caps text-label-caps hover:opacity-80 active:scale-[0.99] transition-all">
+                Logout
+            </button>
+</div>
+</header>
+<div class="flex min-h-screen pt-14">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col w-60 bg-surface-container border-r border-outline-variant fixed h-[calc(100vh-3.5rem)]">
+<div class="p-6">
+<h2 class="text-headline-md font-headline-md text-on-surface">Etude Workspace</h2>
+<p class="text-label-caps font-label-caps text-on-surface-variant opacity-60">v1.0.4-stable</p>
+</div>
+<nav class="flex-1 flex flex-col gap-1 py-4">
+<a class="flex items-center gap-3 text-on-surface-variant pl-4 py-2 hover:text-on-surface hover:bg-surface-container-highest transition-all group" href="/">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant pl-4 py-2 hover:text-on-surface hover:bg-surface-container-highest transition-all group" href="#">
+<span class="material-symbols-outlined">exercise</span>
+<span class="font-label-caps text-label-caps">Training Sets</span>
+</a>
+<a class="flex items-center gap-3 text-primary border-l-2 border-primary pl-3 py-2 bg-transparent transition-all group" href="/progress">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="font-label-caps text-label-caps">Quests</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant pl-4 py-2 hover:text-on-surface hover:bg-surface-container-highest transition-all group" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</a>
+</nav>
+<div class="px-4 mb-6">
+<button class="w-full bg-surface border border-outline-variant py-2 flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-all text-on-surface font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-sm">add</span>
+                    New Training Session
+                </button>
+</div>
+<footer class="border-t border-outline-variant py-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 text-on-surface-variant pl-4 py-2 hover:text-on-surface hover:bg-surface-container-highest transition-all group" href="#">
+<span class="material-symbols-outlined text-[18px]">description</span>
+<span class="text-label-caps font-label-caps">Documentation</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant pl-4 py-2 hover:text-on-surface hover:bg-surface-container-highest transition-all group" href="#">
+<span class="material-symbols-outlined text-[18px]">help_outline</span>
+<span class="text-label-caps font-label-caps">Support</span>
+</a>
+</footer>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 md:ml-60 flex flex-col items-center px-gutter py-8 bg-surface">
+<div class="w-full max-w-[800px] flex flex-col gap-8">
+<!-- Page Header -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-on-surface-variant text-label-caps font-label-caps">
+<span class="text-primary">root</span>
+<span>/</span>
+<span>workspace</span>
+<span>/</span>
+<span class="text-on-surface">progress_dashboard</span>
+</div>
+<h1 class="text-headline-lg font-headline-lg text-on-surface">System Progress</h1>
+</div>
+<!-- Summary Cards (Bento style, terminal aesthetics) -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="bg-surface-container border border-outline-variant p-4 flex flex-col gap-4 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-2 opacity-5">
+<span class="material-symbols-outlined text-4xl">terminal</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">database</span>
+<span class="text-label-caps font-label-caps text-on-surface-variant">Total Quests</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-4xl font-headline-lg">24</span>
+<span class="text-label-caps font-label-caps text-on-surface-variant">Units</span>
+</div>
+</div>
+<div class="bg-surface-container border border-outline-variant p-4 flex flex-col gap-4 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-2 opacity-5">
+<span class="material-symbols-outlined text-4xl">check_circle</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-sm">task_alt</span>
+<span class="text-label-caps font-label-caps text-on-surface-variant">Completed Quests</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-4xl font-headline-lg">18</span>
+<span class="text-label-caps font-label-caps text-on-surface-variant">Resolved</span>
+</div>
+</div>
+<div class="bg-surface-container border border-outline-variant p-4 flex flex-col gap-4 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-2 opacity-5">
+<span class="material-symbols-outlined text-4xl">analytics</span>
+</div>
+<div class="flex items-center gap-2 text-[#22c55e]">
+<span class="material-symbols-outlined text-sm">query_stats</span>
+<span class="text-label-caps font-label-caps opacity-80">Completion %</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-4xl font-headline-lg">75.0</span>
+<span class="text-label-caps font-label-caps text-on-surface-variant">%</span>
+</div>
+<!-- Progress mini bar at the bottom -->
+<div class="absolute bottom-0 left-0 w-full h-[2px] bg-surface-container-highest">
+<div class="h-full bg-[#22c55e]" style="width: 75%"></div>
+</div>
+</div>
+</section>
+<!-- Training Sets List (Terminal Table Style) -->
+<section class="bg-surface-container border border-outline-variant overflow-hidden">
+<div class="px-4 py-3 border-b border-outline-variant flex justify-between items-center bg-surface-container-high">
+<span class="text-label-caps font-label-caps">Active Training Sets</span>
+<div class="flex gap-2">
+<div class="w-2 h-2 rounded-full bg-error/40"></div>
+<div class="w-2 h-2 rounded-full bg-secondary/40"></div>
+<div class="w-2 h-2 rounded-full bg-[#22c55e]/40"></div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface">
+<tr>
+<th class="px-6 py-3 text-label-caps font-label-caps text-on-surface-variant border-b border-outline-variant">Set Name</th>
+<th class="px-6 py-3 text-label-caps font-label-caps text-on-surface-variant border-b border-outline-variant">Category</th>
+<th class="px-6 py-3 text-label-caps font-label-caps text-on-surface-variant border-b border-outline-variant">Progress</th>
+<th class="px-6 py-3 text-label-caps font-label-caps text-on-surface-variant border-b border-outline-variant">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1: Completed -->
+<tr class="hover:bg-surface-container-highest/50 transition-colors group">
+<td class="px-6 py-4 font-code-sm text-code-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-[#22c55e]">check_circle</span>
+                                            kubernetes-fundamentals-v1
+                                        </div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 bg-surface border border-outline-variant text-[10px] font-code-sm rounded uppercase tracking-wider text-on-surface-variant">Infra</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col gap-1 w-32">
+<div class="flex justify-between text-[10px] font-code-sm">
+<span>8/8</span>
+<span>100%</span>
+</div>
+<div class="h-1 bg-surface border border-outline-variant">
+<div class="h-full bg-[#22c55e]" style="width: 100%"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-[11px] font-label-caps text-[#22c55e] border border-[#22c55e]/30 px-2 py-0.5 rounded-sm bg-[#22c55e]/5">COMPLETED</span>
+</td>
+</tr>
+<!-- Row 2: In Progress -->
+<tr class="hover:bg-surface-container-highest/50 transition-colors group">
+<td class="px-6 py-4 font-code-sm text-code-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-primary animate-pulse">sync</span>
+                                            docker-advanced-networking
+                                        </div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 bg-surface border border-outline-variant text-[10px] font-code-sm rounded uppercase tracking-wider text-on-surface-variant">DevOps</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col gap-1 w-32">
+<div class="flex justify-between text-[10px] font-code-sm">
+<span>4/10</span>
+<span>40%</span>
+</div>
+<div class="h-1 bg-surface border border-outline-variant">
+<div class="h-full bg-primary" style="width: 40%"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-[11px] font-label-caps text-primary border border-primary/30 px-2 py-0.5 rounded-sm bg-primary/5">IN PROGRESS</span>
+</td>
+</tr>
+<!-- Row 3: In Progress -->
+<tr class="hover:bg-surface-container-highest/50 transition-colors group">
+<td class="px-6 py-4 font-code-sm text-code-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-primary">sync</span>
+                                            ansible-automation-logic
+                                        </div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 bg-surface border border-outline-variant text-[10px] font-code-sm rounded uppercase tracking-wider text-on-surface-variant">IaC</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col gap-1 w-32">
+<div class="flex justify-between text-[10px] font-code-sm">
+<span>6/10</span>
+<span>60%</span>
+</div>
+<div class="h-1 bg-surface border border-outline-variant">
+<div class="h-full bg-primary" style="width: 60%"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-[11px] font-label-caps text-primary border border-primary/30 px-2 py-0.5 rounded-sm bg-primary/5">IN PROGRESS</span>
+</td>
+</tr>
+<!-- Row 4: Not Started -->
+<tr class="hover:bg-surface-container-highest/50 transition-colors group">
+<td class="px-6 py-4 font-code-sm text-code-sm opacity-60">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">circle</span>
+                                            terraform-cloud-security
+                                        </div>
+</td>
+<td class="px-6 py-4 opacity-60">
+<span class="px-2 py-0.5 bg-surface border border-outline-variant text-[10px] font-code-sm rounded uppercase tracking-wider text-on-surface-variant">SecOps</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col gap-1 w-32 opacity-40">
+<div class="flex justify-between text-[10px] font-code-sm">
+<span>0/6</span>
+<span>0%</span>
+</div>
+<div class="h-1 bg-surface border border-outline-variant">
+<div class="h-full bg-outline-variant" style="width: 0%"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-[11px] font-label-caps text-on-surface-variant border border-outline-variant px-2 py-0.5 rounded-sm bg-surface-variant/5">NOT STARTED</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- List Footer / Action -->
+<div class="p-4 border-t border-outline-variant flex justify-between items-center bg-surface">
+<span class="text-label-caps font-label-caps text-on-surface-variant">Showing 4 of 24 Training Sets</span>
+<div class="flex gap-4">
+<button class="text-label-caps font-label-caps text-on-surface-variant hover:text-on-surface flex items-center gap-1 transition-all">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+                                Filter
+                            </button>
+<button class="text-label-caps font-label-caps text-on-surface-variant hover:text-on-surface flex items-center gap-1 transition-all">
+<span class="material-symbols-outlined text-sm">download</span>
+                                Export Report
+                            </button>
+</div>
+</div>
+</section>
+<!-- Footer System Stats -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+<div class="bg-surface-container-lowest border border-outline-variant p-4 flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<h3 class="text-label-caps font-label-caps text-primary">System Integrity</h3>
+<span class="text-[10px] font-code-sm text-[#22c55e]">STABLE</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex justify-between text-[10px] font-code-sm text-on-surface-variant">
+<span>Memory Leakage Check</span>
+<span>0.00ms</span>
+</div>
+<div class="h-1 bg-surface">
+<div class="h-full bg-[#22c55e]" style="width: 98%"></div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-4 flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<h3 class="text-label-caps font-label-caps text-primary">Session Artifacts</h3>
+<span class="text-[10px] font-code-sm text-on-surface-variant">SYNCHRONIZED</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex flex-col">
+<span class="text-headline-md font-headline-md">1.2GB</span>
+<span class="text-[10px] font-code-sm text-on-surface-variant uppercase">Logs Stored</span>
+</div>
+<div class="h-8 w-[1px] bg-outline-variant"></div>
+<div class="flex flex-col">
+<span class="text-headline-md font-headline-md">142</span>
+<span class="text-[10px] font-code-sm text-on-surface-variant uppercase">Commits</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Bar -->
+<div class="flex items-center justify-between border-t border-outline-variant pt-6">
+<a class="group flex items-center gap-2 text-on-surface-variant hover:text-on-surface transition-all" href="/">
+<span class="material-symbols-outlined text-sm group-hover:-translate-x-1 transition-transform">arrow_back</span>
+<span class="text-label-caps font-label-caps">Return to Set Select</span>
+</a>
+<button class="bg-primary text-on-primary px-6 py-2 font-label-caps text-label-caps flex items-center gap-2 hover:opacity-90 transition-all border border-primary">
+<span class="material-symbols-outlined text-sm">play_arrow</span>
+                        Continue Last Quest
+                    </button>
+</div>
+</div>
+</main>
+</div>
+<!-- Micro-interaction script -->
+<script>
+        document.querySelectorAll('tr').forEach(row => {
+            row.addEventListener('mouseenter', () => {
+                row.style.boxShadow = 'inset 4px 0 0 #c8c6c5';
+            });
+            row.addEventListener('mouseleave', () => {
+                row.style.boxShadow = 'none';
+            });
+        });
+    </script>
+</body></html>
