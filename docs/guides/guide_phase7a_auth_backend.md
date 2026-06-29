@@ -240,7 +240,19 @@ fastify.post('/admin/users', { preHandler: adminMiddleware }, async (request, re
 })
 ```
 
-### 4-8. /grade에 attempt 기록 추가
+### 4-8. /admin/users/:id/password API (비밀번호 초기화)
+
+```typescript
+fastify.patch('/admin/users/:id/password', { preHandler: adminMiddleware }, async (request, reply) => {
+  const { id } = request.params as { id: string }
+  const { password } = request.body as { password: string }
+  const hashed = await bcrypt.hash(password, 10)
+  await pool.query('UPDATE user SET password = ? WHERE id = ?', [hashed, id])
+  return { ok: true }
+})
+```
+
+### 4-9. /grade에 attempt 기록 추가
 
 기존 `/grade` 라우트의 요청 파싱 부분에 새 필드 추가:
 

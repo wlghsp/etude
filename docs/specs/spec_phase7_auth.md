@@ -141,6 +141,16 @@ CREATE TABLE quest_attempt (
 { "id": 3, "name": "홍길동", "email": "hong@okestro.com", "role": "member" }
 ```
 
+#### PATCH /admin/users/:id/password
+관리자 전용. 팀원 비밀번호 초기화 (비밀번호 분실 시).
+```json
+// 요청
+{ "password": "새임시비번" }
+
+// 응답
+{ "ok": true }
+```
+
 ---
 
 ## 화면 흐름
