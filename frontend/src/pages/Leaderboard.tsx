@@ -3,12 +3,20 @@ import { fetchLeaderboard } from "../api"
 import { TopNav } from "../components/TopNav"
 import { SideNav } from "../components/SideNav"
 
-interface Row {
-  userName: string
-  questSetTitle: string
-  category: string
-  total: number
-  completed: number
+interface SetRow {
+    questSetId: number
+    questSetTitle: string
+    category: string
+    total: number
+    completed: number
+}
+
+interface UserRow {
+    userId: number
+    userName: string
+    total: number
+    completed: number
+    sets: SetRow[]
 }
 
 interface Props {
@@ -20,14 +28,24 @@ interface Props {
 }
 
 export function Leaderboard({ onBack, onProgress, onLogout, userName, userEmail }: Props) {
-    const [rows, setRows] = useState<Row[]>([])
+    const [rows, setRows] = useState<UserRow[]>([])
+    const [openUsers, setOpenUsers] = useState<Set<number>>(new Set())
 
     useEffect(() => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         fetchLeaderboard().then((data: any[]) =>
-            setRows(data.map((r) => ({ ...r, total: Number(r.total), completed: Number(r.completed) })))
+            setRows(data.map(u => ({ ...u, total: Number(u.total), completed: Number(u.completed) })))
         )
     }, [])
+
+    function toggleUser(userId: number) {
+        setOpenUsers(prev => {
+            const next = new Set(prev)
+            if (next.has(userId)) next.delete(userId)
+            else next.add(userId)
+            return next
+        })
+    }
 
     return (
         <div className="dark min-h-screen bg-surface flex flex-col">
@@ -51,63 +69,74 @@ export function Leaderboard({ onBack, onProgress, onLogout, userName, userEmail 
                         <div className="p-4 border-b border-outline-variant bg-surface-container-high flex justify-between items-center">
                             <h3 className="font-mono text-label-caps uppercase tracking-widest text-on-surface">팀원 진행현황</h3>
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="border-b border-outline-variant bg-surface-container-lowest">
-                                        <th className="p-4 font-mono text-label-caps uppercase text-on-surface-variant border-r border-outline-variant w-48">팀원</th>
-                                        <th className="p-4 font-mono text-label-caps uppercase text-on-surface-variant">세트명</th>
-                                        <th className="p-4 font-mono text-label-caps uppercase text-on-surface-variant">카테고리</th>
-                                        <th className="p-4 font-mono text-label-caps uppercase text-on-surface-variant w-64">진행률</th>
-                                        <th className="p-4 font-mono text-label-caps uppercase text-on-surface-variant text-right">상태</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="font-mono text-body-md">
-                                    {rows.map((r, i) => {
-                                        const pct = r.total > 0 ? Math.round((r.completed / r.total) * 100) : 0
-                                        const isComplete = r.completed === r.total && r.total > 0
-                                        const isStarted = r.completed > 0
-                                        return (
-                                            <tr key={i} className="border-b border-outline-variant hover:bg-surface-container-high transition-colors">
-                                                <td className="p-4 border-r border-outline-variant bg-surface-container-lowest">
-                                                    <span className="font-bold text-on-surface">{r.userName}</span>
-                                                </td>
-                                                <td className="p-4 text-on-surface">{r.questSetTitle}</td>
-                                                <td className="p-4">
-                                                    <div className="inline-flex items-center gap-2 px-2 py-1 bg-surface-container-highest border border-outline-variant">
-                                                        <span className="font-mono text-code-sm">{r.category}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <div className="flex flex-col gap-1">
-                                                        <div className="flex justify-between font-mono text-code-sm">
-                                                            <span>{r.completed}/{r.total}</span>
-                                                            <span>{pct}%</span>
-                                                        </div>
-                                                        <div className="h-1 bg-surface-variant w-full overflow-hidden">
+
+                        {rows.map((u, idx) => {
+                            const pct = u.total > 0 ? Math.round((u.completed / u.total) * 100) : 0
+                            const isOpen = openUsers.has(u.userId)
+                            return (
+                                <div key={u.userId} className="border-b border-outline-variant last:border-0">
+                                    <button
+                                        onClick={() => toggleUser(u.userId)}
+                                        className="w-full flex items-center gap-4 px-4 py-4 hover:bg-surface-container-high transition-colors text-left"
+                                    >
+                                        <span className="font-mono text-headline-md text-on-surface-variant w-8 shrink-0">
+                                            {idx + 1}
+                                        </span>
+                                        <span className="font-mono text-body-md font-semibold text-on-surface w-32 shrink-0">
+                                            {u.userName}
+                                        </span>
+                                        <div className="flex-1 h-2 bg-surface-container-highest">
+                                            <div
+                                                className={`h-full ${pct === 100 ? 'bg-success' : 'bg-primary'}`}
+                                                style={{ width: `${pct}%` }}
+                                            />
+                                        </div>
+                                        <span className="font-mono text-code-sm text-on-surface-variant w-20 text-right shrink-0">
+                                            {u.completed}/{u.total}
+                                        </span>
+                                        <span className={`font-mono text-body-md font-bold w-12 text-right shrink-0 ${pct === 100 ? 'text-success' : 'text-primary'}`}>
+                                            {pct}%
+                                        </span>
+                                        <span
+                                            className="material-symbols-outlined text-on-surface-variant text-[20px] shrink-0 transition-transform"
+                                            style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                                        >
+                                            expand_more
+                                        </span>
+                                    </button>
+
+                                    {isOpen && (
+                                        <div className="border-t border-outline-variant bg-surface-container-lowest">
+                                            {u.sets.map(s => {
+                                                const sPct = s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0
+                                                const sComplete = s.completed === s.total && s.total > 0
+                                                return (
+                                                    <div key={s.questSetId} className="flex items-center gap-4 px-4 py-3 border-b border-outline-variant/50 last:border-0">
+                                                        <span className="w-8 shrink-0" />
+                                                        <span className="font-mono text-code-sm text-on-surface-variant w-32 shrink-0">{s.category}</span>
+                                                        <span className="font-mono text-code-sm text-on-surface flex-1">{s.questSetTitle}</span>
+                                                        <div className="w-24 h-1 bg-surface-container-highest shrink-0">
                                                             <div
-                                                                className={`h-full ${isComplete ? 'bg-success' : 'bg-info'}`}
-                                                                style={{ width: `${pct}%` }}
+                                                                className={`h-full ${sComplete ? 'bg-success' : 'bg-primary'}`}
+                                                                style={{ width: `${sPct}%` }}
                                                             />
                                                         </div>
+                                                        <span className="font-mono text-code-sm text-on-surface-variant w-20 text-right shrink-0">
+                                                            {s.completed}/{s.total}
+                                                        </span>
+                                                        <span className={`font-mono text-code-sm font-bold w-12 text-right shrink-0 ${sComplete ? 'text-success' : sPct > 0 ? 'text-primary' : 'text-on-surface-variant'}`}>
+                                                            {sPct}%
+                                                        </span>
+                                                        <span className="w-[20px] shrink-0" />
                                                     </div>
-                                                </td>
-                                                <td className="p-4 text-right">
-                                                    {isComplete
-                                                        ? <span className="font-mono text-code-sm text-success border border-success px-2 py-1 bg-success/10">완료</span>
-                                                        : isStarted
-                                                            ? <span className="font-mono text-code-sm text-info border border-info px-2 py-1 bg-info/10">진행 중</span>
-                                                            : <span className="font-mono text-code-sm text-on-surface-variant border border-outline-variant px-2 py-1 bg-surface-variant/5">미시작</span>
-                                                    }
-                                                </td>
-                                            </tr>
-                                        )
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })}
                     </div>
-
                 </main>
             </div>
         </div>

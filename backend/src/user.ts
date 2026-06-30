@@ -21,22 +21,52 @@ export async function getProgress(userId: number) {
 
 
 export async function getLeaderboard() {
-    const [rows] = await db.query(`
-      SELECT
-        u.name AS userName,
-        qs.title AS questSetTitle,
-        qs.category,
-        COUNT(DISTINCT q.id) AS total,
-        COUNT(DISTINCT CASE WHEN qa.passed = 1 THEN qa.quest_id END) AS completed
-      FROM user u
-      CROSS JOIN quest_set qs
-      JOIN quest q ON q.quest_set_id = qs.id
-      LEFT JOIN quest_attempt qa ON qa.quest_id = q.id AND qa.user_id = u.id
-      WHERE u.role = 'member'
-      GROUP BY u.id, qs.id
-      ORDER BY u.name, qs.id
+    const [summary] = await db.query(`
+        SELECT
+            u.id AS userId,
+            u.name AS userName,
+            COUNT(DISTINCT q.id) AS total,
+            COUNT(DISTINCT CASE WHEN qa.passed = 1 THEN qa.quest_id END) AS completed
+        FROM user u
+        CROSS JOIN quest q
+        LEFT JOIN quest_attempt qa ON qa.quest_id = q.id AND qa.user_id = u.id
+        WHERE u.role = 'member'
+        GROUP BY u.id
+        ORDER BY completed DESC, u.name
     `) as any[]
-    return rows
+
+    const [details] = await db.query(`
+        SELECT
+            u.id AS userId,
+            qs.id AS questSetId,
+            qs.title AS questSetTitle,
+            qs.category,
+            COUNT(DISTINCT q.id) AS total,
+            COUNT(DISTINCT CASE WHEN qa.passed = 1 THEN qa.quest_id END) AS completed
+        FROM user u
+        CROSS JOIN quest_set qs
+        JOIN quest q ON q.quest_set_id = qs.id
+        LEFT JOIN quest_attempt qa ON qa.quest_id = q.id AND qa.user_id = u.id
+        WHERE u.role = 'member'
+        GROUP BY u.id, qs.id
+        ORDER BY u.id, qs.id
+    `) as any[]
+
+    return (summary as any[]).map((u: any) => ({
+        userId: u.userId,
+        userName: u.userName,
+        total: Number(u.total),
+        completed: Number(u.completed),
+        sets: (details as any[])
+            .filter((d: any) => d.userId === u.userId)
+            .map((d: any) => ({
+                questSetId: d.questSetId,
+                questSetTitle: d.questSetTitle,
+                category: d.category,
+                total: Number(d.total),
+                completed: Number(d.completed),
+            }))
+    }))
 }
 
 export async function createUser(name: string, email: string, password: string) {
