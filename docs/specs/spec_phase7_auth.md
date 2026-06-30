@@ -198,12 +198,12 @@ CREATE TABLE quest_attempt (
 - [x] 로그인 성공 → JWT 발급 → 세트 선택 화면 진입
 - [x] 잘못된 이메일/비밀번호 → 에러 메시지 표시
 - [x] 퀘스트 채점 성공 → `quest_attempt`에 행 추가 (user_id, quest_id, passed 포함)
-- [ ] 같은 퀘스트 재채점 → attempt 행 추가 (중복 허용)
-- [ ] `/progress` 에서 세트별 완료 수 확인
-- [ ] `/leaderboard` 에서 전체 팀원 현황 확인 (member/admin 모두)
-- [ ] member 계정 → `/admin/users` 호출 시 403 반환
-- [ ] 로그아웃 → 토큰 삭제 → 로그인 화면으로 이동
-- [ ] 토큰 없이 인증 필요 API 호출 → 401 반환
-- [ ] SetSelect 세트 카드에 진행률 배지 표시
-- [ ] 채점 성공 시 NEXT QUEST 버튼 표시, 클릭 시 다음 퀘스트로 이동
-- [ ] 환경 리셋 버튼 → confirm 다이얼로그 → 터미널 재연결
+- [x] 같은 퀘스트 재채점 → attempt 행 추가 (중복 허용)
+- [x] `/progress` 에서 세트별 완료 수 확인
+- [x] `/leaderboard` 에서 전체 팀원 현황 확인 (member/admin 모두)
+- [x] member 계정 → `/admin/users` 호출 시 403 반환
+- [x] 로그아웃 → 토큰 삭제 → 로그인 화면으로 이동
+- [x] 토큰 없이 인증 필요 API 호출 → 401 반환
+- [x] SetSelect 세트 카드에 진행률 배지 표시
+- [x] 채점 성공 시 NEXT QUEST 버튼 표시, 클릭 시 다음 퀘스트로 이동
+- [x] 환경 리셋 버튼 → confirm 다이얼로그 → 터미널 재연결
