@@ -1,0 +1,4 @@
+-- 실제 계정은 이 파일을 복사해 04_users.sql 로 만든 뒤 서버에서만 관리합니다.
+-- 비밀번호 해시 생성: node -e "const b=require('bcrypt'); b.hash('비밀번호',10).then(console.log)"
+INSERT INTO user (name, email, password, role) VALUES
+  ('관리자', 'admin@example.com', '$2b$10$REPLACE_WITH_REAL_HASH', 'admin');
