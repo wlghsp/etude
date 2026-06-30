@@ -107,8 +107,9 @@ export function Progress({ onBack }: Props) {
   const [rows, setRows] = useState<ProgressRow[]>([])
 
   useEffect(() => {
-    fetchProgress().then((data) =>
-      setRows(data.map((r: any) => ({ ...r, total: Number(r.total), completed: Number(r.completed) })))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fetchProgress().then((data: any[]) =>
+      setRows(data.map((r) => ({ ...r, total: Number(r.total), completed: Number(r.completed) })))
     )
   }, [])
 
@@ -183,8 +184,9 @@ export function Leaderboard({ onBack }: Props) {
   const [rows, setRows] = useState<Row[]>([])
 
   useEffect(() => {
-    fetchLeaderboard().then((data) =>
-      setRows(data.map((r: any) => ({ ...r, total: Number(r.total), completed: Number(r.completed) })))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fetchLeaderboard().then((data: any[]) =>
+      setRows(data.map((r) => ({ ...r, total: Number(r.total), completed: Number(r.completed) })))
     )
   }, [])
 

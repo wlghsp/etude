@@ -1,3 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -5,9 +16,10 @@
 }
 
 body {
-  font-family: system-ui, sans-serif;
-  background: #1a1a1a;
-  color: #e0e0e0;
+  font-family: 'JetBrains Mono', monospace;
+  background: #141313;
+  color: #e5e2e1;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
@@ -15,3 +27,8 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #141313; }
+::-webkit-scrollbar-thumb { background: #333333; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #444444; }

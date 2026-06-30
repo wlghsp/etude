@@ -7,128 +7,137 @@ interface Props {
     containerId: string
     total: number
     index: number
+    completedIndices: Set<number>
     onPrev: () => void
     onNext: () => void
+    onHome: () => void
     onReset: () => void
+    onComplete: (index: number) => void
 }
 
-export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, onReset }: Props) {
+export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, onHome, onReset, onComplete }: Props) {
     const [result, setResult] = useState<boolean | null>(null)
     const [loading, setLoading] = useState(false)
     const ns = containerId ? `quest-${containerId.slice(0, 8)}` : '$NS'
     const resolve = (text: string) => text.replace(/\$NS/g, ns)
+    const pct = Math.round(((index + 1) / total) * 100)
 
     const grade = async () => {
         setLoading(true)
         try {
             const data = await gradeQuest(containerId, quest.id)
             setResult(data.passed)
+            if (data.passed) onComplete(index)
         } finally {
             setLoading(false)
         }
     }
 
+    function handleReset() {
+        if (window.confirm('환경을 초기화하면 터미널이 재시작됩니다. 계속할까요?')) {
+            onReset()
+        }
+    }
+
+    function handleNext() {
+        onNext()
+        setResult(null)
+    }
+
     return (
-        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div>
-                <div style={{ fontSize: '12px', color: '#666', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    Quest {index + 1} / {total}
-                </div>
-                <h2 style={{ fontSize: '20px', color: '#f0f0f0', margin: 0 }}>{quest.title}</h2>
+        <div className="dark h-full flex flex-col bg-surface border-r border-outline-variant">
+            {/* Progress Bar */}
+            <div className="w-full h-1 bg-surface-container-lowest shrink-0">
+                <div className="h-full bg-success transition-all duration-300" style={{ width: `${pct}%` }} />
             </div>
-            <p style={{ color: '#bbb', lineHeight: '1.6', fontSize: '14px' }}>{resolve(quest.description)}</p>
-            <details>
-                <summary style={{ cursor: 'pointer', color: '#666', fontSize: '13px', userSelect: 'none' }}>힌트 보기</summary>
-                <p style={{ color: '#888', fontSize: '13px', marginTop: '8px', paddingLeft: '4px' }}>{resolve(quest.hint ?? '')}</p>
-            </details>
-            <details>
-                <summary style={{ cursor: 'pointer', color: '#666', fontSize: '13px', userSelect: 'none' }}>풀이 보기</summary>
-                <p style={{ color: '#888', fontSize: '13px', marginTop: '8px', paddingLeft: '4px', fontFamily: 'monospace' }}>{resolve(quest.solution ?? '')}</p>
-            </details>
-            <button
-                onClick={grade}
-                disabled={loading}
-                style={{
-                    marginTop: '8px',
-                    padding: '10px 20px',
-                    background: loading ? '#5b21b6' : '#7c3aed',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: loading ? 'default' : 'pointer',
-                    alignSelf: 'flex-start',
-                    opacity: loading ? 0.7 : 1,
-                }}
-            >
-                {loading ? '채점 중...' : '채점하기'}
-            </button>
-            {result !== null && (
-                <div style={{
-                    padding: '12px 16px',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    background: result ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    color: result ? '#4ade80' : '#f87171',
-                    border: `1px solid ${result ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-                }}>
-                    {result
-                        ? index === total - 1
-                            ? '✅ 성공! 마지막 퀘스트를 완료했습니다.'
-                            : '✅ 성공!'
-                        : '❌ 아직이에요. 다시 시도해보세요.'
-                    }
+
+            {/* Scrollable Content */}
+            <div className="p-6 flex-1 overflow-y-auto">
+                <div className="mb-4">
+                    <span className="font-mono text-label-caps text-on-surface-variant">CURRENT SESSION</span>
+                    <h1 className="font-mono text-headline-lg mt-1 text-on-surface">{quest.title}</h1>
+                    <p className="font-mono text-on-surface-variant text-body-md mt-1">Quest Index: {index + 1}/{total}</p>
                 </div>
-            )}
-            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                <button
-                    onClick={onPrev}
-                    disabled={index === 0}
-                    style={{
-                        padding: '8px 16px',
-                        background: 'transparent',
-                        color: index === 0 ? '#444' : '#aaa',
-                        border: '1px solid',
-                        borderColor: index === 0 ? '#333' : '#555',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        cursor: index === 0 ? 'default' : 'pointer',
-                    }}
-                >
-                    이전
+
+                <div className="space-y-4">
+                    {/* Description */}
+                    <div className="border border-outline-variant bg-surface-container p-4">
+                        <h3 className="font-mono text-label-caps text-primary mb-2">DESCRIPTION</h3>
+                        <p className="font-mono text-body-md text-on-surface leading-relaxed">{resolve(quest.description)}</p>
+                    </div>
+
+                    {/* Hint / Solution */}
+                    <div className="flex gap-2">
+                        <details className="flex-1">
+                            <summary className="border border-outline-variant hover:bg-surface-container-high py-2 px-3 font-mono text-label-caps cursor-pointer text-center transition-all list-none">
+                                VIEW HINT
+                            </summary>
+                            <div className="mt-2 border border-outline-variant border-l-4 border-l-primary bg-surface-container-low p-4">
+                                <p className="font-mono text-body-md text-on-surface-variant">{resolve(quest.hint ?? '')}</p>
+                            </div>
+                        </details>
+                        <details className="flex-1">
+                            <summary className="border border-outline-variant hover:bg-surface-container-high py-2 px-3 font-mono text-label-caps cursor-pointer text-center transition-all list-none">
+                                VIEW SOLUTION
+                            </summary>
+                            <div className="mt-2 border border-outline-variant bg-surface-container-low p-4">
+                                <p className="font-mono text-code-sm text-on-surface-variant">{resolve(quest.solution ?? '')}</p>
+                            </div>
+                        </details>
+                    </div>
+
+                    {/* Grade Button */}
+                    <button
+                        onClick={grade}
+                        disabled={loading}
+                        className="w-full py-3 bg-info text-white font-mono text-label-caps hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                        {loading ? 'GRADING...' : 'GRADE QUEST'}
+                    </button>
+
+                    {/* Result */}
+                    {result === false && (
+                        <div className="border border-error/30 bg-error/5 p-4 flex items-center gap-3">
+                            <span className="material-symbols-outlined text-error text-[20px]">cancel</span>
+                            <p className="font-mono text-body-md text-error">아직이에요. 다시 시도해보세요.</p>
+                        </div>
+                    )}
+                    {result === true && (
+                        <div className="border border-success/30 bg-success/5 p-4 border-l-4 border-l-success">
+                            <div className="flex items-center gap-3 mb-3">
+                                <span className="material-symbols-outlined text-success" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                                <div>
+                                    <h4 className="font-mono text-body-md font-bold text-success">QUEST COMPLETE</h4>
+                                    <p className="font-mono text-label-caps text-success/80">Status: Validated</p>
+                                </div>
+                            </div>
+                            {index < total - 1
+                                ? <button onClick={handleNext} className="w-full bg-success text-on-primary py-3 font-mono font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2">
+                                    NEXT QUEST <span className="material-symbols-outlined">arrow_forward</span>
+                                  </button>
+                                : <button onClick={onHome} className="w-full bg-success text-on-primary py-3 font-mono font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2">
+                                    세트 완료! 홈으로 <span className="material-symbols-outlined">home</span>
+                                  </button>
+                            }
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Bottom Controls */}
+            <div className="border-t border-outline-variant p-4 grid grid-cols-4 gap-2 bg-surface shrink-0">
+                <button onClick={onHome} title="Go Home" className="border border-outline-variant hover:bg-surface-container-high py-2 flex items-center justify-center transition-colors">
+                    <span className="material-symbols-outlined text-on-surface-variant">home</span>
                 </button>
-                <button
-                    onClick={onNext}
-                    disabled={index === total - 1}
-                    style={{
-                        padding: '8px 16px',
-                        background: 'transparent',
-                        color: index === total - 1 ? '#444' : '#aaa',
-                        border: '1px solid',
-                        borderColor: index === total - 1 ? '#333' : '#555',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        cursor: index === total - 1 ? 'default' : 'pointer',
-                    }}
-                >
-                    다음
+                <button onClick={handleReset} title="Reset Environment" className="border border-outline-variant hover:bg-surface-container-high py-2 flex items-center justify-center transition-colors">
+                    <span className="material-symbols-outlined text-on-surface-variant">restart_alt</span>
                 </button>
-                <button
-                    onClick={onReset}
-                    style={{
-                        padding: '8px 16px',
-                        background: 'transparent',
-                        color: '#aaa',
-                        border: '1px solid #555',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        cursor: 'pointer',
-                        marginLeft: 'auto',
-                    }}
-                >
-                    홈으로
+                <button onClick={onPrev} disabled={index === 0} className="border border-outline-variant hover:bg-surface-container-high py-2 flex items-center justify-center font-mono text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
+                    <span className="material-symbols-outlined">chevron_left</span> PREV
+                </button>
+                <button onClick={handleNext} disabled={index === total - 1} className="border border-outline-variant hover:bg-surface-container-high py-2 flex items-center justify-center font-mono text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
+                    NEXT <span className="material-symbols-outlined">chevron_right</span>
                 </button>
             </div>
         </div>
