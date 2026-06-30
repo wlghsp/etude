@@ -20,6 +20,8 @@ function App() {
   const [page, setPage] = useState<'home' | 'progress' | 'leaderboard'>('home')
   const [completedIndices, setCompletedIndices] = useState<Set<number>>(new Set())
   const [sessionId, setSessionId] = useState('')
+  const [resetKey, setResetKey] = useState(0)
+  const [preparing, setPreparing] = useState(false)
   const containerIdRef = useRef(containerId)
   const sandboxTypeRef = useRef(sandboxType)
 
@@ -65,6 +67,7 @@ function App() {
       setSelectedSetId(id)
       setSandboxType(sandboxType)
       setContainerId('')
+      setPreparing(true)
     }
     return <SetSelect
         onSelect={handleSetSelect}
@@ -79,7 +82,7 @@ function App() {
   const quest = quests[questIndex] ?? null
 
   return (
-    <div className="dark h-screen flex flex-col bg-surface overflow-hidden">
+    <div className="dark h-screen flex flex-col bg-surface overflow-hidden relative">
       {/* TopNav */}
       <header className="flex items-center w-full px-gutter h-14 bg-surface border-b border-outline-variant shrink-0">
         <button onClick={() => setSelectedSetId(null)} className="font-mono text-body-lg font-bold tracking-tighter text-on-surface hover:text-primary transition-colors">
@@ -101,7 +104,12 @@ function App() {
               onPrev={() => setQuestIndex((i) => i - 1)}
               onNext={() => setQuestIndex((i) => i + 1)}
               onHome={() => setSelectedSetId(null)}
-              onReset={() => setContainerId('')}
+              onReset={async () => {
+                setPreparing(true)
+                if (containerId) await endSession(containerId).catch(() => {})
+                setContainerId('')
+                setResetKey(k => k + 1)
+              }}
               onComplete={(i) => setCompletedIndices(prev => new Set(prev).add(i))}
             />
           )}
@@ -118,14 +126,21 @@ function App() {
               <span className="font-mono text-label-caps text-on-surface-variant">연결됨</span>
             </div>
           </div>
-          {quest && (
-            <Terminal
-              key={sandboxType === 'docker-persistent' ? `set-${selectedSetId}` : sandboxType === 'k8s' ? 'k8s' : questIndex}
-              sandboxType={sandboxType}
-              questId={quest?.id ?? null}
-              containerId={containerId || null}
-              onConnected={setContainerId}
-            />
+          {quest
+            ? <Terminal
+                key={`${sandboxType === 'docker-persistent' ? `set-${selectedSetId}` : questIndex}-${resetKey}`}
+                sandboxType={sandboxType}
+                questId={quest.id}
+                containerId={containerId || null}
+                onConnected={(id) => { setContainerId(id); setPreparing(false) }}
+              />
+            : null
+          }
+          {preparing && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface/80 z-50">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span className="font-mono text-label-caps text-on-surface-variant">환경 준비 중...</span>
+            </div>
           )}
         </section>
       </main>

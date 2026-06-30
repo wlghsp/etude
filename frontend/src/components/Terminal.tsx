@@ -59,13 +59,14 @@ export function Terminal({ sandboxType, questId, containerId, onConnected }: Pro
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
-        <div style={{ height: '100vh', background: '#000' }}>
+        <div className="relative" style={{ height: '100vh', background: '#000' }}>
+            <div ref={containerRef} style={{ height: '100%', padding: '4px' }} />
             {loading && (
-                <div style={{ color: '#666', padding: '1rem', fontSize: '13px' }}>
-                    환경 준비 중...
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 gap-3">
+                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <span className="font-mono text-label-caps text-on-surface-variant">환경 준비 중...</span>
                 </div>
             )}
-            <div ref={containerRef} style={{ height: '100%', padding: '4px', display: loading ? 'none' : 'block' }} />
         </div>
     )
 }

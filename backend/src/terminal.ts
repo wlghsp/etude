@@ -183,12 +183,14 @@ async function handleK8sTerminal(socket: WebSocket, docker: Docker, config: { im
   socket.on('message', (msg: Buffer) => stream.write(msg))
   socket.on('close', async () => {
     // namespace 삭제 후 컨테이너 제거
-    const delExec = await container.exec({
+    try {
+      const delExec = await container.exec({
       Cmd: ['kubectl', 'delete', 'namespace', ns, '--ignore-not-found'],
       AttachStdout: false,
       AttachStderr: false,
     })
     await delExec.start({})
+    } catch {}
     container.stop().then(() => container.remove()).catch(() => {})
   })
 
