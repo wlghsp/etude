@@ -105,20 +105,17 @@ CREATE TABLE quest_attempt (
 #### POST /grade
 기존과 동일하지만, 채점 결과를 `quest_attempt`에 기록.
 ```json
-// 요청
+// 요청 (현재 구현)
 {
   "containerId": "abc123",
-  "questId": 1,
-  "questSetId": 1,
-  "sessionId": "uuid-v4",
-  "elapsedSec": 142,
-  "hintUsed": false,
-  "solutionUsed": false
+  "questId": 1
 }
 
 // 응답 (기존과 동일)
 { "passed": true }
 ```
+
+> `sessionId`, `elapsedSec`, `hintUsed`, `solutionUsed`는 Phase 9에서 추가 예정. 현재는 `user_id`, `quest_id`, `quest_set_id`, `passed`, `attempted_at`만 기록.
 
 #### GET /leaderboard
 인증 필요. 전체 팀원의 세트별 진행 현황 (리더보드 — 모든 팀원 공개).
@@ -179,7 +176,9 @@ CREATE TABLE quest_attempt (
 | `frontend/src/pages/Progress.tsx` | 신규 — 내 진행 현황 대시보드 |
 | `frontend/src/pages/Leaderboard.tsx` | 신규 — 전체 팀원 리더보드 (모든 팀원 접근 가능) |
 | `frontend/src/pages/SetSelect.tsx` | 진행률 배지 추가 |
-| `frontend/src/components/QuestPanel.tsx` | 환경 리셋 버튼, 프로그레스 바, 성공 시 NEXT QUEST 버튼, elapsed/hint/solution 추적 |
+| `frontend/src/components/QuestPanel.tsx` | 환경 리셋 버튼(confirm), 프로그레스 바, 성공 시 NEXT QUEST 버튼. Props: `onHome`(홈), `onReset`(환경리셋), `onComplete`(채점성공 콜백) |
+| `frontend/tailwind.config.js` | Stitch 커스텀 컬러 토큰 (surface, primary, outline-variant 등) |
+| `frontend/src/index.css` | JetBrains Mono + Material Symbols 폰트, Tailwind 디렉티브 |
 
 ---
 
@@ -196,10 +195,13 @@ CREATE TABLE quest_attempt (
 
 - [ ] 로그인 성공 → JWT 발급 → 세트 선택 화면 진입
 - [ ] 잘못된 이메일/비밀번호 → 에러 메시지 표시
-- [ ] 퀘스트 채점 성공 → `quest_attempt`에 행 추가 (elapsed_sec, hint_used 포함)
+- [ ] 퀘스트 채점 성공 → `quest_attempt`에 행 추가 (user_id, quest_id, passed 포함)
 - [ ] 같은 퀘스트 재채점 → attempt 행 추가 (중복 허용)
 - [ ] `/progress` 에서 세트별 완료 수 확인
-- [ ] admin 계정 → `/admin/progress` 에서 전체 팀원 현황 확인
-- [ ] member 계정 → `/admin/progress` 호출 시 403 반환
-- [ ] 로그아웃 → 토큰 삭제 → `/login` 리다이렉트
+- [ ] `/leaderboard` 에서 전체 팀원 현황 확인 (member/admin 모두)
+- [ ] member 계정 → `/admin/users` 호출 시 403 반환
+- [ ] 로그아웃 → 토큰 삭제 → 로그인 화면으로 이동
 - [ ] 토큰 없이 인증 필요 API 호출 → 401 반환
+- [ ] SetSelect 세트 카드에 진행률 배지 표시
+- [ ] 채점 성공 시 NEXT QUEST 버튼 표시, 클릭 시 다음 퀘스트로 이동
+- [ ] 환경 리셋 버튼 → confirm 다이얼로그 → 터미널 재연결
