@@ -47,16 +47,15 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, o
     return (
         <div className="dark h-full flex flex-col bg-surface border-r border-outline-variant">
             {/* Progress Bar */}
-            <div className="w-full h-1 bg-surface-container-lowest shrink-0">
-                <div className="h-full bg-success transition-all duration-300" style={{ width: `${pct}%` }} />
+            <div className="w-full h-[3px] bg-surface-container-highest shrink-0">
+                <div className="h-full bg-primary transition-all duration-300" style={{ width: `${pct}%` }} />
             </div>
 
             {/* Scrollable Content */}
             <div className="p-6 flex-1 overflow-y-auto">
                 <div className="mb-4">
-                    <span className="font-mono text-label-caps text-on-surface-variant">CURRENT SESSION</span>
+                    <span className="font-mono text-label-caps text-on-surface-variant">{index + 1} / {total}</span>
                     <h1 className="font-mono text-headline-lg mt-1 text-on-surface">{quest.title}</h1>
-                    <p className="font-mono text-on-surface-variant text-body-md mt-1">Quest Index: {index + 1}/{total}</p>
                 </div>
 
                 <div className="space-y-4">

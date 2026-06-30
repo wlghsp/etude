@@ -77,13 +77,10 @@ function App() {
   return (
     <div className="dark h-screen flex flex-col bg-surface overflow-hidden">
       {/* TopNav */}
-      <header className="flex justify-between items-center w-full px-gutter h-14 bg-surface border-b border-outline-variant shrink-0">
-        <span className="font-mono text-body-lg font-bold tracking-tighter text-on-surface">OKESTRO TRAINING | Etude</span>
-        <div className="flex items-center gap-6">
-          <button onClick={() => setPage('progress')} className="font-mono text-on-surface-variant hover:text-primary transition-colors text-body-md">Progress Status</button>
-          <button onClick={() => setSelectedSetId(null)} className="font-mono text-on-surface-variant hover:text-primary transition-colors text-body-md">Dashboard</button>
-          <button onClick={() => { token.clear(); setUser(null) }} className="font-mono text-on-surface-variant hover:text-primary transition-colors text-body-md">Logout</button>
-        </div>
+      <header className="flex items-center w-full px-gutter h-14 bg-surface border-b border-outline-variant shrink-0">
+        <button onClick={() => setSelectedSetId(null)} className="font-mono text-body-lg font-bold tracking-tighter text-on-surface hover:text-primary transition-colors">
+          OKESTRO TRAINING | Etude
+        </button>
       </header>
       <main className="flex flex-1 overflow-hidden">
         <section className="w-[40%] flex flex-col">
