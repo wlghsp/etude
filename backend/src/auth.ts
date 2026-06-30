@@ -8,6 +8,7 @@ const JWT_EXPIRES = '24h'
 
 export interface JwtPayload {
     userId: number
+    name: string
     email: string
     role: string
 }
@@ -24,7 +25,7 @@ export async function login(email: string, password: string) {
     const match = await bcrypt.compare(password, user.password)
     if (!match) throw new Error('이메일 또는 비밀번호가 올바르지 않습니다.')
 
-    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role} satisfies JwtPayload, JWT_SECRET, { expiresIn: JWT_EXPIRES })
+    const token = jwt.sign({ userId: user.id, name: user.name, email: user.email, role: user.role} satisfies JwtPayload, JWT_SECRET, { expiresIn: JWT_EXPIRES })
 
     return {
         token,
