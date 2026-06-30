@@ -51,13 +51,29 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, o
                 <div className="h-full bg-primary transition-all duration-300" style={{ width: `${pct}%` }} />
             </div>
 
+            {/* Header: quest index + title + controls */}
+            <div className="px-6 py-4 border-b border-outline-variant shrink-0">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <span className="font-mono text-label-caps text-on-surface-variant">{index + 1} / {total}</span>
+                        <h1 className="font-mono text-headline-lg text-on-surface truncate">{quest.title}</h1>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={onPrev} disabled={index === 0} title="Previous" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center font-mono text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
+                            <span className="material-symbols-outlined text-[18px]">chevron_left</span>PREV
+                        </button>
+                        <button onClick={handleNext} disabled={index === total - 1} title="Next" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center font-mono text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
+                            NEXT<span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                        </button>
+                        <button onClick={handleReset} title="Reset Environment" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center justify-center transition-colors ml-2">
+                            <span className="material-symbols-outlined text-[18px] text-on-surface-variant">restart_alt</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {/* Scrollable Content */}
             <div className="p-6 flex-1 overflow-y-auto">
-                <div className="mb-4">
-                    <span className="font-mono text-label-caps text-on-surface-variant">{index + 1} / {total}</span>
-                    <h1 className="font-mono text-headline-lg mt-1 text-on-surface">{quest.title}</h1>
-                </div>
-
                 <div className="space-y-4">
                     {/* Description */}
                     <div className="border border-outline-variant bg-surface-container p-4">
@@ -122,22 +138,6 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, o
                         </div>
                     )}
                 </div>
-            </div>
-
-            {/* Bottom Controls */}
-            <div className="border-t border-outline-variant p-4 grid grid-cols-4 gap-2 bg-surface shrink-0">
-                <button onClick={onHome} title="Go Home" className="border border-outline-variant hover:bg-surface-container-high py-2 flex items-center justify-center transition-colors">
-                    <span className="material-symbols-outlined text-on-surface-variant">home</span>
-                </button>
-                <button onClick={handleReset} title="Reset Environment" className="border border-outline-variant hover:bg-surface-container-high py-2 flex items-center justify-center transition-colors">
-                    <span className="material-symbols-outlined text-on-surface-variant">restart_alt</span>
-                </button>
-                <button onClick={onPrev} disabled={index === 0} className="border border-outline-variant hover:bg-surface-container-high py-2 flex items-center justify-center font-mono text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
-                    <span className="material-symbols-outlined">chevron_left</span> PREV
-                </button>
-                <button onClick={handleNext} disabled={index === total - 1} className="border border-outline-variant hover:bg-surface-container-high py-2 flex items-center justify-center font-mono text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
-                    NEXT <span className="material-symbols-outlined">chevron_right</span>
-                </button>
             </div>
         </div>
     )
