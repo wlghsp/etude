@@ -6,7 +6,7 @@ interface Props {
 }
 
 export function Login({ onLogin }: Props) {
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => localStorage.getItem('lastEmail') ?? '')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -17,6 +17,7 @@ export function Login({ onLogin }: Props) {
     setLoading(true)
     try {
       const data = await loginApi(email, password)
+      localStorage.setItem('lastEmail', email)
       token.set(data.token)
       onLogin(data.user)
     } catch (e) {
@@ -42,7 +43,7 @@ export function Login({ onLogin }: Props) {
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <label className="text-label-caps font-mono text-on-surface-variant block uppercase tracking-widest">
-                Email Address
+                이메일
               </label>
               <input
                 type="email"
@@ -56,7 +57,7 @@ export function Login({ onLogin }: Props) {
 
             <div className="space-y-2">
               <label className="text-label-caps font-mono text-on-surface-variant block uppercase tracking-widest">
-                Password
+                비밀번호
               </label>
               <input
                 type="password"
@@ -72,7 +73,7 @@ export function Login({ onLogin }: Props) {
               disabled={loading}
               className="w-full py-3 bg-info text-white font-mono text-body-md flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50"
             >
-              <span>{loading ? 'VALIDATING_CREDENTIALS...' : 'LOGIN_TO_WORKSPACE'}</span>
+              <span>{loading ? '로그인 중...' : '로그인'}</span>
               {!loading && <span className="material-symbols-outlined text-[18px]">arrow_forward</span>}
             </button>
           </form>
@@ -82,7 +83,7 @@ export function Login({ onLogin }: Props) {
               <div className="flex gap-3 items-start text-error">
                 <span className="material-symbols-outlined text-[18px] mt-0.5">error</span>
                 <p className="font-mono text-code-sm">
-                  AUTH_FAILURE: {error}
+                  {error}
                 </p>
               </div>
             </div>
@@ -91,7 +92,6 @@ export function Login({ onLogin }: Props) {
 
         <footer className="mt-8 flex justify-between items-center px-2">
           <div className="flex items-center gap-4">
-            <span className="font-mono text-on-surface-variant/40 text-[10px]">v1.0.4-stable</span>
             <span className="w-[1px] h-3 bg-outline-variant/30"></span>
             <span className="font-mono text-on-surface-variant/40 text-[10px]">OKESTRO TRAINING</span>
           </div>

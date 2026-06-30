@@ -104,12 +104,12 @@ function App() {
           <div className="h-9 border-b border-outline-variant flex items-center px-4 bg-surface justify-between shrink-0">
             <div className="flex items-center gap-4">
               <span className="font-mono text-label-caps text-on-surface flex items-center gap-2">
-                <span className="material-symbols-outlined text-[16px]">terminal</span> TERMINAL
+                <span className="material-symbols-outlined text-[16px]">terminal</span> 터미널
               </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-success"></span>
-              <span className="font-mono text-label-caps text-on-surface-variant">CONNECTED</span>
+              <span className="font-mono text-label-caps text-on-surface-variant">연결됨</span>
             </div>
           </div>
           {quest && (

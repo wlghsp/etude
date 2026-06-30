@@ -59,13 +59,13 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, o
                         <h1 className="font-mono text-headline-lg text-on-surface truncate">{quest.title}</h1>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                        <button onClick={onPrev} disabled={index === 0} title="Previous" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center font-mono text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
-                            <span className="material-symbols-outlined text-[18px]">chevron_left</span>PREV
+                        <button onClick={onPrev} disabled={index === 0} title="이전" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center font-mono text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
+                            <span className="material-symbols-outlined text-[18px]">chevron_left</span>이전
                         </button>
-                        <button onClick={handleNext} disabled={index === total - 1} title="Next" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center font-mono text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
-                            NEXT<span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                        <button onClick={handleNext} disabled={index === total - 1} title="다음" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center font-mono text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
+                            다음<span className="material-symbols-outlined text-[18px]">chevron_right</span>
                         </button>
-                        <button onClick={handleReset} title="Reset Environment" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center justify-center transition-colors ml-2">
+                        <button onClick={handleReset} title="환경 초기화" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center justify-center transition-colors ml-2">
                             <span className="material-symbols-outlined text-[18px] text-on-surface-variant">restart_alt</span>
                         </button>
                     </div>
@@ -77,7 +77,7 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, o
                 <div className="space-y-4">
                     {/* Description */}
                     <div className="border border-outline-variant bg-surface-container p-4">
-                        <h3 className="font-mono text-label-caps text-primary mb-2">DESCRIPTION</h3>
+                        <h3 className="font-mono text-label-caps text-primary mb-2">설명</h3>
                         <p className="font-mono text-body-md text-on-surface leading-relaxed">{resolve(quest.description)}</p>
                     </div>
 
@@ -85,7 +85,7 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, o
                     <div className="flex gap-2">
                         <details className="flex-1">
                             <summary className="border border-outline-variant hover:bg-surface-container-high py-2 px-3 font-mono text-label-caps cursor-pointer text-center transition-all list-none">
-                                VIEW HINT
+                                힌트 보기
                             </summary>
                             <div className="mt-2 border border-outline-variant border-l-4 border-l-primary bg-surface-container-low p-4">
                                 <p className="font-mono text-body-md text-on-surface-variant">{resolve(quest.hint ?? '')}</p>
@@ -93,7 +93,7 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, o
                         </details>
                         <details className="flex-1">
                             <summary className="border border-outline-variant hover:bg-surface-container-high py-2 px-3 font-mono text-label-caps cursor-pointer text-center transition-all list-none">
-                                VIEW SOLUTION
+                                풀이 보기
                             </summary>
                             <div className="mt-2 border border-outline-variant bg-surface-container-low p-4">
                                 <p className="font-mono text-code-sm text-on-surface-variant">{resolve(quest.solution ?? '')}</p>
@@ -108,7 +108,7 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, o
                         className="w-full py-3 bg-info text-white font-mono text-label-caps hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                        {loading ? 'GRADING...' : 'GRADE QUEST'}
+                        {loading ? '채점 중...' : '채점하기'}
                     </button>
 
                     {/* Result */}
@@ -123,13 +123,13 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, o
                             <div className="flex items-center gap-3 mb-3">
                                 <span className="material-symbols-outlined text-success" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                                 <div>
-                                    <h4 className="font-mono text-body-md font-bold text-success">QUEST COMPLETE</h4>
-                                    <p className="font-mono text-label-caps text-success/80">Status: Validated</p>
+                                    <h4 className="font-mono text-body-md font-bold text-success">퀘스트 완료!</h4>
+                                    <p className="font-mono text-label-caps text-success/80">정답입니다</p>
                                 </div>
                             </div>
                             {index < total - 1
                                 ? <button onClick={handleNext} className="w-full bg-success text-on-primary py-3 font-mono font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2">
-                                    NEXT QUEST <span className="material-symbols-outlined">arrow_forward</span>
+                                    다음 퀘스트 <span className="material-symbols-outlined">arrow_forward</span>
                                   </button>
                                 : <button onClick={onHome} className="w-full bg-success text-on-primary py-3 font-mono font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2">
                                     세트 완료! 홈으로 <span className="material-symbols-outlined">home</span>

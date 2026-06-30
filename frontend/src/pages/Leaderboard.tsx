@@ -40,24 +40,24 @@ export function Leaderboard({ onBack, onProgress, onLogout }: Props) {
                             <span>/</span>
                             <span>workspace</span>
                             <span>/</span>
-                            <span className="text-on-surface">leaderboard</span>
+                            <span className="text-on-surface">리더보드</span>
                         </div>
-                        <h1 className="font-mono text-headline-lg text-on-surface">Leaderboard</h1>
+                        <h1 className="font-mono text-headline-lg text-on-surface">리더보드</h1>
                     </div>
 
                     <div className="bg-surface-container border border-outline-variant overflow-hidden">
                         <div className="p-4 border-b border-outline-variant bg-surface-container-high flex justify-between items-center">
-                            <h3 className="font-mono text-label-caps uppercase tracking-widest text-on-surface">Member Progress Matrix</h3>
+                            <h3 className="font-mono text-label-caps uppercase tracking-widest text-on-surface">팀원 진행현황</h3>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="border-b border-outline-variant bg-surface-container-lowest">
-                                        <th className="p-4 font-mono text-label-caps uppercase text-on-surface-variant border-r border-outline-variant w-48">Member</th>
-                                        <th className="p-4 font-mono text-label-caps uppercase text-on-surface-variant">Training Set Name</th>
-                                        <th className="p-4 font-mono text-label-caps uppercase text-on-surface-variant">Category</th>
-                                        <th className="p-4 font-mono text-label-caps uppercase text-on-surface-variant w-64">Progress</th>
-                                        <th className="p-4 font-mono text-label-caps uppercase text-on-surface-variant text-right">Status</th>
+                                        <th className="p-4 font-mono text-label-caps uppercase text-on-surface-variant border-r border-outline-variant w-48">팀원</th>
+                                        <th className="p-4 font-mono text-label-caps uppercase text-on-surface-variant">세트명</th>
+                                        <th className="p-4 font-mono text-label-caps uppercase text-on-surface-variant">카테고리</th>
+                                        <th className="p-4 font-mono text-label-caps uppercase text-on-surface-variant w-64">진행률</th>
+                                        <th className="p-4 font-mono text-label-caps uppercase text-on-surface-variant text-right">상태</th>
                                     </tr>
                                 </thead>
                                 <tbody className="font-mono text-body-md">
@@ -73,7 +73,7 @@ export function Leaderboard({ onBack, onProgress, onLogout }: Props) {
                                                 <td className="p-4 text-on-surface">{r.questSetTitle}</td>
                                                 <td className="p-4">
                                                     <div className="inline-flex items-center gap-2 px-2 py-1 bg-surface-container-highest border border-outline-variant">
-                                                        <span className="font-mono text-label-caps">{r.category}</span>
+                                                        <span className="font-mono text-code-sm">{r.category}</span>
                                                     </div>
                                                 </td>
                                                 <td className="p-4">
@@ -92,10 +92,10 @@ export function Leaderboard({ onBack, onProgress, onLogout }: Props) {
                                                 </td>
                                                 <td className="p-4 text-right">
                                                     {isComplete
-                                                        ? <span className="font-mono text-label-caps text-success border border-success px-2 py-0.5 bg-success/10">COMPLETED</span>
+                                                        ? <span className="font-mono text-code-sm text-success border border-success px-2 py-1 bg-success/10">완료</span>
                                                         : isStarted
-                                                            ? <span className="font-mono text-label-caps text-info border border-info px-2 py-0.5 bg-info/10">IN PROGRESS</span>
-                                                            : <span className="font-mono text-label-caps text-on-surface-variant border border-outline-variant px-2 py-0.5 bg-surface-variant/5">NOT STARTED</span>
+                                                            ? <span className="font-mono text-code-sm text-info border border-info px-2 py-1 bg-info/10">진행 중</span>
+                                                            : <span className="font-mono text-code-sm text-on-surface-variant border border-outline-variant px-2 py-1 bg-surface-variant/5">미시작</span>
                                                     }
                                                 </td>
                                             </tr>
@@ -106,13 +106,6 @@ export function Leaderboard({ onBack, onProgress, onLogout }: Props) {
                         </div>
                     </div>
 
-                    <div className="mt-8 pt-4 border-t border-outline-variant">
-                        <div className="flex items-center gap-4 font-mono text-label-caps text-on-surface-variant">
-                            <span className="flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-success"></span> System Online
-                            </span>
-                        </div>
-                    </div>
                 </main>
             </div>
         </div>
