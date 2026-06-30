@@ -2,13 +2,15 @@ type Page = 'home' | 'progress' | 'leaderboard'
 
 interface Props {
     activePage: Page
+    userName: string
+    userEmail: string
     onHome: () => void
     onProgress: () => void
     onLeaderboard: () => void
     onLogout: () => void
 }
 
-export function SideNav({ activePage, onHome, onProgress, onLeaderboard, onLogout }: Props) {
+export function SideNav({ activePage, userName, userEmail, onHome, onProgress, onLeaderboard, onLogout }: Props) {
     const item = (icon: string, label: string, page: Page, onClick: () => void) => {
         const active = activePage === page
         return active
@@ -36,6 +38,10 @@ export function SideNav({ activePage, onHome, onProgress, onLeaderboard, onLogou
                 {item('analytics', '리더보드', 'leaderboard', onLeaderboard)}
             </nav>
             <div className="border-t border-outline-variant pt-4 px-2">
+                <div className="px-4 py-3 mb-1">
+                    <div className="font-mono text-body-md font-semibold text-on-surface truncate">{userName}</div>
+                    <div className="font-mono text-code-sm text-on-surface-variant truncate">{userEmail}</div>
+                </div>
                 <button onClick={onLogout} className="w-full flex items-center gap-3 text-on-surface-variant pl-4 py-3 hover:text-on-surface transition-all">
                     <span className="material-symbols-outlined text-[22px]">logout</span>
                     <span className="font-mono text-body-md">로그아웃</span>

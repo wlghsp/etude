@@ -55,8 +55,8 @@ function App() {
 
   const handleLogout = () => { token.clear(); setUser(null) }
 
-  if (page === 'progress') return <Progress onBack={() => setPage('home')} onLeaderboard={() => setPage('leaderboard')} onLogout={handleLogout} />
-  if (page === 'leaderboard') return <Leaderboard onBack={() => setPage('home')} onProgress={() => setPage('progress')} onLogout={handleLogout} />
+  if (page === 'progress') return <Progress onBack={() => setPage('home')} onLeaderboard={() => setPage('leaderboard')} onLogout={handleLogout} userName={user.name} userEmail={user.email} />
+  if (page === 'leaderboard') return <Leaderboard onBack={() => setPage('home')} onProgress={() => setPage('progress')} onLogout={handleLogout} userName={user.name} userEmail={user.email} />
 
   if (selectedSetId === null) {
     function handleSetSelect(id: number, sandboxType: string) {
@@ -69,6 +69,8 @@ function App() {
         onProgress={() => setPage('progress')}
         onLeaderboard={() => setPage('leaderboard')}
         onLogout={handleLogout}
+        userName={user.name}
+        userEmail={user.email}
     />
   }
 

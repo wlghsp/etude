@@ -15,9 +15,11 @@ interface Props {
     onBack: () => void
     onProgress: () => void
     onLogout: () => void
+    userName: string
+    userEmail: string
 }
 
-export function Leaderboard({ onBack, onProgress, onLogout }: Props) {
+export function Leaderboard({ onBack, onProgress, onLogout, userName, userEmail }: Props) {
     const [rows, setRows] = useState<Row[]>([])
 
     useEffect(() => {
@@ -31,7 +33,7 @@ export function Leaderboard({ onBack, onProgress, onLogout }: Props) {
         <div className="dark min-h-screen bg-surface flex flex-col">
             <TopNav onHome={onBack} />
             <div className="flex flex-1 pt-14">
-                <SideNav activePage="leaderboard" onHome={onBack} onProgress={onProgress} onLeaderboard={() => {}} onLogout={onLogout} />
+                <SideNav activePage="leaderboard" userName={userName} userEmail={userEmail} onHome={onBack} onProgress={onProgress} onLeaderboard={() => {}} onLogout={onLogout} />
 
                 <main className="flex-1 md:ml-60 p-margin-page bg-surface overflow-y-auto">
                     <div className="flex flex-col gap-2 mb-8">
