@@ -53,8 +53,10 @@ function App() {
   // 비로그인 - 로그인 화면
   if (!user) return <Login onLogin={(u) => setUser(u)} />
 
-  if (page === 'progress') return <Progress onBack={() => setPage('home')} onLeaderboard={() => setPage('leaderboard')} />
-  if (page === 'leaderboard') return <Leaderboard onBack={() => setPage('home')} />
+  const handleLogout = () => { token.clear(); setUser(null) }
+
+  if (page === 'progress') return <Progress onBack={() => setPage('home')} onLeaderboard={() => setPage('leaderboard')} onLogout={handleLogout} />
+  if (page === 'leaderboard') return <Leaderboard onBack={() => setPage('home')} onProgress={() => setPage('progress')} onLogout={handleLogout} />
 
   if (selectedSetId === null) {
     function handleSetSelect(id: number, sandboxType: string) {
@@ -66,7 +68,7 @@ function App() {
         onSelect={handleSetSelect}
         onProgress={() => setPage('progress')}
         onLeaderboard={() => setPage('leaderboard')}
-        onLogout={() => { token.clear(); setUser(null) }}
+        onLogout={handleLogout}
     />
   }
 
