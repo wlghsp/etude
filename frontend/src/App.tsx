@@ -19,6 +19,7 @@ function App() {
   const [authChecked, setAuthChecked] = useState(false)
   const [page, setPage] = useState<'home' | 'progress' | 'leaderboard'>('home')
   const [completedIndices, setCompletedIndices] = useState<Set<number>>(new Set())
+  const [sessionId, setSessionId] = useState('')
   const containerIdRef = useRef(containerId)
   const sandboxTypeRef = useRef(sandboxType)
 
@@ -39,6 +40,7 @@ function App() {
         setQuests(data)
         setQuestIndex(0)
         setCompletedIndices(new Set())
+        setSessionId(`${Date.now()}-${Math.random().toString(36).slice(2)}`)
       })
     return () => {
       if (containerIdRef.current && sandboxTypeRef.current === 'docker-persistent') {
@@ -91,6 +93,8 @@ function App() {
               key={quest.id}
               quest={quest}
               containerId={containerId}
+              questSetId={selectedSetId}
+              sessionId={sessionId}
               total={quests.length}
               index={questIndex}
               completedIndices={completedIndices}

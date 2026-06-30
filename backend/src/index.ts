@@ -117,7 +117,7 @@ fastify.post('/grade', async (req) => {
             try {
                 const payload = verifyToken(token)
                 await recordAttempt(payload.userId, questId, questSetId, sessionId, passed, elapsedSec, hintUsed, solutionUsed)
-            } catch {} // 토큰 없거나 만료돼도 채점 결과는 정상 반환
+            } catch (e) { console.error('[grade] recordAttempt error:', e) }
         }
 
         return { passed }

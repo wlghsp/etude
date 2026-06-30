@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { Quest } from '../types'
 import { gradeQuest } from '../api'
 
 interface Props {
     quest: Quest
     containerId: string
+    questSetId: number
+    sessionId: string
     total: number
     index: number
     completedIndices: Set<number>
@@ -15,7 +17,10 @@ interface Props {
     onComplete: (index: number) => void
 }
 
-export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, onHome, onReset, onComplete }: Props) {
+export function QuestPanel({ quest, containerId, questSetId, sessionId, total, index, onPrev, onNext, onHome, onReset, onComplete }: Props) {
+    const startTimeRef = useRef(0)
+    useEffect(() => { startTimeRef.current = Date.now() }, [])
+    
     const [result, setResult] = useState<boolean | null>(null)
     const [loading, setLoading] = useState(false)
     const ns = containerId ? `quest-${containerId.slice(0, 8)}` : '$NS'
@@ -25,7 +30,8 @@ export function QuestPanel({ quest, containerId, total, index, onPrev, onNext, o
     const grade = async () => {
         setLoading(true)
         try {
-            const data = await gradeQuest(containerId, quest.id)
+            const elapsedSec = Math.round((Date.now() - startTimeRef.current) / 1000)
+            const data = await gradeQuest(containerId, quest.id, questSetId, sessionId, elapsedSec)
             setResult(data.passed)
             if (data.passed) onComplete(index)
         } finally {

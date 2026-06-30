@@ -195,9 +195,9 @@ CREATE TABLE quest_attempt (
 
 ## 검증 기준
 
-- [ ] 로그인 성공 → JWT 발급 → 세트 선택 화면 진입
-- [ ] 잘못된 이메일/비밀번호 → 에러 메시지 표시
-- [ ] 퀘스트 채점 성공 → `quest_attempt`에 행 추가 (user_id, quest_id, passed 포함)
+- [x] 로그인 성공 → JWT 발급 → 세트 선택 화면 진입
+- [x] 잘못된 이메일/비밀번호 → 에러 메시지 표시
+- [x] 퀘스트 채점 성공 → `quest_attempt`에 행 추가 (user_id, quest_id, passed 포함)
 - [ ] 같은 퀘스트 재채점 → attempt 행 추가 (중복 허용)
 - [ ] `/progress` 에서 세트별 완료 수 확인
 - [ ] `/leaderboard` 에서 전체 팀원 현황 확인 (member/admin 모두)

@@ -9,11 +9,11 @@ export async function fetchQuests(setId: number) {
   return fetch(`${BASE}/quest-sets/${setId}/quests`, { headers: authHeaders() }).then((r) => r.json())
 }
 
-export async function gradeQuest(containerId: string, questId: number) {
+export async function gradeQuest(containerId: string, questId: number, questSetId: number, sessionId: string, elapsedSec: number) {
   return fetch(`${BASE}/grade`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ containerId, questId }),
+    body: JSON.stringify({ containerId, questId, questSetId, sessionId, elapsedSec }),
   }).then((r) => r.json())
 }
 
