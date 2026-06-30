@@ -20,6 +20,9 @@ interface Props {
 export function QuestPanel({ quest, containerId, questSetId, sessionId, total, index, onPrev, onNext, onHome, onReset, onComplete }: Props) {
     const startTimeRef = useRef(0)
     useEffect(() => { startTimeRef.current = Date.now() }, [])
+    const [hintUsed, setHintUsed] = useState(false)
+    const [solutionUsed, setSolutionUsed] = useState(false)
+
     
     const [result, setResult] = useState<boolean | null>(null)
     const [loading, setLoading] = useState(false)
@@ -31,7 +34,7 @@ export function QuestPanel({ quest, containerId, questSetId, sessionId, total, i
         setLoading(true)
         try {
             const elapsedSec = Math.round((Date.now() - startTimeRef.current) / 1000)
-            const data = await gradeQuest(containerId, quest.id, questSetId, sessionId, elapsedSec)
+            const data = await gradeQuest(containerId, quest.id, questSetId, sessionId, elapsedSec, hintUsed, solutionUsed)
             setResult(data.passed)
             if (data.passed) onComplete(index)
         } finally {
@@ -89,7 +92,7 @@ export function QuestPanel({ quest, containerId, questSetId, sessionId, total, i
 
                     {/* Hint / Solution */}
                     <div className="flex gap-2">
-                        <details className="flex-1">
+                        <details className="flex-1" onToggle={(e) => { if ((e.currentTarget as HTMLDetailsElement).open) setHintUsed(true) }}>
                             <summary className="border border-outline-variant hover:bg-surface-container-high py-2 px-3 font-mono text-label-caps cursor-pointer text-center transition-all list-none">
                                 힌트 보기
                             </summary>
@@ -97,7 +100,7 @@ export function QuestPanel({ quest, containerId, questSetId, sessionId, total, i
                                 <p className="font-mono text-body-md text-on-surface-variant">{resolve(quest.hint ?? '')}</p>
                             </div>
                         </details>
-                        <details className="flex-1">
+                        <details className="flex-1" onToggle={(e) => { if ((e.currentTarget as HTMLDetailsElement).open) setSolutionUsed(true) }}>
                             <summary className="border border-outline-variant hover:bg-surface-container-high py-2 px-3 font-mono text-label-caps cursor-pointer text-center transition-all list-none">
                                 풀이 보기
                             </summary>
@@ -110,7 +113,7 @@ export function QuestPanel({ quest, containerId, questSetId, sessionId, total, i
                     {/* Grade Button */}
                     <button
                         onClick={grade}
-                        disabled={loading}
+                        disabled={loading || result === true}
                         className="w-full py-3 bg-info text-white font-mono text-label-caps hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         <span className="material-symbols-outlined text-[16px]">check_circle</span>

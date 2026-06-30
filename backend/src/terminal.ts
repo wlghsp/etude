@@ -35,13 +35,15 @@ async function runSetupCmd(
       setupCmd = setupCmd.map((s: string) => s.replace(/\$NS/g, ns))
     }
 
-    const exec = await container.exec({ Cmd: setupCmd, AttachStdout: false, AttachStderr: false })
-    await exec.start({})
-    while (true) {
-        const info = await exec.inspect()
-        if (!info.Running) break
-        await new Promise((r) => setTimeout(r, 100))
-    }
+    const exec = await container.exec({ Cmd: setupCmd, AttachStdout: true, AttachStderr: true })
+    await new Promise<void>((resolve, reject) => {
+        exec.start({ hijack: true, stdin: false }, (err: any, stream: any) => {
+            if (err) return reject(err)
+            stream.resume()
+            stream.on('end', resolve)
+            stream.on('error', reject)
+        })
+    })
 }
 
 export async function handleTerminal(
