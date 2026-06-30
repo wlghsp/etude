@@ -35,7 +35,7 @@ export function SideNav({ activePage, userName, userEmail, onHome, onProgress, o
             <nav className="flex-1 space-y-1">
                 {item('grid_view', '트레이닝 세트', 'home', onHome)}
                 {item('assignment', '내 진행현황', 'progress', onProgress)}
-                {item('analytics', '리더보드', 'leaderboard', onLeaderboard)}
+                {item('analytics', '랭킹', 'leaderboard', onLeaderboard)}
             </nav>
             <div className="border-t border-outline-variant pt-4 px-2">
                 <div className="px-4 py-3 mb-1">

@@ -60,14 +60,14 @@ export function Leaderboard({ onBack, onProgress, onLogout, userName, userEmail 
                             <span>/</span>
                             <span>workspace</span>
                             <span>/</span>
-                            <span className="text-on-surface">리더보드</span>
+                            <span className="text-on-surface">랭킹</span>
                         </div>
-                        <h1 className="font-mono text-headline-lg text-on-surface">리더보드</h1>
+                        <h1 className="font-mono text-headline-lg text-on-surface">랭킹</h1>
                     </div>
 
                     <div className="bg-surface-container border border-outline-variant overflow-hidden">
                         <div className="p-4 border-b border-outline-variant bg-surface-container-high flex justify-between items-center">
-                            <h3 className="font-mono text-label-caps uppercase tracking-widest text-on-surface">팀원 진행현황</h3>
+                            <h3 className="font-mono text-label-caps uppercase tracking-widest text-on-surface">팀원 랭킹</h3>
                         </div>
 
                         {rows.map((u, idx) => {
