@@ -35,21 +35,23 @@ export async function gradeQuest(
 
 ## Step 2. `QuestPanel.tsx` — 진입 시각 기록 + 전달
 
-### 2-1. import에 `useRef` 추가
+### 2-1. import에 `useRef`, `useEffect` 추가
 
 ```ts
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 ```
 
-### 2-2. 컴포넌트 상단에 startTimeRef 추가
+### 2-2. 컴포넌트 상단에 startTimeRef + useEffect 추가
 
 `const [result, setResult] = useState` 바로 위에:
 
 ```ts
-const startTimeRef = useRef(Date.now())
+const startTimeRef = useRef(0)
+useEffect(() => { startTimeRef.current = Date.now() }, [])
 ```
 
-> `key={quest.id}`로 퀘스트가 바뀔 때마다 컴포넌트가 리마운트되므로 자동으로 초기화된다. 별도 useEffect 불필요.
+> `useRef` 초기값에 `Date.now()`를 직접 쓰면 React 린터가 순수하지 않은 함수 호출로 에러를 낸다. `useEffect`로 마운트 후 초기화해야 한다.  
+> `key={quest.id}`로 퀘스트가 바뀔 때마다 컴포넌트가 리마운트되므로 자동으로 초기화된다.
 
 ### 2-3. grade 함수에서 경과 시간 계산 후 전달
 
