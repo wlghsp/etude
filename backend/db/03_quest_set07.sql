@@ -1,0 +1,65 @@
+-- 세트 7: 리눅스 압축과 아카이브 (order 1~9)
+-- 실무 조합: -cvf, -tvf, -xvf, -czvf, -xzvf 중심
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
+  (7,  1, 'tar로 파일 묶기 (-cvf)',
+   '/tmp/files 디렉토리를 tar로 묶어 /tmp/files.tar 로 저장하세요. 묶이는 파일 목록이 출력되어야 합니다.',
+   'tar -cvf <출력파일> <대상> 형식을 사용하세요. c=생성, v=목록출력, f=파일명 지정. "tar: Removing leading /" 메시지가 출력되어도 정상입니다.',
+   'tar -cvf /tmp/files.tar /tmp/files',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && echo world > /tmp/files/b.txt"]',
+   '["sh", "-c", "tar -tf /tmp/files.tar | grep -q a.txt"]'),
+
+  (7,  2, 'tar 아카이브 내용 확인하기 (-tvf)',
+   '/tmp/files.tar 아카이브에 어떤 파일이 들어있는지 목록을 확인하세요.',
+   'tar -tvf 옵션을 사용하세요. t=목록확인, v=상세출력(권한/날짜 포함), f=파일명 지정.',
+   'tar -tvf /tmp/files.tar',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && tar -cf /tmp/files.tar /tmp/files"]',
+   '["sh", "-c", "tar -tf /tmp/files.tar | grep -q files"]'),
+
+  (7,  3, 'tar 해제하기 (-xvf)',
+   '/tmp/files.tar 를 /tmp/extract 디렉토리에 압축 해제하세요. 해제되는 파일 목록이 출력되어야 합니다.',
+   'tar -xvf <파일> -C <대상 디렉토리> 형식을 사용하세요. x=해제, v=목록출력, f=파일명 지정. 대상 디렉토리는 먼저 만들어야 합니다.',
+   'mkdir -p /tmp/extract && tar -xvf /tmp/files.tar -C /tmp/extract',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && tar -cf /tmp/files.tar /tmp/files"]',
+   '["sh", "-c", "find /tmp/extract -name a.txt | grep -q a.txt"]'),
+
+  (7,  4, 'tar.gz 한 번에 만들기 (-czvf)',
+   '/tmp/files 디렉토리를 gzip 압축까지 적용해 /tmp/archive.tar.gz 로 만드세요. 묶이는 파일 목록이 출력되어야 합니다.',
+   'tar -czvf <출력파일> <대상> 형식을 사용하세요. z=gzip 압축 추가. 현장에서 가장 많이 쓰는 조합입니다.',
+   'tar -czvf /tmp/archive.tar.gz /tmp/files',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && echo world > /tmp/files/b.txt"]',
+   '["sh", "-c", "tar -tzf /tmp/archive.tar.gz | grep -q a.txt"]'),
+
+  (7,  5, 'tar.gz 내용 확인하기 (-tzvf)',
+   '/tmp/archive.tar.gz 아카이브의 내용을 확인하세요.',
+   'tar -tzvf 옵션을 사용하세요. z 옵션이 있어야 .gz 파일을 읽을 수 있습니다.',
+   'tar -tzvf /tmp/archive.tar.gz',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && tar -czvf /tmp/archive.tar.gz /tmp/files"]',
+   '["sh", "-c", "tar -tzf /tmp/archive.tar.gz | grep -q files"]'),
+
+  (7,  6, 'tar.gz 압축 해제하기 (-xzvf)',
+   '/tmp/archive.tar.gz 를 /tmp/extract 디렉토리에 압축 해제하세요. 해제되는 파일 목록이 출력되어야 합니다.',
+   'tar -xzvf <파일> -C <대상 디렉토리> 형식을 사용하세요.',
+   'mkdir -p /tmp/extract && tar -xzvf /tmp/archive.tar.gz -C /tmp/extract',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && tar -czvf /tmp/archive.tar.gz /tmp/files"]',
+   '["sh", "-c", "find /tmp/extract -name a.txt | grep -q a.txt"]'),
+
+  (7,  7, 'zip으로 압축하기',
+   '/tmp/files 디렉토리를 zip으로 압축해 /tmp/files.zip 으로 만드세요.',
+   'zip -r <출력파일> <대상> 형식을 사용하세요. -r은 디렉토리를 재귀적으로 포함합니다.',
+   'zip -r /tmp/files.zip /tmp/files',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && echo world > /tmp/files/b.txt"]',
+   '["sh", "-c", "unzip -l /tmp/files.zip | grep -q a.txt"]'),
+
+  (7,  8, 'unzip으로 압축 해제하기',
+   '/tmp/files.zip 을 /tmp/unzipped 디렉토리에 압축 해제하세요.',
+   'unzip <파일> -d <대상 디렉토리> 형식을 사용하세요.',
+   'unzip /tmp/files.zip -d /tmp/unzipped',
+   '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && zip -r /tmp/files.zip /tmp/files"]',
+   '["sh", "-c", "find /tmp/unzipped -name a.txt | grep -q a.txt"]'),
+
+  (7,  9, '압축 파일 크기 비교하기',
+   '/tmp/files 디렉토리를 tar.gz와 zip 두 가지로 압축한 뒤, 두 파일의 크기를 확인하고 결과를 /tmp/size_compare.txt 에 저장하세요.',
+   'tar -czvf로 tar.gz를, zip -r로 zip을 만든 뒤 ls -lh 로 크기를 비교하세요.',
+   'tar -czvf /tmp/compare.tar.gz /tmp/files && zip -r /tmp/compare.zip /tmp/files && ls -lh /tmp/compare.tar.gz /tmp/compare.zip > /tmp/size_compare.txt',
+   '["sh", "-c", "mkdir -p /tmp/files && for i in $(seq 1 10); do echo content$i > /tmp/files/file$i.txt; done"]',
+   '["sh", "-c", "grep -q compare /tmp/size_compare.txt"]');

@@ -70,9 +70,36 @@ export async function fetchProgress() {
 
 ### 1-4. 기존 fetchQuests, gradeQuest에 토큰 헤더 추가
 
+`fetchQuestSets`, `fetchQuests` — 두 번째 인자 추가:
+
 ```typescript
-// fetchQuests, fetchQuestSets, gradeQuest, endSession 의 fetch 호출에
-// headers: { ...authHeaders() } 추가
+export async function fetchQuestSets() {
+  return fetch(`${BASE}/quest-sets`, { headers: authHeaders() }).then((r) => r.json())
+}
+
+export async function fetchQuests(setId: number) {
+  return fetch(`${BASE}/quest-sets/${setId}/quests`, { headers: authHeaders() }).then((r) => r.json())
+}
+```
+
+`gradeQuest`, `endSession` — 기존 `headers`에 스프레드:
+
+```typescript
+export async function gradeQuest(containerId: string, questId: number) {
+  return fetch(`${BASE}/grade`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ containerId, questId }),
+  }).then((r) => r.json())
+}
+
+export async function endSession(containerId: string) {
+  return fetch(`${BASE}/session/end`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ containerId }),
+  }).then((r) => r.json())
+}
 ```
 
 ---
@@ -84,12 +111,17 @@ export async function fetchProgress() {
 
 ### 추가할 상태
 
+기존 `useState` 선언 블록 끝(14번 줄) 바로 다음에 추가:
+
 ```typescript
 const [user, setUser] = useState<{ id: number; name: string; email: string; role: string } | null>(null)
 const [authChecked, setAuthChecked] = useState(false)
+const [showProgress, setShowProgress] = useState(false)
 ```
 
 ### 앱 시작 시 토큰 검증
+
+기존 ref sync `useEffect` 두 개(18~19번 줄) 다음, `selectedSetId` `useEffect`(21번 줄) 앞에 추가:
 
 ```typescript
 useEffect(() => {
@@ -102,6 +134,8 @@ useEffect(() => {
 
 ### 화면 분기 로직
 
+기존 35~42번 줄의 `if (selectedSetId === null) { ... return <SetSelect ...> }` 블록 전체를 아래로 교체:
+
 ```typescript
 // 토큰 검증 전 — 빈 화면 (깜빡임 방지)
 if (!authChecked) return null
@@ -109,15 +143,15 @@ if (!authChecked) return null
 // 비로그인 — 로그인 화면
 if (!user) return <Login onLogin={(u) => setUser(u)} />
 
-// 진행 현황 화면
-if (showProgress) return <Progress onBack={() => setShowProgress(false)} />
-
 // 세트 선택 화면
 if (selectedSetId === null) {
+  function handleSetSelect(id: number, sandboxType: string) {
+    setSelectedSetId(id)
+    setSandboxType(sandboxType)
+    setContainerId('')
+  }
   return <SetSelect
-    user={user}
     onSelect={handleSetSelect}
-    onProgress={() => setShowProgress(true)}
     onLogout={() => { token.clear(); setUser(null) }}
   />
 }
@@ -126,7 +160,71 @@ if (selectedSetId === null) {
 return ( ... )
 ```
 
-> `showProgress` 상태도 `useState(false)`로 추가 필요
+---
+
+## Step 2-1. 로그아웃 — SetSelect에 버튼 추가
+
+로그아웃은 토큰 삭제 + `user` 상태를 `null`로 초기화하는 것이 전부다.  
+버튼은 세트 선택 화면(`SetSelect`) 헤더 우상단에 배치한다.
+
+### SetSelect Props 확장
+
+`frontend/src/pages/SetSelect.tsx`의 `Props` 인터페이스에 추가:
+
+```typescript
+interface Props {
+  onSelect: (setId: number, sandboxType: string) => void
+  onLogout: () => void   // 추가
+}
+```
+
+함수 인자도 구조분해에 추가:
+
+```typescript
+export function SetSelect({ onSelect, onLogout }: Props) {
+```
+
+### 헤더에 버튼 배치
+
+헤더 `<div>`(48번 줄 `marginBottom: '2.5rem'` 블록)를 flex로 바꿔서 우상단에 버튼을 놓는다:
+
+```tsx
+<div style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+  <div>
+    <div style={{ fontSize: '11px', letterSpacing: '0.15em', color: '#555', marginBottom: '8px' }}>
+      OKESTRO TRAINING
+    </div>
+    <h1 style={{ fontSize: '32px', fontWeight: 700, color: '#f0f0f0', margin: 0, letterSpacing: '-0.5px' }}>
+      Etude
+    </h1>
+    <p style={{ color: '#555', fontSize: '14px', marginTop: '8px', marginBottom: 0 }}>
+      실습할 트레이닝 세트를 선택하세요.
+    </p>
+  </div>
+  <button
+    onClick={onLogout}
+    style={{
+      background: 'none',
+      border: '1px solid #333',
+      color: '#666',
+      fontSize: '13px',
+      padding: '6px 14px',
+      borderRadius: '6px',
+      cursor: 'pointer',
+    }}
+  >
+    로그아웃
+  </button>
+</div>
+```
+
+### App.tsx import 추가
+
+`token`을 App.tsx에서 사용하므로 import에 추가:
+
+```typescript
+import { fetchQuests, endSession, fetchMe, token } from './api'
+```
 
 ---
 
@@ -148,7 +246,7 @@ export function Login({ onLogin }: Props) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
@@ -156,8 +254,8 @@ export function Login({ onLogin }: Props) {
       const data = await loginApi(email, password)
       token.set(data.token)
       onLogin(data.user)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '로그인 실패')
     } finally {
       setLoading(false)
     }
@@ -181,6 +279,7 @@ export function Login({ onLogin }: Props) {
 
 1. 서버 실행 후 브라우저 진입 → 로그인 화면 표시
 2. 잘못된 비밀번호 → 에러 메시지 표시
-3. `test@okestro.com` / `password123` 로그인 → 세트 선택 화면 진입
+3. `test@okestro.com` / `password` 로그인 → 세트 선택 화면 진입
 4. 브라우저 새로고침 → 로그인 상태 유지 (localStorage 토큰)
-5. 로그아웃 → 로그인 화면으로 복귀
+5. 세트 선택 화면 우상단 로그아웃 버튼 클릭 → 로그인 화면으로 복귀
+6. 로그아웃 후 localStorage에서 `token` 키가 사라졌는지 확인 (DevTools → Application → Local Storage)

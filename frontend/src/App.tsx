@@ -3,7 +3,8 @@ import { Terminal } from './components/Terminal'
 import { QuestPanel } from './components/QuestPanel'
 import { SetSelect } from './pages/SetSelect'
 import type { Quest } from './types'
-import { fetchQuests, endSession } from './api'
+import { fetchQuests, endSession, fetchMe, token } from './api'
+import { Login } from './pages/Login'
 
 
 function App() {
@@ -12,12 +13,21 @@ function App() {
   const [questIndex, setQuestIndex] = useState(0)
   const [containerId, setContainerId] = useState('')
   const [sandboxType, setSandboxType] = useState<string>('linux')
+  const [user, setUser] = useState<{id: number; name: string; email: string; role: string} | null>(null)
+  const [authChecked, setAuthChecked] = useState(false)
   const containerIdRef = useRef(containerId)
   const sandboxTypeRef = useRef(sandboxType)
 
   useEffect(() => { containerIdRef.current = containerId }, [containerId])
   useEffect(() => { sandboxTypeRef.current = sandboxType }, [sandboxType])
 
+  useEffect(() => {
+    fetchMe()
+      .then(setUser)
+      .catch(() => {})
+      .finally(() => setAuthChecked(true))
+  }, [])
+  
   useEffect(() => {
     if (selectedSetId === null) return
     fetchQuests(selectedSetId)
@@ -32,13 +42,21 @@ function App() {
     }
   }, [selectedSetId])
 
+  // 토큰 검증 전 - 빈 화면 (깜박임 방지)
+  if (!authChecked) return null
+
+  // 비로그인 - 로그인 화면
+  if (!user) return <Login onLogin={(u) => setUser(u)} />
+
   if (selectedSetId === null) {
     function handleSetSelect(id: number, sandboxType: string) {
       setSelectedSetId(id)
       setSandboxType(sandboxType)
       setContainerId('')
     }
-    return <SetSelect onSelect={handleSetSelect} />
+    return <SetSelect onSelect={handleSetSelect} 
+        onLogout={() => { token.clear(); setUser(null) }}
+    />
   }
 
   const quest = quests[questIndex] ?? null

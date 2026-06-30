@@ -4,6 +4,7 @@ import { fetchQuestSets } from "../api";
 
 interface Props {
     onSelect: (setId: number, sandboxType: string) => void
+    onLogout: () => void
 }
 
 const CATEGORY_META: Record<string, { icon: string; color: string }> = {
@@ -12,7 +13,7 @@ const CATEGORY_META: Record<string, { icon: string; color: string }> = {
     'k8s':    { icon: '☸️',  color: '#326ce5' },
 }
 
-export function SetSelect({ onSelect }: Props) {
+export function SetSelect({ onSelect, onLogout }: Props) {
     const [sets, setSets] = useState<QuestSet[]>([])
     const [openCategories, setOpenCategories] = useState<Set<string>>(new Set())
 
@@ -29,7 +30,8 @@ export function SetSelect({ onSelect }: Props) {
     function toggleCategory(category: string) {
         setOpenCategories((prev) => {
             const next = new Set(prev)
-            next.has(category) ? next.delete(category) : next.add(category)
+            if (next.has(category)) next.delete(category)
+            else next.add(category)
             return next
         })
     }
@@ -45,16 +47,32 @@ export function SetSelect({ onSelect }: Props) {
         }}>
             <div style={{ width: '100%', maxWidth: '520px' }}>
                 {/* 헤더 */}
-                <div style={{ marginBottom: '2.5rem' }}>
-                    <div style={{ fontSize: '11px', letterSpacing: '0.15em', color: '#555', marginBottom: '8px' }}>
-                        OKESTRO TRAINING
+                <div style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                        <div style={{ fontSize: '11px', letterSpacing: '0.15em', color: '#555', marginBottom: '8px' }}>
+                            OKESTRO TRAINING
+                        </div>
+                        <h1 style={{ fontSize: '32px', fontWeight: 700, color: '#f0f0f0', margin: 0, letterSpacing: '-0.5px' }}>
+                            Etude
+                        </h1>
+                        <p style={{ color: '#555', fontSize: '14px', marginTop: '8px', marginBottom: 0 }}>
+                            실습할 트레이닝 세트를 선택하세요.
+                        </p>
                     </div>
-                    <h1 style={{ fontSize: '32px', fontWeight: 700, color: '#f0f0f0', margin: 0, letterSpacing: '-0.5px' }}>
-                        Etude
-                    </h1>
-                    <p style={{ color: '#555', fontSize: '14px', marginTop: '8px', marginBottom: 0 }}>
-                        실습할 트레이닝 세트를 선택하세요.
-                    </p>
+                    <button
+                        onClick={onLogout}
+                        style={{
+                            background: 'none',
+                            border: '1px solid #333',
+                            color: '#666',
+                            fontSize: '13px',
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        로그아웃
+                    </button>
                 </div>
 
                 {/* 카테고리 목록 */}

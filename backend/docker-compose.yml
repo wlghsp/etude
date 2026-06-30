@@ -9,7 +9,7 @@ services:
       - "3306:3306"
     volumes:
       - etude-db-data:/var/lib/mysql
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./db:/docker-entrypoint-initdb.d
 
 volumes:
   etude-db-data:

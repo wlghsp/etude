@@ -1,0 +1,50 @@
+-- 세트 4: 리눅스 네트워크/파일 전송 (order 1~7)
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
+  (4,  1, 'HTTP 요청 보내기',
+   'curl 명령어로 http://example.com 에 GET 요청을 보내고 응답을 출력하세요.',
+   'curl 명령어를 사용하세요.',
+   'curl http://example.com',
+   NULL,
+   '["sh", "-c", "curl -s http://example.com | grep -q html"]'),
+
+  (4,  2, '파일 다운로드하기',
+   'curl 명령어로 http://example.com 의 내용을 /tmp/index.html 파일로 저장하세요.',
+   'curl -o 옵션으로 저장할 파일명을 지정할 수 있습니다.',
+   'curl -o /tmp/index.html http://example.com',
+   NULL,
+   '["test", "-f", "/tmp/index.html"]'),
+
+  (4,  3, '네트워크 연결 확인하기',
+   '8.8.8.8 주소로 ping을 3번만 보내고 결과를 확인하세요.',
+   'ping -c 옵션으로 횟수를 지정할 수 있습니다.',
+   'ping -c 3 8.8.8.8',
+   NULL,
+   '["sh", "-c", "ping -c 1 8.8.8.8 > /dev/null 2>&1 && echo ok | grep -q ok"]'),
+
+  (4,  4, '열린 포트 확인하기',
+   '현재 수신 대기 중인 TCP 포트 목록을 확인하고, 결과를 /tmp/ports.txt 에 저장하세요.',
+   'ss -tlnp 명령어를 사용하세요.',
+   'ss -tlnp > /tmp/ports.txt',
+   '["sh", "-c", "nginx &"]',
+   '["sh", "-c", "grep -q :80 /tmp/ports.txt"]'),
+
+  (4,  5, 'SSH로 원격 파일 복사하기',
+   '/tmp/index.html 파일을 scp 명령어로 root@localhost:/tmp/remote_copy.html 에 복사하세요. (비밀번호: root)',
+   'scp 파일경로 사용자@호스트:대상경로 형식으로 사용합니다. -o StrictHostKeyChecking=no 옵션으로 키 확인을 생략할 수 있습니다.',
+   'scp -o StrictHostKeyChecking=no /tmp/index.html root@localhost:/tmp/remote_copy.html',
+   '["sh", "-c", "/usr/sbin/sshd && curl -s -o /tmp/index.html http://example.com"]',
+   '["test", "-f", "/tmp/remote_copy.html"]'),
+
+  (4,  6, 'rsync로 원격 디렉토리 동기화하기',
+   '/tmp/sync_src 디렉토리를 rsync로 root@localhost:/tmp/sync_dst 에 동기화하세요. (비밀번호: root)',
+   'rsync -av -e "ssh -o StrictHostKeyChecking=no" /tmp/sync_src/ root@localhost:/tmp/sync_dst/ 형식으로 사용합니다.',
+   'rsync -av -e "ssh -o StrictHostKeyChecking=no" /tmp/sync_src/ root@localhost:/tmp/sync_dst/',
+   '["sh", "-c", "/usr/sbin/sshd && mkdir -p /tmp/sync_src && touch /tmp/sync_src/file.txt"]',
+   '["test", "-f", "/tmp/sync_dst/file.txt"]'),
+
+  (4,  7, '원격 명령 실행 결과 저장하기',
+   'ssh로 root@localhost에 접속해 hostname 명령어를 실행하고 결과를 /tmp/hostname.txt 에 저장하세요. (비밀번호: root)',
+   'ssh -o StrictHostKeyChecking=no 사용자@호스트 명령어 형식으로 원격 명령을 실행할 수 있습니다.',
+   'ssh -o StrictHostKeyChecking=no root@localhost hostname > /tmp/hostname.txt',
+   '["sh", "-c", "/usr/sbin/sshd"]',
+   '["test", "-s", "/tmp/hostname.txt"]');
