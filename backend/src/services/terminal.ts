@@ -2,6 +2,7 @@ import Docker from 'dockerode'
 import type { WebSocket } from 'ws'
 import { getSandboxConfig } from './sandbox.js'
 import { getSetupCmd } from './quest.js'
+import { assignFromPool, releaseVcluster } from './vcluster-pool.js'
 
 async function waitForDocker(container: Docker.Container): Promise<void> {
     const exec = await container.exec({
@@ -57,6 +58,8 @@ export async function handleTerminal(
 
     if (sandboxType === 'docker' || sandboxType === 'docker-persistent') {
         await handleDockerTerminal(socket, docker, config, questId, existingContainerId)
+    } else if (sandboxType === 'k8s-isolated') {
+        await handleK8sIsolatedTerminal(socket, docker, questId)
     } else if (sandboxType === 'k8s') {
         await handleK8sTerminal(socket, docker, config, questId)
     } else {
@@ -191,6 +194,38 @@ async function handleK8sTerminal(socket: WebSocket, docker: Docker, config: { im
     })
     await delExec.start({})
     } catch {}
+    container.stop().then(() => container.remove()).catch(() => {})
+  })
+
+}
+
+
+async function handleK8sIsolatedTerminal(socket: WebSocket, docker: Docker, questId: number | null) {
+  const vcluster = await assignFromPool()
+
+  const container = await docker.createContainer({
+    Image: 'etude-k8s',
+    Labels: { etude: 'sandbox' },
+    HostConfig: {
+      Binds: [`${vcluster.kubeconfigPath}:/root/.kube/config:ro`],
+      NetworkMode: process.env.K3D_NETWORK ?? 'k3d-etude',
+    },
+    Cmd: ['/bin/bash'],
+    AttachStdin: true, AttachStdout: true, AttachStderr: true,
+    OpenStdin: true, Tty: true,
+  })
+
+  const stream = await container.attach({ stream: true, stdin: true, stdout: true, stderr: true, hijack: true })
+
+  await container.start()
+  await runSetupCmd(container, questId, container.id)
+
+  socket.send(JSON.stringify({ type: 'connected', containerId: container.id }))
+
+  stream.on('data', (chunk: Buffer) => socket.send(chunk))
+  socket.on('message', (msg: Buffer) => stream.write(msg))
+  socket.on('close', async () => {
+    await releaseVcluster(vcluster)
     container.stop().then(() => container.remove()).catch(() => {})
   })
 

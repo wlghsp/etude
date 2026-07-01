@@ -22,8 +22,14 @@ export function QuestPanel({ quest, containerId, questSetId, sessionId, total, i
     useEffect(() => { startTimeRef.current = Date.now() }, [])
     const [hintUsed, setHintUsed] = useState(false)
     const [solutionUsed, setSolutionUsed] = useState(false)
+    const [activeTab, setActiveTab] = useState<'description' | 'hint' | 'solution'>('description')
 
-    
+    const selectTab = (tab: 'description' | 'hint' | 'solution') => {
+        setActiveTab(tab)
+        if (tab === 'hint') setHintUsed(true)
+        if (tab === 'solution') setSolutionUsed(true)
+    }
+
     const [result, setResult] = useState<boolean | null>(null)
     const [loading, setLoading] = useState(false)
     const ns = containerId ? `quest-${containerId.slice(0, 8)}` : '$NS'
@@ -84,30 +90,38 @@ export function QuestPanel({ quest, containerId, questSetId, sessionId, total, i
             {/* Scrollable Content */}
             <div className="p-6 flex-1 overflow-y-auto">
                 <div className="space-y-4">
-                    {/* Description */}
-                    <div className="border border-outline-variant bg-surface-container p-4">
-                        <h3 className="font-mono text-label-caps text-primary mb-2">설명</h3>
-                        <p className="font-mono text-body-md text-on-surface leading-relaxed">{resolve(quest.description)}</p>
-                    </div>
-
-                    {/* Hint / Solution */}
-                    <div className="flex gap-2">
-                        <details className="flex-1" onToggle={(e) => { if ((e.currentTarget as HTMLDetailsElement).open) setHintUsed(true) }}>
-                            <summary className="border border-outline-variant hover:bg-surface-container-high py-2 px-3 font-mono text-label-caps cursor-pointer text-center transition-all list-none">
-                                힌트 보기
-                            </summary>
-                            <div className="mt-2 border border-outline-variant border-l-4 border-l-primary bg-surface-container-low p-4">
-                                <p className="font-mono text-body-md text-on-surface-variant">{resolve(quest.hint ?? '')}</p>
-                            </div>
-                        </details>
-                        <details className="flex-1" onToggle={(e) => { if ((e.currentTarget as HTMLDetailsElement).open) setSolutionUsed(true) }}>
-                            <summary className="border border-outline-variant hover:bg-surface-container-high py-2 px-3 font-mono text-label-caps cursor-pointer text-center transition-all list-none">
-                                풀이 보기
-                            </summary>
-                            <div className="mt-2 border border-outline-variant bg-surface-container-low p-4">
-                                <p className="font-mono text-code-sm text-on-surface-variant">{resolve(quest.solution ?? '')}</p>
-                            </div>
-                        </details>
+                    {/* Tabs: 설명 / 힌트 / 풀이 */}
+                    <div>
+                        <div className="flex border-b border-outline-variant">
+                            {([
+                                ['description', '설명'],
+                                ['hint', '힌트'],
+                                ['solution', '풀이'],
+                            ] as const).map(([tab, label]) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => selectTab(tab)}
+                                    className={`px-4 py-2 font-mono text-label-caps transition-colors border-b-2 -mb-px ${
+                                        activeTab === tab
+                                            ? 'border-primary text-primary'
+                                            : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                                    }`}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="border border-t-0 border-outline-variant bg-surface-container p-4">
+                            {activeTab === 'description' && (
+                                <p className="font-mono text-body-md text-on-surface leading-relaxed break-words whitespace-pre-wrap">{resolve(quest.description)}</p>
+                            )}
+                            {activeTab === 'hint' && (
+                                <p className="font-mono text-body-md text-on-surface-variant break-words whitespace-pre-wrap">{resolve(quest.hint ?? '')}</p>
+                            )}
+                            {activeTab === 'solution' && (
+                                <p className="font-mono text-code-sm text-on-surface-variant break-words whitespace-pre-wrap">{resolve(quest.solution ?? '')}</p>
+                            )}
+                        </div>
                     </div>
 
                     {/* Grade Button */}

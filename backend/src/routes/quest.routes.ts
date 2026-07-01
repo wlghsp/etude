@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { canAccessQuestSet, getQuests, getQuestSets, gradeQuest } from "../services/quest.js";
 import { verifyToken } from "../services/auth.js";
-import { recordAttempt } from "../services/user.js";
+import { recordAttempt } from "../services/progress.js";
 import { docker } from '../plugins/docker.js'
 import { authMiddleware } from "../plugins/auth-guard.js";
 

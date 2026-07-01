@@ -308,6 +308,14 @@ curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 docker pull rancher/k3s:latest
 docker pull rancher/k3d-proxy:latest
 
+# vcluster CLI (Phase 10 — k8s-isolated sandbox 타입용)
+curl -L -o vcluster "https://github.com/loft-sh/vcluster/releases/latest/download/vcluster-linux-arm64"
+chmod +x vcluster
+sudo mv vcluster /usr/local/bin/vcluster
+
+# vcluster 이미지 사전 pull (pool 재보충 시 pull 대기시간 제거)
+docker pull ghcr.io/loft-sh/vcluster-pro:0.35.1
+
 # Node.js 20 (프론트 빌드용)
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
@@ -349,6 +357,8 @@ ssh -i ~/.ssh/etude_oci ubuntu@{공인IP}
 ---
 
 ## Step 4. k3d 클러스터 생성 + kubeconfig 구성
+
+> 이 클러스터(`etude`, 노드명 `k3d-etude-server-0`)는 [Phase 10](guide_phase10_klid_cmp.md)에서 vcluster를 얹는 호스트 클러스터로 그대로 재사용된다. 별도 클러스터를 추가로 만들 필요 없음.
 
 서버에 SSH 접속 후 실행:
 
@@ -428,6 +438,8 @@ EOF
 ```
 
 > `JWT_SECRET`을 빠뜨리면 `backend/src/services/auth.ts`의 기본값(`dev-secret`)으로 fallback된다. 배포 시 반드시 설정한다.
+>
+> [Phase 10](guide_phase10_klid_cmp.md)(vcluster pool) 적용 시 pool 크기 등 추가 환경변수가 필요할 수 있다 — 해당 가이드 구현 시점에 이 파일에 반영한다.
 
 ---
 

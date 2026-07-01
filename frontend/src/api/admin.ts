@@ -45,7 +45,7 @@ export async function grantAccess(questSetId: number, userId: number) {
 }
 
 export async function revokeAccess(questSetId: number, userId: number) {
-    await fetch(`${BASE}/admin/quest-sets/${questSetId}/access${userId}`, {
+    await fetch(`${BASE}/admin/quest-sets/${questSetId}/access/${userId}`, {
         method: 'DELETE',
         headers: authHeaders(),
     })

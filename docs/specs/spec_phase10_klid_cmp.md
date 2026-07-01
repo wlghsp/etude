@@ -31,10 +31,12 @@
 
 ```
 [호스트 k3d 클러스터 1개 — 상시 가동, Phase 6/8에서 이미 존재]
-  ├── vcluster-{sessionId}  (Pod, ~3~5초 기동) ← 실습자 A 세션
-  ├── vcluster-{sessionId}  (Pod, ~3~5초 기동) ← 실습자 B 세션
-  └── vcluster-{sessionId}  (Pod, ~3~5초 기동) ← 실습자 C 세션
+  ├── vcluster-{sessionId}  (Pod) ← 실습자 A 세션
+  ├── vcluster-{sessionId}  (Pod) ← 실습자 B 세션
+  └── vcluster-{sessionId}  (Pod) ← 실습자 C 세션
 ```
+
+> `k8s_cluster_isolation.md`는 vcluster 기동을 3~5초로 추정했으나, 2026-07-01 로컬 실측 결과 이미지가 캐시된 상태에서도 **약 33초**가 걸렸다(k3s 컨트롤 플레인 자체의 부팅 시간이 병목, 이미지 pull은 병목이 아님을 확인). 세션 시작 시 매번 새로 생성하면 이 33초를 그대로 사용자가 기다려야 하므로, 아래 "pre-warming pool"로 이 대기시간을 없앤다.
 
 ### sandbox 타입 추가
 
@@ -48,26 +50,87 @@
 | 생성/삭제 시점 | 컨테이너 생성/삭제와 함께 namespace 생성/삭제 | 컨테이너 생성/삭제와 함께 vcluster 생성/삭제 (세션형) |
 | 리소스 | 거의 없음 | ~200MB RAM/세션 |
 
+### Pre-warming pool — 33초 대기 제거
+
+vcluster 생성이 세션 시작 시점에 일어나면 실습자가 33초를 그대로 기다려야 한다. 대신 **미리 만들어둔 유휴 vcluster를 세션에 즉시 배정**하고, 배정으로 줄어든 pool을 백그라운드로 재보충하는 방식을 쓴다.
+
+```
+[pool: 유휴 vcluster N개 항상 유지, 기본 N=2]
+  vcluster-pool-a  (대기 중)
+  vcluster-pool-b  (대기 중)
+
+세션 시작 요청
+  → pool에서 1개 꺼내 즉시 세션에 배정 (대기시간 없음)
+  → 백그라운드로 새 vcluster 1개 생성해 pool 채움 (다음 요청을 위해)
+
+세션 종료
+  → 배정됐던 vcluster는 삭제 (재사용하지 않음 — 실습자가 클러스터 레벨까지 변경했을 상태라 재사용 시 격리 보장 어려움)
+```
+
+| 항목 | 값 |
+|------|-----|
+| pool 크기 (N) | 2 (기본값, 운영 중 트래픽 보고 조정) |
+| pool 재보충 방식 | 배정 즉시 비동기로 신규 생성 시작 — 사용자 응답과 분리 |
+| pool 부족 시 | 재보충이 33초 안에 못 끝나 pool이 빈 상태로 요청이 들어오면, 기존처럼 그 자리에서 생성 후 대기 (fallback) |
+| 세션 종료 후 재사용 | 하지 않음 — 실습자가 vcluster 내부에서 클러스터 레벨 리소스(RBAC, CRD 등)까지 변경 가능해 재사용 시 이전 세션 흔적이 남을 위험. 항상 삭제 후 신규 생성으로 pool 채움 |
+
 ### 백엔드 변경 포인트
 
-[k8s_cluster_isolation.md](../research/k8s_cluster_isolation.md) 88-105행 방향을 따른다.
+[k8s_cluster_isolation.md](../research/k8s_cluster_isolation.md) 88-105행 방향을 pool 방식에 맞게 확장한다.
 
 ```
 현재(k8s):      exec('kubectl create namespace quest-{id}')
-k8s-isolated:   exec('vcluster create vcluster-{sessionId} --connect=false')
-                → vcluster가 생성한 kubeconfig를 etude-k8s 컨테이너에 주입
-                → 세션 종료 시 vcluster delete
+k8s-isolated:   pool에서 유휴 vcluster 1개 꺼내 세션에 배정
+                → 배정된 vcluster의 kubeconfig를 etude-k8s 컨테이너에 주입
+                → 비동기로 신규 vcluster 생성해 pool 재보충
+                → 세션 종료 시 배정됐던 vcluster delete (pool에 반납하지 않음)
 ```
 
 | 파일 | 변경 내용 |
 |------|-----------|
-| `terminal.ts` | `k8s-isolated` sandbox type 분기 — vcluster 생성/삭제 |
-| `sandbox.ts` | `k8s-isolated` 신규 타입 처리 — vcluster kubeconfig 주입 |
+| `terminal.ts` | `k8s-isolated` sandbox type 분기 — pool에서 vcluster 배정, 세션 종료 시 삭제 |
+| `sandbox.ts` | `k8s-isolated` 신규 타입 처리 — vcluster kubeconfig 주입 (NodePort 기반 server 주소 치환 포함) |
+| `services/vcluster-pool.ts` (신규) | pool 상태 관리 — 유휴 목록 유지, 배정, 비동기 재보충 |
 | `backend/db/01_sandbox.sql` | `k8s-isolated` 행 추가 |
 
-### 검증 환경의 제약
+### vcluster 생성 시 필수 옵션
 
-vcluster는 24GB RAM 등 서버급 리소스가 전제라 로컬(Colima 등) 환경에서 재현이 어렵다. **로컬에서 코드를 작성하고, 실제 OCI 서버에 배포한 뒤 서버에서 직접 검증**하는 흐름을 취한다. 이는 이 기능의 특성상 발생하는 제약이며, 다른 Phase와 개발 방식이 다르다는 점을 인지하고 진행한다.
+로컬 검증으로 확정된 옵션 (네트워크 경로 문제 해결에 필수):
+
+```bash
+vcluster create vcluster-{poolId} --connect=false \
+  --set "controlPlane.proxy.extraSANs={k3d-etude-server-0}"
+```
+
+> vcluster 0.35.1부터 전용 `--tls-san` CLI 플래그가 없어졌다(`unknown flag: --tls-san`). Helm values 경로(`controlPlane.proxy.extraSANs`)로 `--set` 옵션을 통해 설정해야 한다.
+
+생성 후 Service를 NodePort로 전환하고 kubeconfig의 `server` 주소를 치환하는 과정은 아래 "네트워크 경로" 절차를 따른다.
+
+### 검증 환경 — 로컬에서 1세션 단위로 검증 가능 (2026-07-01 확인)
+
+애초에 "vcluster는 서버급 리소스가 전제라 로컬 재현 불가"로 판단했으나, 실제로 로컬 k3d 클러스터(`etude`) 위에 vcluster 1개를 직접 띄워 검증한 결과 **1세션 단위 동작은 로컬(Colima)에서도 그대로 재현 가능**하다. 24GB RAM은 "여러 세션을 동시에 운영"하기 위한 서버 스펙이지, vcluster 자체가 로컬에서 못 뜨는 게 아니다.
+
+다만 **동시 다중 세션의 성능/리소스 여유**는 로컬에서 검증할 수 없고 서버에서만 확인 가능하다.
+
+### 네트워크 경로 — 컨테이너에서 vcluster 접속 시 주의사항 (로컬 검증으로 확정)
+
+`etude-k8s` 컨테이너는 Docker 브리지 네트워크(`k3d-etude`)에 있고, vcluster의 API 서버는 k3s **Pod 내부**에서 뜬다. vcluster 생성 직후 기본 kubeconfig의 `server` 주소(`https://localhost:8443`, `vcluster-test.vcluster-vcluster-test.svc` 등 ClusterIP 기반)는 Docker 브리지 네트워크에서 라우팅되지 않아 컨테이너에서 접속 불가.
+
+**해결**: 기존 `k8s` 타입(Phase 6)이 API 서버 주소로 `k3d-etude-server-0`(호스트 노드 컨테이너 이름)을 쓰는 것과 동일한 경로를 확보해야 한다.
+
+1. vcluster의 Service를 **NodePort**로 노출 (`vcluster create --expose` 옵션 또는 생성 후 `kubectl patch svc`)
+2. kubeconfig의 `server`를 `https://k3d-etude-server-0:{nodePort}`로 치환
+3. vcluster 생성 시 `--set "controlPlane.proxy.extraSANs={k3d-etude-server-0}"` 옵션으로 인증서에 호스트 노드 이름을 SAN으로 포함시켜야 함 (안 하면 TLS 인증서 검증 실패 — `--insecure-skip-tls-verify`로 우회 가능하나 보안상 권장 안 함)
+
+로컬 검증 절차 (재현 가능):
+```bash
+vcluster create vcluster-test --connect=false
+kubectl patch svc vcluster-test -n vcluster-vcluster-test \
+  -p '{"spec":{"type":"NodePort","ports":[{"name":"https","port":443,"protocol":"TCP","targetPort":8443,"nodePort":30443}]}}'
+kubectl get secret vc-vcluster-test -n vcluster-vcluster-test -o jsonpath='{.data.config}' | base64 -d > kubeconfig.yaml
+sed -i '' 's|https://localhost:8443|https://k3d-etude-server-0:30443|' kubeconfig.yaml
+# 이 kubeconfig를 etude-k8s 컨테이너에 마운트하면 kubectl 사용 가능 (TLS SAN 미설정 시 --insecure-skip-tls-verify 필요)
+```
 
 ---
 

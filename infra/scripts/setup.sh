@@ -21,6 +21,14 @@ curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 docker pull rancher/k3s:latest
 docker pull rancher/k3d-proxy:latest
 
+# vcluster CLI (Phase 10 — k8s-isolated sandbox 타입용)
+curl -L -o vcluster "https://github.com/loft-sh/vcluster/releases/latest/download/vcluster-linux-arm64"
+chmod +x vcluster
+sudo mv vcluster /usr/local/bin/vcluster
+
+# vcluster 이미지 사전 pull (pool 재보충 시 pull 대기시간 제거)
+docker pull ghcr.io/loft-sh/vcluster-pro:0.35.1
+
 # Node.js 20 (프론트 빌드용)
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
