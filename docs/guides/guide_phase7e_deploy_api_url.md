@@ -10,7 +10,7 @@
 |------|-----------|
 | `frontend/.env.development` | 신규 — 로컬 개발용 환경변수 |
 | `frontend/.env.production` | 신규 — 프로덕션 환경변수 |
-| `frontend/src/api.ts` | BASE URL을 환경변수에서 읽도록 변경 |
+| `frontend/src/api/base.ts` | BASE URL을 환경변수에서 읽도록 변경 |
 | `frontend/src/components/Terminal.tsx` | WebSocket URL을 환경변수에서 읽도록 변경 |
 | `frontend/.gitignore` (또는 루트 `.gitignore`) | `.env.development` gitignore 추가 불필요 — 포트 정보만 있어 공개 OK |
 
@@ -36,7 +36,7 @@ VITE_WS_BASE=
 
 ---
 
-## Step 2. `frontend/src/api.ts` — BASE URL 변경
+## Step 2. `frontend/src/api/base.ts` — BASE URL 변경
 
 ```ts
 const BASE = import.meta.env.VITE_API_BASE ?? ''
