@@ -5,6 +5,7 @@ import { QuestPanel } from './components/QuestPanel'
 import { SetSelect } from './pages/SetSelect'
 import { Progress } from './pages/Progress'
 import { Leaderboard } from './pages/Leaderboard'
+import { Admin } from './pages/Admin'
 import type { Quest } from './types'
 import { fetchQuests, endSession } from './api/quest'
 import { fetchMe, token } from './api/auth'
@@ -20,7 +21,7 @@ function App() {
   const [sandboxType, setSandboxType] = useState<string>('linux')
   const [user, setUser] = useState<{id: number; name: string; email: string; role: string} | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
-  const [page, setPage] = useState<'home' | 'progress' | 'leaderboard'>('home')
+  const [page, setPage] = useState<'home' | 'progress' | 'leaderboard' | 'admin'>('home')
   const [completedIndices, setCompletedIndices] = useState<Set<number>>(new Set())
   const [sessionId, setSessionId] = useState('')
   const [resetKey, setResetKey] = useState(0)
@@ -63,13 +64,28 @@ function App() {
   const handleLogout = () => { token.clear(); setUser(null) }
 
   if (page === 'progress') return <>
-    <Progress onBack={() => setPage('home')} onLeaderboard={() => setPage('leaderboard')} onLogout={handleLogout} userName={user.name} userEmail={user.email} />
+    <Progress onBack={() => setPage('home')} onLeaderboard={() => setPage('leaderboard')} onAdmin={() => setPage('admin')} onLogout={handleLogout} userName={user.name} userEmail={user.email} userRole={user.role} />
     <FeedbackButton page="progress" />
   </>
   if (page === 'leaderboard') return <>
-    <Leaderboard onBack={() => setPage('home')} onProgress={() => setPage('progress')} onLogout={handleLogout} userName={user.name} userEmail={user.email} />
+    <Leaderboard onBack={() => setPage('home')} onProgress={() => setPage('progress')} onAdmin={() => setPage('admin')} onLogout={handleLogout} userName={user.name} userEmail={user.email} userRole={user.role} />
     <FeedbackButton page="leaderboard" />
   </>
+  if (page === 'admin') {
+    if (user.role !== 'admin') { setPage('home'); return null }
+    return <>
+      <Admin
+        onHome={() => setPage('home')}
+        onProgress={() => setPage('progress')}
+        onLeaderboard={() => setPage('leaderboard')}
+        onLogout={handleLogout}
+        userName={user.name}
+        userEmail={user.email}
+        userRole={user.role}
+      />
+      <FeedbackButton page="admin" />
+    </>
+  }
 
   if (selectedSetId === null) {
     function handleSetSelect(id: number, sandboxType: string) {
@@ -83,9 +99,11 @@ function App() {
           onSelect={handleSetSelect}
           onProgress={() => setPage('progress')}
           onLeaderboard={() => setPage('leaderboard')}
+          onAdmin={() => setPage('admin')}
           onLogout={handleLogout}
           userName={user.name}
           userEmail={user.email}
+          userRole={user.role}
       />
       <FeedbackButton page="home" />
     </>

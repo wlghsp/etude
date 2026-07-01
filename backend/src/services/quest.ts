@@ -13,9 +13,64 @@ async function execCheck(container: Docker.Container, cmd: string[]): Promise<bo
   }
 }
 
-export async function getQuestSets(): Promise<QuestSet[]> {
-  const [rows] = await db.query('SELECT id, title, description, sandbox_type, category FROM quest_set')
+export async function canAccessQuestSet(userId: number, role: string, questSetId: number) {
+  const [rows] = await db.query<any[]>(`
+    SELECT 1
+    FROM quest_set qs
+    WHERE qs.id = ?
+      AND (
+        qs.is_public = TRUE
+        OR ? = 'admin'
+        OR EXISTS (
+          SELECT 1 FROM quest_set_access qsa
+          WHERE qsa.quest_set_id = qs.id AND qsa.user_id = ?
+        )
+      )`, [questSetId, role, userId])
+  return rows.length > 0
+}
+
+export async function getQuestSets(userId: number, role: string): Promise<QuestSet[]> {
+  const [rows] = await db.query(`
+    SELECT qs.id, qs.title, qs.description, qs.sandbox_type, qs.category
+    FROM quest_set qs
+    WHERE qs.is_public = TRUE
+      OR ? = 'admin'
+      OR EXISTS (
+        SELECT 1 FROM quest_set_access qsa
+        WHERE qsa.quest_set_id = qs.id AND qsa.user_id = ?
+    )`, [role, userId]
+  )
   return rows as QuestSet[]
+}
+
+export async function getQuestSetsForAdmin() {
+  const [sets] = await db.query<any[]>(
+    'SELECT id, title, description, sandbox_type, category, is_public FROM quest_set ORDER BY id'
+  )
+  const [access] = await db.query<any[]>(`
+    SELECT qsa.quest_set_id, u.id AS userId, u.name, u.email
+    FROM quest_set_access qsa
+    JOIN user u ON u.id = qsa.user_id
+  `)
+  return sets.map((s) => ({
+    ...s,
+    is_public: Boolean(s.is_public),
+    accessUsers: access
+      .filter((a) => a.quest_set_id === s.id)
+      .map((a) => ({ id: a.userId, name: a.name, email: a.email }))
+  }))
+}
+
+export async function setQuestSetPublic(questSetId: number, isPublic: boolean) {
+  await db.query('UPDATE quest_set SET is_public = ? WHERE id = ?', [isPublic, questSetId])
+}
+
+export async function grantQuestSetAccess(questSetId: number, userId: number) {
+  await db.query('INSERT IGNORE INTO quest_set_access (quest_set_id, user_id) VALUES (?, ?)', [questSetId, userId])
+}
+
+export async function revokeQuestSetAccess(questSetId: number, userId: number) {
+  await db.query('DELETE FROM quest_set_access WHERE quest_set_id = ? AND user_id = ?', [questSetId, userId])
 }
 
 export async function getQuests(questSetId: number): Promise<Quest[]> {

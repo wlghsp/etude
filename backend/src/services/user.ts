@@ -1,6 +1,10 @@
 import bcrypt from 'bcrypt'
 import { db } from '../db.js'
 
+export async function getAllUsers() {
+    const [rows] = await db.query("SELECT id, name, email, role FROM user WHERE role = 'member' ORDER BY name")
+    return rows
+}
 
 export async function getProgress(userId: number) {
     const [rows] = await db.query(`

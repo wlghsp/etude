@@ -15,7 +15,7 @@ const fastify = Fastify({ logger: true })
 
 await cleanupOrphanContainers()
 
-await fastify.register(cors, { origin: true })
+await fastify.register(cors, { origin: true, methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'] })
 await fastify.register(websocket)
 
 await fastify.register(terminalRoutes)

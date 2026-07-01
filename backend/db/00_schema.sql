@@ -12,6 +12,7 @@ CREATE TABLE quest_set (
   description  TEXT,
   sandbox_type VARCHAR(20) NOT NULL DEFAULT 'linux',
   category     VARCHAR(50) NOT NULL DEFAULT '기타',
+  is_public    BOOLEAN NOT NULL DEFAULT TRUE,
   FOREIGN KEY (sandbox_type) REFERENCES sandbox(type)
 );
 
@@ -35,6 +36,15 @@ CREATE TABLE user (
   password   VARCHAR(200) NOT NULL,
   role       ENUM('member', 'admin') NOT NULL DEFAULT 'member',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE quest_set_access (
+  quest_set_id INT NOT NULL,
+  user_id      INT NOT NULL,
+  granted_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (quest_set_id, user_id),
+  FOREIGN KEY (quest_set_id) REFERENCES quest_set(id),
+  FOREIGN KEY (user_id)      REFERENCES user(id)
 );
 
 -- 중복 허용 — 반복 시도가 쌓이는 구조 (Phase 9 분석의 원본 데이터)

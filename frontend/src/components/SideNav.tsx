@@ -1,16 +1,18 @@
-type Page = 'home' | 'progress' | 'leaderboard'
+type Page = 'home' | 'progress' | 'leaderboard' | 'admin'
 
 interface Props {
     activePage: Page
     userName: string
     userEmail: string
+    userRole?: string
     onHome: () => void
     onProgress: () => void
     onLeaderboard: () => void
+    onAdmin?: () => void
     onLogout: () => void
 }
 
-export function SideNav({ activePage, userName, userEmail, onHome, onProgress, onLeaderboard, onLogout }: Props) {
+export function SideNav({ activePage, userName, userEmail, userRole, onHome, onProgress, onLeaderboard, onAdmin, onLogout }: Props) {
     const item = (icon: string, label: string, page: Page, onClick: () => void) => {
         const active = activePage === page
         return active
@@ -36,6 +38,7 @@ export function SideNav({ activePage, userName, userEmail, onHome, onProgress, o
                 {item('grid_view', '트레이닝 세트', 'home', onHome)}
                 {item('assignment', '내 진행현황', 'progress', onProgress)}
                 {item('analytics', '랭킹', 'leaderboard', onLeaderboard)}
+                {userRole === 'admin' && onAdmin && item('admin_panel_settings', '관리자', 'admin', onAdmin)}
             </nav>
             <div className="border-t border-outline-variant pt-4 px-2">
                 <div className="px-4 py-3 mb-1">
