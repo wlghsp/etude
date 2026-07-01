@@ -52,3 +52,6 @@ infra/terraform/.terraform.lock.hcl
 
 # Server-only env
 backend/.env.prod
+
+# 실제 계정 정보 (이메일/비밀번호 해시) — 서버 로컬에서만 관리, .example만 커밋
+backend/db/04_users.sql
