@@ -1,6 +1,6 @@
 import Docker from 'dockerode'
-import { db } from './db.js'
-import type { Quest, QuestSet } from './types.js'
+import { db } from '../db.js'
+import type { Quest, QuestSet } from '../types.js'
 
 async function execCheck(container: Docker.Container, cmd: string[]): Promise<boolean> {
   const exec = await container.exec({ Cmd: cmd })

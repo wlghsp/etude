@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import type { Quest } from '../types'
-import { gradeQuest } from '../api'
+import { gradeQuest } from '../api/quest'
 
 interface Props {
     quest: Quest

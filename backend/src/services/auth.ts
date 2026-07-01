@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt'
 import jwt, { type Jwt } from 'jsonwebtoken'
-import { db } from './db.js'
+import { db } from '../db.js'
 
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret'

@@ -19,4 +19,15 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    files: ['src/components/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['**/pages/*', '../pages/*', '../../pages/*'],
+          message: 'components/ 는 pages/ 를 참조할 수 없습니다 (단방향 의존 — CLAUDE.md 참고)',
+        }],
+      }],
+    },
+  },
 ])

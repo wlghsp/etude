@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { QuestSet } from "../types";
-import { fetchQuestSets, fetchProgess } from "../api";
+import { fetchQuestSets } from "../api/quest";
+import { fetchProgess } from "../api/user";
 import { SideNav } from "../components/SideNav";
 import { TopNav } from "../components/TopNav";
 

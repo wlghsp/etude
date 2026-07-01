@@ -53,3 +53,14 @@ CREATE TABLE quest_attempt (
   FOREIGN KEY (quest_id)     REFERENCES quest(id),
   FOREIGN KEY (quest_set_id) REFERENCES quest_set(id)
 );
+
+CREATE TABLE IF NOT EXISTS feedback (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  user_id      INT,
+  page         VARCHAR(100),
+  quest_id     INT,
+  quest_set_id INT,
+  body         TEXT NOT NULL,
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES user(id)
+);

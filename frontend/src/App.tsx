@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { Terminal } from './components/Terminal'
+import { FeedbackButton } from './components/FeedbackButton'
 import { QuestPanel } from './components/QuestPanel'
 import { SetSelect } from './pages/SetSelect'
 import { Progress } from './pages/Progress'
 import { Leaderboard } from './pages/Leaderboard'
 import type { Quest } from './types'
-import { fetchQuests, endSession, fetchMe, token } from './api'
+import { fetchQuests, endSession } from './api/quest'
+import { fetchMe, token } from './api/auth'
 import { Login } from './pages/Login'
+
 
 
 function App() {
@@ -59,8 +62,14 @@ function App() {
 
   const handleLogout = () => { token.clear(); setUser(null) }
 
-  if (page === 'progress') return <Progress onBack={() => setPage('home')} onLeaderboard={() => setPage('leaderboard')} onLogout={handleLogout} userName={user.name} userEmail={user.email} />
-  if (page === 'leaderboard') return <Leaderboard onBack={() => setPage('home')} onProgress={() => setPage('progress')} onLogout={handleLogout} userName={user.name} userEmail={user.email} />
+  if (page === 'progress') return <>
+    <Progress onBack={() => setPage('home')} onLeaderboard={() => setPage('leaderboard')} onLogout={handleLogout} userName={user.name} userEmail={user.email} />
+    <FeedbackButton page="progress" />
+  </>
+  if (page === 'leaderboard') return <>
+    <Leaderboard onBack={() => setPage('home')} onProgress={() => setPage('progress')} onLogout={handleLogout} userName={user.name} userEmail={user.email} />
+    <FeedbackButton page="leaderboard" />
+  </>
 
   if (selectedSetId === null) {
     function handleSetSelect(id: number, sandboxType: string) {
@@ -69,20 +78,24 @@ function App() {
       setContainerId('')
       setPreparing(true)
     }
-    return <SetSelect
-        onSelect={handleSetSelect}
-        onProgress={() => setPage('progress')}
-        onLeaderboard={() => setPage('leaderboard')}
-        onLogout={handleLogout}
-        userName={user.name}
-        userEmail={user.email}
-    />
+    return <>
+      <SetSelect
+          onSelect={handleSetSelect}
+          onProgress={() => setPage('progress')}
+          onLeaderboard={() => setPage('leaderboard')}
+          onLogout={handleLogout}
+          userName={user.name}
+          userEmail={user.email}
+      />
+      <FeedbackButton page="home" />
+    </>
   }
 
   const quest = quests[questIndex] ?? null
 
   return (
     <div className="dark h-screen flex flex-col bg-surface overflow-hidden relative">
+      <FeedbackButton page="quest" questId={quest?.id} questSetId={selectedSetId} />
       {/* TopNav */}
       <header className="flex items-center w-full px-gutter h-14 bg-surface border-b border-outline-variant shrink-0">
         <button onClick={() => setSelectedSetId(null)} className="font-mono text-body-lg font-bold tracking-tighter text-on-surface hover:text-primary transition-colors">

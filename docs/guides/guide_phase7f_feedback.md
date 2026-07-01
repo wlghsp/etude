@@ -2,13 +2,15 @@
 
 명세: [specs/spec_phase9_feedback.md](../specs/spec_phase9_feedback.md)
 
+선행: [guide_phase7g_route_split.md](guide_phase7g_route_split.md) — 백엔드 라우트가 `routes/` 디렉터리로 분리된 구조를 전제로 한다.
+
 ---
 
 ## 전체 흐름
 
 ```
 1. DB — feedback 테이블 추가
-2. 백엔드 — POST /feedback, GET /admin/feedback 라우트 추가
+2. 백엔드 — services/feedback.ts (쿼리) + 라우트 2개 추가
 3. 프론트 — FeedbackButton 컴포넌트 (버튼 + 모달 + 토스트)
 4. 프론트 — App.tsx에 FeedbackButton 마운트
 ```
@@ -50,65 +52,102 @@ CREATE TABLE IF NOT EXISTS feedback (
 
 ---
 
-## Step 2. 백엔드 — 라우트 추가
+## Step 2. 백엔드 — 서비스 + 라우트 추가
 
-`backend/src/index.ts`에 추가.
+Phase 7h 라우트 분리 이후 구조 기준. 레이어 원칙(`routes/`는 요청 파싱/응답만, DB 쿼리는 `services/`)을 그대로 따른다.
+`index.ts`, 라우트 파일에 직접 `db.query`를 넣지 않는다.
+
+### services/feedback.ts — 쿼리 분리
+
+`backend/src/services/feedback.ts` 신규 작성:
+
+```ts
+import { db } from '../db.js'
+
+export async function createFeedback(
+    userId: number | null,
+    page: string,
+    questId: number | null,
+    questSetId: number | null,
+    body: string,
+) {
+    await db.query(
+        'INSERT INTO feedback (user_id, page, quest_id, quest_set_id, body) VALUES (?, ?, ?, ?, ?)',
+        [userId, page, questId, questSetId, body]
+    )
+}
+
+export async function getFeedbackList() {
+    const [rows] = await db.query(`
+        SELECT
+            f.id,
+            u.name AS userName,
+            f.page,
+            qs.title AS questSetTitle,
+            q.title AS questTitle,
+            f.body,
+            f.created_at AS createdAt
+        FROM feedback f
+        LEFT JOIN user u ON f.user_id = u.id
+        LEFT JOIN quest_set qs ON f.quest_set_id = qs.id
+        LEFT JOIN quest q ON f.quest_id = q.id
+        ORDER BY f.created_at DESC
+    `)
+    return rows
+}
+```
 
 ### POST /feedback
 
-인증 불필요. `user_id`는 토큰이 있으면 추출, 없으면 NULL.
+`backend/src/routes/feedback.routes.ts` 신규 작성. 인증 불필요 — `user_id`는 토큰이 있으면 추출, 없으면 NULL.
 
 ```ts
-fastify.post<{ Body: { page: string; questId?: number; questSetId?: number; body: string } }>(
-    '/feedback',
-    async (req, reply) => {
-        const { page, questId, questSetId, body } = req.body
-        if (!body?.trim()) return reply.code(400).send({ error: '내용을 입력해주세요.' })
+import { FastifyPluginAsync } from 'fastify'
+import { verifyToken } from '../services/auth.js'
+import { createFeedback } from '../services/feedback.js'
 
-        let userId: number | null = null
-        const authHeader = req.headers['authorization']
-        if (authHeader?.startsWith('Bearer ')) {
-            try {
-                const payload = jwt.verify(authHeader.slice(7), JWT_SECRET) as { userId: number }
-                userId = payload.userId
-            } catch {}
+export const feedbackRoutes: FastifyPluginAsync = async (app) => {
+    app.post<{ Body: { page: string; questId?: number; questSetId?: number; body: string } }>(
+        '/feedback',
+        async (req, reply) => {
+            const { page, questId, questSetId, body } = req.body
+            if (!body?.trim()) return reply.code(400).send({ error: '내용을 입력해주세요.' })
+
+            let userId: number | null = null
+            const authHeader = req.headers['authorization']
+            if (authHeader?.startsWith('Bearer ')) {
+                try {
+                    userId = verifyToken(authHeader.slice(7)).userId
+                } catch {}
+            }
+
+            await createFeedback(userId, page, questId ?? null, questSetId ?? null, body.trim())
+            return { ok: true }
         }
+    )
+}
+```
 
-        await db.query(
-            'INSERT INTO feedback (user_id, page, quest_id, quest_set_id, body) VALUES (?, ?, ?, ?, ?)',
-            [userId, page ?? null, questId ?? null, questSetId ?? null, body.trim()]
-        )
-        return { ok: true }
-    }
-)
+`index.ts`에 등록 추가:
+
+```ts
+import { feedbackRoutes } from './routes/feedback.routes.js'
+// ...
+await fastify.register(feedbackRoutes)
 ```
 
 ### GET /admin/feedback
 
-관리자 전용.
+`backend/src/routes/admin.routes.ts`(기존 파일)에 라우트 추가. 관리자 전용이므로 `adminMiddleware` 재사용.
 
 ```ts
-fastify.get(
+import { getFeedbackList } from '../services/feedback.js'
+
+// adminRoutes 안, 기존 라우트들 옆에 추가
+app.get(
     '/admin/feedback',
-    { preHandler: [authMiddleware, adminOnly] },
-    async () => {
-        const [rows] = await db.query(`
-            SELECT
-                f.id,
-                u.name AS userName,
-                f.page,
-                qs.title AS questSetTitle,
-                q.title AS questTitle,
-                f.body,
-                f.created_at AS createdAt
-            FROM feedback f
-            LEFT JOIN user u ON f.user_id = u.id
-            LEFT JOIN quest_set qs ON f.quest_set_id = qs.id
-            LEFT JOIN quest q ON f.quest_id = q.id
-            ORDER BY f.created_at DESC
-        `)
-        return rows
-    }
+    { preHandler: adminMiddleware },
+    async () => getFeedbackList()
 )
 ```
 

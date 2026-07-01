@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { fetchLeaderboard } from "../api"
+import { fetchLeaderboard } from "../api/user"
 import { TopNav } from "../components/TopNav"
 import { SideNav } from "../components/SideNav"
 

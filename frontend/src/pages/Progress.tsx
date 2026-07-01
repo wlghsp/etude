@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { fetchProgess } from "../api"
+import { fetchProgess } from "../api/user"
 import { TopNav } from "../components/TopNav"
 import { SideNav } from "../components/SideNav"
 

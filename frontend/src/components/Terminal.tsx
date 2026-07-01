@@ -24,8 +24,9 @@ export function Terminal({ sandboxType, questId, containerId, onConnected }: Pro
         const params = new URLSearchParams({ sandboxType })
         if (questId !== null) params.set('questId', String(questId))
         if (containerId) params.set('containerId', containerId)  // 추가
-
-        const ws = new WebSocket(`ws://${window.location.hostname}:3001/ws/terminal?${params}`)
+        
+        const wsBase = import.meta.env.VITE_WS_BASE ?? ''
+        const ws = new WebSocket(`${wsBase}/ws/terminal?${params}`)
         ws.binaryType = 'arraybuffer'
 
         ws.onopen = () => {}

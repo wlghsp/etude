@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt'
-import { db } from "./db.js";
+import { db } from '../db.js'
 
 
 export async function getProgress(userId: number) {
