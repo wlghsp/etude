@@ -32,7 +32,9 @@ ln -sf ~/.colima/default/docker.sock ~/.docker/run/docker.sock
 | Phase 7 — 사용자 인증 + 진행 추적 | [guides/guide_phase7a_auth_backend.md](guides/guide_phase7a_auth_backend.md) 외 | [specs/spec_phase7_auth.md](specs/spec_phase7_auth.md) | ✅ 완료 |
 | Phase 7 — 퀘스트 세트 접근 제어 | [guides/guide_phase7h_quest_access.md](guides/guide_phase7h_quest_access.md) | [specs/spec_phase7_quest_access.md](specs/spec_phase7_quest_access.md) | 대기 |
 | Phase 8 — 서버 배포 (OCI) | [guides/guide_phase8_deploy.md](guides/guide_phase8_deploy.md) | [specs/spec_phase8_deploy.md](specs/spec_phase8_deploy.md) | 대기 |
+| Phase 8b — CI/CD (GitHub Actions) | [guides/guide_phase8b_cicd.md](guides/guide_phase8b_cicd.md) | [specs/spec_phase8b_cicd.md](specs/spec_phase8b_cicd.md) | 대기 |
 | Phase 9 — 퀘스트 콘텐츠 확장 2 | (Phase 8 완료 후 작성) | (Phase 8 완료 후 작성) | 대기 |
+| Phase 10 — vcluster 전환 + KLID CMP 현장실습 | (작성 예정) | [specs/spec_phase10_klid_cmp.md](specs/spec_phase10_klid_cmp.md) | 대기 |
 
 ---
 

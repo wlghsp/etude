@@ -44,14 +44,22 @@
 
 - Node.js 20+
 - Docker
-- MariaDB
+
+### DB
+
+`backend/db/`의 SQL 파일들은 파일명 순서(`00_schema.sql` → ... → `04_users.sql`)대로 자동 실행된다.
+
+```bash
+cd backend
+cp db/04_users.sql.example db/04_users.sql  # 유저 시드 작성
+docker compose up -d
+```
 
 ### 백엔드
 
 ```bash
 cd backend
 cp .env.example .env       # 환경변수 설정
-cp db/04_users.sql.example db/04_users.sql  # 유저 시드 작성
 npm install
 npm run dev
 ```
@@ -62,15 +70,6 @@ npm run dev
 cd frontend
 npm install
 npm run dev
-```
-
-### DB 초기화
-
-```bash
-mysql -u root -p etude < backend/db/00_schema.sql
-mysql -u root -p etude < backend/db/01_sandbox.sql
-# ... 나머지 sql 파일 순서대로 실행
-mysql -u root -p etude < backend/db/04_users.sql
 ```
 
 ---
@@ -94,14 +93,7 @@ K3D_NETWORK=k3d-etude   # k8s 세트 사용 시
 
 ## 유저 관리
 
-가입 화면 없음. 관리자가 API로 직접 생성.
-
-```bash
-curl -X POST http://localhost:3001/admin/users \
-  -H "Authorization: Bearer <admin-token>" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "홍길동", "email": "hong@example.com", "password": "임시비번"}'
-```
+가입 화면 없음. 관리자가 API로 직접 생성 — [docs/ops/guide_user_management.md](docs/ops/guide_user_management.md) 참고.
 
 ---
 
@@ -110,3 +102,4 @@ curl -X POST http://localhost:3001/admin/users \
 - [`docs/etude_dev_plan.md`](docs/etude_dev_plan.md) — 아키텍처 및 개발 계획
 - [`docs/guides/`](docs/guides/) — Phase별 구현 가이드
 - [`docs/specs/`](docs/specs/) — Phase별 명세
+- [`docs/ops/`](docs/ops/) — 운영 가이드 (배포 후 반복 운영 절차)

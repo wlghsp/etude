@@ -133,14 +133,20 @@ resource "oci_core_security_list" "etude" {
   ingress_security_rules {
     protocol = "6"
     source   = "0.0.0.0/0"
-    tcp_options { min = 22; max = 22 }
+    tcp_options {
+      min = 22
+      max = 22
+    }
   }
 
   # HTTP
   ingress_security_rules {
     protocol = "6"
     source   = "0.0.0.0/0"
-    tcp_options { min = 80; max = 80 }
+    tcp_options {
+      min = 80
+      max = 80
+    }
   }
 
   # 아웃바운드 전체 허용
@@ -165,6 +171,16 @@ data "oci_identity_availability_domains" "ads" {
   compartment_id = var.compartment_ocid
 }
 
+# Ubuntu 22.04 ARM64 최신 이미지 자동 조회 (리전마다 OCID가 다르므로 하드코딩하지 않음)
+data "oci_core_images" "ubuntu" {
+  compartment_id           = var.compartment_ocid
+  operating_system         = "Canonical Ubuntu"
+  operating_system_version = "22.04"
+  shape                    = "VM.Standard.A1.Flex"
+  sort_by                  = "TIMECREATED"
+  sort_order               = "DESC"
+}
+
 resource "oci_core_instance" "etude" {
   compartment_id      = var.compartment_ocid
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
@@ -178,8 +194,7 @@ resource "oci_core_instance" "etude" {
 
   source_details {
     source_type = "image"
-    # Ubuntu 22.04 ARM64 — 리전마다 OCID 다름 (outputs.tf의 주석 참고)
-    source_id   = var.ubuntu_image_ocid
+    source_id   = data.oci_core_images.ubuntu.images[0].id
   }
 
   create_vnic_details {
@@ -228,19 +243,13 @@ private_key_path = "~/.oci/oci_api_key.pem"
 region           = "ap-seoul-1"
 compartment_ocid = "ocid1.compartment.oc1..xxxxxx"
 ssh_public_key   = "ssh-ed25519 AAAA..."
-
-# Ubuntu 22.04 ARM64 이미지 OCID
-# OCI 콘솔 → Compute → Images → Platform Images → Ubuntu 22.04 → ARM64 OCID 복사
-ubuntu_image_ocid = "ocid1.image.oc1.ap-seoul-1.xxxxxx"
 ```
 
-### 2-2. variables.tf에 ubuntu_image_ocid 추가
+> `compartment_ocid`는 별도로 compartment를 만들지 않았다면 root compartment를 쓰면 되고, root compartment의 OCID는 `tenancy_ocid`와 동일하다.
+>
+> Ubuntu 22.04 ARM64 이미지는 리전마다 OCID가 다르고 콘솔에서 찾기 번거로우므로, OCID를 직접 넣지 않고 `main.tf`의 `oci_core_images` data source로 자동 조회한다 (위 2-1 참고).
 
-```hcl
-variable "ubuntu_image_ocid" {}
-```
-
-### 2-3. .gitignore 추가
+### 2-2. .gitignore 추가
 
 `infra/terraform/terraform.tfvars`는 비밀 정보이므로 gitignore에 추가한다.
 
@@ -294,6 +303,10 @@ sudo mv kubectl /usr/local/bin/kubectl
 
 # k3d
 curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+
+# k3d 이미지 사전 pull (클러스터 최초 기동 시 pull 대기시간 제거)
+docker pull rancher/k3s:latest
+docker pull rancher/k3d-proxy:latest
 
 # Node.js 20 (프론트 빌드용)
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -408,10 +421,13 @@ DB_PORT=3306
 DB_USER=etude
 DB_PASSWORD={비밀번호 설정}
 DB_NAME=etude
+JWT_SECRET={랜덤 시크릿 설정}
 KUBECONFIG_PATH=/root/.kube/config-etude
 K3D_NETWORK=k3d-etude
 EOF
 ```
+
+> `JWT_SECRET`을 빠뜨리면 `backend/src/services/auth.ts`의 기본값(`dev-secret`)으로 fallback된다. 배포 시 반드시 설정한다.
 
 ---
 
@@ -521,9 +537,9 @@ EXPOSE 3001
 CMD ["node", "dist/index.js"]
 ```
 
-### 7-4. 코드 수정 — API URL + tsconfig
+### 7-4. 코드 수정 — tsconfig
 
-**① `backend/tsconfig.json` — outDir 주석 해제**
+**`backend/tsconfig.json` — outDir 주석 해제**
 
 현재 `outDir`이 주석 처리되어 있어 `npm run build`를 해도 `dist/`가 생성되지 않는다.
 
@@ -537,29 +553,7 @@ CMD ["node", "dist/index.js"]
 "outDir": "./dist",
 ```
 
-**② `frontend/src/api.ts` — 포트 제거**
-
-현재 `:3001`이 하드코딩되어 있다. 서버에서는 nginx가 80포트로 받으므로 포트를 제거한다.
-
-```typescript
-// 변경 전
-const BASE = `http://${window.location.hostname}:3001`
-
-// 변경 후
-const BASE = `http://${window.location.hostname}`
-```
-
-**③ `frontend/src/components/Terminal.tsx` — WebSocket 포트 제거**
-
-```typescript
-// 변경 전
-`ws://${window.location.hostname}:3001/ws/terminal?...`
-
-// 변경 후
-`ws://${window.location.hostname}/ws/terminal?...`
-```
-
-> 로컬 개발 시 vite proxy를 쓰거나, 개발 중에는 `:3001`을 다시 붙여야 한다는 점 참고.
+> 프론트엔드 API/WebSocket URL의 포트 처리는 [guide_phase7e_deploy_api_url.md](guide_phase7e_deploy_api_url.md)에서 이미 `VITE_API_BASE`/`VITE_WS_BASE` 환경변수로 구현되어 있다. `frontend/.env.production`은 빈 값(같은 origin, 포트 생략)으로 이미 존재하므로 이 단계에서 별도 코드 수정은 불필요하다. 배포 전 `frontend/.env.production`의 두 값이 비어 있는지만 확인한다.
 
 ### 7-5. git push 후 서버에서 실행
 

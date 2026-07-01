@@ -5,8 +5,7 @@
 OCI(Oracle Cloud Infrastructure) Always Free VM에 Etude를 배포한다.
 팀원이 브라우저로 접속해서 퀘스트를 풀 수 있는 상태를 만드는 것이 목표다.
 
-현재 Phase (Phase 6 완료) 기준으로 인증 없이 배포한다.
-Phase 7 (인증) 완료 후 동일 서버에 재배포한다.
+Phase 7 (인증) 완료 기준으로 배포한다. 로그인/권한 체크가 포함된 상태로 배포된다.
 
 ---
 
@@ -75,6 +74,8 @@ HTTPS는 도메인 확보 후 Let's Encrypt로 추가한다.
 Vite로 정적 빌드 후 nginx가 서빙한다.
 `frontend/dist/`를 nginx 컨테이너에 볼륨 마운트한다.
 
+API/WebSocket URL은 `VITE_API_BASE`/`VITE_WS_BASE` 환경변수로 분리되어 있다 ([guide_phase7e_deploy_api_url.md](../guides/guide_phase7e_deploy_api_url.md)). `frontend/.env.production`은 빈 값 — 같은 origin의 nginx가 `/api/`, `/ws/`로 프록시하므로 호스트를 생략한다.
+
 ---
 
 ## 환경변수 (서버)
@@ -87,9 +88,12 @@ DB_PORT=3306
 DB_USER=etude
 DB_PASSWORD={비밀번호}
 DB_NAME=etude
+JWT_SECRET={랜덤 시크릿}
 KUBECONFIG_PATH=/root/.kube/config-etude
 K3D_NETWORK=k3d-etude
 ```
+
+> `JWT_SECRET`을 설정하지 않으면 `backend/src/services/auth.ts`의 기본값(`dev-secret`)으로 fallback되므로 배포 시 필수로 설정한다.
 
 ---
 
@@ -155,7 +159,8 @@ Terraform이 관리하지 않는 것:
 
 ## 검증 기준
 
-- [ ] `http://{공인IP}` 로 세트 선택 화면 접속 가능
+- [ ] `http://{공인IP}` 로 로그인 화면 접속 가능
+- [ ] 로그인 후 세트 선택 화면 접속 가능
 - [ ] linux 퀘스트 세트 — 터미널 연결 + 채점 동작
 - [ ] docker 퀘스트 세트 — DinD 터미널 연결 + 채점 동작
 - [ ] k8s 퀘스트 세트 — kubectl 동작 + namespace 격리 확인
