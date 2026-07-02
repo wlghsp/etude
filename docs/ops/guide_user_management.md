@@ -31,7 +31,7 @@ curl -X POST http://161.33.45.200/auth/login \
 ```bash
 ADMIN_TOKEN=$(curl -s -X POST http://161.33.45.200/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "admin@okestro.com", "password": "cloud1234!"}' \
+  -d '{"email": "admin@okestro.com", "password": "실제비밀번호"}' \
   | python3 -c "import sys, json; print(json.load(sys.stdin)['token'])")
 ```
 
@@ -45,7 +45,7 @@ ADMIN_TOKEN=$(curl -s -X POST http://161.33.45.200/auth/login \
 curl -X POST http://161.33.45.200/admin/users \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"name": "최지호", "email": "jh.choi2@okestro.com", "password": "cloud1234!"}'
+  -d '{"name": "홍길동", "email": "hong@okestro.com", "password": "임시비밀번호"}'
 ```
 
 - `role`은 별도로 지정하지 않으며 항상 `member`로 생성된다 (관리자 계정은 DB에서 직접 관리).
