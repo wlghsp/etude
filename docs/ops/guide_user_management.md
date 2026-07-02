@@ -24,7 +24,7 @@ curl -X POST http://161.33.45.200/auth/login \
 {"token": "eyJhbGciOiJIUzI1NiIs...", "name": "관리자", "role": "admin"}
 ```
 
-이 `token` 값을 이후 명령에서 계속 사용한다. 아래에서는 `{ADMIN_TOKEN}`으로 표기한다.
+이 `token` 값을 이후 명령에서 계속 사용한다. 아래에서는 `$ADMIN_TOKEN`으로 표기한다.
 
 매번 복사하기 번거로우면 셸 변수로 저장해두면 편하다 (아래 코드블록만 복사해서 실행 — `>` 기호는 포함하지 않는다):
 
@@ -43,9 +43,9 @@ ADMIN_TOKEN=$(curl -s -X POST http://161.33.45.200/auth/login \
 
 ```bash
 curl -X POST http://161.33.45.200/admin/users \
-  -H "Authorization: Bearer {ADMIN_TOKEN}" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"name": "최지호", "email": "hong@okestro.com", "password": "{임시 비밀번호}"}'
+  -d '{"name": "최지호", "email": "jh.choi2@okestro.com", "password": "cloud1234!"}'
 ```
 
 - `role`은 별도로 지정하지 않으며 항상 `member`로 생성된다 (관리자 계정은 DB에서 직접 관리).
@@ -73,7 +73,7 @@ done < users.txt
 
 ```bash
 curl -X PATCH http://161.33.45.200/admin/users/{userId}/password \
-  -H "Authorization: Bearer {ADMIN_TOKEN}" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"password": "{새 비밀번호}"}'
 ```
@@ -86,7 +86,7 @@ curl -X PATCH http://161.33.45.200/admin/users/{userId}/password \
 
 ```bash
 curl http://161.33.45.200/admin/users \
-  -H "Authorization: Bearer {ADMIN_TOKEN}"
+  -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 `member` role인 계정만 반환된다 (admin은 목록에서 제외됨 — role만으로 모든 세트에 접근 가능해 개별 관리 대상이 아니기 때문).
@@ -102,13 +102,13 @@ curl로 하려면:
 ```bash
 # 세트 공개 전환
 curl -X PATCH http://161.33.45.200/admin/quest-sets/{setId} \
-  -H "Authorization: Bearer {ADMIN_TOKEN}" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"is_public": true}'
 
 # 특정 유저에게 비공개 세트 접근 허용
 curl -X POST http://161.33.45.200/admin/quest-sets/{setId}/access \
-  -H "Authorization: Bearer {ADMIN_TOKEN}" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"userId": {userId}}'
 ```
