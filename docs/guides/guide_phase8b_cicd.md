@@ -57,10 +57,12 @@ jobs:
             npm ci
             npm run build
             cd ..
-            docker compose -f deploy/docker-compose.prod.yml up -d --build backend
+            docker compose -f deploy/docker-compose.prod.yml --project-directory . up -d --build backend nginx
 ```
 
 `workflow_dispatch`만 트리거로 두었으므로 push로는 실행되지 않는다. GitHub Actions 탭에서 수동으로 눌러야 배포가 시작된다.
+
+> `--project-directory .`가 없으면 `deploy/` 안에서 compose 파일의 상대경로(`./backend/.env.prod` 등)가 `deploy/` 기준으로 해석되어 `.env.prod`를 못 찾는다 ([guide_phase8_deploy.md](guide_phase8_deploy.md) 참고). `nginx`도 매번 함께 재시작해 `nginx.conf` 변경이 있으면 반영되도록 한다 — nginx 재시작 자체는 1초 내외라 매번 재기동해도 무방하다고 판단.
 
 ---
 
