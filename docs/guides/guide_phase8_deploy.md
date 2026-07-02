@@ -422,6 +422,12 @@ Host github.com
 git clone git@github.com:{org}/etude.git ~/etude
 ```
 
+`backend/db/04_users.sql`은 실제 계정 정보라 `.gitignore` 대상이므로 clone해도 서버에 없다. 로컬에서 만든 `04_users.sql`을 서버로 직접 옮긴다 (scp 등). 이 파일이 없으면 DB 초기화 시 유저 테이블이 비어 로그인이 불가능하다.
+
+```bash
+scp -i ~/.ssh/etude_oci backend/db/04_users.sql ubuntu@{공인IP}:~/etude/backend/db/04_users.sql
+```
+
 ### 6-3. 환경변수 작성
 
 ```bash
@@ -460,7 +466,7 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - etude-db-data:/var/lib/mysql
-      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/db:/docker-entrypoint-initdb.d
     networks:
       - etude
 

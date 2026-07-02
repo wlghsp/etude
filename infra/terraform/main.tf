@@ -118,7 +118,7 @@ resource "oci_core_instance" "etude" {
 
   create_vnic_details {
     subnet_id        = oci_core_subnet.etude.id
-    assign_public_ip = true
+    assign_public_ip = false
   }
 
   metadata = {
