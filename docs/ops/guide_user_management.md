@@ -2,6 +2,8 @@
 
 가입 화면이 없다. 관리자가 API로 직접 계정을 만들어준다. 아래 순서대로 진행한다.
 
+> 아래 예시에서 `{...}`로 표시된 부분은 전부 실제 값으로 바꿔서 넣는다는 뜻이다. **중괄호(`{}`) 자체는 입력값에 포함하지 않는다** — 중괄호까지 그대로 붙여넣으면 그 문자 그대로가 값으로 전송되어 실패한다.
+
 ---
 
 ## 1. 관리자 토큰 발급받기
@@ -11,8 +13,10 @@
 ```bash
 curl -X POST http://161.33.45.200/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "admin@okestro.com", "password": "{관리자 비밀번호}"}'
+  -d '{"email": "admin@okestro.com", "password": "실제비밀번호"}'
 ```
+
+> `실제비밀번호` 자리에 진짜 비밀번호를 그대로 넣는다. 중괄호(`{}`)는 포함하지 않는다.
 
 응답 예시:
 
@@ -27,9 +31,11 @@ curl -X POST http://161.33.45.200/auth/login \
 ```bash
 ADMIN_TOKEN=$(curl -s -X POST http://161.33.45.200/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "admin@okestro.com", "password": "{관리자 비밀번호}"}' \
+  -d '{"email": "admin@okestro.com", "password": "cloud1234!"}' \
   | python3 -c "import sys, json; print(json.load(sys.stdin)['token'])")
 ```
+
+> `실제비밀번호` 자리에 진짜 비밀번호를 그대로 넣는다. 중괄호(`{}`)는 포함하지 않는다 — 중괄호까지 넣으면 그 문자 그대로가 비밀번호로 전송되어 로그인이 실패한다.
 
 ---
 
@@ -39,7 +45,7 @@ ADMIN_TOKEN=$(curl -s -X POST http://161.33.45.200/auth/login \
 curl -X POST http://161.33.45.200/admin/users \
   -H "Authorization: Bearer {ADMIN_TOKEN}" \
   -H "Content-Type: application/json" \
-  -d '{"name": "홍길동", "email": "hong@okestro.com", "password": "{임시 비밀번호}"}'
+  -d '{"name": "최지호", "email": "hong@okestro.com", "password": "{임시 비밀번호}"}'
 ```
 
 - `role`은 별도로 지정하지 않으며 항상 `member`로 생성된다 (관리자 계정은 DB에서 직접 관리).
