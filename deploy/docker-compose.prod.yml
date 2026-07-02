@@ -3,10 +3,11 @@ services:
     image: mariadb:11
     container_name: etude-db
     restart: unless-stopped
+    env_file: ./backend/.env.prod
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: etude
-      MYSQL_USER: etude
+      MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - etude-db-data:/var/lib/mysql

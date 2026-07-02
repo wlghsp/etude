@@ -587,7 +587,7 @@ npm run build
 cd ..
 
 # 서비스 기동
-docker compose -f deploy/docker-compose.prod.yml up -d --build
+docker compose -f deploy/docker-compose.prod.yml --project-directory . up -d --build
 ```
 
 ---
@@ -596,10 +596,10 @@ docker compose -f deploy/docker-compose.prod.yml up -d --build
 
 ```bash
 # 서비스 상태
-docker compose -f deploy/docker-compose.prod.yml ps
+docker compose -f deploy/docker-compose.prod.yml --project-directory . ps
 
 # 로그 확인
-docker compose -f deploy/docker-compose.prod.yml logs -f backend
+docker compose -f deploy/docker-compose.prod.yml --project-directory . logs -f backend
 
 # 브라우저 접속
 open http://{공인IP}
@@ -626,7 +626,7 @@ git pull
 cd frontend && npm run build && cd ..
 
 # 서비스 재시작
-docker compose -f deploy/docker-compose.prod.yml up -d --build backend
+docker compose -f deploy/docker-compose.prod.yml --project-directory . up -d --build backend
 ```
 
 ---
@@ -635,10 +635,10 @@ docker compose -f deploy/docker-compose.prod.yml up -d --build backend
 
 ```bash
 # 전체 서비스 중지
-docker compose -f deploy/docker-compose.prod.yml down
+docker compose -f deploy/docker-compose.prod.yml --project-directory . down
 
 # DB 초기화 (주의: 데이터 삭제)
-docker compose -f deploy/docker-compose.prod.yml down -v
+docker compose -f deploy/docker-compose.prod.yml --project-directory . down -v
 
 # k3d 클러스터 중지/재시작
 k3d cluster stop etude
