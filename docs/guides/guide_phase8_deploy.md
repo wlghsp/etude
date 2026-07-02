@@ -531,22 +531,9 @@ networks:
 ```nginx
 server {
     listen 80;
+    root /usr/share/nginx/html;
 
-    # 프론트엔드 (정적 파일)
-    location / {
-        root /usr/share/nginx/html;
-        index index.html;
-        try_files $uri $uri/ /index.html;
-    }
-
-    # 백엔드 API
-    location /api/ {
-        proxy_pass http://backend:3001/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    # WebSocket
+    # WebSocket (백엔드 라우트가 /api 접두사 없이 등록되어 있으므로 먼저 매칭)
     location /ws/ {
         proxy_pass http://backend:3001/ws/;
         proxy_http_version 1.1;
@@ -555,8 +542,26 @@ server {
         proxy_set_header Host $host;
         proxy_read_timeout 3600s;
     }
+
+    # 프론트엔드는 SPA 라우터 없이 App.tsx state로만 화면을 전환하므로 실제 경로는 / 하나뿐이다.
+    # 정적 파일(js/css/이미지 등)이 존재하면 그대로 서빙하고, 없으면 API 요청으로 간주해 backend로 넘긴다.
+    location = / {
+        try_files /index.html @backend;
+    }
+
+    location / {
+        try_files $uri @backend;
+    }
+
+    location @backend {
+        proxy_pass http://backend:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
 }
 ```
+
+> **주의**: 처음엔 `location /api/`로 `/api/` 접두사가 붙은 요청만 backend로 프록시하는 흔한 패턴을 썼으나, 실제 백엔드 라우트(`auth.routes.ts`, `quest.routes.ts` 등)는 `/api` 접두사 없이 `/auth/login`, `/quest-sets`처럼 등록되어 있다. 그 결과 로그인 요청이 `location /`(정적 파일)로 떨어져 `405 Not Allowed`가 발생했다. 위처럼 정적 파일 우선 매칭 후 나머지를 전부 backend로 넘기는 방식으로 수정.
 
 ### 7-3. backend/Dockerfile 작성 (로컬에서)
 
