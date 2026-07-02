@@ -447,6 +447,19 @@ EOF
 >
 > [Phase 10](guide_phase10_klid_cmp.md)(vcluster pool) 적용 시 pool 크기 등 추가 환경변수가 필요할 수 있다 — 해당 가이드 구현 시점에 이 파일에 반영한다.
 
+### 6-4. 프로젝트 루트 `.env` 작성
+
+`docker-compose.prod.yml`의 `${DB_USER}`/`${DB_PASSWORD}` 같은 변수 치환은 `env_file`(컨테이너 안에 주입되는 값)과는 별개로, **compose 파일 실행 시 기준 디렉토리(`--project-directory`)의 `.env` 파일**에서 값을 읽는다. `backend/.env.prod`와 값이 중복되지만 용도가 다르므로 별도로 작성해야 한다.
+
+```bash
+cat > ~/etude/.env << 'EOF'
+DB_USER=etude
+DB_PASSWORD={6-3에서 설정한 것과 동일한 값}
+EOF
+```
+
+> `.gitignore`에 `.env`가 이미 포함되어 있어 커밋되지 않는다.
+
 ---
 
 ## Step 7. 프로덕션 파일 작성 + 서비스 기동
