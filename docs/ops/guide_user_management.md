@@ -22,13 +22,14 @@ curl -X POST http://161.33.45.200/auth/login \
 
 이 `token` 값을 이후 명령에서 계속 사용한다. 아래에서는 `{ADMIN_TOKEN}`으로 표기한다.
 
-> 매번 복사하기 번거로우면 셸 변수로 저장해두면 편하다.
-> ```bash
-> ADMIN_TOKEN=$(curl -s -X POST http://161.33.45.200/auth/login \
->   -H "Content-Type: application/json" \
->   -d '{"email": "admin@okestro.com", "password": "{관리자 비밀번호}"}' \
->   | python3 -c "import sys, json; print(json.load(sys.stdin)['token'])")
-> ```
+매번 복사하기 번거로우면 셸 변수로 저장해두면 편하다 (아래 코드블록만 복사해서 실행 — `>` 기호는 포함하지 않는다):
+
+```bash
+ADMIN_TOKEN=$(curl -s -X POST http://161.33.45.200/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@okestro.com", "password": "{관리자 비밀번호}"}' \
+  | python3 -c "import sys, json; print(json.load(sys.stdin)['token'])")
+```
 
 ---
 
