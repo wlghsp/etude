@@ -22,6 +22,9 @@ services:
     container_name: etude-backend
     restart: unless-stopped
     env_file: ./backend/.env.prod
+    environment:
+      # vcluster CLI가 표준으로 인식하는 KUBECONFIG 환경변수 — KUBECONFIG_PATH(.env.prod)와 동일 경로를 가리킨다
+      KUBECONFIG: /root/.kube/config-etude
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOME}/.kube/config-etude:/root/.kube/config-etude:ro

@@ -490,6 +490,9 @@ services:
     container_name: etude-backend
     restart: unless-stopped
     env_file: ./backend/.env.prod
+    environment:
+      # vcluster CLI가 표준으로 인식하는 KUBECONFIG 환경변수 — KUBECONFIG_PATH(.env.prod)와 동일 경로를 가리킨다
+      KUBECONFIG: /root/.kube/config-etude
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOME}/.kube/config-etude:/root/.kube/config-etude:ro
@@ -670,3 +673,4 @@ docker ps -a --filter "name=etude-" --format "{{.ID}}" | xargs docker rm -f
 - Docker socket(`/var/run/docker.sock`) 마운트는 샌드박스 컨테이너 제어에 필수다.
 - k3d 클러스터가 내려간 상태에서 서비스를 올리면 k8s 세트만 연결 실패한다. 다른 세트는 영향 없음.
 - VM 재부팅 시 k3d 클러스터가 자동으로 올라오지 않는다. `k3d cluster start etude` 후 `docker compose up -d` 순서로 실행한다.
+- Phase 10(vcluster pool) 배포 시 backend 컨테이너 안에서 직접 `vcluster`/`kubectl` 명령이 실행되므로, `backend/Dockerfile`에 두 바이너리가 설치되어 있어야 하고, `docker-compose.prod.yml`의 backend 서비스에 `KUBECONFIG` 환경변수가 `KUBECONFIG_PATH`(.env.prod)와 동일한 경로로 설정되어 있어야 한다. 실제로 이 두 가지가 빠져 `vcluster: not found`, `no configuration has been provided` 에러로 backend가 계속 재시작되는 문제를 겪었다.
