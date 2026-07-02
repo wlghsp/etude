@@ -635,39 +635,9 @@ open http://{공인IP}
 
 ---
 
-## 재배포 절차
+## 재배포 절차 + 운영 명령어
 
-코드 변경 후 서버 반영:
-
-```bash
-cd ~/etude
-git pull
-
-# 프론트 변경 시
-cd frontend && npm run build && cd ..
-
-# 서비스 재시작
-docker compose -f deploy/docker-compose.prod.yml --project-directory . up -d --build backend
-```
-
----
-
-## 유용한 운영 명령어
-
-```bash
-# 전체 서비스 중지
-docker compose -f deploy/docker-compose.prod.yml --project-directory . down
-
-# DB 초기화 (주의: 데이터 삭제)
-docker compose -f deploy/docker-compose.prod.yml --project-directory . down -v
-
-# k3d 클러스터 중지/재시작
-k3d cluster stop etude
-k3d cluster start etude
-
-# 고아 컨테이너 정리 (etude- prefix)
-docker ps -a --filter "name=etude-" --format "{{.ID}}" | xargs docker rm -f
-```
+최초 배포 이후 반복되는 재배포/운영 명령어는 [docs/ops/guide_server_operations.md](../ops/guide_server_operations.md)에 정리되어 있다.
 
 ---
 
