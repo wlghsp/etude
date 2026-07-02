@@ -9,6 +9,9 @@ services:
       MYSQL_DATABASE: etude
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      # DBeaver 등 로컬 DB 클라이언트에서 SSH 터널로만 접근하도록 localhost에만 바인딩
+      - "127.0.0.1:3306:3306"
     volumes:
       - etude-db-data:/var/lib/mysql
       - ./backend/db:/docker-entrypoint-initdb.d
