@@ -9,20 +9,23 @@
 ## 전체 흐름
 
 ```
-Step 1. terminal.ts — cleanupOrphanQuestNamespaces() 작성
+Step 1. plugins/k8s-namespace.ts (신규) — cleanupOrphanQuestNamespaces() 작성
 Step 2. index.ts — 서버 기동 시 호출 추가
 Step 3. 로컬에서 강제 종료로 재현 + 정리 확인
 ```
 
 ---
 
-## Step 1. `terminal.ts` — 고아 namespace 정리 함수
+## Step 1. `plugins/k8s-namespace.ts` (신규) — 고아 namespace 정리 함수
+
+`docker.ts`(Docker 컨테이너 정리)와 `vcluster-pool.ts`(vcluster 정리)처럼, "이 리소스 종류를 다루는 파일"이 리소스별로 나뉘어 있다. `terminal.ts`는 WebSocket 연결 처리가 본연의 역할이라, 서버 기동 시 1회 실행되는 정리 로직을 거기 얹으면 역할이 섞인다 — `plugins/`에 전담 파일을 새로 만든다.
 
 `k8s` 타입이 만드는 namespace 이름 규칙은 `quest-{containerId 앞 8자리}` ([terminal.ts:174](../../backend/src/services/terminal.ts#L174)의 `handleK8sTerminal` 참고). 이 접두사로 걸러서 지운다.
 
-`vcluster-pool.ts`의 `cleanupOrphanVclusters()`와 완전히 같은 구조다 — `execAsync`로 `kubectl`을 직접 호출하는 점도 동일. `terminal.ts`는 이미 `Docker`를 다루고 있으니 `node:child_process`의 `exec`를 새로 import해야 한다.
+`vcluster-pool.ts`의 `cleanupOrphanVclusters()`와 완전히 같은 구조다 — `execAsync`로 `kubectl`을 직접 호출하는 점도 동일.
 
 ```typescript
+// backend/src/plugins/k8s-namespace.ts
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
 
@@ -43,7 +46,7 @@ export async function cleanupOrphanQuestNamespaces(): Promise<void> {
 }
 ```
 
-`export`를 붙여서 `index.ts`에서 가져다 쓸 수 있게 한다.
+`handleK8sTerminal` 안의 namespace 생성/삭제 로직 자체는 이번 범위에 포함하지 않는다 — `terminal.ts`에 그대로 둔다. 이번 Phase는 "정상 종료 흐름에서 놓친 것을 서버 기동 시 잡아내는 안전망" 추가에만 집중한다.
 
 ---
 
@@ -54,7 +57,7 @@ export async function cleanupOrphanQuestNamespaces(): Promise<void> {
 ```typescript
 import { cleanupOrphanContainers, cleanupRunningContainers } from './plugins/docker.js'
 import { cleanupOrphanVclusters, initPool } from './services/vcluster-pool.js'
-import { cleanupOrphanQuestNamespaces } from './services/terminal.js'
+import { cleanupOrphanQuestNamespaces } from './plugins/k8s-namespace.js'
 
 const fastify = Fastify({ logger: true })
 
