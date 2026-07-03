@@ -23,7 +23,9 @@ export function Terminal({ sandboxType, questId, containerId, onConnected }: Pro
 
         const params = new URLSearchParams({ sandboxType })
         if (questId !== null) params.set('questId', String(questId))
-        if (containerId) params.set('containerId', containerId)  // 추가
+        if (sandboxType === 'docker-persistent' && containerId) {
+            params.set('containerId', containerId)
+        }
         
         const wsBase = import.meta.env.VITE_WS_BASE ?? ''
         const ws = new WebSocket(`${wsBase}/ws/terminal?${params}`)
