@@ -41,6 +41,8 @@ ADMIN_TOKEN=$(curl -s -X POST http://161.33.45.200/auth/login \
 
 ## 2. 팀원 계정 생성
 
+### 한 명만 만들 때
+
 ```bash
 curl -X POST http://161.33.45.200/admin/users \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -50,20 +52,44 @@ curl -X POST http://161.33.45.200/admin/users \
 
 - `role`은 별도로 지정하지 않으며 항상 `member`로 생성된다 (관리자 계정은 DB에서 직접 관리).
 - 이메일은 로그인 ID로 쓰이므로 중복되지 않게 사내 이메일을 그대로 쓰는 걸 권장.
-- 비밀번호는 팀원이 처음 로그인 후 바꿀 방법이 아직 없으므로(비밀번호 변경 화면 미구현), 팀원에게 안전하게 전달하고 필요시 관리자가 재설정(아래 3번)해준다.
+- 팀원은 로그인 후 사이드바의 "비밀번호 변경"에서 스스로 비밀번호를 바꿀 수 있다 (Phase 7i). 임시 비밀번호는 최초 로그인용으로만 안전하게 전달하면 된다.
 
-여러 명을 한 번에 추가하려면 위 curl 명령을 팀원 수만큼 반복 실행하면 된다. 명단이 많으면 아래처럼 스크립트로 처리해도 된다.
+### 여러 명을 한 번에 만들 때 — 이름/이메일만 준비하면 비밀번호는 자동 생성
+
+명단이 여러 명이면 **이름과 이메일만** 파일로 정리해두고, 스크립트가 각자 다른 임시 비밀번호를 랜덤으로 만들어 계정을 생성한다.
+
+`users.txt` — 한 줄에 `이름,이메일` 형식으로 준비 (비밀번호는 안 적어도 됨):
+
+```
+홍길동,hong@okestro.com
+김철수,kim@okestro.com
+이영희,lee@okestro.com
+```
+
+아래 스크립트를 실행하면 `users.txt`를 한 줄씩 읽어 계정을 생성하고, 결과(이름/이메일/생성된 임시 비밀번호)를 `created_users.csv`에 저장한다.
 
 ```bash
-# users.txt: 한 줄에 "이름,이메일,비밀번호" 형식으로 준비
-while IFS=, read -r name email pw; do
+echo "name,email,password" > created_users.csv
+
+while IFS=, read -r name email; do
+  pw=$(openssl rand -base64 9)
   curl -s -X POST http://161.33.45.200/admin/users \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -H "Content-Type: application/json" \
-    -d "{\"name\": \"$name\", \"email\": \"$email\", \"password\": \"$pw\"}"
-  echo
+    -d "{\"name\": \"$name\", \"email\": \"$email\", \"password\": \"$pw\"}" > /dev/null
+  echo "$name,$email,$pw" >> created_users.csv
 done < users.txt
+
+echo "완료 — created_users.csv 에서 결과 확인"
 ```
+
+`created_users.csv`에 각 팀원의 실제 비밀번호가 평문으로 남으니, 팀원들에게 개별 전달(메신저 DM 등)한 뒤 **이 파일은 반드시 삭제한다.**
+
+```bash
+rm created_users.csv
+```
+
+> `users.txt`, `created_users.csv`는 실제 개인정보/비밀번호가 담기므로 git으로 관리하지 않는다 — 이 저장소의 `.gitignore`에 이미 `*.csv`, `users.txt` 패턴이 없다면 추가해서 실수로 커밋되지 않게 한다.
 
 ---
 
