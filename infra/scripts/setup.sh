@@ -29,6 +29,11 @@ sudo mv vcluster /usr/local/bin/vcluster
 # vcluster 이미지 사전 pull (pool 재보충 시 pull 대기시간 제거)
 docker pull ghcr.io/loft-sh/vcluster-pro:0.35.1
 
+# sandbox 테이블(01_sandbox.sql)이 참조하는 외부 이미지 사전 pull
+# (etude-k8s, etude-ssh는 Step 5에서 직접 빌드하므로 여기 포함하지 않음)
+docker pull ubuntu:latest
+docker pull docker:dind
+
 # Node.js 20 (프론트 빌드용)
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
