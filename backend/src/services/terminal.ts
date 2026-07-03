@@ -174,7 +174,7 @@ async function handleSystemdTerminal(socket: WebSocket, docker: Docker, config: 
       Binds: [...(config.binds ?? []), '/sys/fs/cgroup:/sys/fs/cgroup:rw'],
       Privileged: true,
       CgroupnsMode: 'host',
-    },
+    } as Docker.ContainerCreateOptions['HostConfig'],
   })
   await container.start()
   await waitForSystemd(container)
