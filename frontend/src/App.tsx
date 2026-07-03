@@ -141,8 +141,14 @@ function App() {
               total={quests.length}
               index={questIndex}
               completedIndices={completedIndices}
-              onPrev={() => setQuestIndex((i) => i - 1)}
-              onNext={() => setQuestIndex((i) => i + 1)}
+              onPrev={() => {
+                if (sandboxType !== 'docker-persistent') setContainerId('')
+                setQuestIndex((i) => i - 1)
+              }}
+              onNext={() => {
+                if (sandboxType !== 'docker-persistent') setContainerId('')
+                setQuestIndex((i) => i + 1)
+              }}
               onHome={() => setSelectedSetId(null)}
               onReset={async () => {
                 setPreparing(true)
