@@ -18,7 +18,7 @@ interface Props {
 }
 
 
-export function Admin({ onHome, onProgress, onLeaderboard, onLogout, userName, userEmail, userRole }: Props) {
+export function Admin({ onHome, onProgress, onLeaderboard, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
     const [users, setUsers] = useState<AdminUser[]>([])
     const [sets, setSets] = useState<AdminQuestSet[]>([])
     const [selectedSetId, setSelectedSetId] = useState<number | null>(null)
@@ -45,7 +45,7 @@ export function Admin({ onHome, onProgress, onLeaderboard, onLogout, userName, u
     <div className="dark min-h-screen bg-surface flex flex-col">
       <TopNav onHome={onHome} />
       <div className="flex flex-1 pt-14">
-        <SideNav activePage="admin" userName={userName} userEmail={userEmail} userRole={userRole} onHome={onHome} onProgress={onProgress} onLeaderboard={onLeaderboard} onAdmin={onHome} onLogout={onLogout} />
+        <SideNav activePage="admin" userName={userName} userEmail={userEmail} userRole={userRole} onHome={onHome} onProgress={onProgress} onLeaderboard={onLeaderboard} onAdmin={onHome} onLogout={onLogout} onChangePassword={onChangePassword} />
 
         <main className="flex-1 md:ml-60 flex flex-col items-center px-gutter py-8 bg-surface">
           <div className="w-full max-w-[900px] flex flex-col gap-8">
