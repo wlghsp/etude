@@ -71,7 +71,7 @@ curl -X POST http://161.33.45.200/admin/users \
 ```bash
 INITIAL_PASSWORD="{공통 초기 비밀번호}"
 
-while IFS=, read -r name email; do
+while IFS=, read -r name email || [ -n "$name" ]; do
   http_code=$(curl -s -o /tmp/create_user_resp.json -w "%{http_code}" -X POST http://161.33.45.200/admin/users \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -H "Content-Type: application/json" \
@@ -85,6 +85,8 @@ done < users.txt
 ```
 
 이메일은 DB에 `UNIQUE` 제약이 걸려 있어 중복 등록은 막히지만, 지금 백엔드가 그 실패를 별도 처리하지 않아 500 에러로 응답한다 — 위 스크립트는 HTTP 상태 코드를 확인해 성공/실패를 명확히 구분해서 출력한다. 이미 등록된 이메일이 섞여 있어도 실패한 항목만 따로 확인할 수 있다.
+
+`|| [ -n "$name" ]`는 `users.txt` 마지막 줄에 개행문자가 없어도 그 줄을 건너뛰지 않고 처리하기 위함이다 — `read`는 개행 기준으로 줄을 읽는데, 파일이 개행 없이 끝나면 마지막 줄에서 `read`가 실패로 처리되어 루프가 그 줄을 건너뛴다.
 
 팀원들에게 접속 주소, 본인 이메일, 초기 비밀번호를 공지하고 **최초 로그인 후 반드시 비밀번호를 변경하도록 안내한다.**
 
