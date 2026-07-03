@@ -11,6 +11,7 @@ interface Props {
     onProgress: () => void
     onLeaderboard: () => void
     onLogout: () => void
+    onChangePassword: () => void
     userName: string
     userEmail: string
     userRole?: string

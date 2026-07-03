@@ -11,10 +11,12 @@ import { questRoutes } from './routes/quest.routes.js'
 import { sessionRoutes } from './routes/session.routes.js'
 import { feedbackRoutes } from './routes/feedback.routes.js'
 import { cleanupOrphanVclusters, initPool } from './services/vcluster-pool.js'
+import { cleanupOrphanQuestNamespaces } from './plugins/k8s-namespace.js'
 
 const fastify = Fastify({ logger: true })
 
 await cleanupOrphanContainers()
+await cleanupOrphanQuestNamespaces()
 await initPool()
 
 await fastify.register(cors, { origin: true, methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'] })

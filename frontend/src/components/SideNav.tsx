@@ -10,9 +10,10 @@ interface Props {
     onLeaderboard: () => void
     onAdmin?: () => void
     onLogout: () => void
+    onChangePassword: () => void
 }
 
-export function SideNav({ activePage, userName, userEmail, userRole, onHome, onProgress, onLeaderboard, onAdmin, onLogout }: Props) {
+export function SideNav({ activePage, userName, userEmail, userRole, onHome, onProgress, onLeaderboard, onAdmin, onLogout, onChangePassword }: Props) {
     const item = (icon: string, label: string, page: Page, onClick: () => void) => {
         const active = activePage === page
         return active
@@ -45,6 +46,10 @@ export function SideNav({ activePage, userName, userEmail, userRole, onHome, onP
                     <div className="font-mono text-body-md font-semibold text-on-surface truncate">{userName}</div>
                     <div className="font-mono text-code-sm text-on-surface-variant truncate">{userEmail}</div>
                 </div>
+                <button onClick={onChangePassword} className="w-full flex items-center gap-3 text-on-surface-variant pl-4 py-3 hover:text-on-surface transition-all">
+                        <span className="material-symbols-outlined text-[22px]">lock_reset</span>
+                        <span className="font-mono text-body-md">비밀번호 변경</span>
+                </button>
                 <button onClick={onLogout} className="w-full flex items-center gap-3 text-on-surface-variant pl-4 py-3 hover:text-on-surface transition-all">
                     <span className="material-symbols-outlined text-[22px]">logout</span>
                     <span className="font-mono text-body-md">로그아웃</span>

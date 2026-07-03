@@ -18,3 +18,16 @@ export async function fetchMe() {
   if (!res.ok) throw new Error('unauthorized')
   return res.json()
 }
+
+
+export async function changePassword(currentPassword: string, newPassword: string) {
+  const res = await fetch(`${BASE}/me/password`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ currentPassword, newPassword })
+  })
+  if (!res.ok) {
+    const data = await res.json()
+    throw new Error(data.error)
+  }
+}

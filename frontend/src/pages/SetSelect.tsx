@@ -11,6 +11,7 @@ interface Props {
     onLeaderboard: () => void
     onAdmin?: () => void
     onLogout: () => void
+    onChangePassword: () => void
     userName: string
     userEmail: string
     userRole?: string
@@ -22,7 +23,7 @@ const CATEGORY_META: Record<string, { icon: string }> = {
     'k8s':    { icon: '☸️' },
 }
 
-export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogout, userName, userEmail, userRole }: Props) {
+export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
     const [sets, setSets] = useState<QuestSet[]>([])
     const [progressMap, setProgressMap] = useState<Record<number, { total: number; completed: number }>>({})
     const [openCategories, setOpenCategories] = useState<Set<string>>(new Set())
@@ -57,7 +58,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
             <TopNav onHome={() => {}} />
 
             <div className="flex flex-1 pt-14">
-                <SideNav activePage="home" userName={userName} userEmail={userEmail} userRole={userRole} onHome={() => {}} onProgress={onProgress} onLeaderboard={onLeaderboard} onAdmin={onAdmin} onLogout={onLogout} />
+                <SideNav activePage="home" userName={userName} userEmail={userEmail} userRole={userRole} onHome={() => {}} onProgress={onProgress} onLeaderboard={onLeaderboard} onAdmin={onAdmin} onLogout={onLogout} onChangePassword={onChangePassword} />
 
                 <main className="flex-1 md:ml-60 p-8 bg-surface">
                     <div className="max-w-[1000px] mx-auto space-y-8">

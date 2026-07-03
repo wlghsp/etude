@@ -10,6 +10,7 @@ import type { Quest } from './types'
 import { fetchQuests, endSession } from './api/quest'
 import { fetchMe, token } from './api/auth'
 import { Login } from './pages/Login'
+import { ChangePasswordModal } from './components/ChangePasswordModal'
 
 
 
@@ -26,6 +27,8 @@ function App() {
   const [sessionId, setSessionId] = useState('')
   const [resetKey, setResetKey] = useState(0)
   const [preparing, setPreparing] = useState(false)
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
+  const openChangePassword = () => setChangePasswordOpen(true)
   const containerIdRef = useRef(containerId)
   const sandboxTypeRef = useRef(sandboxType)
 
@@ -64,12 +67,14 @@ function App() {
   const handleLogout = () => { token.clear(); setUser(null) }
 
   if (page === 'progress') return <>
-    <Progress onBack={() => setPage('home')} onLeaderboard={() => setPage('leaderboard')} onAdmin={() => setPage('admin')} onLogout={handleLogout} userName={user.name} userEmail={user.email} userRole={user.role} />
+    <Progress onBack={() => setPage('home')} onLeaderboard={() => setPage('leaderboard')} onAdmin={() => setPage('admin')} onLogout={handleLogout} onChangePassword={openChangePassword} userName={user.name} userEmail={user.email} userRole={user.role} />
     <FeedbackButton page="progress" />
+    <ChangePasswordModal open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
   </>
   if (page === 'leaderboard') return <>
-    <Leaderboard onBack={() => setPage('home')} onProgress={() => setPage('progress')} onAdmin={() => setPage('admin')} onLogout={handleLogout} userName={user.name} userEmail={user.email} userRole={user.role} />
+    <Leaderboard onBack={() => setPage('home')} onProgress={() => setPage('progress')} onAdmin={() => setPage('admin')} onLogout={handleLogout} onChangePassword={openChangePassword} userName={user.name} userEmail={user.email} userRole={user.role} />
     <FeedbackButton page="leaderboard" />
+    <ChangePasswordModal open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
   </>
   if (page === 'admin') {
     if (user.role !== 'admin') { setPage('home'); return null }
@@ -79,11 +84,13 @@ function App() {
         onProgress={() => setPage('progress')}
         onLeaderboard={() => setPage('leaderboard')}
         onLogout={handleLogout}
+        onChangePassword={openChangePassword}
         userName={user.name}
         userEmail={user.email}
         userRole={user.role}
       />
       <FeedbackButton page="admin" />
+      <ChangePasswordModal open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
     </>
   }
 
@@ -101,11 +108,13 @@ function App() {
           onLeaderboard={() => setPage('leaderboard')}
           onAdmin={() => setPage('admin')}
           onLogout={handleLogout}
+          onChangePassword={openChangePassword}
           userName={user.name}
           userEmail={user.email}
           userRole={user.role}
       />
       <FeedbackButton page="home" />
+      <ChangePasswordModal open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
     </>
   }
 

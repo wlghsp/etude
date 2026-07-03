@@ -24,12 +24,13 @@ interface Props {
     onProgress: () => void
     onAdmin?: () => void
     onLogout: () => void
+    onChangePassword: () => void
     userName: string
     userEmail: string
     userRole?: string
 }
 
-export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, userName, userEmail, userRole }: Props) {
+export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
     const [rows, setRows] = useState<UserRow[]>([])
     const [openUsers, setOpenUsers] = useState<Set<number>>(new Set())
 
@@ -53,7 +54,7 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, userName, u
         <div className="dark min-h-screen bg-surface flex flex-col">
             <TopNav onHome={onBack} />
             <div className="flex flex-1 pt-14">
-                <SideNav activePage="leaderboard" userName={userName} userEmail={userEmail} userRole={userRole} onHome={onBack} onProgress={onProgress} onLeaderboard={() => {}} onAdmin={onAdmin} onLogout={onLogout} />
+                <SideNav activePage="leaderboard" userName={userName} userEmail={userEmail} userRole={userRole} onHome={onBack} onProgress={onProgress} onLeaderboard={() => {}} onAdmin={onAdmin} onLogout={onLogout} onChangePassword={onChangePassword} />
 
                 <main className="flex-1 md:ml-60 p-margin-page bg-surface overflow-y-auto">
                     <div className="flex flex-col gap-2 mb-8">
