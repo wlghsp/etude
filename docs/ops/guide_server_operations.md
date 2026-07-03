@@ -37,6 +37,22 @@ docker compose -f deploy/docker-compose.prod.yml --project-directory . logs --ta
 
 ## 재배포 (코드 변경 후 서버 반영)
 
+### 방법 1 — GitHub Actions CI/CD (권장)
+
+로컬 터미널에서 `gh` CLI로 브라우저 없이 바로 트리거할 수 있다 ([guide_phase8b_cicd.md](../guides/guide_phase8b_cicd.md) 참고).
+
+```bash
+gh workflow run deploy.yml
+
+# 실행 상태 확인
+gh run list --workflow=deploy.yml --limit 3
+
+# 특정 실행의 상세 로그 확인 (run id는 위 목록에서 확인)
+gh run view {run-id} --log
+```
+
+### 방법 2 — 서버에서 수동 실행
+
 ```bash
 cd ~/etude
 git pull
