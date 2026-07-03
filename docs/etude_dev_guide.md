@@ -31,6 +31,7 @@ ln -sf ~/.colima/default/docker.sock ~/.docker/run/docker.sock
 | Phase 5 — 퀘스트 콘텐츠 확장 | [guides/guide_phase5.md](guides/guide_phase5.md) | [specs/spec_phase5_content.md](specs/spec_phase5_content.md) | ✅ 완료 |
 | Phase 6 — k8s 기초 실습 세트 | [guides/guide_phase6.md](guides/guide_phase6.md) | [specs/spec_phase6_k8s.md](specs/spec_phase6_k8s.md) | ✅ 완료 |
 | Phase 6b — k8s namespace 고아 정리 | [guides/guide_phase6b_ns_cleanup.md](guides/guide_phase6b_ns_cleanup.md) | [specs/spec_phase6b_ns_cleanup.md](specs/spec_phase6b_ns_cleanup.md) | 대기 |
+| Phase 6c — Rocky Linux systemd sandbox 타입 | [guides/guide_phase6c_rocky_systemd.md](guides/guide_phase6c_rocky_systemd.md) | [specs/spec_phase6c_rocky_systemd.md](specs/spec_phase6c_rocky_systemd.md) | 대기 |
 | Phase 7 — 사용자 인증 + 진행 추적 | [guides/guide_phase7a_auth_backend.md](guides/guide_phase7a_auth_backend.md) 외 | [specs/spec_phase7_auth.md](specs/spec_phase7_auth.md) | ✅ 완료 |
 | Phase 7 — 퀘스트 세트 접근 제어 | [guides/guide_phase7h_quest_access.md](guides/guide_phase7h_quest_access.md) | [specs/spec_phase7_quest_access.md](specs/spec_phase7_quest_access.md) | 대기 |
 | Phase 7i — 본인 비밀번호 변경 | [guides/guide_phase7i_change_password.md](guides/guide_phase7i_change_password.md) | [specs/spec_phase7i_change_password.md](specs/spec_phase7i_change_password.md) | 대기 |
