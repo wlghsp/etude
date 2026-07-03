@@ -1,5 +1,5 @@
 -- 세트 10: 리눅스 현장 운영 (order 1~12)
--- sandbox_type은 linux-systemd (Phase 6c, rockylinux 기반) 전환 예정 — 그 전까지는 linux(etude-linux)로 배포하면 1,2번은 systemctl 미지원으로 실패한다.
+-- sandbox_type은 linux-systemd (Phase 6c, rockylinux/rockylinux:9-ubi-init 기반).
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
   (10,  1, 'systemd 서비스 상태 확인하기',
    'cron 서비스의 상태를 확인하고 결과를 /tmp/svc_status.txt 에 저장하세요.',
@@ -38,9 +38,9 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
 
   (10,  6, '포트 사용 현황 확인하기',
    '현재 리스닝 중인 TCP 포트 목록을 /tmp/ports.txt 에 저장하세요.',
-   'ss -tlnp 또는 netstat -tlnp 를 사용하세요.',
+   'ss -tlnp 를 사용하세요.',
    'ss -tlnp > /tmp/ports.txt',
-   NULL,
+   '["sh", "-c", "dnf install -y iproute openssh-server > /dev/null 2>&1 && systemctl start sshd"]',
    '["sh", "-c", "grep -qi ''listen\\|LISTEN'' /tmp/ports.txt"]'),
 
   (10,  7, 'tar로 디렉토리 백업하기',

@@ -22,6 +22,24 @@ async function waitForDocker(container: Docker.Container): Promise<void> {
     })
 }
 
+async function waitForSystemd(container: Docker.Container): Promise<void> {
+    const exec = await container.exec({
+        Cmd: ['sh', '-c', 'until systemctl is-system-running 2>/dev/null | grep -qE "running|degraded"; do sleep 0.3; done'],
+        AttachStdout: false,
+        AttachStderr: false,
+    })
+    await exec.start({})
+    await new Promise<void>((resolve) => {
+        const poll = setInterval(async () => {
+            const info = await exec.inspect()
+            if (!info.Running) {
+                clearInterval(poll)
+                resolve()
+            }
+        }, 300)
+    })
+}
+
 async function runSetupCmd(
   container: Docker.Container, 
   questId: number | null,
@@ -56,7 +74,9 @@ export async function handleTerminal(
 ) {
     const config = await getSandboxConfig(sandboxType)
 
-    if (sandboxType === 'docker' || sandboxType === 'docker-persistent') {
+    if (sandboxType === 'linux-systemd') {
+        await handleSystemdTerminal(socket, docker, config, questId)
+    } else if (sandboxType === 'docker' || sandboxType === 'docker-persistent') {
         await handleDockerTerminal(socket, docker, config, questId, existingContainerId)
     } else if (sandboxType === 'k8s-isolated') {
         await handleK8sIsolatedTerminal(socket, docker, questId)
@@ -141,6 +161,38 @@ async function handleDockerTerminal(
     if (!config.persistent) {
       container.stop().then(() => container.remove()).catch(() => {})
     }
+  })
+}
+
+async function handleSystemdTerminal(socket: WebSocket, docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null) {
+  const container = await docker.createContainer({
+    Image: config.image,
+    Labels: { etude: 'sandbox' },
+    OpenStdin: false, Tty: false,
+    AttachStdin: false, AttachStdout: false, AttachStderr: false,
+    HostConfig: {
+      Binds: [...(config.binds ?? []), '/sys/fs/cgroup:/sys/fs/cgroup:rw'],
+      Privileged: true,
+      CgroupnsMode: 'host',
+    },
+  })
+  await container.start()
+  await waitForSystemd(container)
+
+  await runSetupCmd(container, questId)
+
+  const exec = await container.exec({
+    Cmd: ['/bin/bash'],
+    AttachStdin: true, AttachStdout: true, AttachStderr: true, Tty: true,
+  })
+  const stream = await exec.start({ hijack: true, stdin: true, Tty: true })
+
+  socket.send(JSON.stringify({ type: 'connected', containerId: container.id }))
+
+  stream.on('data', (chunk: Buffer) => socket.send(chunk))
+  socket.on('message', (msg: Buffer) => stream.write(msg))
+  socket.on('close', () => {
+    container.stop().then(() => container.remove()).catch(() => {})
   })
 }
 

@@ -8,7 +8,7 @@ INSERT INTO quest_set (id, title, description, sandbox_type, category) VALUES
   (7,  '리눅스 압축과 아카이브',            'tar, gzip, zip 등 압축/아카이브 명령어를 실습합니다. 오프라인 패키지 반입의 기초입니다.', 'linux', '리눅스'),
   (8,  'Docker 이미지 오프라인 반입',       'tar 파일로 이미지를 save/load하고 로컬 레지스트리에 push하는 현장 패턴을 실습합니다.', 'docker-persistent', '도커'),
   (9,  'Vim 기초',                          '현장에서 가장 자주 막히는 Vim 편집 패턴을 실습합니다. 열고 저장하는 것부터 설정 파일 수정까지.', 'linux', '리눅스'),
-  (10, '리눅스 현장 운영',                  'systemd, rpm, 환경변수, 방화벽 등 실제 서버 운영에서 반드시 쓰는 명령어를 실습합니다.', 'linux', '리눅스'),
+  (10, '리눅스 현장 운영',                  'systemd, rpm, 환경변수, 방화벽 등 실제 서버 운영에서 반드시 쓰는 명령어를 실습합니다.', 'linux-systemd', '리눅스'),
   (11, 'Docker 이미지 빌드',               'Dockerfile 작성부터 이미지 빌드, 태깅까지 이미지를 직접 만드는 과정을 실습합니다.', 'docker', '도커'),
   (12, 'k8s ConfigMap과 Secret',           'ConfigMap과 Secret을 생성하고 Pod에 환경변수와 볼륨으로 주입하는 패턴을 실습합니다.', 'k8s', 'k8s'),
   (13, 'k8s 스토리지와 네트워크',          'PersistentVolume/PVC로 데이터를 영속 저장하고 port-forward로 클러스터 내부 서비스에 접근하는 패턴을 실습합니다.', 'k8s', 'k8s'),
