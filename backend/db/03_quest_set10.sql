@@ -1,18 +1,19 @@
 -- 세트 10: 리눅스 현장 운영 (order 1~12)
+-- sandbox_type은 linux-systemd (Phase 6c, rockylinux 기반) 전환 예정 — 그 전까지는 linux(etude-linux)로 배포하면 1,2번은 systemctl 미지원으로 실패한다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
-  (10,  1, '서비스 상태 확인하기',
+  (10,  1, 'systemd 서비스 상태 확인하기',
    'cron 서비스의 상태를 확인하고 결과를 /tmp/svc_status.txt 에 저장하세요.',
-   'service <서비스명> status 명령어를 사용하세요.',
-   'service cron status > /tmp/svc_status.txt 2>&1',
-   '["sh", "-c", "apt-get update -qq > /dev/null 2>&1 && apt-get install -y cron > /dev/null 2>&1"]',
-   '["sh", "-c", "grep -qi ''cron'' /tmp/svc_status.txt"]'),
+   'systemctl status <서비스명> 명령어를 사용하세요.',
+   'systemctl status crond > /tmp/svc_status.txt 2>&1',
+   '["sh", "-c", "dnf install -y cronie > /dev/null 2>&1"]',
+   '["sh", "-c", "grep -qi ''crond'' /tmp/svc_status.txt"]'),
 
-  (10,  2, '서비스 시작하기',
-   'cron 서비스를 시작하세요.',
-   'service <서비스명> start 를 사용하세요.',
-   'service cron start',
-   '["sh", "-c", "apt-get update -qq > /dev/null 2>&1 && apt-get install -y cron > /dev/null 2>&1 && service cron stop 2>/dev/null || true"]',
-   '["sh", "-c", "service cron status | grep -qi running"]'),
+  (10,  2, 'systemd 서비스 시작하고 활성화하기',
+   'cron 서비스를 시작하고 부팅 시 자동 시작되도록 활성화하세요.',
+   'systemctl start 와 systemctl enable 을 사용하세요.',
+   'systemctl start crond && systemctl enable crond',
+   '["sh", "-c", "dnf install -y cronie > /dev/null 2>&1 && systemctl stop crond 2>/dev/null || true"]',
+   '["sh", "-c", "systemctl is-active crond"]'),
 
   (10,  3, '환경변수 설정하기 (/etc/profile.d)',
    '/etc/profile.d/myapp.sh 파일을 만들어 APP_HOME=/opt/myapp 환경변수를 등록하세요.',

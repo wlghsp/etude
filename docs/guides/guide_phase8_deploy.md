@@ -11,7 +11,7 @@ Step 1. OCI 콘솔 — 사전 준비 (API 키, compartment OCID 수집)
 Step 2. Terraform — VM + 네트워크 프로비저닝
 Step 3. setup.sh — 서버 초기 세팅 (Docker, k3d, kubectl)
 Step 4. k3d — 클러스터 생성 + kubeconfig 구성
-Step 5. 커스텀 이미지 빌드 (etude-k8s, etude-ssh)
+Step 5. 커스텀 이미지 빌드 (etude-k8s, etude-ssh, etude-linux)
 Step 6. 소스 배포 + 환경변수 설정
 Step 7. 프론트 빌드 + docker-compose 기동
 Step 8. 접속 확인
@@ -395,6 +395,9 @@ docker build -f docker/Dockerfile.k8s -t etude-k8s .
 
 # etude-ssh 빌드
 docker build -f docker/Dockerfile.ssh -t etude-ssh .
+
+# etude-linux 빌드 (Phase 6d — vim, iproute2 사전 설치된 linux 타입 기본 이미지)
+docker build -f docker/Dockerfile.linux -t etude-linux .
 
 # 확인
 docker images | grep etude
