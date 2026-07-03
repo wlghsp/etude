@@ -54,11 +54,11 @@ curl -X POST http://161.33.45.200/admin/users \
 - 이메일은 로그인 ID로 쓰이므로 중복되지 않게 사내 이메일을 그대로 쓰는 걸 권장.
 - 팀원은 로그인 후 사이드바의 "비밀번호 변경"에서 스스로 비밀번호를 바꿀 수 있다 (Phase 7i). 임시 비밀번호는 최초 로그인용으로만 안전하게 전달하면 된다.
 
-### 여러 명을 한 번에 만들 때 — 이름/이메일만 준비하면 비밀번호는 자동 생성
+### 여러 명을 한 번에 만들 때 — 이름/이메일만 준비하면 공통 초기 비밀번호로 생성
 
-명단이 여러 명이면 **이름과 이메일만** 파일로 정리해두고, 스크립트가 각자 다른 임시 비밀번호를 랜덤으로 만들어 계정을 생성한다.
+명단이 여러 명이면 **이름과 이메일만** 파일로 정리해두고, 스크립트가 전원 동일한 초기 비밀번호로 계정을 생성한다. 팀원은 로그인 후 사이드바의 "비밀번호 변경"에서 스스로 바꾸면 된다 (Phase 7i) — 랜덤 비밀번호를 팀원마다 따로 만들어 개별 전달하는 것보다 훨씬 간단하고, 전달 실수/오타 위험도 적다.
 
-`users.txt` — 한 줄에 `이름,이메일` 형식으로 준비 (비밀번호는 안 적어도 됨):
+`users.txt` — 한 줄에 `이름,이메일` 형식으로 준비:
 
 ```
 홍길동,hong@okestro.com
@@ -66,30 +66,23 @@ curl -X POST http://161.33.45.200/admin/users \
 이영희,lee@okestro.com
 ```
 
-아래 스크립트를 실행하면 `users.txt`를 한 줄씩 읽어 계정을 생성하고, 결과(이름/이메일/생성된 임시 비밀번호)를 `created_users.csv`에 저장한다.
+아래 스크립트를 실행하면 `users.txt`를 한 줄씩 읽어, 전원 동일한 초기 비밀번호로 계정을 생성한다. `INITIAL_PASSWORD`는 실행 전 직접 채워 넣는다 (이 문서에는 실제 값을 적지 않는다 — 커밋되는 문서에 평문 비밀번호를 남기지 않기 위함).
 
 ```bash
-echo "name,email,password" > created_users.csv
+INITIAL_PASSWORD="{공통 초기 비밀번호}"
 
 while IFS=, read -r name email; do
-  pw=$(openssl rand -base64 9)
   curl -s -X POST http://161.33.45.200/admin/users \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -H "Content-Type: application/json" \
-    -d "{\"name\": \"$name\", \"email\": \"$email\", \"password\": \"$pw\"}" > /dev/null
-  echo "$name,$email,$pw" >> created_users.csv
+    -d "{\"name\": \"$name\", \"email\": \"$email\", \"password\": \"$INITIAL_PASSWORD\"}" > /dev/null
+  echo "생성됨: $name ($email)"
 done < users.txt
-
-echo "완료 — created_users.csv 에서 결과 확인"
 ```
 
-`created_users.csv`에 각 팀원의 실제 비밀번호가 평문으로 남으니, 팀원들에게 개별 전달(메신저 DM 등)한 뒤 **이 파일은 반드시 삭제한다.**
+팀원들에게 접속 주소, 본인 이메일, 초기 비밀번호를 공지하고 **최초 로그인 후 반드시 비밀번호를 변경하도록 안내한다.**
 
-```bash
-rm created_users.csv
-```
-
-> `users.txt`, `created_users.csv`는 실제 개인정보/비밀번호가 담기므로 git으로 관리하지 않는다 — 이 저장소의 `.gitignore`에 이미 `*.csv`, `users.txt` 패턴이 없다면 추가해서 실수로 커밋되지 않게 한다.
+> `users.txt`는 이메일 등 개인정보가 담기므로 git으로 관리하지 않는다 — 이 저장소의 `.gitignore`에 이미 등록되어 있다.
 
 ---
 
