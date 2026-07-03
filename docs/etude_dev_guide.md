@@ -24,6 +24,7 @@ ln -sf ~/.colima/default/docker.sock ~/.docker/run/docker.sock
 | Phase | 문서 | 명세 | 상태 |
 |-------|------|------|------|
 | Phase 1 — 터미널 샌드박스 | [guides/guide_phase1.md](guides/guide_phase1.md) | [specs/spec_phase1_terminal.md](specs/spec_phase1_terminal.md) | ✅ 완료 |
+| Phase 1b — containerId 관리 주체를 Terminal로 이전 | [guides/guide_phase1b_terminal_container_ownership.md](guides/guide_phase1b_terminal_container_ownership.md) | [specs/spec_phase1b_terminal_container_ownership.md](specs/spec_phase1b_terminal_container_ownership.md) | 대기 |
 | Phase 2 — 퀘스트 + 채점 | [guides/guide_phase2.md](guides/guide_phase2.md) | [specs/spec_phase2_quest.md](specs/spec_phase2_quest.md) | ✅ 완료 |
 | Phase 3 — UX 개선 | [guides/guide_phase3.md](guides/guide_phase3.md) | [specs/spec_phase3_ux.md](specs/spec_phase3_ux.md) | ✅ 완료 |
 | Phase 4 — MariaDB 연동 + 퀘스트 세트 구조 | [guides/guide_phase4.md](guides/guide_phase4.md) | [specs/spec_phase4_db.md](specs/spec_phase4_db.md) | ✅ 완료 |
