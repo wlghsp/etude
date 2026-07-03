@@ -15,3 +15,4 @@ Etude 개발 중 나오는 개념 정리. Spring/Java 기준으로 비교 설명
 | [terminal_ts_walkthrough.md](terminal_ts_walkthrough.md) | terminal.ts 코드 뜯어보기 |
 | [external_access.md](external_access.md) | 외부 접속 원리 — 0.0.0.0 바인딩, window.location.hostname, CORS |
 | [kubeconfig.md](kubeconfig.md) | kubeconfig란 무엇이고 왜 컨테이너에 마운트해야 하는가 |
+| [git_restore_deleted_files.md](git_restore_deleted_files.md) | 삭제된 파일을 git 히스토리에서 복원하는 방법 |
