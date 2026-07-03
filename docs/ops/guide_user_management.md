@@ -72,13 +72,19 @@ curl -X POST http://161.33.45.200/admin/users \
 INITIAL_PASSWORD="{공통 초기 비밀번호}"
 
 while IFS=, read -r name email; do
-  curl -s -X POST http://161.33.45.200/admin/users \
+  http_code=$(curl -s -o /tmp/create_user_resp.json -w "%{http_code}" -X POST http://161.33.45.200/admin/users \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -H "Content-Type: application/json" \
-    -d "{\"name\": \"$name\", \"email\": \"$email\", \"password\": \"$INITIAL_PASSWORD\"}" > /dev/null
-  echo "생성됨: $name ($email)"
+    -d "{\"name\": \"$name\", \"email\": \"$email\", \"password\": \"$INITIAL_PASSWORD\"}")
+  if [ "$http_code" = "200" ]; then
+    echo "생성됨: $name ($email)"
+  else
+    echo "실패 ($http_code): $name ($email) — $(cat /tmp/create_user_resp.json)"
+  fi
 done < users.txt
 ```
+
+이메일은 DB에 `UNIQUE` 제약이 걸려 있어 중복 등록은 막히지만, 지금 백엔드가 그 실패를 별도 처리하지 않아 500 에러로 응답한다 — 위 스크립트는 HTTP 상태 코드를 확인해 성공/실패를 명확히 구분해서 출력한다. 이미 등록된 이메일이 섞여 있어도 실패한 항목만 따로 확인할 수 있다.
 
 팀원들에게 접속 주소, 본인 이메일, 초기 비밀번호를 공지하고 **최초 로그인 후 반드시 비밀번호를 변경하도록 안내한다.**
 
