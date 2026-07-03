@@ -32,6 +32,7 @@ ln -sf ~/.colima/default/docker.sock ~/.docker/run/docker.sock
 | Phase 6b — k8s namespace 고아 정리 | [guides/guide_phase6b_ns_cleanup.md](guides/guide_phase6b_ns_cleanup.md) | [specs/spec_phase6b_ns_cleanup.md](specs/spec_phase6b_ns_cleanup.md) | 대기 |
 | Phase 7 — 사용자 인증 + 진행 추적 | [guides/guide_phase7a_auth_backend.md](guides/guide_phase7a_auth_backend.md) 외 | [specs/spec_phase7_auth.md](specs/spec_phase7_auth.md) | ✅ 완료 |
 | Phase 7 — 퀘스트 세트 접근 제어 | [guides/guide_phase7h_quest_access.md](guides/guide_phase7h_quest_access.md) | [specs/spec_phase7_quest_access.md](specs/spec_phase7_quest_access.md) | 대기 |
+| Phase 7i — 본인 비밀번호 변경 | [guides/guide_phase7i_change_password.md](guides/guide_phase7i_change_password.md) | [specs/spec_phase7i_change_password.md](specs/spec_phase7i_change_password.md) | 대기 |
 | Phase 8 — 서버 배포 (OCI) | [guides/guide_phase8_deploy.md](guides/guide_phase8_deploy.md) | [specs/spec_phase8_deploy.md](specs/spec_phase8_deploy.md) | ✅ 완료 |
 | Phase 8b — CI/CD (GitHub Actions) | [guides/guide_phase8b_cicd.md](guides/guide_phase8b_cicd.md) | [specs/spec_phase8b_cicd.md](specs/spec_phase8b_cicd.md) | ✅ 완료 |
 | Phase 8c — 도메인 + HTTPS + 보안 점검 | [guides/guide_phase8c_https.md](guides/guide_phase8c_https.md) | [specs/spec_phase8c_https.md](specs/spec_phase8c_https.md) | 대기 |
