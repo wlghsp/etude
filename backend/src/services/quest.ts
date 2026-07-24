@@ -2,13 +2,14 @@ import Docker from 'dockerode'
 import { db } from '../db.js'
 import type { Quest, QuestSet } from '../types.js'
 
-async function execCheck(container: Docker.Container, cmd: string[]): Promise<boolean> {
+async function execCheck(container: Docker.Container, cmd: string[], timeoutMs = 15000): Promise<boolean> {
   const exec = await container.exec({ Cmd: cmd })
   await exec.start({})
-  // exec 완료될 때까지 폴링
+  const start = Date.now()
   while (true) {
     const info = await exec.inspect()
     if (!info.Running) return info.ExitCode === 0
+    if (Date.now() - start > timeoutMs) return false
     await new Promise((r) => setTimeout(r, 100))
   }
 }

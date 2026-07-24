@@ -2,18 +2,18 @@
 -- $NS 는 런타임에 quest-{containerId 앞 8자리} 로 치환됨
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
   (6,  1, '클러스터 노드 확인하기',
-   '현재 클러스터에 어떤 노드가 있는지 확인하세요.',
-   'kubectl get nodes 명령어를 사용하세요.',
-   'kubectl get nodes',
+   '현재 클러스터에 어떤 노드가 있는지 확인하고, 결과를 /tmp/nodes_result.txt 에 저장하세요.',
+   'kubectl get nodes > /tmp/nodes_result.txt 형식을 사용하세요.',
+   'kubectl get nodes > /tmp/nodes_result.txt',
    NULL,
-   '["sh", "-c", "kubectl get nodes | grep -i ready"]'),
+   '["sh", "-c", "test -s /tmp/nodes_result.txt"]'),
 
   (6,  2, '네임스페이스 목록 확인하기',
-   '클러스터에 존재하는 네임스페이스 목록을 확인하세요.',
-   'kubectl get namespaces 또는 kubectl get ns',
-   'kubectl get namespaces',
+   '클러스터에 존재하는 네임스페이스 목록을 확인하고, 결과를 /tmp/ns_result.txt 에 저장하세요.',
+   'kubectl get namespaces > /tmp/ns_result.txt 형식을 사용하세요.',
+   'kubectl get namespaces > /tmp/ns_result.txt',
    NULL,
-   '["sh", "-c", "kubectl get ns | grep quest-"]'),
+   '["sh", "-c", "test -s /tmp/ns_result.txt"]'),
 
   (6,  3, 'Pod 실행하기',
    '$NS 네임스페이스에 nginx 이미지로 nginx라는 이름의 Pod를 실행하세요.',
@@ -30,11 +30,11 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    '["sh", "-c", "kubectl get pods -n $NS | grep nginx"]'),
 
   (6,  5, 'Pod 로그 확인하기',
-   '$NS 네임스페이스의 nginx Pod 로그를 확인하세요.',
-   'kubectl logs <pod-name> -n <namespace>',
-   'kubectl logs nginx -n $NS',
+   '$NS 네임스페이스의 nginx Pod 로그를 확인하고, 결과를 /tmp/log_result.txt 에 저장하세요.',
+   'kubectl logs <pod-name> -n <namespace> > /tmp/log_result.txt 형식을 사용합니다.',
+   'kubectl logs nginx -n $NS > /tmp/log_result.txt 2>&1',
    '["sh", "-c", "kubectl run nginx --image=nginx -n $NS 2>/dev/null; kubectl wait --for=condition=ready pod/nginx -n $NS --timeout=30s 2>/dev/null; true"]',
-   '["sh", "-c", "kubectl logs nginx -n $NS 2>/dev/null; exit 0"]'),
+   '["sh", "-c", "test -s /tmp/log_result.txt"]'),
 
   (6,  6, 'Pod 삭제하기',
    '$NS 네임스페이스의 nginx Pod를 삭제하세요.',
@@ -65,11 +65,11 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    '["sh", "-c", "kubectl get svc my-app -n $NS | grep my-app"]'),
 
   (6, 10, '리소스 전체 확인하기',
-   '$NS 네임스페이스의 모든 리소스를 한 번에 확인하세요.',
-   'kubectl get all -n <namespace>',
-   'kubectl get all -n $NS',
+   '$NS 네임스페이스의 모든 리소스를 한 번에 확인하고, 결과를 /tmp/all_result.txt 에 저장하세요.',
+   'kubectl get all -n <namespace> > /tmp/all_result.txt 형식을 사용하세요.',
+   'kubectl get all -n $NS > /tmp/all_result.txt',
    '["sh", "-c", "kubectl create deployment my-app --image=nginx -n $NS 2>/dev/null; kubectl expose deployment my-app --port=80 -n $NS 2>/dev/null; true"]',
-   '["sh", "-c", "kubectl get all -n $NS | grep -c my-app | xargs -I{} test {} -ge 2"]'),
+   '["sh", "-c", "test -s /tmp/all_result.txt && grep -c my-app /tmp/all_result.txt | xargs -I{} test {} -ge 2"]'),
 
   (6, 11, 'YAML 파일로 Pod 생성하기',
    '/tmp/pod.yaml 파일을 작성해서 $NS 네임스페이스에 nginx Pod를 생성하세요. Pod 이름은 yaml-pod 로 지정하세요.',

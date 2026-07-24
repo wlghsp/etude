@@ -171,3 +171,59 @@ DB를 통째로 초기화(`down -v`)하는 방식은 팀원 계정, 진행 기�
 ## 유저 관리
 
 [guide_user_management.md](guide_user_management.md) 참고.
+
+---
+
+## 퀘스트 터미널이 "환경 준비 중"에서 안 넘어갈 때
+
+브라우저에서 퀘스트에 들어갔는데 터미널 화면이 "환경 준비 중..."에 멈춰 있으면, 아래 순서대로 확인한다. 각 단계는 "무엇을 보는 명령인지"와 "정상/비정상 기준"을 같이 적어뒀다. 사례는 [troubleshooting_2026-07-24_k8s_quest_env_prep.md](troubleshooting_2026-07-24_k8s_quest_env_prep.md) 참고.
+
+### 1단계 — 서버 로그를 실시간으로 켜둔다
+
+```bash
+docker logs etude-backend --tail 50 -f
+```
+
+이 상태에서 브라우저로 돌아가 문제가 되는 퀘스트에 다시 들어간다. 로그에 새로 찍히는 줄을 본다.
+- 아무것도 안 찍히면 → 요청이 백엔드까지 아예 안 왔다는 뜻. nginx나 네트워크 쪽 문제일 가능성.
+- `terminal error: ...` 같은 에러 스택이 찍히면 → 그 메시지를 그대로 복사해서 다음 단계로.
+
+`Ctrl+C`로 로그 tail을 멈출 수 있다.
+
+### 2단계 — 에러 메시지로 원인 유형 판별
+
+**`No such image: {이미지이름}:latest`** 가 보이면 → 그 이미지가 서버에 없다는 뜻.
+
+```bash
+docker images | grep etude
+```
+
+여기 목록에 에러에 나온 이미지 이름이 없으면, 해당 Dockerfile(`backend/docker/Dockerfile.*`)로 서버에서 직접 빌드해야 한다.
+
+```bash
+cd ~/etude/backend
+docker build -f docker/Dockerfile.{종류} -t {이미지이름}:latest .
+```
+
+**`config: is a directory` / `no such file or directory`** 같은 kubeconfig 관련 에러가 보이면 → 환경변수(`KUBECONFIG_PATH`)가 최신 값으로 반영이 안 됐을 가능성.
+
+```bash
+docker exec etude-backend printenv KUBECONFIG_PATH
+```
+
+이 값이 `backend/.env.prod`에 적힌 값과 다르면, 재기동이 안 된 것 — 3단계로.
+
+### 3단계 — `.env.prod`를 고쳤다면 반드시 재기동
+
+`.env.prod` 파일 내용만 고치는 걸로는 이미 떠 있는 컨테이너에 반영되지 않는다. `--build`로 다시 띄워야 한다.
+
+```bash
+cd ~/etude
+docker compose -f deploy/docker-compose.prod.yml --project-directory . up -d --build backend
+```
+
+재기동 후 다시 2단계의 `printenv` 명령으로 값이 바뀌었는지 확인하고, 브라우저에서 퀘스트를 다시 열어본다.
+
+### 참고 — 처음 들어갈 때 로딩이 오래 걸리는 건 정상일 수 있다
+
+k3d 클러스터나 컨테이너가 초기화되는 데 몇 초에서 수십 초 걸릴 수 있다. 로그에 에러가 안 찍히는데 그냥 느리기만 하다면 잠시 기다려본다. 1~2분 넘게 아무 반응이 없는데 로그도 조용하면 그때 1단계부터 다시 확인.

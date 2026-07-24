@@ -446,12 +446,14 @@ DB_USER=etude
 DB_PASSWORD={비밀번호 설정}
 DB_NAME=etude
 JWT_SECRET={랜덤 시크릿 설정}
-KUBECONFIG_PATH=/root/.kube/config-etude
+KUBECONFIG_PATH=/home/ubuntu/.kube/config-etude
 K3D_NETWORK=k3d-etude
 EOF
 ```
 
 > `JWT_SECRET`을 빠뜨리면 `backend/src/services/auth.ts`의 기본값(`dev-secret`)으로 fallback된다. 배포 시 반드시 설정한다.
+>
+> `KUBECONFIG_PATH`는 **호스트 파일시스템 기준 경로**여야 한다 (`/root/...`처럼 컨테이너 내부 경로가 아니다). `backend/src/services/sandbox.ts`가 이 값을 읽어 k8s 실습 컨테이너를 만들 때 바인드 마운트 소스로 그대로 쓰는데, `etude-backend`는 호스트의 `/var/run/docker.sock`을 직접 제어하므로(dind 아님) dockerd가 이 경로를 호스트 기준으로 해석한다. 컨테이너 내부 경로를 넣으면 호스트에 그 경로가 없어 Docker가 자동으로 빈 디렉토리를 만들어버리고, k8s 실습 컨테이너 안에서 `kubectl`이 `config: is a directory` 에러를 낸다.
 >
 > [Phase 10](guide_phase10_klid_cmp.md)(vcluster pool) 적용 시 pool 크기 등 추가 환경변수가 필요할 수 있다 — 해당 가이드 구현 시점에 이 파일에 반영한다.
 
@@ -636,10 +638,13 @@ open http://{공인IP}
 
 ### 검증 순서
 
-1. 세트 선택 화면 로드 확인
-2. 리눅스 퀘스트 — 터미널 연결 + 명령어 실행 + 채점
-3. 도커 퀘스트 — DinD 터미널 연결 + 채점
-4. k8s 퀘스트 — `kubectl get nodes` 실행 확인 + 채점
+배포 직후 반복 확인용 체크리스트는 [docs/ops/guide_post_deploy_checklist.md](../ops/guide_post_deploy_checklist.md) 참고.
+
+1. `docker images | grep etude`로 `etude-k8s`, `etude-ssh`, `etude-linux`가 모두 빌드되어 있는지 확인 (Step 5 누락 여부)
+2. 세트 선택 화면 로드 확인
+3. 리눅스 퀘스트 — 터미널 연결 + 명령어 실행 + 채점
+4. 도커 퀘스트 — DinD 터미널 연결 + 채점
+5. k8s 퀘스트 — `kubectl get nodes` 실행 확인 + 채점
 
 ---
 

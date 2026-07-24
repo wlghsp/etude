@@ -79,6 +79,23 @@ vcluster를 만드는 데 시간이 걸린다(로컬 실측 약 33초 — 클러
 
 ---
 
+## "지금 우리가 쓰는 게 vcluster야 k3d야?" — sandbox 타입별 정리
+
+이 질문이 헷갈리는 이유: 어느 쪽이든 **물리적으로는 같은 k3d 클러스터(`etude`, 노드명 `k3d-etude-server-0`) 위에서 동작**한다. 차이는 그 위에서 격리를 어떻게 하느냐다.
+
+| sandbox type | 격리 방식 | 실제 쓰는 세트 (2026-07 기준) | 핸들러 |
+|---|---|---|---|
+| `k8s` | **namespace 격리** — k3d 클러스터를 공유하고 퀘스트별로 `quest-xxxxxxxx` namespace만 따로 씀 | 세트 6(k8s 기초), 12(ConfigMap/Secret), 13(스토리지/네트워크), 14(Helm 기초) | `handleK8sTerminal` (`backend/src/services/terminal.ts`) |
+| `k8s-isolated` | **vcluster 격리** — pool에서 배정받은 vcluster(가짜 클러스터) 안에서 완전 격리 | 아직 DB에 등록된 세트 없음 (KLID CMP 콘텐츠 준비 중) | `handleK8sIsolatedTerminal` (`backend/src/services/terminal.ts`) |
+
+즉 지금 실습자들이 실제로 만나는 "k8s 기초" 같은 세트는 **k3d(namespace 격리)**를 쓰고 있고, vcluster는 아직 실전 투입 전이다. `01_sandbox.sql`에서 어떤 세트가 어느 sandbox_type을 쓰는지 직접 확인하려면:
+
+```sql
+SELECT id, title, sandbox_type FROM quest_set;
+```
+
+---
+
 ## 관련 문서
 
 - [kubeconfig.md](kubeconfig.md) — vcluster도 접속하려면 kubeconfig가 필요하고, 이걸 세션마다 새로 만들어야 하는 이유
