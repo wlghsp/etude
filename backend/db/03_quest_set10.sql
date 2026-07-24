@@ -41,7 +41,7 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    'ss -tlnp 를 사용하세요.',
    'ss -tlnp > /tmp/ports.txt',
    '["sh", "-c", "dnf install -y iproute openssh-server > /dev/null 2>&1 && systemctl start sshd"]',
-   '["sh", "-c", "grep -qi ''listen\\|LISTEN'' /tmp/ports.txt"]'),
+   '["sh", "-c", "grep -qiE ''listen|LISTEN'' /tmp/ports.txt"]'),
 
   (10,  7, 'tar로 디렉토리 백업하기',
    '/etc 디렉토리를 /tmp/etc_backup.tar.gz 로 압축 백업하세요.',

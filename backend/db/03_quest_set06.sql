@@ -108,4 +108,4 @@ kubectl apply -f /tmp/pod.yaml',
    'kubectl rollout undo deployment/<name> -n <namespace> 를 사용합니다.',
    'kubectl rollout undo deployment/my-app -n $NS',
    '["sh", "-c", "kubectl create deployment my-app --image=nginx -n $NS 2>/dev/null; kubectl set image deployment/my-app my-app=nginx:alpine -n $NS 2>/dev/null; true"]',
-   '["sh", "-c", "kubectl rollout history deployment/my-app -n $NS | grep -q ''2\\|3''"]');
+   '["sh", "-c", "kubectl rollout history deployment/my-app -n $NS | grep -qE ''2|3''"]');

@@ -13,7 +13,7 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    'helm repo update 를 실행합니다.',
    'helm repo update',
    '["sh", "-c", "helm repo add bitnami https://charts.bitnami.com/bitnami 2>/dev/null; true"]',
-   '["sh", "-c", "helm repo update 2>&1 | grep -qi \\\"update complete\\\\|Successfully\\\""]'),
+   '["sh", "-c", "helm repo update 2>&1 | grep -qiE \\\"update complete|Successfully\\\""]'),
 
   (14, 3, '차트 검색하기',
    'Bitnami 저장소에서 nginx 차트를 검색하고 결과를 /tmp/helm_search.txt 에 저장하세요.',
