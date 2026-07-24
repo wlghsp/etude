@@ -65,6 +65,26 @@ async function runSetupCmd(
     })
 }
 
+function attachResizeHandler(
+  socket: WebSocket,
+  stream: NodeJS.ReadWriteStream,
+  resizeTarget: { resize: (opts: { h: number, w: number }) => Promise<void> }
+) {
+  stream.on('data', (chunk: Buffer) => socket.send(chunk))
+  socket.on('message', (msg: Buffer) => {
+    const str = msg.toString()
+    if (str.startsWith('{') && str.includes('"type":"resize"')) {
+      try {
+        const { cols, rows } = JSON.parse(str)
+        resizeTarget.resize({ h: rows, w: cols })
+        return 
+      } catch { /* JSON 파싱 실패 시 일반 입력으로 처리 */}
+    }
+    stream.write(msg)
+  })
+
+}
+
 export async function handleTerminal(
     socket: WebSocket,
     docker: Docker,
@@ -113,8 +133,7 @@ async function handleDefaultTerminal(socket: WebSocket, docker: Docker, config: 
 
   socket.send(JSON.stringify({ type: 'connected', containerId: container.id }))
 
-  stream.on('data', (chunk: Buffer) => socket.send(chunk))
-  socket.on('message', (msg: Buffer) => stream.write(msg))
+  attachResizeHandler(socket, stream, container)
   socket.on('close', () => {
     container.stop().then(() => container.remove()).catch(() => {})
   })
@@ -155,8 +174,7 @@ async function handleDockerTerminal(
 
   socket.send(JSON.stringify({ type: 'connected', containerId: container.id }))
 
-  stream.on('data', (chunk: Buffer) => socket.send(chunk))
-  socket.on('message', (msg: Buffer) => stream.write(msg))
+  attachResizeHandler(socket, stream, exec)
   socket.on('close', () => {
     if (!config.persistent) {
       container.stop().then(() => container.remove()).catch(() => {})
@@ -189,8 +207,7 @@ async function handleSystemdTerminal(socket: WebSocket, docker: Docker, config: 
 
   socket.send(JSON.stringify({ type: 'connected', containerId: container.id }))
 
-  stream.on('data', (chunk: Buffer) => socket.send(chunk))
-  socket.on('message', (msg: Buffer) => stream.write(msg))
+  attachResizeHandler(socket, stream, exec)
   socket.on('close', () => {
     container.stop().then(() => container.remove()).catch(() => {})
   })
@@ -234,8 +251,7 @@ async function handleK8sTerminal(socket: WebSocket, docker: Docker, config: { im
 
   socket.send(JSON.stringify({ type: 'connected', containerId: container.id }))
 
-  stream.on('data', (chunk: Buffer) => socket.send(chunk))
-  socket.on('message', (msg: Buffer) => stream.write(msg))
+  attachResizeHandler(socket, stream, container)
   socket.on('close', async () => {
     // namespace 삭제 후 컨테이너 제거
     try {
@@ -274,8 +290,7 @@ async function handleK8sIsolatedTerminal(socket: WebSocket, docker: Docker, ques
 
   socket.send(JSON.stringify({ type: 'connected', containerId: container.id }))
 
-  stream.on('data', (chunk: Buffer) => socket.send(chunk))
-  socket.on('message', (msg: Buffer) => stream.write(msg))
+  attachResizeHandler(socket, stream, container)
   socket.on('close', async () => {
     await releaseVcluster(vcluster)
     container.stop().then(() => container.remove()).catch(() => {})

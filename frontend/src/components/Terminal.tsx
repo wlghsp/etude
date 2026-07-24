@@ -21,6 +21,14 @@ export function Terminal({ sandboxType, questId, containerId, onConnected }: Pro
         term.open(containerRef.current!)
         fitAddon.fit()
 
+        const sendResize = () => {
+            fitAddon.fit()
+            if (ws.readyState !== WebSocket.OPEN) return
+            const { cols, rows } = term
+            ws.send(JSON.stringify({ type: 'resize', cols, rows }))
+        }
+
+
         const params = new URLSearchParams({ sandboxType })
         if (questId !== null) params.set('questId', String(questId))
         if (sandboxType === 'docker-persistent' && containerId) {
@@ -30,8 +38,13 @@ export function Terminal({ sandboxType, questId, containerId, onConnected }: Pro
         const wsBase = import.meta.env.VITE_WS_BASE ?? ''
         const ws = new WebSocket(`${wsBase}/ws/terminal?${params}`)
         ws.binaryType = 'arraybuffer'
+        
+        // WebSocket 연결 성공 시 최소 1회
+        ws.onopen = () => sendResize()
 
-        ws.onopen = () => {}
+        // 브라우저 창 크기 변경 대응
+        const resizeObserver = new ResizeObserver(() => sendResize())
+        resizeObserver.observe(containerRef.current!)
 
         ws.onmessage = (e) => {
             // binary면 터미널 출력, string이면 JSON 메시지
@@ -58,6 +71,7 @@ export function Terminal({ sandboxType, questId, containerId, onConnected }: Pro
         return () => {
             ws.close()
             term.dispose()
+            resizeObserver.disconnect()
         }
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
