@@ -1,0 +1,9 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+etude:
+  jwt:
+    secret: test-secret
+    expires-hours: 24

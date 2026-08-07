@@ -1,0 +1,24 @@
+server:
+  port: 3001
+  address: 0.0.0.0
+
+spring:
+  application:
+    name: etude-backend
+  datasource:
+    url: jdbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:etude}
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+  jpa:
+    hibernate:
+      ddl-auto: validate # 스키마는 backend/db/*.sql이 SSOT - JPA가 스키마를 바꾸지 않도록 validate
+    open-in-view: false # 컨트롤러까지 영속성 컨텍스트를 늘리지 않음 (지연로딩 예외는 서비스 계층에서 해결)
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
+
+etude:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret}
+    expires-hours: 24
+

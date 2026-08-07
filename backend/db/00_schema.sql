@@ -7,7 +7,7 @@ CREATE TABLE sandbox (
 );
 
 CREATE TABLE quest_set (
-  id           INT AUTO_INCREMENT PRIMARY KEY,
+  id           BIGINT AUTO_INCREMENT PRIMARY KEY,
   title        VARCHAR(100) NOT NULL,
   description  TEXT,
   sandbox_type VARCHAR(20) NOT NULL DEFAULT 'linux',
@@ -17,8 +17,8 @@ CREATE TABLE quest_set (
 );
 
 CREATE TABLE quest (
-  id           INT AUTO_INCREMENT PRIMARY KEY,
-  quest_set_id INT NOT NULL,
+  id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+  quest_set_id BIGINT NOT NULL,
   order_index  INT NOT NULL DEFAULT 0,
   title        VARCHAR(200) NOT NULL,
   description  TEXT NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE quest (
 );
 
 CREATE TABLE user (
-  id         INT AUTO_INCREMENT PRIMARY KEY,
+  id         BIGINT AUTO_INCREMENT PRIMARY KEY,
   name       VARCHAR(100) NOT NULL,
   email      VARCHAR(200) NOT NULL UNIQUE,
   password   VARCHAR(200) NOT NULL,
@@ -39,8 +39,8 @@ CREATE TABLE user (
 );
 
 CREATE TABLE quest_set_access (
-  quest_set_id INT NOT NULL,
-  user_id      INT NOT NULL,
+  quest_set_id BIGINT NOT NULL,
+  user_id      BIGINT NOT NULL,
   granted_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (quest_set_id, user_id),
   FOREIGN KEY (quest_set_id) REFERENCES quest_set(id),
@@ -49,10 +49,10 @@ CREATE TABLE quest_set_access (
 
 -- 중복 허용 — 반복 시도가 쌓이는 구조 (Phase 9 분석의 원본 데이터)
 CREATE TABLE quest_attempt (
-  id             INT AUTO_INCREMENT PRIMARY KEY,
-  user_id        INT NOT NULL,
-  quest_id       INT NOT NULL,
-  quest_set_id   INT NOT NULL,
+  id             BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id        BIGINT NOT NULL,
+  quest_id       BIGINT NOT NULL,
+  quest_set_id   BIGINT NOT NULL,
   session_id     VARCHAR(36) NOT NULL,
   elapsed_sec    INT,
   hint_used      BOOLEAN NOT NULL DEFAULT FALSE,
@@ -65,11 +65,11 @@ CREATE TABLE quest_attempt (
 );
 
 CREATE TABLE IF NOT EXISTS feedback (
-  id           INT AUTO_INCREMENT PRIMARY KEY,
-  user_id      INT,
+  id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id      BIGINT,
   page         VARCHAR(100),
-  quest_id     INT,
-  quest_set_id INT,
+  quest_id     BIGINT,
+  quest_set_id BIGINT,
   body         TEXT NOT NULL,
   created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES user(id)
