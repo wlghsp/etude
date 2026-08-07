@@ -1,4 +1,4 @@
-# Phase 12 Step 1 — 인증 (TDD)
+# Phase 12 Step 1 — 인증 (ATDD)
 
 명세: [specs/spec_phase12_kotlin_migration.md](../specs/spec_phase12_kotlin_migration.md)
 이전 Step: [guide_phase12_step0b_multi_module.md](guide_phase12_step0b_multi_module.md)
@@ -14,10 +14,35 @@
 (`BackendKotlinApplication.kt`)과 전역 설정(`config/`)도 예외 없이 `com.etude` 바로 아래에 둡니다.
 `BaseEntity`는 `modules/jpa`(패키지 `com.etude.domain`)에 이미 있으므로 이 Step에서는 import만 합니다.
 
-이 Step의 목표: 로그인(JWT 발급) → `/me`(토큰 검증) → 관리자 전용 경로 차단까지, **테스트가 먼저 있고
-그 테스트를 통과시키는 순서로** 만듭니다. 레이어는 `domain/auth`(엔티티, 포트, 도메인 서비스) →
-`infrastructure/persistence`, `infrastructure/security`(어댑터) → `interfaces/api/auth`(컨트롤러) 순으로
-바깥으로 나갑니다.
+## 인수 조건 (이 Step의 완료 기준)
+
+*Node.js 원본(`auth.ts`, `auth-guard.ts`, `auth.routes.ts`)의 실제 동작이 곧 인수 조건이다 — 새로
+설계할 필요 없이 "기존과 동일하게 동작하는가"만 확인하면 된다.*
+
+**로그인 (`POST /auth/login`)**
+- [ ] 올바른 이메일/비밀번호로 로그인 시 200 + `{ token, user: { id, name, email, role } }`
+- [ ] 존재하지 않는 이메일 → 401 + `{ error: "이메일 또는 비밀번호가 올바르지 않습니다." }`
+- [ ] 틀린 비밀번호 → 401 + 동일 에러 메시지 (이메일 존재 여부를 노출하지 않음)
+
+**내 정보 조회 (`GET /me`)**
+- [ ] 유효한 토큰으로 호출 시 200 + `{ userId, name, email, role }`
+- [ ] 토큰 없이 호출 시 401 + `{ error: "인증이 필요합니다." }`
+- [ ] 유효하지 않은/만료된 토큰으로 호출 시 401 + `{ error: "토큰이 유효하지 않습니다." }`
+
+**관리자 권한 차단** (Step 2에서 실제 `/admin/*` 엔드포인트가 생기면 여기서 만든 `AdminInterceptor`로 검증)
+- [ ] `role: member` 토큰으로 관리자 전용 경로 호출 시 403
+
+이 조건들은 아래 1-9(통합 테스트)의 `AuthControllerTest`로 그대로 옮겨진다. 이 Step은 그 테스트가
+전부 통과하면 완료다.
+
+## 진행 방식
+
+이 Step은 **ATDD 바깥 루프 + 구현-후-검증 안쪽 루프**로 진행합니다. `auth.ts`의 로그인 로직은 이미
+명확히 정해져 있어 설계를 탐색할 이유가 없으므로, 도메인 로직은 TDD(레드-그린)가 아니라 "구현 먼저 작성
+→ 단위 테스트로 검증" 순서로 만듭니다. 하지만 이 Step 전체가 끝났다고 판단하는 기준은 위 인수 조건을
+검증하는 API 테스트(1-9)입니다. 레이어는 `domain/auth`(엔티티, 포트, 도메인 서비스) →
+`infrastructure/persistence`, `infrastructure/security`(어댑터) → `interfaces/api/auth`(컨트롤러) →
+인수 테스트 순으로 바깥으로 나갑니다.
 
 ---
 
@@ -108,69 +133,13 @@ interface UserRepository {
 
 ---
 
-## 1-5. `AuthService` — 먼저 실패하는 테스트를 쓴다
+## 1-5. `AuthService` — 구현 후 테스트로 검증
 
-여기서부터 TDD입니다. `AuthService`는 `UserRepository`(포트)와 `PasswordEncoder`(BCrypt 래퍼),
-`JwtProvider`에만 의존하고, 실제 DB/JWT 구현은 모른 채로 동작을 검증할 수 있어야 합니다 — 그래서
-단위 테스트에서 MockK로 세 협력자를 모두 목킹합니다.
-
-### 테스트 먼저 (`src/test/kotlin/com/etude/backend/domain/auth/AuthServiceTest.kt`)
-
-```kotlin
-package com.etude.domain.auth
-
-import io.mockk.every
-import io.mockk.mockk
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Test
-
-class AuthServiceTest {
-
-    private val userRepository = mockk<UserRepository>()
-    private val passwordEncoder = mockk<PasswordEncoder>()
-    private val jwtProvider = mockk<JwtProvider>()
-    private val authService = AuthService(userRepository, passwordEncoder, jwtProvider)
-
-    @DisplayName("이메일과 비밀번호가 맞으면 토큰과 사용자 정보를 반환한다")
-    @Test
-    fun loginSucceeds() {
-        val user = User(name = "테스트", email = "test@okestro.com", password = "hashed", role = UserRole.member)
-        every { userRepository.findByEmail("test@okestro.com") } returns user
-        every { passwordEncoder.matches("password123", "hashed") } returns true
-        every { jwtProvider.generate(user) } returns "signed-jwt"
-
-        val result = authService.login("test@okestro.com", "password123")
-
-        assertThat(result.token).isEqualTo("signed-jwt")
-        assertThat(result.user.email).isEqualTo("test@okestro.com")
-    }
-
-    @DisplayName("존재하지 않는 이메일이면 예외를 던진다")
-    @Test
-    fun loginFailsWhenUserNotFound() {
-        every { userRepository.findByEmail("unknown@okestro.com") } returns null
-
-        assertThatThrownBy { authService.login("unknown@okestro.com", "anything") }
-            .isInstanceOf(InvalidCredentialsException::class.java)
-    }
-
-    @DisplayName("비밀번호가 틀리면 예외를 던진다")
-    @Test
-    fun loginFailsWhenPasswordMismatch() {
-        val user = User(name = "테스트", email = "test@okestro.com", password = "hashed", role = UserRole.member)
-        every { userRepository.findByEmail("test@okestro.com") } returns user
-        every { passwordEncoder.matches("wrong", "hashed") } returns false
-
-        assertThatThrownBy { authService.login("test@okestro.com", "wrong") }
-            .isInstanceOf(InvalidCredentialsException::class.java)
-    }
-}
-```
-
-이 시점에 `./gradlew test`를 돌리면 `AuthService`, `PasswordEncoder`, `JwtProvider`, `InvalidCredentialsException`이
-아직 없어서 **컴파일 자체가 실패**합니다 — TDD의 "레드" 단계입니다. 이제 이걸 통과시킬 최소 코드를 작성합니다.
+**TDD가 아니라 "구현 먼저 + 테스트로 검증" 순서로 진행합니다.** `auth.ts`의 `login()` 로직은 이미
+명확하게 정해져 있어서(이메일 조회 → 비밀번호 비교 → 토큰 발급), 테스트로 설계를 탐색할 이유가 없습니다.
+먼저 협력자 인터페이스(포트)와 `AuthService`를 완성한 뒤, 그 동작이 맞는지 테스트로 검증하는 순서가
+더 자연스럽고 빠릅니다. (Step 3 이후 도메인 규칙이 복잡한 로직—예: 채점 조건, 퀘스트 접근 제어—을 다룰
+때는 실패하는 테스트를 먼저 쓰는 진짜 TDD를 다시 적용합니다.)
 
 ### `PasswordEncoder` 포트 (`domain/auth/PasswordEncoder.kt`)
 
@@ -236,7 +205,65 @@ class AuthService(
 }
 ```
 
-**검증**: `./gradlew test --tests "*.AuthServiceTest"` — 3개 테스트 모두 통과해야 합니다 (그린 단계).
+### 테스트로 검증 (`src/test/kotlin/com/etude/domain/auth/AuthServiceTest.kt`)
+
+구현이 끝났으니, `UserRepository`/`PasswordEncoder`/`JwtProvider`를 MockK로 목킹해 `login()`의 세 가지
+분기(성공/이메일 없음/비밀번호 불일치)가 의도대로 동작하는지 검증합니다.
+
+```kotlin
+package com.etude.domain.auth
+
+import io.mockk.every
+import io.mockk.mockk
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
+
+class AuthServiceTest {
+
+    private val userRepository = mockk<UserRepository>()
+    private val passwordEncoder = mockk<PasswordEncoder>()
+    private val jwtProvider = mockk<JwtProvider>()
+    private val authService = AuthService(userRepository, passwordEncoder, jwtProvider)
+
+    @DisplayName("이메일과 비밀번호가 맞으면 토큰과 사용자 정보를 반환한다")
+    @Test
+    fun loginSucceeds() {
+        val user = User(name = "테스트", email = "test@okestro.com", password = "hashed", role = UserRole.member)
+        every { userRepository.findByEmail("test@okestro.com") } returns user
+        every { passwordEncoder.matches("password123", "hashed") } returns true
+        every { jwtProvider.generate(user) } returns "signed-jwt"
+
+        val result = authService.login("test@okestro.com", "password123")
+
+        assertThat(result.token).isEqualTo("signed-jwt")
+        assertThat(result.user.email).isEqualTo("test@okestro.com")
+    }
+
+    @DisplayName("존재하지 않는 이메일이면 예외를 던진다")
+    @Test
+    fun loginFailsWhenUserNotFound() {
+        every { userRepository.findByEmail("unknown@okestro.com") } returns null
+
+        assertThatThrownBy { authService.login("unknown@okestro.com", "anything") }
+            .isInstanceOf(InvalidCredentialsException::class.java)
+    }
+
+    @DisplayName("비밀번호가 틀리면 예외를 던진다")
+    @Test
+    fun loginFailsWhenPasswordMismatch() {
+        val user = User(name = "테스트", email = "test@okestro.com", password = "hashed", role = UserRole.member)
+        every { userRepository.findByEmail("test@okestro.com") } returns user
+        every { passwordEncoder.matches("wrong", "hashed") } returns false
+
+        assertThatThrownBy { authService.login("test@okestro.com", "wrong") }
+            .isInstanceOf(InvalidCredentialsException::class.java)
+    }
+}
+```
+
+**검증**: `./gradlew test --tests "*.AuthServiceTest"` — 3개 테스트 모두 통과해야 합니다.
 
 ---
 
