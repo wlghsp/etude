@@ -36,13 +36,14 @@
 이 조건들은 아래 1-9(통합 테스트)의 `AuthControllerTest`로 그대로 옮겨진다. 이 Step은 그 테스트가
 전부 통과하면 완료다.
 
-> **⚠️ 프론트엔드 연동 필수 작업**: `ApiResponse<T>` 래퍼 도입으로 응답 형태가 `{ token, user }`에서
-> `{ data: { token, user } }`로, 에러 형태가 `{ error }`에서 `{ meta: { message } }`로 바뀐다.
-> `frontend/src/api/auth.ts`의 `loginApi`/`fetchMe`/`changePassword`가 응답을 파싱하는 부분을
-> `res.json().data`(성공 시), `res.json().meta.message`(에러 시)를 읽도록 수정해야 백엔드 마이그레이션이
-> 완료된 뒤 프론트가 정상 동작한다. 다른 도메인(quest, admin, feedback 등)의 Step에서도 컨트롤러를
-> Kotlin으로 옮길 때마다 해당 프론트 API 모듈을 동일하게 고쳐야 한다 — 이 작업을 빠뜨리지 않도록 각
-> Step의 완료 기준에 "프론트 연동 확인"을 포함시킨다.
+> **참고 — 프론트엔드는 이 Step에서 건드리지 않는다**: `ApiResponse<T>` 래퍼 도입으로 응답 형태가
+> `{ token, user }`에서 `{ data: { token, user } }`로, 에러 형태가 `{ error }`에서
+> `{ meta: { message } }`로 바뀐다. 하지만 프론트는 백엔드를 하나만 바라보는 구조라 도메인별로 부분
+> 전환하면 임시 라우팅 프록시가 필요해진다 — 그 비용을 피하기 위해 Step 1~9는 Kotlin 백엔드만
+> 완성하고 curl/MockMvc/Testcontainers로 검증한다. `frontend/src/api/auth.ts`(`loginApi`/`fetchMe`/
+> `changePassword`)를 `ApiResponse` 포맷에 맞게 고치는 작업은 모든 도메인의 백엔드 전환이 끝난 뒤
+> Step 10(cutover)에서 프론트 전체를 한 번에 전환할 때 함께 처리한다 (spec 문서의 "프론트엔드 연동
+> 방침" 참고).
 
 ## 진행 방식
 
@@ -1009,8 +1010,8 @@ curl -i localhost:3001/me
 - `AuthControllerTest`(통합, Testcontainers) 4개 통과
 - `/auth/login`, `/me` curl 검증에서 `data` 필드가 기존 Node.js 백엔드와 동일
 - 토큰 없이 `/me` 호출 시 401, 잘못된 비밀번호로 로그인 시 401
-- **`frontend/src/api/auth.ts`(`loginApi`, `fetchMe`, `changePassword`)를 `ApiResponse` 포맷에 맞게
-  수정하고, 프론트에서 실제 로그인이 동작하는지 확인** — 이 항목 없이는 Step 1이 완료된 것으로 보지 않는다.
 
-다음은 Step 2 — `user`/`admin` (계정 생성, 비밀번호 초기화/변경). Step 2 이후로도 컨트롤러를 옮길 때마다
-`ApiResponse` 포맷 변경에 맞춰 해당 프론트 API 모듈을 함께 고쳐야 한다.
+프론트엔드(`frontend/src/api/auth.ts`)는 이 Step에서 건드리지 않는다 — 모든 도메인의 백엔드 전환이
+끝난 뒤 Step 10(cutover)에서 프론트 전체를 `ApiResponse` 포맷에 맞게 한 번에 전환한다.
+
+다음은 Step 2 — `user`/`admin` (계정 생성, 비밀번호 초기화/변경).

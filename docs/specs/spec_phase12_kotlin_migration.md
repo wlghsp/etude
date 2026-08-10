@@ -164,7 +164,7 @@ backend-kotlin/                         (루트 — 빌드 설정 총괄)
 |---|---|---|---|
 | 0 | [guide_phase12_step0_setup.md](../guides/guide_phase12_step0_setup.md) | - | TS 스냅샷 태그, Gradle+Spring Boot+Kotlin 프로젝트 뼈대, 패키지 구조, 테스트 스택 |
 | 0b | [guide_phase12_step0b_multi_module.md](../guides/guide_phase12_step0b_multi_module.md) | - | 멀티모듈 재구성 — `apps/backend`(앱) + `modules/jpa`(공통 JPA, `BaseEntity`) 분리 |
-| 1 | [guide_phase12_step1_auth.md](../guides/guide_phase12_step1_auth.md) | `auth.ts`, `auth-guard.ts`, `auth.routes.ts`, `user.ts`(로그인/비밀번호 관련) | `User` 엔티티, `AuthService`(TDD), `JwtProvider`, `JwtAuthFilter`, `AuthController` |
+| 1 | [guide_phase12_step1_auth.md](../guides/guide_phase12_step1_auth.md) | `auth.ts`, `auth-guard.ts`, `auth.routes.ts`, `user.ts`(로그인/비밀번호 관련) | `User` 엔티티, `AuthService`(TDD), `JwtProvider`, `JwtAuthFilter`, `AuthController`, `ApiResponse<T>` 공통 래퍼 |
 | 2 | [guide_phase12_step2_user_admin.md](../guides/guide_phase12_step2_user_admin.md) | `user.ts`(나머지), `admin.routes.ts`(user 부분) | 계정 생성/비밀번호 초기화 유스케이스 + 테스트 |
 | 3 | [guide_phase12_step3_quest.md](../guides/guide_phase12_step3_quest.md) | `types.ts`, `quest.ts`(채점 제외), `quest.routes.ts`(채점 제외), `admin.routes.ts`(quest-set 부분) | `Quest`/`QuestSet`/`QuestSetAccess` 엔티티, `QuestService`(TDD) |
 | 4 | [guide_phase12_step4_progress_feedback.md](../guides/guide_phase12_step4_progress_feedback.md) | `progress.ts`, `progress.routes.ts`, `feedback.ts`, `feedback.routes.ts` | `QuestAttempt`/`Feedback` 엔티티, 집계 쿼리 테스트 |
@@ -173,10 +173,18 @@ backend-kotlin/                         (루트 — 빌드 설정 총괄)
 | 7 | [guide_phase12_step7_grading.md](../guides/guide_phase12_step7_grading.md) | `quest.ts`의 `execCheck`/`gradeQuest` | 채점 로직 + `/grade` 엔드포인트 |
 | 8 | [guide_phase12_step8_vcluster.md](../guides/guide_phase12_step8_vcluster.md) | `vcluster-pool.ts`, `k8s-namespace.ts` | `VclusterProvisioner` 포트/어댑터, 풀 관리 |
 | 9 | [guide_phase12_step9_session_shutdown.md](../guides/guide_phase12_step9_session_shutdown.md) | `session.routes.ts`, `index.ts`(정리 훅) | 세션 종료 API, graceful shutdown |
-| 10 | [guide_phase12_step10_cutover.md](../guides/guide_phase12_step10_cutover.md) | - | 전체 회귀 테스트, 배포 전환, 문서/CLAUDE.md 갱신 |
+| 10 | [guide_phase12_step10_cutover.md](../guides/guide_phase12_step10_cutover.md) | - | 전체 회귀 테스트, **프론트엔드 API 모듈 일괄 전환**, 배포 전환, 문서/CLAUDE.md 갱신 |
 
 각 가이드 파일은 진행하면서 순서대로 작성한다 (한 번에 전부 작성하지 않음). Step 6(터미널)은 분량이 크면
 Step 6-1(default/docker), Step 6-2(systemd/k8s), Step 6-3(k8s-isolated)처럼 더 세분화할 수 있다.
+
+**프론트엔드 연동 방침**: Step 1에서 응답을 `ApiResponse<T>`(`{ meta, data }`) 공통 래퍼로 감싸기로
+결정하면서 Node.js와 Kotlin 백엔드의 응답 포맷이 달라졌다. 프론트는 백엔드를 하나만 바라보는 구조라
+(`BASE URL` 단일 설정), 도메인별로 Kotlin/Node.js를 오가며 부분 전환하면 라우팅 프록시 같은 임시
+인프라가 추가로 필요해진다. 그 비용을 피하기 위해 **Step 1~9는 백엔드(Kotlin)만 완성하고 curl/MockMvc/
+Testcontainers로만 검증한다 — 프론트 코드는 건드리지 않는다.** 모든 도메인의 백엔드 전환이 끝난 뒤
+Step 10(cutover)에서 프론트엔드 API 모듈(`frontend/src/api/*.ts`) 전체를 `ApiResponse` 포맷에 맞게
+한 번에 고치고, 그 시점에 브라우저로 전체 시나리오를 회귀 검증한다.
 
 ## 결정 사항 (확정)
 
@@ -189,6 +197,9 @@ Step 6-1(default/docker), Step 6-2(systemd/k8s), Step 6-3(k8s-isolated)처럼 �
 
 ## 완료 기준
 
-- 프론트엔드 코드 변경 없이 Kotlin 백엔드로 전체 시나리오(로그인/퀘스트/터미널 5종 sandbox/채점/진행률/리더보드/피드백/관리자 기능)가 기존과 동일하게 동작
+- Kotlin 백엔드가 전체 시나리오(로그인/퀘스트/터미널 5종 sandbox/채점/진행률/리더보드/피드백/관리자 기능)를
+  기존 Node.js 백엔드와 동일하게 처리 (Step 1~9에서 curl/MockMvc/Testcontainers로 도메인별 검증)
+- Step 10에서 `frontend/src/api/*.ts`를 `ApiResponse` 포맷에 맞게 일괄 전환한 뒤, 브라우저로 전체
+  시나리오가 기존과 동일하게 동작
 - 앱 종료 시 컨테이너/vcluster/네임스페이스 정리 로직이 기존과 동일하게 작동
 - `docs/etude_dev_guide.md`에 Phase 11 가이드 인덱스 추가, `CLAUDE.md` 스택 표기 갱신
