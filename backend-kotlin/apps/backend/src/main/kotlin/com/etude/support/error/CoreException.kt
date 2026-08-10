@@ -1,4 +1,4 @@
-package com.etude.support
+package com.etude.support.error
 
 class CoreException(
     val errorType: ErrorType,

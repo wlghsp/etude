@@ -1,11 +1,11 @@
 package com.etude.config
 
-import com.etude.domain.auth.JwtPayload
-import com.etude.domain.auth.UserRole
 import com.etude.infrastructure.security.JwtAuthFilter
 import com.etude.infrastructure.security.REQUEST_ATTR_JWT_PAYLOAD
-import com.etude.support.CoreException
-import com.etude.support.ErrorType
+import com.etude.domain.auth.JwtPayload
+import com.etude.domain.auth.UserRole
+import com.etude.support.error.CoreException
+import com.etude.support.error.ErrorType
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.boot.web.servlet.FilterRegistrationBean

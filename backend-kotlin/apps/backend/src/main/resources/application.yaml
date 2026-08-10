@@ -19,6 +19,6 @@ spring:
 
 etude:
   jwt:
-    secret: ${JWT_SECRET:dev-secret}
+    secret: ${JWT_SECRET:dev-secret-must-be-at-least-256-bits-long-for-hmac-sha}
     expires-hours: 24
 

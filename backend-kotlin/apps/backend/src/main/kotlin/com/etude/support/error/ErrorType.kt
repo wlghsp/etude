@@ -1,4 +1,4 @@
-package com.etude.support
+package com.etude.support.error
 
 import org.springframework.http.HttpStatus
 

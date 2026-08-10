@@ -2,8 +2,8 @@ package com.etude.interfaces.api
 
 import com.etude.domain.auth.InvalidCredentialsException
 import com.etude.domain.auth.InvalidTokenException
-import com.etude.support.CoreException
-import com.etude.support.ErrorType
+import com.etude.support.error.CoreException
+import com.etude.support.error.ErrorType
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
