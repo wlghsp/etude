@@ -22,6 +22,13 @@ dependencies {
     // Docker 제어
     implementation("com.github.docker-java:docker-java-core:3.4.0")
     implementation("com.github.docker-java:docker-java-transport-httpclient5:3.4.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+
+    // MockMvc(@AutoConfigureMockMvc) — Spring Boot 4.x부터 spring-boot-starter-test에서 분리됨
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:mariadb")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
 }
 
 kotlin {

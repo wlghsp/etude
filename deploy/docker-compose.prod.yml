@@ -14,7 +14,7 @@ services:
       - "127.0.0.1:3306:3306"
     volumes:
       - etude-db-data:/var/lib/mysql
-      - ./backend/db:/docker-entrypoint-initdb.d
+      - ./backend-kotlin/apps/backend/src/main/resources/db:/docker-entrypoint-initdb.d
     networks:
       - etude
 

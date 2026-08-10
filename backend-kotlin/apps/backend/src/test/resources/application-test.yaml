@@ -2,8 +2,18 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+    defer-datasource-initialization: false
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/00_schema.sql
+
+logging:
+  level:
+    org.springframework.boot.jdbc.init: DEBUG
+    org.springframework.boot.sql.init: DEBUG
 
 etude:
   jwt:
-    secret: test-secret
+    secret: test-secret-must-be-at-least-256-bits-long-for-hmac-sha
     expires-hours: 24

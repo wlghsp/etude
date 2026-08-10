@@ -16,24 +16,33 @@
 
 ## 인수 조건 (이 Step의 완료 기준)
 
-*Node.js 원본(`auth.ts`, `auth-guard.ts`, `auth.routes.ts`)의 실제 동작이 곧 인수 조건이다 — 새로
-설계할 필요 없이 "기존과 동일하게 동작하는가"만 확인하면 된다.*
+*Node.js 원본(`auth.ts`, `auth-guard.ts`, `auth.routes.ts`)의 실제 동작이 곧 인수 조건이다 — 다만 응답
+포맷은 참고 템플릿(`loopers-spring-kotlin-template`)의 `ApiResponse<T>` 공통 래퍼를 따른다 (1-8a 참고).
+필드 이름/값 자체는 기존과 동일하게 유지하되, `{ data: { ... } }`로 한 겹 감싼다는 점만 다르다.*
 
 **로그인 (`POST /auth/login`)**
-- [ ] 올바른 이메일/비밀번호로 로그인 시 200 + `{ token, user: { id, name, email, role } }`
-- [ ] 존재하지 않는 이메일 → 401 + `{ error: "이메일 또는 비밀번호가 올바르지 않습니다." }`
+- [ ] 올바른 이메일/비밀번호로 로그인 시 200 + `{ meta: { result: "SUCCESS" }, data: { token, user: { id, name, email, role } } }`
+- [ ] 존재하지 않는 이메일 → 401 + `{ meta: { result: "FAIL", errorCode, message: "이메일 또는 비밀번호가 올바르지 않습니다." }, data: null }`
 - [ ] 틀린 비밀번호 → 401 + 동일 에러 메시지 (이메일 존재 여부를 노출하지 않음)
 
 **내 정보 조회 (`GET /me`)**
-- [ ] 유효한 토큰으로 호출 시 200 + `{ userId, name, email, role }`
-- [ ] 토큰 없이 호출 시 401 + `{ error: "인증이 필요합니다." }`
-- [ ] 유효하지 않은/만료된 토큰으로 호출 시 401 + `{ error: "토큰이 유효하지 않습니다." }`
+- [ ] 유효한 토큰으로 호출 시 200 + `{ meta: { result: "SUCCESS" }, data: { userId, name, email, role } }`
+- [ ] 토큰 없이 호출 시 401 + `{ meta: { result: "FAIL", message: "인증이 필요합니다." }, data: null }`
+- [ ] 유효하지 않은/만료된 토큰으로 호출 시 401 + `{ meta: { result: "FAIL", message: "토큰이 유효하지 않습니다." }, data: null }`
 
 **관리자 권한 차단** (Step 2에서 실제 `/admin/*` 엔드포인트가 생기면 여기서 만든 `AdminInterceptor`로 검증)
 - [ ] `role: member` 토큰으로 관리자 전용 경로 호출 시 403
 
 이 조건들은 아래 1-9(통합 테스트)의 `AuthControllerTest`로 그대로 옮겨진다. 이 Step은 그 테스트가
 전부 통과하면 완료다.
+
+> **⚠️ 프론트엔드 연동 필수 작업**: `ApiResponse<T>` 래퍼 도입으로 응답 형태가 `{ token, user }`에서
+> `{ data: { token, user } }`로, 에러 형태가 `{ error }`에서 `{ meta: { message } }`로 바뀐다.
+> `frontend/src/api/auth.ts`의 `loginApi`/`fetchMe`/`changePassword`가 응답을 파싱하는 부분을
+> `res.json().data`(성공 시), `res.json().meta.message`(에러 시)를 읽도록 수정해야 백엔드 마이그레이션이
+> 완료된 뒤 프론트가 정상 동작한다. 다른 도메인(quest, admin, feedback 등)의 Step에서도 컨트롤러를
+> Kotlin으로 옮길 때마다 해당 프론트 API 모듈을 동일하게 고쳐야 한다 — 이 작업을 빠뜨리지 않도록 각
+> Step의 완료 기준에 "프론트 연동 확인"을 포함시킨다.
 
 ## 진행 방식
 
@@ -170,7 +179,44 @@ data class JwtPayload(
 )
 ```
 
+### 공통 예외/에러 타입 — `support/error` (참고 템플릿과 동일 구조)
+
+컨트롤러마다 예외를 개별로 catch하지 않고, 참고 템플릿(`loopers-spring-kotlin-template`)처럼
+`CoreException` + `ErrorType` + 전역 `@RestControllerAdvice`(1-8b)로 처리합니다. 이 Step에서 처음
+만들지만 이후 모든 Step의 컨트롤러가 공유하는 공통 인프라이므로 도메인에 묻지 않고 별도 패키지에 둡니다.
+
+`support/error/ErrorType.kt`
+
+```kotlin
+package com.etude.support.error
+
+import org.springframework.http.HttpStatus
+
+enum class ErrorType(val status: HttpStatus, val code: String, val message: String) {
+    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR.reasonPhrase, "일시적인 오류가 발생했습니다."),
+    BAD_REQUEST(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.reasonPhrase, "잘못된 요청입니다."),
+    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, HttpStatus.UNAUTHORIZED.reasonPhrase, "인증이 필요합니다."),
+    FORBIDDEN(HttpStatus.FORBIDDEN, HttpStatus.FORBIDDEN.reasonPhrase, "권한이 없습니다."),
+    NOT_FOUND(HttpStatus.NOT_FOUND, HttpStatus.NOT_FOUND.reasonPhrase, "존재하지 않는 요청입니다."),
+}
+```
+
+`support/error/CoreException.kt`
+
+```kotlin
+package com.etude.support.error
+
+class CoreException(
+    val errorType: ErrorType,
+    val customMessage: String? = null,
+) : RuntimeException(customMessage ?: errorType.message)
+```
+
 ### 도메인 예외 (`domain/auth/AuthExceptions.kt`)
+
+도메인 예외는 `CoreException`을 직접 던지지 않고 이 Step 전용 타입을 유지합니다 — `AuthService`가
+HTTP 상태 코드(`ErrorType`)를 알 필요는 없기 때문입니다. `ErrorType`으로의 변환은 컨트롤러
+계층(1-8a)에서 합니다.
 
 ```kotlin
 package com.etude.domain.auth
@@ -179,15 +225,25 @@ class InvalidCredentialsException(message: String = "이메일 또는 비밀번�
 class InvalidTokenException(message: String = "토큰이 유효하지 않습니다.") : RuntimeException(message)
 ```
 
+### 응답 타입 (`domain/auth/AuthResult.kt`)
+
+`AuthService`의 반환 타입을 서비스 파일 안에 같이 묻어두지 않고 별도 파일로 분리합니다 — 다른 곳(예:
+Step 2의 관리자 컨트롤러)에서도 `UserSummary`를 재사용할 수 있고, IDE에서 타입명으로 찾을 때 파일명이
+`AuthService.kt`로 나오는 혼란을 피할 수 있습니다.
+
+```kotlin
+package com.etude.domain.auth
+
+data class LoginResult(val token: String, val user: UserSummary)
+data class UserSummary(val id: Long, val name: String, val email: String, val role: UserRole)
+```
+
 ### `AuthService` 구현 (`domain/auth/AuthService.kt`)
 
 ```kotlin
 package com.etude.domain.auth
 
 import org.springframework.stereotype.Service
-
-data class LoginResult(val token: String, val user: UserSummary)
-data class UserSummary(val id: Long, val name: String, val email: String, val role: UserRole)
 
 @Service
 class AuthService(
@@ -446,6 +502,8 @@ import com.etude.infrastructure.security.JwtAuthFilter
 import com.etude.infrastructure.security.REQUEST_ATTR_JWT_PAYLOAD
 import com.etude.domain.auth.JwtPayload
 import com.etude.domain.auth.UserRole
+import com.etude.support.error.CoreException
+import com.etude.support.error.ErrorType
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.boot.web.servlet.FilterRegistrationBean
@@ -475,10 +533,7 @@ class WebConfig(
 class AuthInterceptor : HandlerInterceptor {
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         if (request.getAttribute(REQUEST_ATTR_JWT_PAYLOAD) == null) {
-            response.status = 401
-            response.contentType = "application/json;charset=UTF-8"
-            response.writer.write("""{"error":"인증이 필요합니다."}""")
-            return false
+            throw CoreException(ErrorType.UNAUTHORIZED, "인증이 필요합니다.")
         }
         return true
     }
@@ -488,15 +543,17 @@ class AdminInterceptor : HandlerInterceptor {
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val payload = request.getAttribute(REQUEST_ATTR_JWT_PAYLOAD) as? JwtPayload
         if (payload?.role != UserRole.admin) {
-            response.status = 403
-            response.contentType = "application/json;charset=UTF-8"
-            response.writer.write("""{"error":"관리자 권한이 필요합니다."}""")
-            return false
+            throw CoreException(ErrorType.FORBIDDEN, "관리자 권한이 필요합니다.")
         }
         return true
     }
 }
 ```
+
+> 인터셉터가 응답을 직접 쓰지 않고 `CoreException`을 던지는 이유: Spring MVC는 인터셉터의
+> `preHandle`에서 던진 예외도 `@RestControllerAdvice`(1-8b의 `ApiControllerAdvice`)까지 전파합니다.
+> 그래서 401/403 응답도 컨트롤러 예외와 동일하게 `ApiResponse` 포맷으로 나가고, 응답 바디를 여기서
+> 직접 조립할 필요가 없습니다.
 
 > 경로 목록(`addPathPatterns`)은 이후 Step에서 quest/progress/feedback 컨트롤러를 추가하며 계속
 > 늘어납니다. 지금은 Step 1~2에서 쓰는 경로만 등록하고, 각 Step에서 자신이 추가한 경로를 여기에 보탭니다.
@@ -507,21 +564,137 @@ class AdminInterceptor : HandlerInterceptor {
 
 ## 1-8. `AuthController` — `auth.routes.ts` 대응
 
-`interfaces/api/auth/AuthController.kt`
+참고 템플릿(`loopers-spring-kotlin-template`)의 컨벤션을 따라 컨트롤러를 **ApiSpec(인터페이스) +
+Controller(구현체)** 로 분리하고, 모든 응답을 공통 `ApiResponse<T>`로 감쌉니다. ApiSpec은 Swagger
+문서화(`@Operation`)를 전담하고, Controller는 실제 라우팅/구현만 담당합니다.
+
+### 1-8a. `interfaces/api/ApiResponse.kt` — 공통 응답 래퍼
+
+Step 1에서 처음 만들지만 이후 모든 컨트롤러가 공유하는 공통 타입이라 `auth` 패키지가 아니라
+`interfaces/api` 루트에 둡니다.
+
+```kotlin
+package com.etude.interfaces.api
+
+data class ApiResponse<T>(
+    val meta: Metadata,
+    val data: T?,
+) {
+    data class Metadata(
+        val result: Result,
+        val errorCode: String?,
+        val message: String?,
+    ) {
+        enum class Result { SUCCESS, FAIL }
+
+        companion object {
+            fun success() = Metadata(Result.SUCCESS, null, null)
+            fun fail(errorCode: String, errorMessage: String) = Metadata(Result.FAIL, errorCode, errorMessage)
+        }
+    }
+
+    companion object {
+        fun success(): ApiResponse<Any> = ApiResponse(Metadata.success(), null)
+        fun <T> success(data: T? = null) = ApiResponse(Metadata.success(), data)
+        fun fail(errorCode: String, errorMessage: String): ApiResponse<Any?> =
+            ApiResponse(meta = Metadata.fail(errorCode = errorCode, errorMessage = errorMessage), data = null)
+    }
+}
+```
+
+### 1-8b. `interfaces/api/ApiControllerAdvice.kt` — 전역 예외 처리
+
+컨트롤러 안에서 개별 `try/catch`를 하지 않고, `AuthService`가 던지는 도메인 예외를 여기서 한 곳에
+모아 `ApiResponse.fail(...)`로 변환합니다. `InvalidCredentialsException`/`InvalidTokenException`을
+`CoreException`으로 감싸지 않고 직접 매핑하는 이유는, 이 두 예외가 이미 이 Step에서만 쓰는 명확한
+의미를 가지고 있어서 `CoreException`으로 우회할 필요가 없기 때문입니다. 이후 Step에서 새 도메인
+예외가 생기면 이 클래스에 `@ExceptionHandler`를 하나씩 추가합니다.
+
+```kotlin
+package com.etude.interfaces.api
+
+import com.etude.domain.auth.InvalidCredentialsException
+import com.etude.domain.auth.InvalidTokenException
+import com.etude.support.error.CoreException
+import com.etude.support.error.ErrorType
+import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.RestControllerAdvice
+
+@RestControllerAdvice
+class ApiControllerAdvice {
+    private val log = LoggerFactory.getLogger(ApiControllerAdvice::class.java)
+
+    @ExceptionHandler
+    fun handle(e: CoreException): ResponseEntity<ApiResponse<*>> {
+        log.warn("CoreException : {}", e.customMessage ?: e.message)
+        return failureResponse(e.errorType.status, e.errorType.code, e.customMessage ?: e.errorType.message)
+    }
+
+    @ExceptionHandler
+    fun handle(e: InvalidCredentialsException): ResponseEntity<ApiResponse<*>> =
+        failureResponse(HttpStatus.UNAUTHORIZED, ErrorType.UNAUTHORIZED.code, e.message!!)
+
+    @ExceptionHandler
+    fun handle(e: InvalidTokenException): ResponseEntity<ApiResponse<*>> =
+        failureResponse(HttpStatus.UNAUTHORIZED, ErrorType.UNAUTHORIZED.code, e.message!!)
+
+    @ExceptionHandler
+    fun handle(e: Exception): ResponseEntity<ApiResponse<*>> {
+        log.error("Unhandled exception", e)
+        return failureResponse(HttpStatus.INTERNAL_SERVER_ERROR, ErrorType.INTERNAL_ERROR.code, ErrorType.INTERNAL_ERROR.message)
+    }
+
+    private fun failureResponse(status: HttpStatus, errorCode: String, message: String): ResponseEntity<ApiResponse<*>> =
+        ResponseEntity(ApiResponse.fail(errorCode = errorCode, errorMessage = message), status)
+}
+```
+
+ApiSpec의 `@Operation`/`@Tag` 어노테이션을 쓰려면 `apps/backend/build.gradle.kts`의 `dependencies`에
+springdoc 의존성을 추가해야 합니다:
+
+```kotlin
+implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+```
+
+### 1-8c. `interfaces/api/auth/AuthV1ApiSpec.kt` — Swagger 인터페이스
+
+```kotlin
+package com.etude.interfaces.api.auth
+
+import com.etude.domain.auth.JwtPayload
+import com.etude.domain.auth.LoginResult
+import com.etude.interfaces.api.ApiResponse
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.servlet.http.HttpServletRequest
+
+@Tag(name = "Auth V1 API", description = "인증 관련 API 입니다.")
+interface AuthV1ApiSpec {
+    @Operation(summary = "로그인", description = "이메일/비밀번호로 로그인하고 토큰을 발급받습니다.")
+    fun login(request: LoginRequest): ApiResponse<LoginResult>
+
+    @Operation(summary = "내 정보 조회", description = "토큰으로 현재 로그인한 사용자 정보를 조회합니다.")
+    fun me(request: HttpServletRequest): ApiResponse<JwtPayload>
+}
+```
+
+### 1-8d. `interfaces/api/auth/AuthV1Controller.kt` — 구현체
 
 ```kotlin
 package com.etude.interfaces.api.auth
 
 import com.etude.domain.auth.AuthService
-import com.etude.domain.auth.InvalidCredentialsException
 import com.etude.domain.auth.JwtPayload
 import com.etude.domain.auth.LoginResult
 import com.etude.infrastructure.security.REQUEST_ATTR_JWT_PAYLOAD
+import com.etude.interfaces.api.ApiResponse
 import jakarta.servlet.http.HttpServletRequest
+import jakarta.validation.Valid
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
-import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 data class LoginRequest(
@@ -530,25 +703,27 @@ data class LoginRequest(
 )
 
 @RestController
-class AuthController(
+class AuthV1Controller(
     private val authService: AuthService,
-) {
+) : AuthV1ApiSpec {
     @PostMapping("/auth/login")
-    fun login(@RequestBody request: LoginRequest): ResponseEntity<Any> =
-        try {
-            ResponseEntity.ok(authService.login(request.email, request.password))
-        } catch (e: InvalidCredentialsException) {
-            ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("error" to e.message))
-        }
+    override fun login(@Valid @RequestBody request: LoginRequest): ApiResponse<LoginResult> =
+        ApiResponse.success(authService.login(request.email, request.password))
 
     @GetMapping("/me")
-    fun me(request: HttpServletRequest): JwtPayload =
-        request.getAttribute(REQUEST_ATTR_JWT_PAYLOAD) as JwtPayload
+    override fun me(request: HttpServletRequest): ApiResponse<JwtPayload> =
+        ApiResponse.success(request.getAttribute(REQUEST_ATTR_JWT_PAYLOAD) as JwtPayload)
 }
 ```
 
-> `LoginResult`가 그대로 JSON으로 직렬화되면 `{"token": "...", "user": {"id":.., "name":.., "email":.., "role":..}}`가
-> 되어 기존 `auth.ts`의 `login()` 반환 형태와 동일합니다.
+> 실패 응답은 컨트롤러가 아니라 `ApiControllerAdvice`(1-8b)가 만듭니다. `AuthService.login()`이
+> `InvalidCredentialsException`을 던지면 `ApiControllerAdvice`가 잡아 401 + `ApiResponse.fail(...)`로
+> 변환하므로, 컨트롤러 메서드 안에는 `try/catch`가 없습니다.
+>
+> `LoginResult`가 `ApiResponse.data`에 담겨 그대로 JSON으로 직렬화되면
+> `{"meta":{"result":"SUCCESS","errorCode":null,"message":null},"data":{"token":"...","user":{"id":..,"name":..,"email":..,"role":..}}}`가
+> 됩니다. 기존 `auth.ts`의 `login()` 응답과 필드 이름/값은 같지만 `data`로 한 겹 더 감싸져 있다는 점이
+> 다릅니다 — 프론트엔드 수정이 필요합니다 (인수 조건 섹션의 경고 참고).
 
 `/me/password`(본인 비밀번호 변경)는 Step 2(user/admin)에서 `changeOwnPassword` 로직과 함께 추가합니다 —
 이 컨트롤러에 지금 당장 붙이지 않아도 됩니다.
@@ -557,7 +732,125 @@ class AuthController(
 
 ## 1-9. 통합 테스트 — Testcontainers로 실제 요청까지 검증
 
-`src/test/kotlin/com/etude/backend/interfaces/api/auth/AuthControllerTest.kt`
+다음 의존성이 아직 없어 `apps/backend/build.gradle.kts`의 `dependencies`에 추가해야 합니다:
+
+```kotlin
+// MockMvc(@AutoConfigureMockMvc) — Spring Boot 4.x부터 spring-boot-starter-test에서 분리됨
+testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+testImplementation("org.testcontainers:junit-jupiter")
+testImplementation("org.testcontainers:mariadb")
+testImplementation("org.springframework.boot:spring-boot-testcontainers")
+```
+
+- `spring-boot-testcontainers`가 `@ServiceConnection` 어노테이션을 제공합니다.
+- `spring-boot-starter-webmvc-test`가 `@AutoConfigureMockMvc`를 제공합니다. 루트 `build.gradle.kts`가
+  이미 물고 있는 `spring-boot-starter-test`에는 **더 이상 포함돼 있지 않습니다** — Spring Boot 4.0부터
+  `@SpringBootTest`가 MockMvc를 자동으로 지원하지 않게 되면서 기술별 테스트 스타터
+  (`spring-boot-starter-<technology>-test`)로 쪼개졌기 때문입니다. 패키지 경로도 바뀌어서 아래
+  `import`가 `org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc`가 아니라
+  `org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc`인 점에 주의합니다.
+  루트 `build.gradle.kts`는 `testcontainers-bom`만 import(버전 관리)해뒀을 뿐 testcontainers 실제
+  라이브러리는 추가하지 않았으므로 이것도 함께 추가합니다.
+
+### 1-9a. 스키마 초기화 — Testcontainers는 빈 DB에서 시작한다
+
+`ddl-auto: validate`(CLAUDE.md의 SSOT 원칙에 따라 JPA가 스키마를 만들지 않음, 1-1 참고)인 채로
+Testcontainers를 쓰면, 컨테이너가 갓 띄운 MariaDB는 완전히 빈 상태라 `Schema validation: missing
+table [user]` 에러가 납니다. `backend/db/00_schema.sql`이 스키마의 SSOT이므로, 이 SQL을
+`backend-kotlin` 쪽으로 옮겨서 테스트가 참조하게 합니다.
+
+**1) `backend/db/*.sql` → `apps/backend/src/main/resources/db/*.sql`로 이관**
+
+Node.js 마이그레이션이 끝나면 `backend/`는 어차피 사라질 예정이므로, 스키마 SSOT를 미리
+`backend-kotlin` 쪽으로 옮겨둡니다 (git 이력 보존을 위해 `git mv` 사용):
+
+```bash
+git mv backend/db backend-kotlin/apps/backend/src/main/resources/db
+```
+
+옮긴 뒤에는 이 SQL을 `docker-entrypoint-initdb.d`로 마운트하던 두 compose 파일의 경로도 함께
+고쳐야 실제 로컬/운영 DB 초기화가 깨지지 않습니다:
+- `backend/docker-compose.yml`: `./db:/docker-entrypoint-initdb.d` →
+  `../backend-kotlin/apps/backend/src/main/resources/db:/docker-entrypoint-initdb.d`
+- `deploy/docker-compose.prod.yml`: `./backend/db:/docker-entrypoint-initdb.d` →
+  `./backend-kotlin/apps/backend/src/main/resources/db:/docker-entrypoint-initdb.d`
+
+`main/resources/db/`에 두면 Gradle이 기본적으로 test 클래스패스에도 포함시켜주므로 별도
+`sourceSets` 설정은 필요 없습니다.
+
+**2) `application-test.yaml`에 스키마 초기화 설정 추가**
+
+```yaml
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    defer-datasource-initialization: false   # SQL 스크립트를 EntityManagerFactory보다 먼저 실행
+  sql:
+    init:
+      mode: always                            # 외부 DB(MariaDB)는 기본값이 never라 명시 필요
+      schema-locations: classpath:db/00_schema.sql
+
+etude:
+  jwt:
+    secret: test-secret-must-be-at-least-256-bits-long-for-hmac-sha
+    expires-hours: 24
+```
+
+- `spring.sql.init.mode`는 내장(H2 등) DB에서만 기본으로 켜집니다. MariaDB 같은 외부 DB는
+  `always`로 명시하지 않으면 조용히 꺼진 채로 남아 스크립트가 안 돌고, `ddl-auto: validate`만 남아서
+  똑같은 "missing table" 에러가 재현됩니다.
+- `defer-datasource-initialization`은 이름과 반대로 동작하는 것처럼 헷갈리기 쉬운데, **`true`로
+  두면 SQL 스크립트 실행이 EntityManagerFactory 생성 "이후"로 미뤄져서** `validate`가 스크립트보다
+  먼저 실행되는 문제가 생깁니다. 여기서는 `false`(기본값)여야 SQL이 먼저 실행되고 그다음
+  `validate`가 통과합니다.
+- `etude.jwt.secret`을 `test-secret`처럼 짧게 두면 별개로 `WeakKeyException`이 납니다. HMAC-SHA
+  서명은 최소 256비트(32바이트) 키를 요구하므로(`JwtProviderAdapter`의 주석 참고) 테스트용 시크릿도
+  충분히 길게 잡습니다.
+
+### 1-9b. 공통 테스트 베이스 클래스 — `@Testcontainers` 중복 제거
+
+`AuthControllerTest`뿐 아니라 `BackendKotlinApplicationTests`(스캐폴딩이 기본 생성한 `contextLoads`
+테스트, 1-9c 참고)도 `@SpringBootTest`로 전체 컨텍스트를 띄우는 통합 테스트라 동일한 Testcontainers
+설정이 필요합니다. `@Testcontainers` + `MariaDBContainer` + `@ServiceConnection` + `@ActiveProfiles`
+조합을 테스트 클래스마다 반복하지 않도록, 공통 베이스 클래스 하나로 뽑아 상속하게 합니다.
+
+`src/test/kotlin/com/etude/support/IntegrationTest.kt`
+
+```kotlin
+package com.etude.support
+
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection
+import org.springframework.test.context.ActiveProfiles
+import org.testcontainers.containers.MariaDBContainer
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
+
+@Testcontainers
+@SpringBootTest
+@ActiveProfiles("test")
+abstract class IntegrationTest {
+    companion object {
+        @Container
+        @ServiceConnection
+        val mariaDb = MariaDBContainer("mariadb:11")
+    }
+}
+```
+
+- `abstract class`로 선언해 이 클래스 자체는 테스트로 인식되지 않게 합니다.
+- `companion object`의 `@Container` 필드는 서브클래스마다 새로 만들어지지 않고 하나로 공유되므로,
+  이 베이스 클래스를 상속하는 모든 통합 테스트가 컨테이너를 재사용합니다(클래스마다 새로 띄우지
+  않아 테스트 스위트 전체 실행 시간이 줄어듭니다).
+- `@ActiveProfiles("test")`를 여기 한 번만 선언하면 됩니다 — 이게 빠지면 `application-test.yaml`이
+  전혀 로드되지 않고 `application.yaml`(운영 설정, `dev-secret`/`localhost:3306/etude`)을 그대로
+  읽어 위 1-9a에서 겪은 에러들이 그대로 재현됩니다.
+
+`AuthControllerTest`는 `MockMvc`가 추가로 필요하므로, `@AutoConfigureMockMvc`를 얹은 서브클래스로
+작성합니다:
+
+`src/test/kotlin/com/etude/interfaces/api/auth/AuthControllerTest.kt`
 
 ```kotlin
 package com.etude.interfaces.api.auth
@@ -565,34 +858,20 @@ package com.etude.interfaces.api.auth
 import com.etude.domain.auth.User
 import com.etude.domain.auth.UserRole
 import com.etude.infrastructure.persistence.auth.UserJpaRepository
-import com.ninjasquad.springmockk.MockkBean
+import com.etude.support.IntegrationTest
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.http.MediaType
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
-import org.testcontainers.containers.MariaDBContainer
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 
-@Testcontainers
-@SpringBootTest
 @AutoConfigureMockMvc
-class AuthControllerTest {
-
-    companion object {
-        @Container
-        @ServiceConnection
-        val mariaDb = MariaDBContainer("mariadb:11")
-    }
+class AuthControllerTest : IntegrationTest() {
 
     @Autowired lateinit var mockMvc: MockMvc
     @Autowired lateinit var userJpaRepository: UserJpaRepository
@@ -604,26 +883,31 @@ class AuthControllerTest {
             User(
                 name = "테스트",
                 email = "test@okestro.com",
-                password = BCryptPasswordEncoder().encode("password123"),
+                // BCryptPasswordEncoder.encode()는 Java API라 Kotlin이 반환 타입을 String!(플랫폼
+                // 타입)로 본다. non-null String을 기대하는 User.password에 대입 시 타입 불일치로
+                // 잡히는데, 실제로 null이 반환될 일은 없으므로 !!로 단언한다.
+                password = BCryptPasswordEncoder().encode("password123")!!,
                 role = UserRole.member,
             )
         )
     }
 
+    @DisplayName("로그인 성공 시 토큰을 반환한다")
     @Test
-    fun `로그인 성공 시 토큰을 반환한다`() {
+    fun loginReturnsToken() {
         mockMvc.perform(
             post("/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"email":"test@okestro.com","password":"password123"}""")
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.token").exists())
-            .andExpect(jsonPath("$.user.email").value("test@okestro.com"))
+            .andExpect(jsonPath("$.data.token").exists())
+            .andExpect(jsonPath("$.data.user.email").value("test@okestro.com"))
     }
 
+    @DisplayName("잘못된 비밀번호면 401을 반환한다")
     @Test
-    fun `잘못된 비밀번호면 401을 반환한다`() {
+    fun loginFailsWithWrongPassword() {
         mockMvc.perform(
             post("/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -632,13 +916,15 @@ class AuthControllerTest {
             .andExpect(status().isUnauthorized)
     }
 
+    @DisplayName("토큰 없이 me 호출하면 401을 반환한다")
     @Test
-    fun `토큰 없이 me 호출하면 401을 반환한다`() {
+    fun meFailsWithoutToken() {
         mockMvc.perform(get("/me")).andExpect(status().isUnauthorized)
     }
 
+    @DisplayName("토큰을 붙이면 me가 사용자 정보를 반환한다")
     @Test
-    fun `토큰을 붙이면 me가 사용자 정보를 반환한다`() {
+    fun meReturnsUserWithToken() {
         val loginResponse = mockMvc.perform(
             post("/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -648,7 +934,7 @@ class AuthControllerTest {
 
         mockMvc.perform(get("/me").header("Authorization", "Bearer $token"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.email").value("test@okestro.com"))
+            .andExpect(jsonPath("$.data.email").value("test@okestro.com"))
     }
 }
 ```
@@ -657,11 +943,35 @@ class AuthControllerTest {
 > 자동으로 주입해줍니다 — `application-test.yml`에 URL/계정을 직접 쓸 필요가 없습니다. 이 테스트를 실행하려면
 > Docker(Colima)가 떠 있어야 합니다.
 
+### 1-9c. `BackendKotlinApplicationTests` — 스캐폴딩 기본 테스트도 격리
+
+프로젝트 생성 시 자동으로 만들어지는 `contextLoads` 테스트도 `@SpringBootTest`로 전체 컨텍스트를
+띄우므로 위와 동일한 문제(운영 설정을 그대로 읽어 JWT 키/DB 연결 실패)를 겪습니다. 지우지 않고
+`IntegrationTest`를 상속시켜 고칩니다 — 이 테스트는 개별 기능 테스트가 놓치는 "빈 조립 자체가
+깨지는" 전역적인 실수(순환 의존, 설정 누락 등)를 가장 값싸게 잡아주는 안전망이라 유지할 가치가
+있습니다.
+
+`src/test/kotlin/com/etude/BackendKotlinApplicationTests.kt`
+
+```kotlin
+package com.etude
+
+import com.etude.support.IntegrationTest
+import org.junit.jupiter.api.Test
+
+class BackendKotlinApplicationTests : IntegrationTest() {
+    @Test
+    fun contextLoads() {
+    }
+}
+```
+
 **검증**:
 ```bash
-./gradlew test --tests "*.AuthServiceTest" --tests "*.AuthControllerTest"
+./gradlew test --tests "*.AuthServiceTest" --tests "*.AuthControllerTest" --tests "*.BackendKotlinApplicationTests"
 ```
-4개 통합 테스트 + 3개 단위 테스트 모두 통과해야 합니다.
+4개 통합 테스트(`AuthControllerTest`) + 3개 단위 테스트(`AuthServiceTest`) + `contextLoads` 모두
+통과해야 합니다.
 
 ---
 
@@ -675,19 +985,21 @@ class AuthControllerTest {
 # 로그인
 curl -X POST localhost:3001/auth/login -H "Content-Type: application/json" \
   -d '{"email":"test@okestro.com","password":"password123"}'
-# → {"token":"eyJ...", "user":{"id":1,"name":"테스트","email":"test@okestro.com","role":"member"}}
+# → {"meta":{"result":"SUCCESS","errorCode":null,"message":null},
+#    "data":{"token":"eyJ...", "user":{"id":1,"name":"테스트","email":"test@okestro.com","role":"member"}}}
 
 # 토큰으로 /me
 curl localhost:3001/me -H "Authorization: Bearer <위 토큰>"
-# → {"userId":1,"name":"테스트","email":"test@okestro.com","role":"member"}
+# → {"meta":{"result":"SUCCESS","errorCode":null,"message":null},
+#    "data":{"userId":1,"name":"테스트","email":"test@okestro.com","role":"member"}}
 
 # 토큰 없이 /me
 curl -i localhost:3001/me
-# → 401 {"error":"인증이 필요합니다."}
+# → 401 {"meta":{"result":"FAIL","errorCode":"Unauthorized","message":"인증이 필요합니다."},"data":null}
 ```
 
-기존 `backend/`(Node.js, 포트를 다르게 띄우거나 잠시 내려두고 비교)의 동일한 요청 응답과 필드명/구조가
-같은지 눈으로 대조합니다.
+기존 `backend/`(Node.js, 포트를 다르게 띄우거나 잠시 내려두고 비교)와는 `data`/`meta`로 감싸진 형태가
+다릅니다 — `data` 안의 필드명/값만 기존과 동일한지 대조합니다.
 
 ---
 
@@ -695,7 +1007,10 @@ curl -i localhost:3001/me
 
 - `AuthServiceTest`(단위, MockK) 3개 통과
 - `AuthControllerTest`(통합, Testcontainers) 4개 통과
-- `/auth/login`, `/me` curl 검증에서 기존 Node.js 백엔드와 응답 필드가 동일
+- `/auth/login`, `/me` curl 검증에서 `data` 필드가 기존 Node.js 백엔드와 동일
 - 토큰 없이 `/me` 호출 시 401, 잘못된 비밀번호로 로그인 시 401
+- **`frontend/src/api/auth.ts`(`loginApi`, `fetchMe`, `changePassword`)를 `ApiResponse` 포맷에 맞게
+  수정하고, 프론트에서 실제 로그인이 동작하는지 확인** — 이 항목 없이는 Step 1이 완료된 것으로 보지 않는다.
 
-다음은 Step 2 — `user`/`admin` (계정 생성, 비밀번호 초기화/변경).
+다음은 Step 2 — `user`/`admin` (계정 생성, 비밀번호 초기화/변경). Step 2 이후로도 컨트롤러를 옮길 때마다
+`ApiResponse` 포맷 변경에 맞춰 해당 프론트 API 모듈을 함께 고쳐야 한다.

@@ -1,10 +1,9 @@
 package com.etude
 
+import com.etude.support.IntegrationTest
 import org.junit.jupiter.api.Test
-import org.springframework.boot.test.context.SpringBootTest
 
-@SpringBootTest
-class BackendKotlinApplicationTests {
+class BackendKotlinApplicationTests : IntegrationTest() {
 
     @Test
     fun contextLoads() {

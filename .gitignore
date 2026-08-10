@@ -55,7 +55,7 @@ infra/terraform/.terraform.lock.hcl
 backend/.env.prod
 
 # 실제 계정 정보 (이메일/비밀번호 해시) — 서버 로컬에서만 관리, .example만 커밋
-backend/db/04_users.sql
+backend-kotlin/apps/backend/src/main/resources/db/04_users.sql
 
 # 팀원 계정 일괄 생성용 명단/결과 (실제 이메일 + 평문 비밀번호 포함)
 users.txt
