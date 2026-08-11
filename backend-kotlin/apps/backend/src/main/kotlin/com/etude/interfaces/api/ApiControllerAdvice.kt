@@ -1,7 +1,6 @@
 package com.etude.interfaces.api
 
-import com.etude.domain.auth.InvalidCredentialsException
-import com.etude.domain.auth.InvalidTokenException
+import com.etude.domain.auth.*
 import com.etude.support.error.CoreException
 import com.etude.support.error.ErrorType
 import org.slf4j.LoggerFactory
@@ -21,6 +20,15 @@ class ApiControllerAdvice {
         return failureResponse(e.errorType.status, e.errorType.code, e.customMessage ?: e.errorType.message)
     }
 
+    @ExceptionHandler
+    fun handle(e: EmailAlreadyExistsException): ResponseEntity<ApiResponse<*>> =
+        failureResponse(HttpStatus.CONFLICT, ErrorType.CONFLICT.code, e.message!!)
+    @ExceptionHandler
+    fun handle(e: UserNotFoundException): ResponseEntity<ApiResponse<*>> =
+        failureResponse(HttpStatus.CONFLICT, ErrorType.CONFLICT.code, e.message!!)
+    @ExceptionHandler
+    fun handle(e: WrongPasswordException): ResponseEntity<ApiResponse<*>> =
+        failureResponse(HttpStatus.UNAUTHORIZED, ErrorType.UNAUTHORIZED.code, e.message!!)
     @ExceptionHandler
     fun handle(e: InvalidCredentialsException): ResponseEntity<ApiResponse<*>> =
         failureResponse(HttpStatus.UNAUTHORIZED, ErrorType.UNAUTHORIZED.code, e.message!!)

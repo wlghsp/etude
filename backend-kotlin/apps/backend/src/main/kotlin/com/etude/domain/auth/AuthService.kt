@@ -10,7 +10,7 @@ class AuthService(
 ) {
     fun login(email: String, password: String): LoginResult {
         val user = userRepository.findByEmail(email) ?: throw InvalidCredentialsException()
-        if (!passwordEncoder.matches(password, user.password)) {
+        if (!user.matchesPassword(password, passwordEncoder)) {
             throw InvalidCredentialsException()
         }
 

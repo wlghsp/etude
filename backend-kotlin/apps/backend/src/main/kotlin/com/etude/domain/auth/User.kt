@@ -10,16 +10,26 @@ import jakarta.persistence.Table
 @Entity
 @Table(name = "user")
 class User(
-    @Column(nullable = false, length = 100)
-    var name: String,
-
+    name: String,
     @Column(nullable = false, unique = true, length = 200)
     val email: String,
 
-    @Column(nullable = false, length = 200)
-    var password: String,
+    password: String,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     val role: UserRole = UserRole.member,
-) : BaseEntity()
+) : BaseEntity() {
+    @Column(nullable = false, length = 100)
+    var name: String = name
+        protected set
+    @Column(nullable = false, length = 200)
+    var password: String = password
+        protected set
+
+    fun changePassword(encodePassword: String) {
+        password = encodePassword
+    }
+
+    fun matchesPassword(rawPassword: String, passwordEncoder: PasswordEncoder): Boolean = passwordEncoder.matches(rawPassword, password)
+}
