@@ -26,19 +26,11 @@ dependencies {
 
     // MockMvc(@AutoConfigureMockMvc) — Spring Boot 4.x부터 spring-boot-starter-test에서 분리됨
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("org.testcontainers:mariadb")
-    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    // Testcontainers 의존성 3종 + allOpen 설정은 루트 build.gradle.kts의 subprojects { }에서 공통 관리
 }
 
 kotlin {
     compilerOptions {
         freeCompilerArgs.addAll("-Xjsr305=strict", "-Xannotation-default-target=param-property")
     }
-}
-
-allOpen {
-    annotation("jakarta.persistence.Entity")
-    annotation("jakarta.persistence.MappedSuperclass")
-    annotation("jakarta.persistence.Embeddable")
 }

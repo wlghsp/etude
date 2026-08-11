@@ -2,16 +2,12 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    defer-datasource-initialization: false
+  # 스키마 초기화는 IntegrationTest의 MariaDBContainer.withInitScript(...)가 컨테이너 시작 시
+  # 한 번만 수행한다 — spring.sql.init을 켜두면 여러 @SpringBootTest spec이 각자 컨텍스트를
+  # 만들 때마다 스크립트를 재실행하려 시도해 "Table already exists"가 난다.
   sql:
     init:
-      mode: always
-      schema-locations: classpath:db/00_schema.sql
-
-logging:
-  level:
-    org.springframework.boot.jdbc.init: DEBUG
-    org.springframework.boot.sql.init: DEBUG
+      mode: never
 
 etude:
   jwt:

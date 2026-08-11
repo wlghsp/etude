@@ -178,6 +178,10 @@ backend-kotlin/                         (루트 — 빌드 설정 총괄)
 각 가이드 파일은 진행하면서 순서대로 작성한다 (한 번에 전부 작성하지 않음). Step 6(터미널)은 분량이 크면
 Step 6-1(default/docker), Step 6-2(systemd/k8s), Step 6-3(k8s-isolated)처럼 더 세분화할 수 있다.
 
+테스트 프레임워크를 Step 0에서 정한 JUnit5 + MockK에서 Kotest(FreeSpec/ShouldSpec) + MockK로 전환하는
+횡단 작업은 특정 Step에 속하지 않으므로 별도 문서로 둔다:
+[guide_phase12_kotest_migration.md](../guides/guide_phase12_kotest_migration.md).
+
 **프론트엔드 연동 방침**: Step 1에서 응답을 `ApiResponse<T>`(`{ meta, data }`) 공통 래퍼로 감싸기로
 결정하면서 Node.js와 Kotlin 백엔드의 응답 포맷이 달라졌다. 프론트는 백엔드를 하나만 바라보는 구조라
 (`BASE URL` 단일 설정), 도메인별로 Kotlin/Node.js를 오가며 부분 전환하면 라우팅 프록시 같은 임시

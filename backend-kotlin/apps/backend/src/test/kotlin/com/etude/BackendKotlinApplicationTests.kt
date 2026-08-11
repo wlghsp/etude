@@ -1,12 +1,7 @@
 package com.etude
 
 import com.etude.support.IntegrationTest
-import org.junit.jupiter.api.Test
 
-class BackendKotlinApplicationTests : IntegrationTest() {
-
-    @Test
-    fun contextLoads() {
-    }
-
-}
+class BackendKotlinApplicationTests : IntegrationTest({
+    "스프링 컨텍스트가 정상적으로 로드된다" {}
+})
