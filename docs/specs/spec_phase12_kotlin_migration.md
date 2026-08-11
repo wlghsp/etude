@@ -160,20 +160,22 @@ backend-kotlin/                         (루트 — 빌드 설정 총괄)
 간주한다. 리스크 매트릭스(기능별 우선순위 매기기)는 이미 Step 순서 자체가 의존성 기반 우선순위이므로 별도로
 만들지 않는다.
 
-| Step | 가이드 파일 | 대상 Node.js 파일 | 핵심 산출물 |
-|---|---|---|---|
-| 0 | [guide_phase12_step0_setup.md](../guides/guide_phase12_step0_setup.md) | - | TS 스냅샷 태그, Gradle+Spring Boot+Kotlin 프로젝트 뼈대, 패키지 구조, 테스트 스택 |
-| 0b | [guide_phase12_step0b_multi_module.md](../guides/guide_phase12_step0b_multi_module.md) | - | 멀티모듈 재구성 — `apps/backend`(앱) + `modules/jpa`(공통 JPA, `BaseEntity`) 분리 |
-| 1 | [guide_phase12_step1_auth.md](../guides/guide_phase12_step1_auth.md) | `auth.ts`, `auth-guard.ts`, `auth.routes.ts`, `user.ts`(로그인/비밀번호 관련) | `User` 엔티티, `AuthService`(TDD), `JwtProvider`, `JwtAuthFilter`, `AuthController`, `ApiResponse<T>` 공통 래퍼 |
-| 2 | [guide_phase12_step2_user_admin.md](../guides/guide_phase12_step2_user_admin.md) | `user.ts`(나머지), `admin.routes.ts`(user 부분) | 계정 생성/비밀번호 초기화 유스케이스 + 테스트 |
-| 3 | [guide_phase12_step3_quest.md](../guides/guide_phase12_step3_quest.md) | `types.ts`, `quest.ts`(채점 제외), `quest.routes.ts`(채점 제외), `admin.routes.ts`(quest-set 부분) | `Quest`/`QuestSet`/`QuestSetAccess` 엔티티, `QuestService`(TDD) |
-| 4 | [guide_phase12_step4_progress_feedback.md](../guides/guide_phase12_step4_progress_feedback.md) | `progress.ts`, `progress.routes.ts`, `feedback.ts`, `feedback.routes.ts` | `QuestAttempt`/`Feedback` 엔티티, 집계 쿼리 테스트 |
-| 5 | [guide_phase12_step5_docker.md](../guides/guide_phase12_step5_docker.md) | `docker.ts`, `sandbox.ts` | `ContainerRuntime` 포트/어댑터, 고아 컨테이너 정리 |
-| 6 | [guide_phase12_step6_terminal.md](../guides/guide_phase12_step6_terminal.md) | `terminal.ts`, `terminal.routes.ts` | `TerminalWebSocketHandler`, sandbox 5종 분기 (최고난도, 세부 Step으로 재분할될 수 있음) |
-| 7 | [guide_phase12_step7_grading.md](../guides/guide_phase12_step7_grading.md) | `quest.ts`의 `execCheck`/`gradeQuest` | 채점 로직 + `/grade` 엔드포인트 |
-| 8 | [guide_phase12_step8_vcluster.md](../guides/guide_phase12_step8_vcluster.md) | `vcluster-pool.ts`, `k8s-namespace.ts` | `VclusterProvisioner` 포트/어댑터, 풀 관리 |
-| 9 | [guide_phase12_step9_session_shutdown.md](../guides/guide_phase12_step9_session_shutdown.md) | `session.routes.ts`, `index.ts`(정리 훅) | 세션 종료 API, graceful shutdown |
-| 10 | [guide_phase12_step10_cutover.md](../guides/guide_phase12_step10_cutover.md) | - | 전체 회귀 테스트, **프론트엔드 API 모듈 일괄 전환**, 배포 전환, 문서/CLAUDE.md 갱신 |
+| 상태 | Step | 가이드 파일 | 대상 Node.js 파일 | 핵심 산출물 |
+|---|---|---|---|---|
+| ✅ | 0 | [guide_phase12_step0_setup.md](../guides/guide_phase12_step0_setup.md) | - | TS 스냅샷 태그, Gradle+Spring Boot+Kotlin 프로젝트 뼈대, 패키지 구조, 테스트 스택 |
+| ✅ | 0b | [guide_phase12_step0b_multi_module.md](../guides/guide_phase12_step0b_multi_module.md) | - | 멀티모듈 재구성 — `apps/backend`(앱) + `modules/jpa`(공통 JPA, `BaseEntity`) 분리 |
+| ✅ | 1 | [guide_phase12_step1_auth.md](../guides/guide_phase12_step1_auth.md) | `auth.ts`, `auth-guard.ts`, `auth.routes.ts`, `user.ts`(로그인/비밀번호 관련) | `User` 엔티티, `AuthService`(TDD), `JwtProvider`, `JwtAuthFilter`, `AuthController`, `ApiResponse<T>` 공통 래퍼 |
+| ✅ | 2 | [guide_phase12_step2_user_admin.md](../guides/guide_phase12_step2_user_admin.md) | `user.ts`(나머지), `admin.routes.ts`(user 부분) | 계정 생성/비밀번호 초기화 유스케이스 + 테스트 |
+| ▶️ | 3 | [guide_phase12_step3_quest.md](../guides/guide_phase12_step3_quest.md) | `types.ts`, `quest.ts`(채점 제외), `quest.routes.ts`(채점 제외), `admin.routes.ts`(quest-set 부분) | `Quest`/`QuestSet`/`QuestSetAccess` 엔티티, `QuestService`(TDD) |
+| ⬜ | 4 | [guide_phase12_step4_progress_feedback.md](../guides/guide_phase12_step4_progress_feedback.md) | `progress.ts`, `progress.routes.ts`, `feedback.ts`, `feedback.routes.ts` | `QuestAttempt`/`Feedback` 엔티티, 집계 쿼리 테스트 |
+| ⬜ | 5 | [guide_phase12_step5_docker.md](../guides/guide_phase12_step5_docker.md) | `docker.ts`, `sandbox.ts` | `ContainerRuntime` 포트/어댑터, 고아 컨테이너 정리 |
+| ⬜ | 6 | [guide_phase12_step6_terminal.md](../guides/guide_phase12_step6_terminal.md) | `terminal.ts`, `terminal.routes.ts` | `TerminalWebSocketHandler`, sandbox 5종 분기 (최고난도, 세부 Step으로 재분할될 수 있음) |
+| ⬜ | 7 | [guide_phase12_step7_grading.md](../guides/guide_phase12_step7_grading.md) | `quest.ts`의 `execCheck`/`gradeQuest` | 채점 로직 + `/grade` 엔드포인트 |
+| ⬜ | 8 | [guide_phase12_step8_vcluster.md](../guides/guide_phase12_step8_vcluster.md) | `vcluster-pool.ts`, `k8s-namespace.ts` | `VclusterProvisioner` 포트/어댑터, 풀 관리 |
+| ⬜ | 9 | [guide_phase12_step9_session_shutdown.md](../guides/guide_phase12_step9_session_shutdown.md) | `session.routes.ts`, `index.ts`(정리 훅) | 세션 종료 API, graceful shutdown |
+| ⬜ | 10 | [guide_phase12_step10_cutover.md](../guides/guide_phase12_step10_cutover.md) | - | 전체 회귀 테스트, **프론트엔드 API 모듈 일괄 전환**, 배포 전환, 문서/CLAUDE.md 갱신 |
+
+범례: ✅ 완료 · ▶️ 진행 중 · ⬜ 예정
 
 각 가이드 파일은 진행하면서 순서대로 작성한다 (한 번에 전부 작성하지 않음). Step 6(터미널)은 분량이 크면
 Step 6-1(default/docker), Step 6-2(systemd/k8s), Step 6-3(k8s-isolated)처럼 더 세분화할 수 있다.
