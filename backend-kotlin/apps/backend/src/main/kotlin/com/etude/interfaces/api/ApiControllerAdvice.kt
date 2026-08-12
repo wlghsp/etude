@@ -1,6 +1,8 @@
 package com.etude.interfaces.api
 
 import com.etude.domain.auth.*
+import com.etude.domain.quest.QuestSetAccessDeniedException
+import com.etude.domain.quest.QuestSetNotFoundException
 import com.etude.support.error.CoreException
 import com.etude.support.error.ErrorType
 import org.slf4j.LoggerFactory
@@ -40,6 +42,14 @@ class ApiControllerAdvice {
         log.error("UnhandledException", e)
         return failureResponse(HttpStatus.INTERNAL_SERVER_ERROR, ErrorType.INTERNAL_SERVER_ERROR.code, ErrorType.INTERNAL_SERVER_ERROR.message)
     }
+
+    // Quest
+    @ExceptionHandler
+    fun handle(e: QuestSetAccessDeniedException): ResponseEntity<ApiResponse<*>> =
+        failureResponse(HttpStatus.FORBIDDEN, ErrorType.FORBIDDEN.code, e.message!!)
+    @ExceptionHandler
+    fun handle(e: QuestSetNotFoundException): ResponseEntity<ApiResponse<*>> =
+        failureResponse(HttpStatus.NOT_FOUND, ErrorType.NOT_FOUND.code, e.message!!)
 
     private fun failureResponse(status: HttpStatus, errorCode: String, message: String): ResponseEntity<ApiResponse<*>> =
         ResponseEntity(ApiResponse.fail(errorCode = errorCode, errorMessage = message), status)

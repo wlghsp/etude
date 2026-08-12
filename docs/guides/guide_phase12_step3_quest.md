@@ -14,7 +14,13 @@
 필드만 두고 실제로 읽어 쓰는 코드는 그때 작성한다.
 
 DB 스키마는 `apps/backend/src/main/resources/db/00_schema.sql`의 `quest_set`, `quest`,
-`quest_set_access` 테이블 (변경하지 않음). 초기 데이터는 `01_sandbox.sql`, `02_quest_set.sql`,
+`quest_set_access` 테이블. 단, `quest_set`/`quest`에는 `created_at` 컬럼이 빠져 있는데
+`QuestSet`/`Quest` 엔티티(3-0)가 `BaseEntity`(`id` + `created_at` 요구)를 상속하므로,
+`00_schema.sql`에 두 테이블 모두 `user`/`quest_set_access`와 동일한 방식으로
+`created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`를 추가해야 한다 — 없으면
+`ddl-auto: validate`가 "missing column [created_at]"로 애플리케이션 컨텍스트 로딩 자체를
+실패시킨다. 시드 데이터가 없는 컬럼이라 마이그레이션 없이 로컬 DB를 재초기화(drop 후
+`00_schema.sql`부터 재실행)하면 된다. 초기 데이터는 `01_sandbox.sql`, `02_quest_set.sql`,
 `03_quest_set*.sql`에 이미 있으므로 이 Step에서 새로 만들지 않는다.
 
 **경로 표기 안내**는 Step 1과 동일합니다 — `domain/quest/Quest.kt`처럼 쓰는 경로는
@@ -82,14 +88,57 @@ Step 1/2와 동일하게 **ATDD 바깥 루프 + 구현-후-검증 안쪽 루프*
 테스트로 검증" 순서를 그대로 씁니다. 다만 `canAccessQuestSet`의 3분기 조건(공개/관리자/개별 권한)은
 `QuestService`에서 단위 테스트로 각 분기를 명시적으로 검증합니다 — 조건 하나를 놓치면 보안(접근 제어)
 버그로 이어지기 때문에, 이 Step에서는 유일하게 "구현 후 검증"이 아니라 케이스를 먼저 나열하고 하나씩
-채우는 방식으로 접근합니다. 레이어는 `domain/quest`(엔티티/포트/서비스) →
-`infrastructure/persistence/quest`(어댑터) → `interfaces/api/quest`, `interfaces/api/admin`
-(컨트롤러) → 인수 테스트 순으로 나갑니다. `UserRepository`, `ApiResponse<T>`, `ApiControllerAdvice`,
-`AuthInterceptor`/`AdminInterceptor`는 Step 1~2에서 이미 만들어져 있으므로 재사용만 합니다.
+채우는 방식으로 접근합니다. 레이어는 `domain/quest`(엔티티/포트/서비스) → `application/quest`
+(Facade) → `infrastructure/persistence/quest`(어댑터) → `interfaces/api/quest`,
+`interfaces/api/admin`(컨트롤러) → 인수 테스트 순으로 나갑니다. `UserRepository`,
+`ApiResponse<T>`, `ApiControllerAdvice`, `AuthInterceptor`/`AdminInterceptor`는 Step 1~2에서
+이미 만들어져 있으므로 재사용만 합니다.
 
 ---
 
 ## 3-0. 엔티티 3종 — `QuestSet`, `Quest`, `QuestSetAccess`
+
+### `00_schema.sql` 수정 — `quest_set`/`quest`에 `created_at` 추가
+
+엔티티를 작성하기 전에 스키마부터 맞춥니다. `apps/backend/src/main/resources/db/00_schema.sql`의
+`quest_set`, `quest` 테이블에 `user`/`quest_set_access`와 동일한 컬럼을 추가합니다.
+
+```sql
+CREATE TABLE quest_set (
+  id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+  title        VARCHAR(100) NOT NULL,
+  description  TEXT,
+  sandbox_type VARCHAR(20) NOT NULL DEFAULT 'linux',
+  category     VARCHAR(50) NOT NULL DEFAULT '기타',
+  is_public    BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (sandbox_type) REFERENCES sandbox(type)
+);
+
+CREATE TABLE quest (
+  id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+  quest_set_id BIGINT NOT NULL,
+  order_index  INT NOT NULL DEFAULT 0,
+  title        VARCHAR(200) NOT NULL,
+  description  TEXT NOT NULL,
+  hint         TEXT,
+  solution     TEXT,
+  setup_cmd    JSON,
+  grade_cmd    JSON NOT NULL,
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (quest_set_id) REFERENCES quest_set(id)
+);
+```
+
+> `QuestSet`/`Quest`(아래)가 둘 다 `BaseEntity`(`modules/jpa`)를 상속하는데, `BaseEntity`는
+> `id`와 `created_at` 두 컬럼을 전제합니다. `ddl-auto: validate`(`application.yaml`)는 시작
+> 시점에 엔티티와 실제 테이블 컬럼을 비교하므로, 스키마에 `created_at`이 없으면
+> `SchemaManagementException: missing column [created_at]`로 애플리케이션 컨텍스트 로딩
+> 자체가 실패합니다. `quest_set_access`는 이미 `created_at`이 있으므로(3-0의 `QuestSetAccess`
+> 절 참고) 건드리지 않습니다.
+>
+> 시드 데이터가 없는 컬럼 추가라 마이그레이션 스크립트 없이 로컬 DB를 재초기화(테이블 drop 후
+> `00_schema.sql`부터 순서대로 재실행)하면 됩니다.
 
 ### `QuestSet` (`domain/quest/QuestSet.kt`)
 
@@ -277,10 +326,12 @@ package com.etude.domain.quest
 interface QuestSetAccessRepository {
     fun existsByQuestSetIdAndUserId(questSetId: Long, userId: Long): Boolean
     fun findAllByQuestSetId(questSetId: Long): List<QuestSetAccess>
-    fun save(access: QuestSetAccess)
+    fun save(access: QuestSetAccess): QuestSetAccess
     fun deleteByQuestSetIdAndUserId(questSetId: Long, userId: Long)
 }
 ```
+
+> `save()`가 `Unit`이 아니라 `QuestSetAccess`를 반환하는 이유는 다른 리포지토리(`QuestSetRepository.save(): QuestSet`)와 관례를 맞추기 위해서입니다 — JPA `save()`는 INSERT 시 DB가 채운 `id`(auto-increment)를 엔티티에 반영해 돌려주므로, 반환값을 버리면 저장된 레코드의 `id`를 알 방법이 없어집니다. 지금 `grantAccess`(3-2)는 저장된 값을 실제로 쓰지 않지만, 인터페이스 차원에서는 "저장 후 알 수 있는 정보를 버리지 않는다"는 관례를 지킵니다.
 
 ---
 
@@ -558,7 +609,7 @@ class QuestServiceTest : FreeSpec({
         "권한이 없으면" - {
             "새로 저장한다" {
                 every { questSetAccessRepository.existsByQuestSetIdAndUserId(1L, 10L) } returns false
-                every { questSetAccessRepository.save(any()) } returns Unit
+                every { questSetAccessRepository.save(any()) } returns QuestSetAccess(1L, 10L)
 
                 questService.grantAccess(1L, 10L)
 
@@ -573,32 +624,273 @@ class QuestServiceTest : FreeSpec({
 
 ---
 
+## 3-2a. `QuestFacade` — `interfaces`가 `domain`을 직접 호출하지 않는다
+
+Step 0 설계(`docs/guides/guide_phase12_step0_setup.md`의 패키지 구조)는
+`interfaces → application(Facade) → domain`으로 의존 방향을 잡았습니다. `application/`은 Facade,
+Command, Info를 두는 레이어로 비워둔 채 시작했는데, Step 1(auth)과 Step 2(user/admin)에서
+Controller가 `domain.*.XxxService`를 바로 주입받아 쓰면서 이 레이어를 채우지 못하고 지나갔습니다
+— Step 3(Quest)부터 바로잡습니다. Step 1~2도 뒤이어 별도로 `AuthFacade`, `UserFacade`를 채워
+넣습니다.
+
+`QuestFacade`는 `QuestV1Controller`/`AdminQuestSetV1Controller`(3-5) 두 곳이 공유하는
+진입점입니다. 지금 시점엔 `QuestService`의 메서드를 그대로 위임하는 것 이상의 로직이 없지만,
+이 얇은 계층을 두는 이유는 **컨트롤러가 도메인 서비스를 직접 알지 않게** 하기 위해서입니다 —
+나중에 "퀘스트셋 조회 시 진행률도 함께 내려준다"처럼 여러 도메인 서비스(`QuestService` +
+`ProgressService`)를 조합해야 하는 요구가 생기면, 그 조합 로직은 `QuestFacade`에만 추가하면
+되고 컨트롤러나 `QuestService`는 건드리지 않습니다. 지금 당장 조합할 다른 서비스가 없다고 해서
+Facade를 생략하면, 나중에 그 조합이 필요해졌을 때 컨트롤러 코드에 여러 서비스 호출이 섞여
+들어가거나 뒤늦게 레이어를 새로 끼워 넣어야 합니다.
+
+`application/quest/QuestFacade.kt`:
+
+```kotlin
+package com.etude.application.quest
+
+import com.etude.domain.auth.UserRole
+import com.etude.domain.quest.QuestService
+import com.etude.domain.quest.QuestSetAdminSummary
+import com.etude.domain.quest.QuestSetSummary
+import com.etude.domain.quest.QuestSummary
+import org.springframework.stereotype.Component
+
+@Component
+class QuestFacade(
+    private val questService: QuestService,
+) {
+    fun getQuestSets(userId: Long, role: UserRole): List<QuestSetSummary> =
+        questService.getQuestSets(userId, role)
+
+    fun getQuests(userId: Long, role: UserRole, questSetId: Long): List<QuestSummary> =
+        questService.getQuests(userId, role, questSetId)
+
+    fun getQuestSetsForAdmin(): List<QuestSetAdminSummary> =
+        questService.getQuestSetsForAdmin()
+
+    fun setPublic(questSetId: Long, isPublic: Boolean) {
+        questService.setPublic(questSetId, isPublic)
+    }
+
+    fun grantAccess(questSetId: Long, userId: Long) {
+        questService.grantAccess(questSetId, userId)
+    }
+
+    fun revokeAccess(questSetId: Long, userId: Long) {
+        questService.revokeAccess(questSetId, userId)
+    }
+}
+```
+
+> `canAccess`는 위임하지 않습니다 — 이건 `QuestService.getQuests` 내부에서만 쓰이는 private한
+> 접근 제어 판단이라(3-2 참고), 컨트롤러나 Facade가 직접 호출할 일이 없습니다. Facade에 그대로
+> 노출하면 "이 메서드를 컨트롤러에서 호출해도 되는 건가?"라는 불필요한 판단을 호출부에 떠넘기게
+> 됩니다.
+>
+> 지금은 각 메서드가 단순 위임(1줄)이라 "왜 굳이 이 계층을 두는가"라는 의문이 들 수 있습니다.
+> 답은 코딩 가이드라인의 "3. Surgical Changes"가 아니라 Step 0에서 이미 확정한 레이어 규칙을
+> 따르는 것입니다 — 이 얇음 자체가 문제가 아니라 정상입니다. Facade가 조합 로직을 갖게 되는
+> 시점은 실제로 여러 도메인 서비스를 엮어야 하는 요구가 생겼을 때뿐입니다.
+>
+> 테스트는 따로 만들지 않습니다 — `QuestFacade`는 위임 외 로직이 없고, `QuestService`가 이미
+> `QuestServiceTest`로 검증되어 있으므로 같은 케이스를 Facade 레벨에서 mockk로 다시 확인하는 건
+> 검증 없는 중복입니다. Facade에 실제 로직(조합, 트랜잭션 경계 등)이 추가되는 시점에 그 로직만
+> 테스트를 씁니다.
+
+---
+
 ## 3-3. 어댑터 구현 — `infrastructure/persistence/quest`
 
+**이 Step만 QueryDSL 실험.** 대부분의 리포지토리 메서드(`findById`, `existsByQuestSetIdAndUserId`,
+`findAllByQuestSetIdOrderByOrderIndex` 등)는 Spring Data JPA의 메서드 이름 파생 쿼리로 충분히
+표현되므로 그대로 둡니다. 다만 `findAllPublicOrAccessibleBy`(`isPublic = true OR EXISTS(...)`)는
+메서드 이름으로 표현할 수 없어 지금까지는 JPQL 문자열(`@Query`)로 짜야 했는데, 이런 동적/복잡
+조건을 다루는 용도로 QueryDSL을 도입합니다 — 문자열 JPQL은 컴파일 시점에 오타나 필드명 변경을
+잡아주지 못하지만, QueryDSL은 컴파일된 `Q타입`(`QQuestSet`, `QQuestSetAccess`)을 통해 타입
+세이프하게 같은 쿼리를 표현합니다. `QuestService`, 포트 인터페이스(`QuestSetRepository` 등)는
+그대로이고 어댑터 구현 방식만 바뀝니다.
+
+### QueryDSL gradle 설정
+
+Kotlin에서 QueryDSL이 엔티티로부터 `Q타입`(`QQuestSet` 등)을 생성하려면 애노테이션 프로세서가
+필요합니다. QueryDSL은 아직 KSP를 공식 지원하지 않으므로 `kapt`를 씁니다.
+
+`apps/backend`, `modules/jpa` 둘 다 `@Entity`/`@MappedSuperclass`를 가지므로(`QuestSet` 등은
+`apps/backend`에, `BaseEntity`는 `modules/jpa`에 있음) 두 모듈 모두 kapt가 필요합니다. kapt는
+모듈 경계를 넘어 소스를 함께 스캔하지 않으므로 — 각 모듈은 자신의 소스에 있는
+`@Entity`/`@MappedSuperclass`만 보고 그 모듈의 `build/generated/source/kapt/main`에 자기 몫의
+Q타입을 생성합니다. `modules/jpa`에 kapt가 없으면 `BaseEntity`의 `QBaseEntity`가 만들어지지
+않고, `apps/backend`에서 생성된 `QUser`/`QQuestSet`(모두 `BaseEntity`를 상속)이 자신의 부모
+Q타입을 참조하다 `cannot find symbol` 컴파일 에러가 납니다.
+
+두 모듈에 각각 명시적으로 선언합니다 — 루트 `build.gradle.kts`의 `subprojects { }`(allOpen 등
+JPA 쓰는 모듈이면 예외 없이 필요한 필수 설정을 모아두는 곳)에 얹는 방법도 있지만, QueryDSL은
+이 Step에서 Quest 도메인에 국한해 실험해보는 선택적 도구입니다. 루트에 두면 "JPA를 쓰는 모든
+서브모듈이 앞으로도 자동으로 QueryDSL을 갖는다"는 걸 프로젝트 전체 규칙으로 못박게 되므로,
+지금은 실제로 QueryDSL이 필요한 두 모듈에만 적는 편이 "이 프로젝트가 QueryDSL을 어디서 쓰는지"를
+파일만 보고 알 수 있어 낫습니다.
+
+> `apps/backend`가 이미 `springdoc-openapi-starter-webmvc-ui`(Step 1)를 쓰고 있는데,
+> Step 1에서 이 의존성을 `2.7.0`으로 명시해둔 이유가 여기서 드러납니다. springdoc `2.6.0`은
+> 클래스패스에 QueryDSL(`querydsl-jpa`)이 있으면 API 파라미터 자동 문서화용 빈
+> (`QuerydslPredicateOperationCustomizer`)을 `@ConditionalOnClass`로 자동 생성하는데, 이 빈이
+> 참조하는 `spring-data-commons`의 `TypeInformation` 클래스를 로드하는 데 실패해
+> `ClassNotFoundException` → 애플리케이션 컨텍스트 로딩 실패로 이어집니다. 이 프로젝트는
+> QueryDSL을 `JPAQueryFactory`로 직접 짜는 용도로만 쓰고 springdoc의 자동 파라미터 바인딩
+> 기능은 쓰지 않으므로, 이 충돌은 QueryDSL 자체의 문제가 아니라 springdoc `2.6.0`이 최신
+> Spring Boot(4.1)의 `spring-data-commons`와 어긋나는 버전 문제입니다. `springdoc-openapi`를
+> `2.7.0`(또는 그 이상)으로 올리면 해결됩니다 — Step 1에서 이미 `2.7.0`으로 시작했다면 Step 3에
+> 와서 이 문제를 겪지 않습니다.
+
+`apps/backend/build.gradle.kts`:
+
+```kotlin
+plugins {
+    kotlin("plugin.jpa")
+    kotlin("kapt")
+    id("org.springframework.boot")
+}
+
+dependencies {
+    implementation(project(":modules:jpa"))
+
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
+    // ... 기존 의존성 유지
+
+    // QueryDSL
+    implementation("com.querydsl:querydsl-jpa:5.1.0:jakarta")
+    kapt("com.querydsl:querydsl-apt:5.1.0:jakarta")
+    kapt("jakarta.annotation:jakarta.annotation-api")
+    kapt("jakarta.persistence:jakarta.persistence-api")
+}
+```
+
+`modules/jpa/build.gradle.kts`:
+
+```kotlin
+plugins {
+    kotlin("plugin.jpa")
+    kotlin("kapt")
+}
+
+dependencies {
+    api("org.springframework.boot:spring-boot-starter-data-jpa")
+    runtimeOnly("org.mariadb.jdbc:mariadb-java-client:3.4.1")
+    // Testcontainers 의존성 3종 + allOpen 설정은 루트 build.gradle.kts의 subprojects { }에서 공통 관리
+
+    // QueryDSL — BaseEntity(@MappedSuperclass)의 QBaseEntity 생성용
+    implementation("com.querydsl:querydsl-jpa:5.1.0:jakarta")
+    kapt("com.querydsl:querydsl-apt:5.1.0:jakarta")
+    kapt("jakarta.annotation:jakarta.annotation-api")
+    kapt("jakarta.persistence:jakarta.persistence-api")
+}
+```
+
+> `querydsl-jpa`에 `:jakarta` classifier를 붙인 이유는 이 프로젝트가 `javax.persistence`가 아닌
+> `jakarta.persistence`(Spring Boot 4.x 기준)를 쓰기 때문입니다 — classifier 없는 아티팩트는
+> 구버전 `javax` 패키지를 기준으로 빌드되어 있어 섞이지 않습니다. `kapt`가 `@Entity`/
+> `@MappedSuperclass`를 스캔해 각 모듈의 `build/generated/source/kapt/main`에 Q타입을 자동
+> 생성하므로, 이후 어댑터 코드에서 별도 설정 없이 `import` 해서 씁니다.
+
+`JPAQueryFactory`를 스프링 빈으로 등록합니다. `WebConfig`(Step 1~2에서 만든 `AuthInterceptor`/
+`AdminInterceptor` 등록용 설정 클래스)와 동일하게 `config` 패키지(도메인/인프라 어디에도
+속하지 않는 앱 전역 설정)에 둡니다.
+
+`config/QuerydslConfig.kt`:
+
+```kotlin
+package com.etude.config
+
+import com.querydsl.jpa.impl.JPAQueryFactory
+import jakarta.persistence.EntityManager
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+
+@Configuration
+class QuerydslConfig(
+    private val entityManager: EntityManager,
+) {
+    @Bean
+    fun jpaQueryFactory(): JPAQueryFactory = JPAQueryFactory(entityManager)
+}
+```
+
+**검증**: `./gradlew :modules:jpa:kaptKotlin :apps:backend:kaptKotlin`을 실행해
+`modules/jpa/build/generated/source/kapt/main/com/etude/domain/QBaseEntity.java`와
+`apps/backend/build/generated/source/kapt/main/com/etude/domain/quest/QQuestSet.java` 등이
+각각 생성되는지 확인.
+
 ### `QuestSetJpaRepository.kt`, `QuestSetRepositoryImpl.kt`
+
+`findAllPublicOrAccessibleBy`를 JPQL 문자열 대신 QueryDSL로 옮기므로, `QuestSetJpaRepository`
+에는 더 이상 이 메서드를 선언하지 않습니다 — `QuestSetRepositoryImpl`이 `JPAQueryFactory`를 직접
+써서 구현합니다.
 
 ```kotlin
 package com.etude.infrastructure.persistence.quest
 
 import com.etude.domain.quest.QuestSet
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
-import org.springframework.data.repository.query.Param
 
-interface QuestSetJpaRepository : JpaRepository<QuestSet, Long> {
-    @Query(
-        """
-        SELECT qs FROM QuestSet qs
-        WHERE qs.isPublic = true
-           OR EXISTS (
-               SELECT 1 FROM QuestSetAccess qsa
-               WHERE qsa.questSetId = qs.id AND qsa.userId = :userId
-           )
-        """
-    )
-    fun findAllPublicOrAccessibleBy(@Param("userId") userId: Long): List<QuestSet>
+interface QuestSetJpaRepository : JpaRepository<QuestSet, Long>
+```
+
+```kotlin
+package com.etude.infrastructure.persistence.quest
+
+import com.etude.domain.quest.QuestSet
+import org.springframework.data.jpa.repository.JpaRepository
+
+interface QuestSetJpaRepository : JpaRepository<QuestSet, Long>
+```
+
+QueryDSL로 짜는 `findAllPublicOrAccessibleBy`는 상속(예: `QuestSetRepositoryCustom`을
+`QuestSetJpaRepository`가 구현하는 Spring Data 관용 패턴)으로 엮지 않고, 완전히 독립된 클래스
+`QuestSetQuerydslRepository`로 분리합니다. `QuestSetRepositoryImpl`(포트 어댑터)이 이 클래스를
+필드로 주입받아 필요할 때 위임하는 합성(composition) 구조입니다 — 상속 계층에 끼워 넣지 않으므로
+`QuestSetQuerydslRepository`는 QueryDSL만 알면 되고, `QuestSetJpaRepository`/`JpaRepository`는
+이 클래스의 존재를 몰라도 됩니다.
+
+```kotlin
+package com.etude.infrastructure.persistence.quest
+
+import com.etude.domain.quest.QQuestSet.questSet
+import com.etude.domain.quest.QQuestSetAccess.questSetAccess
+import com.etude.domain.quest.QuestSet
+import com.querydsl.jpa.JPAExpressions
+import com.querydsl.jpa.impl.JPAQueryFactory
+import org.springframework.stereotype.Repository
+
+@Repository
+class QuestSetQuerydslRepository(
+    private val queryFactory: JPAQueryFactory,
+) {
+    fun findAllPublicOrAccessibleBy(userId: Long): List<QuestSet> =
+        queryFactory
+            .selectFrom(questSet)
+            .where(
+                questSet.isPublic.isTrue
+                    .or(
+                        JPAExpressions
+                            .selectOne()
+                            .from(questSetAccess)
+                            .where(
+                                questSetAccess.questSetId.eq(questSet.id),
+                                questSetAccess.userId.eq(userId),
+                            )
+                            .exists()
+                    )
+            )
+            .fetch()
 }
 ```
+
+> `JPAExpressions.selectOne().from(...).where(...).exists()`가 기존 JPQL의
+> `EXISTS (SELECT 1 FROM QuestSetAccess qsa WHERE ...)` 서브쿼리와 동일한 표현입니다. Q타입
+> 필드(`questSet.isPublic`, `questSetAccess.questSetId`)를 통해 컬럼명을 문자열이 아니라
+> 컴파일 타임에 검증된 참조로 다루므로, 예를 들어 `QuestSet`에 컬럼을 리네이밍하면 이 쿼리는
+> 컴파일 에러로 바로 드러납니다 — 문자열 JPQL이었다면 런타임까지 발견되지 않았을 실수입니다.
+> "관리자면 전부" 조건이 여기 없는 이유는 3-1에서 설명한 대로 `QuestService`가 role을 보고 이
+> 메서드 자체를 호출할지 말지 결정하기 때문입니다.
 
 ```kotlin
 package com.etude.infrastructure.persistence.quest
@@ -610,17 +902,23 @@ import org.springframework.stereotype.Repository
 @Repository
 class QuestSetRepositoryImpl(
     private val jpaRepository: QuestSetJpaRepository,
+    private val querydslRepository: QuestSetQuerydslRepository,
 ) : QuestSetRepository {
     override fun findById(id: Long): QuestSet? = jpaRepository.findById(id).orElse(null)
-    override fun findAllPublicOrAccessibleBy(userId: Long): List<QuestSet> = jpaRepository.findAllPublicOrAccessibleBy(userId)
+
+    override fun findAllPublicOrAccessibleBy(userId: Long): List<QuestSet> =
+        querydslRepository.findAllPublicOrAccessibleBy(userId)
+
     override fun findAll(): List<QuestSet> = jpaRepository.findAll()
     override fun save(questSet: QuestSet): QuestSet = jpaRepository.save(questSet)
 }
 ```
 
-> JPQL의 `EXISTS` 서브쿼리로 기존 `getQuestSets` SQL의 조건을 그대로 옮겼습니다. "관리자면 전부"
-> 조건은 여기 없다는 점은 3-1에서 이미 설명한 대로입니다 — `QuestService`가 role을 보고 이 메서드
-> 자체를 호출할지 말지 결정합니다.
+> `findById`/`findAll`/`save`는 QueryDSL이 필요 없는 단순 CRUD라 `JpaRepository`를 그대로
+> 씁니다 — 모든 메서드를 QueryDSL로 바꾸는 게 목적이 아니라, 복잡한 조건이 실제로 필요한
+> 지점에서만 씁니다. `QuestSetRepositoryImpl`은 포트(`QuestSetRepository`)를 구현하는 책임만
+> 지고, "이 메서드는 JPA로 짜는지 QueryDSL로 짜는지"는 각 협력자(`jpaRepository`,
+> `querydslRepository`)에게 위임합니다 — 어댑터 자신은 어느 기술로 구현됐는지 몰라도 됩니다.
 
 ### `QuestJpaRepository.kt`, `QuestRepositoryImpl.kt`
 
@@ -685,9 +983,7 @@ class QuestSetAccessRepositoryImpl(
         jpaRepository.existsByQuestSetIdAndUserId(questSetId, userId)
     override fun findAllByQuestSetId(questSetId: Long): List<QuestSetAccess> =
         jpaRepository.findAllByQuestSetId(questSetId)
-    override fun save(access: QuestSetAccess) {
-        jpaRepository.save(access)
-    }
+    override fun save(access: QuestSetAccess): QuestSetAccess = jpaRepository.save(access)
     override fun deleteByQuestSetIdAndUserId(questSetId: Long, userId: Long) {
         jpaRepository.deleteByQuestSetIdAndUserId(questSetId, userId)
     }
@@ -733,22 +1029,23 @@ import com.etude.domain.quest.QuestSummary
 import com.etude.interfaces.api.ApiResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.servlet.http.HttpServletRequest
 
 @Tag(name = "Quest V1 API", description = "퀘스트/퀘스트셋 조회 API 입니다.")
 interface QuestV1ApiSpec {
     @Operation(summary = "퀘스트셋 목록 조회", description = "로그인한 사용자가 접근 가능한 퀘스트셋 목록을 조회합니다.")
-    fun getQuestSets(): ApiResponse<List<QuestSetSummary>>
+    fun getQuestSets(httpRequest: HttpServletRequest): ApiResponse<List<QuestSetSummary>>
 
     @Operation(summary = "퀘스트 목록 조회", description = "지정한 퀘스트셋에 속한 퀘스트 목록을 순서대로 조회합니다.")
-    fun getQuests(questSetId: Long): ApiResponse<List<QuestSummary>>
+    fun getQuests(questSetId: Long, httpRequest: HttpServletRequest): ApiResponse<List<QuestSummary>>
 }
 ```
 
 ```kotlin
 package com.etude.interfaces.api.quest
 
+import com.etude.application.quest.QuestFacade
 import com.etude.domain.auth.JwtPayload
-import com.etude.domain.quest.QuestService
 import com.etude.domain.quest.QuestSetSummary
 import com.etude.domain.quest.QuestSummary
 import com.etude.infrastructure.security.REQUEST_ATTR_JWT_PAYLOAD
@@ -760,12 +1057,12 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class QuestV1Controller(
-    private val questService: QuestService,
+    private val questFacade: QuestFacade,
 ) : QuestV1ApiSpec {
     @GetMapping("/quest-sets")
     override fun getQuestSets(httpRequest: HttpServletRequest): ApiResponse<List<QuestSetSummary>> {
         val payload = httpRequest.getAttribute(REQUEST_ATTR_JWT_PAYLOAD) as JwtPayload
-        return ApiResponse.success(questService.getQuestSets(payload.userId, payload.role))
+        return ApiResponse.success(questFacade.getQuestSets(payload.userId, payload.role))
     }
 
     @GetMapping("/quest-sets/{questSetId}/quests")
@@ -774,15 +1071,16 @@ class QuestV1Controller(
         httpRequest: HttpServletRequest,
     ): ApiResponse<List<QuestSummary>> {
         val payload = httpRequest.getAttribute(REQUEST_ATTR_JWT_PAYLOAD) as JwtPayload
-        return ApiResponse.success(questService.getQuests(payload.userId, payload.role, questSetId))
+        return ApiResponse.success(questFacade.getQuests(payload.userId, payload.role, questSetId))
     }
 }
 ```
 
-> `QuestV1ApiSpec`의 두 메서드 시그니처에 `httpRequest: HttpServletRequest`가 없는 것처럼 보이지만,
-> Step 2의 `MeV1ApiSpec`과 동일하게 Kotlin은 `override`가 시그니처를 완전히 일치시켜야 하므로
-> 실제로는 ApiSpec에도 `httpRequest: HttpServletRequest` 파라미터를 추가해야 컴파일됩니다. 위
-> 코드 블록을 그대로 복사하지 말고 파라미터를 맞춰서 작성합니다.
+> `QuestV1ApiSpec`의 두 메서드가 `httpRequest: HttpServletRequest`를 파라미터로 갖는 이유는
+> Kotlin의 `override`가 시그니처를 완전히 일치시켜야 하기 때문입니다 — `QuestV1Controller`
+> 구현체가 `HttpServletRequest`를 받아 `JwtPayload`를 꺼내 쓰므로, 인터페이스에도 동일한
+> 파라미터가 있어야 오버라이드가 성립합니다. Step 2의 `MeV1ApiSpec.changePassword`와 동일한
+> 패턴입니다.
 >
 > `/quest-sets`, `/quest-sets/**`는 이미 Step 1의 `WebConfig`에서 `AuthInterceptor`가
 > `addPathPatterns`에 등록해뒀으므로(1-7 참고), 토큰 없이 호출하면 컨트롤러에 도달하기 전에
@@ -817,7 +1115,7 @@ interface AdminQuestSetV1ApiSpec {
 ```kotlin
 package com.etude.interfaces.api.admin
 
-import com.etude.domain.quest.QuestService
+import com.etude.application.quest.QuestFacade
 import com.etude.domain.quest.QuestSetAdminSummary
 import com.etude.interfaces.api.ApiResponse
 import jakarta.validation.Valid
@@ -842,27 +1140,27 @@ data class GrantAccessRequest(
 @RestController
 @RequestMapping("/admin/quest-sets")
 class AdminQuestSetV1Controller(
-    private val questService: QuestService,
+    private val questFacade: QuestFacade,
 ) : AdminQuestSetV1ApiSpec {
     @GetMapping
     override fun getQuestSets(): ApiResponse<List<QuestSetAdminSummary>> =
-        ApiResponse.success(questService.getQuestSetsForAdmin())
+        ApiResponse.success(questFacade.getQuestSetsForAdmin())
 
     @PatchMapping("/{id}")
     override fun setPublic(@PathVariable id: Long, @Valid @RequestBody request: SetPublicRequest): ApiResponse<Unit> {
-        questService.setPublic(id, request.isPublic)
+        questFacade.setPublic(id, request.isPublic)
         return ApiResponse.success<Unit>()
     }
 
     @PostMapping("/{id}/access")
     override fun grantAccess(@PathVariable id: Long, @Valid @RequestBody request: GrantAccessRequest): ApiResponse<Unit> {
-        questService.grantAccess(id, request.userId)
+        questFacade.grantAccess(id, request.userId)
         return ApiResponse.success<Unit>()
     }
 
     @DeleteMapping("/{id}/access/{userId}")
     override fun revokeAccess(@PathVariable id: Long, @PathVariable userId: Long): ApiResponse<Unit> {
-        questService.revokeAccess(id, userId)
+        questFacade.revokeAccess(id, userId)
         return ApiResponse.success<Unit>()
     }
 }

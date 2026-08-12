@@ -59,7 +59,8 @@ DB 스키마는 Step 1과 동일하게 `user` 테이블을 그대로 씁니다 (
 Step 1과 동일하게 **ATDD 바깥 루프 + 구현-후-검증 안쪽 루프**로 진행합니다. `user.ts`의 로직(계정 생성,
 비밀번호 초기화/변경)은 이미 명확히 정해져 있어 설계를 탐색할 이유가 없으므로, "구현 먼저 작성 → 단위
 테스트로 검증" 순서를 그대로 씁니다. 레이어는 `domain/auth`(엔티티 보강) → `domain/user`(서비스) →
-`interfaces/api/admin`, `interfaces/api/user`(컨트롤러) → 인수 테스트 순으로 나갑니다.
+`application/user`(Facade) → `interfaces/api/admin`, `interfaces/api/user`(컨트롤러) → 인수
+테스트 순으로 나갑니다.
 `UserRepository`, `PasswordEncoder`, `CoreException`/`ErrorType`, `ApiResponse<T>`,
 `ApiControllerAdvice`, `AuthInterceptor`/`AdminInterceptor`는 Step 1에서 이미 만들어져 있으므로
 재사용만 합니다. `User` 엔티티는 이 Step에서 캡슐화를 보강합니다 (2-0 참고).
@@ -477,6 +478,57 @@ class UserServiceTest : FreeSpec({
 
 ---
 
+## 2-3a. `UserFacade` — `interfaces`가 `domain`을 직접 호출하지 않는다
+
+Step 0 설계(`docs/guides/guide_phase12_step0_setup.md`의 패키지 구조)는 `interfaces →
+application(Facade) → domain`으로 의존 방향을 잡았습니다. Step 1(auth)에서 `AuthFacade`로 이미
+채워 넣기 시작한 `application/` 레이어를 이 Step에서도 이어갑니다.
+
+`UserFacade`는 `AdminUserV1Controller`와 `MeV1Controller`(2-4) 두 곳이 공유하는 진입점입니다.
+지금은 `UserService`의 메서드를 그대로 위임하는 것 이상의 로직이 없지만, 이 얇은 계층을 두는
+이유는 **컨트롤러가 도메인 서비스를 직접 알지 않게** 하기 위해서입니다 — 나중에 "계정 생성 시
+환영 이메일도 함께 보낸다"처럼 여러 도메인 서비스를 조합해야 하는 요구가 생기면, 그 조합 로직은
+`UserFacade`에만 추가하면 되고 컨트롤러나 `UserService`는 건드리지 않습니다.
+
+`application/user/UserFacade.kt`:
+
+```kotlin
+package com.etude.application.user
+
+import com.etude.domain.auth.UserSummary
+import com.etude.domain.user.UserService
+import org.springframework.stereotype.Component
+
+@Component
+class UserFacade(
+    private val userService: UserService,
+) {
+    fun getAllMembers(): List<UserSummary> = userService.getAllMembers()
+
+    fun createUser(name: String, email: String, password: String): UserSummary =
+        userService.createUser(name, email, password)
+
+    fun resetPassword(id: Long, newPassword: String) {
+        userService.resetPassword(id, newPassword)
+    }
+
+    fun changeOwnPassword(userId: Long, currentPassword: String, newPassword: String) {
+        userService.changeOwnPassword(userId, currentPassword, newPassword)
+    }
+}
+```
+
+> `@Service`가 아니라 `@Component`를 씁니다 — `UserFacade`는 도메인 비즈니스 로직을 담은
+> 서비스가 아니라 `interfaces`와 `domain` 사이를 잇는 위임/조합 계층이라, 스프링 스테레오타입의
+> 의미상 `@Service`(비즈니스 로직 계층)와 구분합니다. Step 1의 `AuthFacade`와 동일한 이유입니다.
+>
+> 테스트는 따로 만들지 않습니다 — `UserFacade`는 위임 외 로직이 없고, `UserService`가 이미
+> `UserServiceTest`로 검증되어 있으므로 같은 케이스를 Facade 레벨에서 다시 확인하는 건 검증
+> 없는 중복입니다. Facade에 실제 로직(조합, 트랜잭션 경계 등)이 추가되는 시점에 그 로직만
+> 테스트를 씁니다.
+
+---
+
 ## 2-4. 컨트롤러 — `AdminUserV1Controller`, `MeV1Controller`
 
 Step 1과 동일하게 **ApiSpec + Controller** 분리, `ApiResponse<T>` 반환 패턴을 씁니다.
@@ -542,8 +594,8 @@ interface AdminUserV1ApiSpec {
 ```kotlin
 package com.etude.interfaces.api.admin
 
+import com.etude.application.user.UserFacade
 import com.etude.domain.auth.UserSummary
-import com.etude.domain.user.UserService
 import com.etude.interfaces.api.ApiResponse
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Email
@@ -563,22 +615,22 @@ data class ResetPasswordRequest(
 @RestController
 @RequestMapping("/admin/users")
 class AdminUserV1Controller(
-    private val userService: UserService,
+    private val userFacade: UserFacade,
 ) : AdminUserV1ApiSpec {
     @PostMapping
     override fun createUser(@Valid @RequestBody request: CreateUserRequest): ApiResponse<UserSummary> =
-        ApiResponse.success(userService.createUser(request.name, request.email, request.password))
+        ApiResponse.success(userFacade.createUser(request.name, request.email, request.password))
 
     @GetMapping
     override fun getUsers(): ApiResponse<List<UserSummary>> =
-        ApiResponse.success(userService.getAllMembers())
+        ApiResponse.success(userFacade.getAllMembers())
 
     @PatchMapping("/{id}/password")
     override fun resetPassword(
         @PathVariable id: Long,
         @Valid @RequestBody request: ResetPasswordRequest,
     ): ApiResponse<Unit> {
-        userService.resetPassword(id, request.password)
+        userFacade.resetPassword(id, request.password)
         return ApiResponse.success()
     }
 }
@@ -611,8 +663,8 @@ interface MeV1ApiSpec {
 ```kotlin
 package com.etude.interfaces.api.user
 
+import com.etude.application.user.UserFacade
 import com.etude.domain.auth.JwtPayload
-import com.etude.domain.user.UserService
 import com.etude.infrastructure.security.REQUEST_ATTR_JWT_PAYLOAD
 import com.etude.interfaces.api.ApiResponse
 import jakarta.servlet.http.HttpServletRequest
@@ -627,7 +679,7 @@ data class ChangePasswordRequest(
 
 @RestController
 class MeV1Controller(
-    private val userService: UserService,
+    private val userFacade: UserFacade,
 ) : MeV1ApiSpec {
     @PatchMapping("/me/password")
     override fun changePassword(
@@ -635,7 +687,7 @@ class MeV1Controller(
         httpRequest: HttpServletRequest,
     ): ApiResponse<Unit> {
         val payload = httpRequest.getAttribute(REQUEST_ATTR_JWT_PAYLOAD) as JwtPayload
-        userService.changeOwnPassword(payload.userId, request.currentPassword, request.newPassword)
+        userFacade.changeOwnPassword(payload.userId, request.currentPassword, request.newPassword)
         return ApiResponse.success()
     }
 }

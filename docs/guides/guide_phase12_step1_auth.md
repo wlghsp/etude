@@ -51,8 +51,8 @@
 명확히 정해져 있어 설계를 탐색할 이유가 없으므로, 도메인 로직은 TDD(레드-그린)가 아니라 "구현 먼저 작성
 → 단위 테스트로 검증" 순서로 만듭니다. 하지만 이 Step 전체가 끝났다고 판단하는 기준은 위 인수 조건을
 검증하는 API 테스트(1-9)입니다. 레이어는 `domain/auth`(엔티티, 포트, 도메인 서비스) →
-`infrastructure/persistence`, `infrastructure/security`(어댑터) → `interfaces/api/auth`(컨트롤러) →
-인수 테스트 순으로 바깥으로 나갑니다.
+`application/auth`(Facade) → `infrastructure/persistence`, `infrastructure/security`(어댑터) →
+`interfaces/api/auth`(컨트롤러) → 인수 테스트 순으로 바깥으로 나갑니다.
 
 ---
 
@@ -65,8 +65,8 @@
 import com.etude.domain.BaseEntity
 ```
 
-`quest_set_access`처럼 PK가 단일 `id`가 아니라 복합키인 테이블은 이 `BaseEntity`를 쓰지 않고
-엔티티를 직접 작성합니다 (Step 3에서 다룹니다).
+`quest_set_access`를 포함해 이 프로젝트의 모든 엔티티는 대리키 `id`를 PK로 쓰므로 `BaseEntity`를
+그대로 상속합니다 (Step 3에서 다룹니다).
 
 ---
 
@@ -321,6 +321,48 @@ class AuthServiceTest {
 ```
 
 **검증**: `./gradlew test --tests "*.AuthServiceTest"` — 3개 테스트 모두 통과해야 합니다.
+
+---
+
+## 1-5a. `AuthFacade` — `interfaces`가 `domain`을 직접 호출하지 않는다
+
+Step 0 설계(`docs/guides/guide_phase12_step0_setup.md`의 패키지 구조)는 `interfaces →
+application(Facade) → domain`으로 의존 방향을 잡았습니다. `application/`은 Facade, Command,
+Info를 두는 레이어로 비워둔 채 시작했는데, 이번 Step에서 `AuthV1Controller`가 곧바로
+`domain.auth.AuthService`를 주입받게 되면 이 레이어를 채우지 못하고 지나가게 됩니다 — 지금
+채워둡니다.
+
+`AuthFacade`는 `AuthV1Controller`(1-8d)가 쓰는 진입점입니다. 지금은 `AuthService.login()`을
+그대로 위임하는 것 이상의 로직이 없지만, 이 얇은 계층을 두는 이유는 **컨트롤러가 도메인 서비스를
+직접 알지 않게** 하기 위해서입니다 — 나중에 "로그인 시 마지막 접속 시각도 함께 기록한다"처럼
+여러 도메인 서비스를 조합해야 하는 요구가 생기면, 그 조합 로직은 `AuthFacade`에만 추가하면 되고
+컨트롤러나 `AuthService`는 건드리지 않습니다.
+
+`application/auth/AuthFacade.kt`:
+
+```kotlin
+package com.etude.application.auth
+
+import com.etude.domain.auth.AuthService
+import com.etude.domain.auth.LoginResult
+import org.springframework.stereotype.Component
+
+@Component
+class AuthFacade(
+    private val authService: AuthService,
+) {
+    fun login(email: String, password: String): LoginResult = authService.login(email, password)
+}
+```
+
+> `@Service`가 아니라 `@Component`를 씁니다 — `AuthFacade`는 도메인 비즈니스 로직을 담은
+> 서비스가 아니라 `interfaces`와 `domain` 사이를 잇는 위임/조합 계층이라, 스프링 스테레오타입의
+> 의미상 `@Service`(비즈니스 로직 계층)와 구분합니다.
+>
+> 테스트는 따로 만들지 않습니다 — `AuthFacade`는 위임 외 로직이 없고, `AuthService`가 이미
+> `AuthServiceTest`로 검증되어 있으므로 같은 케이스를 Facade 레벨에서 다시 확인하는 건 검증
+> 없는 중복입니다. Facade에 실제 로직(조합, 트랜잭션 경계 등)이 추가되는 시점에 그 로직만
+> 테스트를 씁니다.
 
 ---
 
@@ -657,8 +699,16 @@ ApiSpec의 `@Operation`/`@Tag` 어노테이션을 쓰려면 `apps/backend/build.
 springdoc 의존성을 추가해야 합니다:
 
 ```kotlin
-implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
 ```
+
+> `2.6.0`이 아니라 `2.7.0`을 쓰는 이유는 Step 3에서 QueryDSL을 도입할 때 밝혀집니다 — springdoc
+> `2.6.0`은 클래스패스에 QueryDSL(`querydsl-jpa`)이 있으면 API 파라미터 자동 문서화용 빈
+> (`QuerydslPredicateOperationCustomizer`)을 자동으로 켜는데, 이 빈이 참조하는
+> `spring-data-commons`의 API가 Spring Boot 4.1(최신 버전)의 실제 `spring-data-commons`와
+> 어긋나 `ClassNotFoundException`으로 애플리케이션 컨텍스트 로딩이 실패합니다. `2.7.0`은 이
+> 버전대에 맞춰 이 문제가 없으므로, Step 3에 가서 버전을 다시 올리지 않도록 지금부터 `2.7.0`으로
+> 시작합니다.
 
 ### 1-8c. `interfaces/api/auth/AuthV1ApiSpec.kt` — Swagger 인터페이스
 
@@ -687,7 +737,7 @@ interface AuthV1ApiSpec {
 ```kotlin
 package com.etude.interfaces.api.auth
 
-import com.etude.domain.auth.AuthService
+import com.etude.application.auth.AuthFacade
 import com.etude.domain.auth.JwtPayload
 import com.etude.domain.auth.LoginResult
 import com.etude.infrastructure.security.REQUEST_ATTR_JWT_PAYLOAD
@@ -705,11 +755,11 @@ data class LoginRequest(
 
 @RestController
 class AuthV1Controller(
-    private val authService: AuthService,
+    private val authFacade: AuthFacade,
 ) : AuthV1ApiSpec {
     @PostMapping("/auth/login")
     override fun login(@Valid @RequestBody request: LoginRequest): ApiResponse<LoginResult> =
-        ApiResponse.success(authService.login(request.email, request.password))
+        ApiResponse.success(authFacade.login(request.email, request.password))
 
     @GetMapping("/me")
     override fun me(request: HttpServletRequest): ApiResponse<JwtPayload> =
@@ -717,6 +767,11 @@ class AuthV1Controller(
 }
 ```
 
+> `me`는 `AuthFacade`를 거치지 않습니다 — 도메인 서비스 호출 없이 요청 속성(JWT 인터셉터가
+> 이미 검증해 둔 `JwtPayload`)만 읽어 반환하는 순수 컨트롤러 로직이라, 위임할 도메인 로직
+> 자체가 없기 때문입니다. Facade는 "컨트롤러가 도메인 서비스를 부를 때" 거치는 계층이지, 모든
+> 컨트롤러 메서드가 예외 없이 거쳐야 하는 관문은 아닙니다.
+>
 > 실패 응답은 컨트롤러가 아니라 `ApiControllerAdvice`(1-8b)가 만듭니다. `AuthService.login()`이
 > `InvalidCredentialsException`을 던지면 `ApiControllerAdvice`가 잡아 401 + `ApiResponse.fail(...)`로
 > 변환하므로, 컨트롤러 메서드 안에는 `try/catch`가 없습니다.
