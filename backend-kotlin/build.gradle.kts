@@ -1,8 +1,8 @@
 plugins {
-    kotlin("jvm") version "2.3.21" apply false
-    kotlin("plugin.spring") version "2.3.21" apply false
-    kotlin("plugin.jpa") version "2.3.21" apply false
-    id("org.springframework.boot") version "4.1.0" apply false
+    kotlin("jvm") version "2.0.20" apply false
+    kotlin("plugin.spring") version "2.0.20" apply false
+    kotlin("plugin.jpa") version "2.0.20" apply false
+    id("org.springframework.boot") version "3.5.13" apply false
     id("io.spring.dependency-management") version "1.1.7" apply false
 }
 
@@ -25,7 +25,7 @@ subprojects {
     // extensions.configure<T>()로 명시적으로 우회한다.
     extensions.configure<JavaPluginExtension> {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(25)
+            languageVersion = JavaLanguageVersion.of(21)
         }
     }
 
@@ -38,13 +38,6 @@ subprojects {
         imports {
             mavenBom("org.testcontainers:testcontainers-bom:${property("testcontainersVersion")}")
             mavenBom(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES)
-        }
-        // Spring Boot 4.1 BOM이 org.testcontainers:testcontainers를 2.0.5로 관리하는데,
-        // mariadb/jdbc/database-commons 등 나머지 testcontainers 모듈은 2.0.5를 내지 않아
-        // (testcontainers-bom 1.x 계열에 머무름) 버전이 갈라지면서 ScriptUtils가 참조하는
-        // shaded 클래스가 사라져 ClassNotFoundException이 난다. dependencies{}로 강제 고정한다.
-        dependencies {
-            dependency("org.testcontainers:testcontainers:${property("testcontainersVersion")}")
         }
     }
 

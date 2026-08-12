@@ -20,6 +20,6 @@ abstract class IntegrationTest(body: FreeSpec.() -> Unit = {}) : FreeSpec(body) 
         @Container
         @ServiceConnection
         val mariadb = MariaDBContainer("mariadb:11")
-            .withInitScript("db/00_schema.sql")
+            .withInitScripts("db/00_schema.sql", "db/01_sandbox.sql")
     }
 }

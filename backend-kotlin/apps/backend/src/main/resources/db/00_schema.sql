@@ -13,6 +13,7 @@ CREATE TABLE quest_set (
   sandbox_type VARCHAR(20) NOT NULL DEFAULT 'linux',
   category     VARCHAR(50) NOT NULL DEFAULT '기타',
   is_public    BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (sandbox_type) REFERENCES sandbox(type)
 );
 
@@ -26,6 +27,7 @@ CREATE TABLE quest (
   solution     TEXT,
   setup_cmd    JSON,
   grade_cmd    JSON NOT NULL,
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (quest_set_id) REFERENCES quest_set(id)
 );
 
@@ -39,10 +41,11 @@ CREATE TABLE user (
 );
 
 CREATE TABLE quest_set_access (
+  id           BIGINT AUTO_INCREMENT PRIMARY KEY,
   quest_set_id BIGINT NOT NULL,
   user_id      BIGINT NOT NULL,
-  granted_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (quest_set_id, user_id),
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_quest_set_access (quest_set_id, user_id),
   FOREIGN KEY (quest_set_id) REFERENCES quest_set(id),
   FOREIGN KEY (user_id)      REFERENCES user(id)
 );
