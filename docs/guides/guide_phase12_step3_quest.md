@@ -89,10 +89,10 @@ Step 1/2와 동일하게 **ATDD 바깥 루프 + 구현-후-검증 안쪽 루프*
 `QuestService`에서 단위 테스트로 각 분기를 명시적으로 검증합니다 — 조건 하나를 놓치면 보안(접근 제어)
 버그로 이어지기 때문에, 이 Step에서는 유일하게 "구현 후 검증"이 아니라 케이스를 먼저 나열하고 하나씩
 채우는 방식으로 접근합니다. 레이어는 `domain/quest`(엔티티/포트/서비스) → `application/quest`
-(Facade) → `infrastructure/persistence/quest`(어댑터) → `interfaces/api/quest`,
-`interfaces/api/admin`(컨트롤러) → 인수 테스트 순으로 나갑니다. `UserRepository`,
-`ApiResponse<T>`, `ApiControllerAdvice`, `AuthInterceptor`/`AdminInterceptor`는 Step 1~2에서
-이미 만들어져 있으므로 재사용만 합니다.
+(Facade) → `infrastructure/persistence/quest`(어댑터) → `interfaces/api/quest`(사용자용/관리자용
+컨트롤러 모두 이 패키지) → 인수 테스트 순으로 나갑니다. `UserRepository`, `ApiResponse<T>`,
+`ApiControllerAdvice`, `AuthInterceptor`/`AdminInterceptor`는 Step 1~2에서 이미 만들어져 있으므로
+재사용만 합니다.
 
 ---
 
@@ -401,8 +401,10 @@ import com.etude.domain.auth.UserRole
 import com.etude.domain.auth.UserRepository
 import com.etude.domain.auth.UserSummary
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional
 class QuestService(
     private val questSetRepository: QuestSetRepository,
     private val questRepository: QuestRepository,
@@ -473,6 +475,15 @@ class QuestService(
 > 깨집니다.
 > `revokeAccess`가 대상이 없어도 예외 없이 넘어가는 이유도 기존 `DELETE ... WHERE`(대상이 없으면
 > 0 rows affected로 조용히 끝남)와 동일한 동작을 맞추기 위해서입니다.
+>
+> 클래스에 `@Transactional`을 붙인 이유는 `revokeAccess`가 호출하는
+> `QuestSetAccessRepository.deleteByQuestSetIdAndUserId`가 내부적으로 Spring Data JPA의 파생
+> 삭제 쿼리(`delete`)인데, 이 메서드는 트랜잭션 경계 밖에서 호출하면 `InvalidDataAccessApiUsageException`
+> ("No EntityManager with actual transaction available for current thread")을 던지기 때문입니다.
+> 조회(`findAll`, `existsBy...`)는 트랜잭션이 없어도 동작하지만, `save`/`delete`처럼 데이터를
+> 바꾸는 메서드는 트랜잭션이 반드시 필요합니다. `setPublic`/`grantAccess`의 `save()`도 같은
+> 이유로 트랜잭션이 필요하므로, 메서드마다 개별로 붙이지 않고 클래스 전체에 `@Transactional`을
+> 걸어 모든 쓰기 메서드를 한 번에 커버합니다.
 
 ### 테스트로 검증 (`src/test/kotlin/com/etude/domain/quest/QuestServiceTest.kt`)
 
@@ -1086,10 +1097,10 @@ class QuestV1Controller(
 > `addPathPatterns`에 등록해뒀으므로(1-7 참고), 토큰 없이 호출하면 컨트롤러에 도달하기 전에
 > 401로 막힙니다.
 
-### 3-5b. `interfaces/api/admin/AdminQuestSetV1ApiSpec.kt`, `AdminQuestSetV1Controller.kt`
+### 3-5b. `interfaces/api/quest/AdminQuestSetV1ApiSpec.kt`, `AdminQuestSetV1Controller.kt`
 
 ```kotlin
-package com.etude.interfaces.api.admin
+package com.etude.interfaces.api.quest
 
 import com.etude.domain.quest.QuestSetAdminSummary
 import com.etude.interfaces.api.ApiResponse
@@ -1113,7 +1124,7 @@ interface AdminQuestSetV1ApiSpec {
 ```
 
 ```kotlin
-package com.etude.interfaces.api.admin
+package com.etude.interfaces.api.quest
 
 import com.etude.application.quest.QuestFacade
 import com.etude.domain.quest.QuestSetAdminSummary
@@ -1187,25 +1198,202 @@ Step 1/2의 `IntegrationTest`(`com.etude.support.IntegrationTest`)를 상속해 
 테스트는 그 시드 데이터에 의존하지 않고 `beforeTest`에서 자신만의 데이터를 직접 만듭니다 — 시드
 데이터의 개수나 내용이 나중에 바뀌어도 이 테스트가 깨지지 않게 하기 위해서입니다.
 
+### 3-6a. 공통 테스트 헬퍼 — `TestAuth`, `TestUsers`, `TestQuestSets`
+
+`AuthControllerTest`(Step 1), `UserAdminControllerTest`(Step 2)에 이어 이 Step의 두 통합 테스트도
+"로그인해서 토큰을 받는다", "admin/member 계정을 만든다", "공개/비공개 퀘스트셋을 만든다"는 절차를
+반복합니다. 세 번째 테스트부터 같은 코드를 또 복붙하는 대신 `support` 패키지에 공통 헬퍼로
+뽑아둡니다.
+
+**로그인/유저 생성/퀘스트셋 생성 헬퍼는 `IntegrationTest`가 아니라 독립 오브젝트(`TestAuth`,
+`TestUsers`, `TestQuestSets`)로 둡니다** — `IntegrationTest`는 "Testcontainers로 통합 테스트
+환경을 어떻게 띄우는가"만 책임지는 클래스입니다. 로그인 흐름이나 테스트 데이터 생성은 그와 다른
+관심사라, 같은 클래스에 얹으면 책임이 섞입니다. 세 오브젝트 모두 `IntegrationTest`를 몰라도 되는
+순수 헬퍼로 설계합니다.
+
+`src/test/kotlin/com/etude/support/TestAuth.kt`:
+
+```kotlin
+package com.etude.support
+
+import org.springframework.http.MediaType
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+
+object TestAuth {
+    // 여러 ControllerTest(AuthControllerTest, UserAdminControllerTest, QuestControllerTest 등)가
+    // "로그인해서 토큰을 받아온다"는 동일한 절차를 반복하므로 여기 한 곳에서 관리한다.
+    fun loginAndGetToken(mockMvc: MockMvc, email: String, password: String): String {
+        val response = mockMvc.perform(
+            post("/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"email":"$email","password":"$password"}""")
+        ).andReturn().response.contentAsString
+        return Regex(""""token":"([^"]+)"""").find(response)!!.groupValues[1]
+    }
+}
+```
+
+**유저 픽스처는 별도 `TestUsers` 오브젝트로 뽑습니다** — `admin@okestro.com`/`member@okestro.com`
+같은 자격증명 문자열이 테스트마다 반복되고, `User(...)` 생성자 호출도 매번 거의 동일한 인자로
+반복됩니다. Kotlin의 named argument + default parameter를 쓰면 Builder 클래스 없이도 "기본값은
+그대로 쓰고 필요한 값만 오버라이드"가 가능합니다.
+
+`src/test/kotlin/com/etude/support/TestUsers.kt`:
+
+```kotlin
+package com.etude.support
+
+import com.etude.domain.auth.User
+import com.etude.domain.auth.UserRole
+import com.etude.infrastructure.persistence.auth.UserJpaRepository
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+
+object TestUsers {
+    const val ADMIN_EMAIL = "admin@okestro.com"
+    const val ADMIN_PASSWORD = "admin123"
+    const val MEMBER_EMAIL = "member@okestro.com"
+    const val MEMBER_PASSWORD = "member123"
+
+    fun createAdmin(
+        userJpaRepository: UserJpaRepository,
+        name: String = "관리자",
+        email: String = ADMIN_EMAIL,
+        password: String = ADMIN_PASSWORD,
+    ): User =
+        userJpaRepository.save(
+            User(name = name, email = email, password = BCryptPasswordEncoder().encode(password)!!, role = UserRole.admin)
+        )
+
+    fun createMember(
+        userJpaRepository: UserJpaRepository,
+        name: String = "멤버",
+        email: String = MEMBER_EMAIL,
+        password: String = MEMBER_PASSWORD,
+    ): User =
+        userJpaRepository.save(
+            User(name = name, email = email, password = BCryptPasswordEncoder().encode(password)!!, role = UserRole.member)
+        )
+}
+```
+
+> `TestAuth`와 `TestUsers`를 나란히 별도 오브젝트로 둔 이유는 각자 하나의 관심사만 갖게 하기
+> 위해서입니다 — `TestAuth`는 "로그인해서 토큰을 받는 방법", `TestUsers`는 "테스트용 계정을
+> 만드는 방법"만 압니다. 어느 쪽도 `IntegrationTest`(환경 설정)나 서로를 참조하지 않으므로,
+> 나중에 셋 중 하나만 재사용하거나(예: 단위 테스트에서 `TestUsers`만 쓰는 경우) 교체하기
+> 쉽습니다.
+>
+> `admin@okestro.com`/`member123` 같은 문자열은 `loginAndGetToken(...)` 호출부에서만
+> `TestUsers.ADMIN_EMAIL`/`TestUsers.ADMIN_PASSWORD`로 상수화합니다. `content("""{"email":"...",
+> ...}""")`처럼 JSON 바디 안에 인라인되는 리터럴까지 전부 상수로 바꾸면 문자열 템플릿 보간이
+> 늘어나 오히려 JSON 구조를 읽기 어려워지므로, 그 부분은 리터럴을 그대로 둡니다.
+
+**퀘스트셋 픽스처는 `TestQuestSets` 오브젝트로 뽑습니다** — `QuestSet(title = "공개 세트",
+description = null, sandboxType = "linux", category = "리눅스", isPublic = true)`처럼 필드 5개짜리
+생성자 호출이 `QuestControllerTest`, `AdminQuestSetControllerTest` 양쪽에 반복됩니다. `TestUsers`와
+동일하게 named argument + default parameter로 필요한 값만 오버라이드하게 합니다.
+
+`src/test/kotlin/com/etude/support/TestQuestSets.kt`:
+
+```kotlin
+package com.etude.support
+
+import com.etude.domain.quest.QuestSet
+import com.etude.infrastructure.persistence.quest.QuestSetJpaRepository
+
+object TestQuestSets {
+    fun createPublic(
+        questSetJpaRepository: QuestSetJpaRepository,
+        title: String = "공개 세트",
+        description: String? = null,
+        sandboxType: String = "linux",
+        category: String = "리눅스",
+    ): QuestSet =
+        questSetJpaRepository.save(
+            QuestSet(title = title, description = description, sandboxType = sandboxType, category = category, isPublic = true)
+        )
+
+    fun createPrivate(
+        questSetJpaRepository: QuestSetJpaRepository,
+        title: String = "비공개 세트",
+        description: String? = null,
+        sandboxType: String = "linux",
+        category: String = "리눅스",
+    ): QuestSet =
+        questSetJpaRepository.save(
+            QuestSet(title = title, description = description, sandboxType = sandboxType, category = category, isPublic = false)
+        )
+}
+```
+
+> `isPublic`만 다르고 나머지 필드가 똑같은 `createPublic`/`createPrivate` 두 메서드로 나눈
+> 이유는, `isPublic: Boolean` 파라미터 하나로 통합하면 호출부에서 `TestQuestSets.create(...,
+> isPublic = true)`처럼 매번 의도를 다시 적어야 하기 때문입니다. 메서드 이름 자체가 "공개
+> 세트인지 비공개 세트인지"를 드러내면 테스트 코드를 읽을 때 별도로 `isPublic` 값을 눈으로
+> 확인할 필요가 없습니다.
+
+**퀘스트 픽스처는 `TestQuests` 오브젝트로 뽑습니다** — `Quest(questSetId = publicSet.id,
+orderIndex = 0, title = "1번 퀘스트", description = "설명", hint = null, solution = null, setupCmd
+= null, gradeCmd = "[]")`처럼 필드 8개짜리 생성자 호출입니다. `QuestControllerTest`에는 지금
+하나뿐이지만, 퀘스트 목록/순서 검증 테스트가 늘어나면 바로 반복될 후보이므로 처음부터 뽑아둡니다.
+
+`src/test/kotlin/com/etude/support/TestQuests.kt`:
+
+```kotlin
+package com.etude.support
+
+import com.etude.domain.quest.Quest
+import com.etude.infrastructure.persistence.quest.QuestJpaRepository
+
+object TestQuests {
+    fun create(
+        questJpaRepository: QuestJpaRepository,
+        questSetId: Long,
+        orderIndex: Int = 0,
+        title: String = "1번 퀘스트",
+        description: String = "설명",
+        hint: String? = null,
+        solution: String? = null,
+        setupCmd: String? = null,
+        gradeCmd: String = "[]",
+    ): Quest =
+        questJpaRepository.save(
+            Quest(
+                questSetId = questSetId,
+                orderIndex = orderIndex,
+                title = title,
+                description = description,
+                hint = hint,
+                solution = solution,
+                setupCmd = setupCmd,
+                gradeCmd = gradeCmd,
+            )
+        )
+}
+```
+
+> `TestQuestSets`와 달리 `questSetId`에는 기본값을 주지 않습니다 — 어느 퀘스트셋에 속한 퀘스트인지는
+> 테스트 시나리오마다 다르고(`publicSet.id`인지 `privateSet.id`인지), 잘못된 기본값을 실수로
+> 그대로 쓰면 "의도한 세트와 다른 세트에 퀘스트가 생기는" 오류가 조용히 발생할 수 있기 때문입니다.
+> 필수 파라미터로 남겨 호출부가 항상 명시하게 강제합니다.
+
 `src/test/kotlin/com/etude/interfaces/api/quest/QuestControllerTest.kt`
 
 ```kotlin
 package com.etude.interfaces.api.quest
 
-import com.etude.domain.auth.User
-import com.etude.domain.auth.UserRole
-import com.etude.domain.quest.Quest
 import com.etude.domain.quest.QuestSet
 import com.etude.infrastructure.persistence.auth.UserJpaRepository
 import com.etude.infrastructure.persistence.quest.QuestJpaRepository
 import com.etude.infrastructure.persistence.quest.QuestSetJpaRepository
 import com.etude.support.IntegrationTest
+import com.etude.support.TestAuth
+import com.etude.support.TestQuestSets
+import com.etude.support.TestQuests
+import com.etude.support.TestUsers
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
-import org.springframework.http.MediaType
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.MockMvc
@@ -1218,14 +1406,7 @@ class QuestControllerTest(
     @Autowired private val questJpaRepository: QuestJpaRepository,
 ) : IntegrationTest({
 
-    fun loginAndGetToken(email: String, password: String): String {
-        val response = mockMvc.perform(
-            post("/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"email":"$email","password":"$password"}""")
-        ).andReturn().response.contentAsString
-        return Regex(""""token":"([^"]+)"""").find(response)!!.groupValues[1]
-    }
+    fun loginAndGetToken(email: String, password: String): String = TestAuth.loginAndGetToken(mockMvc, email, password)
 
     lateinit var publicSet: QuestSet
     lateinit var privateSet: QuestSet
@@ -1235,23 +1416,16 @@ class QuestControllerTest(
         questSetJpaRepository.deleteAll()
         userJpaRepository.deleteAll()
 
-        userJpaRepository.save(
-            User(name = "멤버", email = "member@okestro.com", password = BCryptPasswordEncoder().encode("member123")!!, role = UserRole.member)
-        )
-        publicSet = questSetJpaRepository.save(
-            QuestSet(title = "공개 세트", description = null, sandboxType = "linux", category = "리눅스", isPublic = true)
-        )
-        privateSet = questSetJpaRepository.save(
-            QuestSet(title = "비공개 세트", description = null, sandboxType = "linux", category = "리눅스", isPublic = false)
-        )
-        questJpaRepository.save(
-            Quest(questSetId = publicSet.id, orderIndex = 0, title = "1번 퀘스트", description = "설명", hint = null, solution = null, setupCmd = null, gradeCmd = "[]")
-        )
+        TestUsers.createAdmin(userJpaRepository)
+        TestUsers.createMember(userJpaRepository)
+        publicSet = TestQuestSets.createPublic(questSetJpaRepository)
+        privateSet = TestQuestSets.createPrivate(questSetJpaRepository)
+        TestQuests.create(questJpaRepository, questSetId = publicSet.id)
     }
 
     "퀘스트셋 목록을 조회하면" - {
         "공개 세트만 보인다" {
-            val token = loginAndGetToken("member@okestro.com", "member123")
+            val token = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
 
             mockMvc.perform(get("/quest-sets").header("Authorization", "Bearer $token"))
                 .andExpect(status().isOk)
@@ -1262,7 +1436,7 @@ class QuestControllerTest(
 
     "공개 세트의 퀘스트 목록을 조회하면" - {
         "순서대로 반환된다" {
-            val token = loginAndGetToken("member@okestro.com", "member123")
+            val token = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
 
             mockMvc.perform(get("/quest-sets/${publicSet.id}/quests").header("Authorization", "Bearer $token"))
                 .andExpect(status().isOk)
@@ -1272,7 +1446,7 @@ class QuestControllerTest(
 
     "비공개 세트의 퀘스트 목록을 조회하면" - {
         "403을 반환한다" {
-            val token = loginAndGetToken("member@okestro.com", "member123")
+            val token = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
 
             mockMvc.perform(get("/quest-sets/${privateSet.id}/quests").header("Authorization", "Bearer $token"))
                 .andExpect(status().isForbidden)
@@ -1287,21 +1461,34 @@ class QuestControllerTest(
 })
 ```
 
-`src/test/kotlin/com/etude/interfaces/api/admin/AdminQuestSetControllerTest.kt`
+> `beforeTest`가 `TestUsers.createAdmin`도 호출하는 이유는, 이 Step의 다른 테스트
+> (`AdminQuestSetControllerTest`)와 달리 `QuestControllerTest` 자체는 admin 계정을 쓰지
+> 않지만, `AuthInterceptor`/`AdminInterceptor`가 role 기반으로 분기하는 걸 감안해 "member만
+> 존재하는 상태"보다 "admin과 member가 공존하는 상태"에서 사용자용 API가 올바르게 동작하는지
+> 확인하는 편이 더 현실적인 시나리오이기 때문입니다.
+>
+> `MockMvcRequestBuilders.post`, `MediaType`, `BCryptPasswordEncoder`, `User`/`UserRole` import가
+> 이 파일에서 사라진 걸 확인하세요 — 로그인/유저 생성 로직이 헬퍼로 옮겨가면서 이 테스트
+> 파일에서는 더 이상 직접 쓰지 않습니다. `AutoConfigureMockMvc`의 import 경로는 Spring Boot
+> 3.5.x 기준 `org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc`
+> 입니다.
+
+`src/test/kotlin/com/etude/interfaces/api/quest/AdminQuestSetControllerTest.kt`
 
 ```kotlin
-package com.etude.interfaces.api.admin
+package com.etude.interfaces.api.quest
 
-import com.etude.domain.auth.User
-import com.etude.domain.auth.UserRole
 import com.etude.domain.quest.QuestSet
 import com.etude.infrastructure.persistence.auth.UserJpaRepository
+import com.etude.infrastructure.persistence.quest.QuestSetAccessJpaRepository
 import com.etude.infrastructure.persistence.quest.QuestSetJpaRepository
 import com.etude.support.IntegrationTest
+import com.etude.support.TestAuth
+import com.etude.support.TestQuestSets
+import com.etude.support.TestUsers
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.http.MediaType
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
@@ -1309,45 +1496,43 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.MockMvc
+import kotlin.properties.Delegates
 
 @AutoConfigureMockMvc
 class AdminQuestSetControllerTest(
     @Autowired private val mockMvc: MockMvc,
     @Autowired private val userJpaRepository: UserJpaRepository,
     @Autowired private val questSetJpaRepository: QuestSetJpaRepository,
+    @Autowired private val questSetAccessJpaRepository: QuestSetAccessJpaRepository,
 ) : IntegrationTest({
 
-    fun loginAndGetToken(email: String, password: String): String {
-        val response = mockMvc.perform(
-            post("/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"email":"$email","password":"$password"}""")
-        ).andReturn().response.contentAsString
-        return Regex(""""token":"([^"]+)"""").find(response)!!.groupValues[1]
-    }
+    fun loginAndGetToken(email: String, password: String): String = TestAuth.loginAndGetToken(mockMvc, email, password)
 
     lateinit var privateSet: QuestSet
-    lateinit var memberId: Long
+    var memberId: Long by Delegates.notNull()
 
     beforeTest {
+        questSetAccessJpaRepository.deleteAll()
         questSetJpaRepository.deleteAll()
         userJpaRepository.deleteAll()
 
-        userJpaRepository.save(
-            User(name = "관리자", email = "admin@okestro.com", password = BCryptPasswordEncoder().encode("admin123")!!, role = UserRole.admin)
-        )
-        val member = userJpaRepository.save(
-            User(name = "멤버", email = "member@okestro.com", password = BCryptPasswordEncoder().encode("member123")!!, role = UserRole.member)
-        )
+        TestUsers.createAdmin(userJpaRepository)
+        val member = TestUsers.createMember(userJpaRepository)
         memberId = member.id
-        privateSet = questSetJpaRepository.save(
-            QuestSet(title = "비공개 세트", description = null, sandboxType = "linux", category = "리눅스", isPublic = false)
-        )
+        privateSet = TestQuestSets.createPrivate(questSetJpaRepository)
     }
+```
 
+> `memberId`는 `lateinit`을 못 씁니다 — `lateinit`은 "초기화 전엔 null"이라는 상태를 내부적으로
+> 표현해야 하는데, `Long`(JVM 원시 타입 `long`)은 애초에 null을 담을 수 없어 이 메커니즘 자체가
+> 성립하지 않습니다(`QuestSet`처럼 참조 타입에는 문제없이 쓰입니다). 대신
+> `kotlin.properties.Delegates.notNull()`을 쓰면 `lateinit`과 동일하게 "초기화 전에 읽으면
+> 예외"라는 동작을 원시 타입에도 적용할 수 있습니다.
+
+```kotlin
     "관리자가 퀘스트셋 목록을 조회하면" - {
         "isPublic과 accessUsers를 포함해 전체가 보인다" {
-            val token = loginAndGetToken("admin@okestro.com", "admin123")
+            val token = loginAndGetToken(TestUsers.ADMIN_EMAIL, TestUsers.ADMIN_PASSWORD)
 
             mockMvc.perform(get("/admin/quest-sets").header("Authorization", "Bearer $token"))
                 .andExpect(status().isOk)
@@ -1358,7 +1543,7 @@ class AdminQuestSetControllerTest(
 
     "member 권한으로 조회를 시도하면" - {
         "403을 반환한다" {
-            val token = loginAndGetToken("member@okestro.com", "member123")
+            val token = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
 
             mockMvc.perform(get("/admin/quest-sets").header("Authorization", "Bearer $token"))
                 .andExpect(status().isForbidden)
@@ -1367,7 +1552,7 @@ class AdminQuestSetControllerTest(
 
     "관리자가 퀘스트셋을 공개로 전환하면" - {
         "member도 목록에서 볼 수 있게 된다" {
-            val adminToken = loginAndGetToken("admin@okestro.com", "admin123")
+            val adminToken = loginAndGetToken(TestUsers.ADMIN_EMAIL, TestUsers.ADMIN_PASSWORD)
 
             mockMvc.perform(
                 patch("/admin/quest-sets/${privateSet.id}")
@@ -1376,7 +1561,7 @@ class AdminQuestSetControllerTest(
                     .content("""{"isPublic":true}""")
             ).andExpect(status().isOk)
 
-            val memberToken = loginAndGetToken("member@okestro.com", "member123")
+            val memberToken = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
             mockMvc.perform(get("/quest-sets").header("Authorization", "Bearer $memberToken"))
                 .andExpect(jsonPath("$.data.length()").value(1))
         }
@@ -1384,7 +1569,7 @@ class AdminQuestSetControllerTest(
 
     "관리자가 접근 권한을 부여하면" - {
         "해당 사용자가 비공개 세트를 볼 수 있게 된다" {
-            val adminToken = loginAndGetToken("admin@okestro.com", "admin123")
+            val adminToken = loginAndGetToken(TestUsers.ADMIN_EMAIL, TestUsers.ADMIN_PASSWORD)
 
             mockMvc.perform(
                 post("/admin/quest-sets/${privateSet.id}/access")
@@ -1393,7 +1578,7 @@ class AdminQuestSetControllerTest(
                     .content("""{"userId":$memberId}""")
             ).andExpect(status().isOk)
 
-            val memberToken = loginAndGetToken("member@okestro.com", "member123")
+            val memberToken = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
             mockMvc.perform(get("/quest-sets/${privateSet.id}/quests").header("Authorization", "Bearer $memberToken"))
                 .andExpect(status().isOk)
         }
@@ -1401,7 +1586,7 @@ class AdminQuestSetControllerTest(
 
     "관리자가 접근 권한을 회수하면" - {
         "해당 사용자가 다시 접근할 수 없게 된다" {
-            val adminToken = loginAndGetToken("admin@okestro.com", "admin123")
+            val adminToken = loginAndGetToken(TestUsers.ADMIN_EMAIL, TestUsers.ADMIN_PASSWORD)
             mockMvc.perform(
                 post("/admin/quest-sets/${privateSet.id}/access")
                     .header("Authorization", "Bearer $adminToken")
@@ -1414,7 +1599,7 @@ class AdminQuestSetControllerTest(
                     .header("Authorization", "Bearer $adminToken")
             ).andExpect(status().isOk)
 
-            val memberToken = loginAndGetToken("member@okestro.com", "member123")
+            val memberToken = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
             mockMvc.perform(get("/quest-sets/${privateSet.id}/quests").header("Authorization", "Bearer $memberToken"))
                 .andExpect(status().isForbidden)
         }
@@ -1427,6 +1612,12 @@ class AdminQuestSetControllerTest(
 ./gradlew test --tests "*.QuestServiceTest" --tests "*.QuestControllerTest" --tests "*.AdminQuestSetControllerTest"
 ```
 9개 단위 테스트 + 4개 통합 테스트(퀘스트) + 5개 통합 테스트(관리자) 모두 통과해야 합니다.
+
+> `AuthControllerTest`(Step 1)는 `TestUsers`/`TestAuth`를 쓰지 않고 원래 방식(자체
+> 계정 직접 생성, 로그인 응답을 직접 파싱)을 유지합니다 — 로그인 자체가 이 테스트의 검증
+> 대상이므로, 공통 헬퍼로 감싸면 정작 테스트하려는 로직이 헬퍼 뒤에 숨어버립니다. 반면
+> `UserAdminControllerTest`(Step 2)는 이 Step처럼 로그인은 "전제 조건"일 뿐이라 헬퍼를
+> 그대로 씁니다 — Step 2 가이드로 돌아가 이 변경을 반영해뒀는지 확인하세요.
 
 ---
 

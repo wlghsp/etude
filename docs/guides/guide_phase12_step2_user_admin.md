@@ -316,8 +316,10 @@ import com.etude.domain.auth.UserRole
 import com.etude.domain.auth.UserSummary
 import com.etude.domain.auth.WrongPasswordException
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional
 class UserService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
@@ -356,6 +358,15 @@ class UserService(
 > 정렬(`ORDER BY name`)은 JPA 메서드 이름 규칙(`findAllByRoleOrderByName`)으로 DB에 위임할 수도
 > 있지만, 여기서는 도메인 서비스에서 `.sortedBy { }`로 처리해 정렬 기준이 도메인 코드에 드러나게
 > 했습니다 — 둘 다 맞는 선택이라 팀 컨벤션에 따라 바꿔도 됩니다.
+>
+> 클래스에 `@Transactional`을 붙이는 걸 이 프로젝트의 기본값으로 삼습니다 — 쓰기 작업(`save`)이
+> 하나라도 있는 도메인 서비스는 처음부터 붙여둡니다. `save()`(Spring Data `CrudRepository`)
+> 자체는 자체적으로 트랜잭션을 열어 처리하므로 `@Transactional` 없이도 당장은 동작하지만, (1)
+> `resetPassword`/`changeOwnPassword`처럼 "조회 → 수정 → 저장"이 여러 단계로 이뤄지는 메서드는
+> 트랜잭션이 없으면 그 사이의 원자성이 보장되지 않고, (2) 나중에 커스텀 삭제/수정 파생 쿼리를
+> 추가하면 트랜잭션 없이는 `InvalidDataAccessApiUsageException`으로 바로 깨집니다(Step 3의
+> `QuestService.revokeAccess`가 실제로 이 문제를 겪었습니다). 순수 조회만 하는 서비스
+> (`AuthService.login`처럼 `save`/`delete`가 전혀 없는 경우)는 붙이지 않아도 무방합니다.
 
 ### 테스트로 검증 (`src/test/kotlin/com/etude/domain/user/UserServiceTest.kt`)
 
