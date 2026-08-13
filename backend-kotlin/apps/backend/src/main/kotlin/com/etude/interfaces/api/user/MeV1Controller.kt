@@ -1,7 +1,7 @@
 package com.etude.interfaces.api.user
 
+import com.etude.application.user.UserFacade
 import com.etude.domain.auth.JwtPayload
-import com.etude.domain.user.UserService
 import com.etude.infrastructure.security.REQUEST_ATTR_JWT_PAYLOAD
 import com.etude.interfaces.api.ApiResponse
 import jakarta.servlet.http.HttpServletRequest
@@ -19,13 +19,13 @@ data class ChangePasswordReqeust(
 
 @RestController
 class MeV1Controller(
-    private val userService: UserService
+    private val userFacade: UserFacade
 ) : MeV1ApiSpec {
     @PatchMapping("/me/password")
     override fun changePassword(
         @Valid @RequestBody request: ChangePasswordReqeust, httpRequest: HttpServletRequest): ApiResponse<Unit> {
         val payload = httpRequest.getAttribute(REQUEST_ATTR_JWT_PAYLOAD) as JwtPayload
-        userService.changeOwnPassword(payload.userId, request.currentPassword, request.newPassword)
+        userFacade.changeOwnPassword(payload.userId, request.currentPassword, request.newPassword)
         return ApiResponse.success<Unit>()
     }
 }

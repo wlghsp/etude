@@ -1,6 +1,6 @@
 package com.etude.interfaces.api.auth
 
-import com.etude.domain.auth.AuthService
+import com.etude.application.auth.AuthFacade
 import com.etude.domain.auth.JwtPayload
 import com.etude.domain.auth.LoginResult
 import com.etude.infrastructure.security.REQUEST_ATTR_JWT_PAYLOAD
@@ -21,11 +21,11 @@ data class LoginRequest(
 )
 @RestController
 class AuthV1Controller(
-    private val authService: AuthService,
+    private val authFacade: AuthFacade,
 ) : AuthV1ApiSpec {
     @PostMapping("/auth/login")
     override fun login(@Valid @RequestBody request: LoginRequest): ApiResponse<LoginResult> =
-        ApiResponse.success(authService.login(request.email, request.password))
+        ApiResponse.success(authFacade.login(request.email, request.password))
 
     @GetMapping("/me")
     override fun me(request: HttpServletRequest): ApiResponse<JwtPayload> =

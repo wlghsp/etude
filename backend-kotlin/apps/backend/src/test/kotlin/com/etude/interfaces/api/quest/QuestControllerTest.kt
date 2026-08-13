@@ -33,7 +33,7 @@ class QuestControllerTest(
         TestUsers.createMember(userJpaRepository)
         publicSet = TestQuestSets.createPublic(questSetJpaRepository)
         privateSet = TestQuestSets.createPrivate(questSetJpaRepository)
-        TestQuests.create(questJpaRepository, questSetId = publicSet.id)
+        TestQuests.createAndSave(questJpaRepository, questSetId = publicSet.id)
     }
 
     "퀘스트셋 목록을 조회하면" - {

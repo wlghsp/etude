@@ -229,6 +229,146 @@ mock 설정도 그대로 유효합니다 — `matchesPassword`가 내부에서 `
 **검증**: `./gradlew test --tests "*.AuthServiceTest"` — Step 1의 3개 테스트가 여전히 통과하는지
 확인합니다 (엔티티 캡슐화가 Step 1의 동작을 깨지 않았는지 확인하는 회귀 검증).
 
+### 테스트 픽스처 — `TestUsers`
+
+`User` 단위 테스트, 그리고 이 Step 뒤에 나올 여러 통합 테스트가 "admin/member 계정을 만든다"는
+절차를 반복하게 됩니다. `admin@okestro.com`/`member@okestro.com` 같은 자격증명 문자열과
+`User(...)` 생성자 호출을 매번 새로 적지 않도록, `User`가 정의된 지금 시점에 공용 픽스처
+오브젝트로 미리 뽑아둡니다.
+
+`src/test/kotlin/com/etude/support/TestUsers.kt`:
+
+```kotlin
+package com.etude.support
+
+import com.etude.domain.auth.User
+import com.etude.domain.auth.UserRole
+import com.etude.infrastructure.persistence.auth.UserJpaRepository
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+
+object TestUsers {
+    const val ADMIN_EMAIL = "admin@okestro.com"
+    const val ADMIN_PASSWORD = "admin123"
+    const val MEMBER_EMAIL = "member@okestro.com"
+    const val MEMBER_PASSWORD = "member123"
+
+    fun admin(
+        name: String = "관리자",
+        email: String = ADMIN_EMAIL,
+        password: String = ADMIN_PASSWORD,
+    ): User = User(name = name, email = email, password = BCryptPasswordEncoder().encode(password)!!, role = UserRole.admin)
+
+    fun member(
+        name: String = "멤버",
+        email: String = MEMBER_EMAIL,
+        password: String = MEMBER_PASSWORD,
+    ): User = User(name = name, email = email, password = BCryptPasswordEncoder().encode(password)!!, role = UserRole.member)
+
+    fun createAdmin(
+        userJpaRepository: UserJpaRepository,
+        name: String = "관리자",
+        email: String = ADMIN_EMAIL,
+        password: String = ADMIN_PASSWORD,
+    ): User = userJpaRepository.save(admin(name, email, password))
+
+    fun createMember(
+        userJpaRepository: UserJpaRepository,
+        name: String = "멤버",
+        email: String = MEMBER_EMAIL,
+        password: String = MEMBER_PASSWORD,
+    ): User = userJpaRepository.save(member(name, email, password))
+}
+```
+
+> `admin()`/`member()`(순수 객체 생성)와 `createAdmin()`/`createMember()`(생성 + 저장)를 나눈
+> 이유는 재사용 범위가 다르기 때문입니다 — `createAdmin`/`createMember`는 `UserJpaRepository`가
+> 필요해 `IntegrationTest`(Testcontainers로 실제 DB를 띄우는 통합 테스트, 이 Step 이후
+> `UserAdminControllerTest` 등에서 사용)에서만 쓸 수 있습니다. 반면 바로 아래의 `UserTest`처럼
+> Spring 컨텍스트나 DB 없이 순수 `User` 객체만 다루는 단위 테스트는 리포지토리 자체가 없으므로
+> `createAdmin`을 호출할 수 없습니다 — `admin()`/`member()`처럼 저장 없이 객체만 만드는 함수가
+> 있어야 그런 곳에서도 픽스처를 재사용할 수 있습니다.
+>
+> `TestUsers`를 이 시점(Step 2, `User` 캡슐화 직후)에 만드는 이유는 `UserTest`가 바로 이 Step에서
+> 필요하기 때문입니다 — Step 3(퀘스트 통합 테스트)에서도 그대로 재사용됩니다.
+
+### `User` 자체의 행동을 검증하는 `UserTest` — 뒤늦게 채워 넣는 엔티티 단위 테스트
+
+지금까지는 `changeName`/`changePassword`/`matchesPassword`가 `AuthServiceTest`/`UserServiceTest`를
+통해서만 **간접적으로** 실행되고 있었습니다 — 두 서비스 테스트가 `PasswordEncoder`를 mockk로
+목킹하면서 이 메서드들을 우회해서 지나갈 뿐, "이 메서드 자체가 올바르게 동작하는가"를 딱 집어
+검증하는 테스트는 없었습니다. 지금은 로직이 단순한 위임/대입이라 문제가 드러나지 않았지만,
+엔티티 메서드가 늘어나거나 규칙(예: 이름 길이 제한)이 붙기 시작하면 서비스 테스트만으로는 그
+규칙이 지켜지는지 좁혀서 확인하기 어려워집니다. `User`를 Spring 컨텍스트나 DB 없이(순수 Kotlin
+객체 생성만으로) 검증할 수 있는 지금이 이 테스트를 추가하기 좋은 시점입니다.
+
+`src/test/kotlin/com/etude/domain/auth/UserTest.kt`:
+
+```kotlin
+package com.etude.domain.auth
+
+import com.etude.support.TestUsers
+import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.shouldBe
+import io.mockk.every
+import io.mockk.mockk
+
+class UserTest : FreeSpec({
+
+    "이름을 변경하면" - {
+        "바뀐 이름이 반영된다" {
+            val user = TestUsers.member()
+
+            user.changeName("새 이름")
+
+            user.name shouldBe "새 이름"
+        }
+    }
+
+    "비밀번호를 변경하면" - {
+        "다음 matchesPassword 호출이 새 비밀번호 기준으로 판단된다" {
+            val user = TestUsers.member()
+            val passwordEncoder = mockk<PasswordEncoder>()
+            every { passwordEncoder.matches("raw", "new-hashed") } returns true
+
+            user.changePassword("new-hashed")
+
+            user.matchesPassword("raw", passwordEncoder) shouldBe true
+        }
+    }
+
+    "비밀번호를 확인할 때" - {
+        "PasswordEncoder에 현재 저장된 password를 그대로 위임한다" {
+            val user = TestUsers.member()
+            val passwordEncoder = mockk<PasswordEncoder>()
+            every { passwordEncoder.matches("raw", any()) } returns true
+
+            user.matchesPassword("raw", passwordEncoder) shouldBe true
+        }
+    }
+})
+```
+
+> `TestUsers.member()`가 만드는 `password`는 `TestUsers.MEMBER_PASSWORD`(평문 "member123")를
+> `BCryptPasswordEncoder`로 실제로 인코딩한 해시값입니다 — 매 호출마다 값이 다른 솔트가 섞이므로
+> (BCrypt 특성) 이 테스트에서는 그 해시값을 미리 알 수 없고, `password`가 `private`이라
+> `user.password`로 직접 읽을 방법도 없습니다. 그래서 "비밀번호를 확인할 때" 테스트는
+> `every { passwordEncoder.matches("raw", "hashed") }`처럼 두 번째 인자를 특정 값으로
+> 고정하지 않고, mockk의 `any()` matcher로 "어떤 값이든 상관없이 위임되는지"만 검증합니다 —
+> 여기서 검증하려는 건 "정확히 어떤 해시값이 넘어가는가"가 아니라 "`matchesPassword`가
+> `passwordEncoder.matches`를 실제로 호출하는가"이기 때문입니다.
+>
+> `PasswordEncoder`를 mockk로 목킹하는 이유는 `AuthServiceTest`/`UserServiceTest`와 동일합니다
+> — `matchesPassword`가 실제 해시 비교 로직을 갖고 있지 않고(그건 인프라 어댑터인
+> `BCryptPasswordEncoderAdapter`의 책임입니다), "현재 `password` 필드 값을 넘겨서 위임하는지"만
+> 검증하면 되기 때문입니다. `changePassword` 테스트는 `"new-hashed"`처럼 직접 지정한 값으로
+> `changePassword`를 호출한 뒤 그 값을 mock 기댓값으로 그대로 써서, "바뀐 값이 이후
+> `matchesPassword` 호출에 반영되는지"를 검증합니다 — `password`를 직접 읽지 않고도, 그 값을
+> 아는 유일한 경로(직접 넣은 값)를 통해 간접적으로 확인하는 방식입니다.
+>
+> `email`/`role`은 `val`이라 변경 메서드 자체가 없으므로 별도 테스트가 필요 없습니다.
+
+**검증**: `./gradlew test --tests "*.UserTest"` — 3개 테스트 모두 통과해야 합니다.
+
 ---
 
 ## 2-1. `UserRepository` 확장 — 이메일 중복 확인 + role별 조회

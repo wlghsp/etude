@@ -151,6 +151,7 @@ enum으로 하드코딩하면 나중에 `sandbox` 테이블에 새 타입이 추
 package com.etude.domain.quest
 
 import com.etude.domain.BaseEntity
+import com.etude.domain.auth.UserSummary
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Table
@@ -170,21 +171,99 @@ class QuestSet(
     @Column(nullable = false, length = 50)
     val category: String,
 
-    @Column(name = "is_public", nullable = false)
-    var isPublic: Boolean = true,
+    isPublic: Boolean = true,
 ) : BaseEntity() {
-    fun setPublic(value: Boolean) {
+    @Column(name = "is_public", nullable = false)
+    var isPublic: Boolean = isPublic
+        protected set
+
+    fun changePublic(value: Boolean) {
         isPublic = value
+    }
+
+    fun toAdminSummary(accessUsers: List<UserSummary>): QuestSetAdminSummary {
+        return QuestSetAdminSummary(
+            id = id,
+            title = title,
+            description = description,
+            sandboxType = sandboxType,
+            category = category,
+            isPublic = isPublic,
+            accessUsers = accessUsers,
+        )
     }
 }
 ```
 
-> `isPublic`을 `var`로 열어두지 않고 `setPublic()` 메서드로 감싼 이유는 Step 2의 `User.name`/
+> `isPublic`을 `var`로 열어두지 않고 `changePublic()` 메서드로 감싼 이유는 Step 2의 `User.name`/
 > `password`와 동일합니다 — "공개 여부를 바꾼다"는 의도가 드러나는 진입점을 하나로 고정해두면,
 > 나중에 "비공개로 바꿀 때 접근 권한 목록을 함께 정리한다" 같은 규칙이 생겨도 이 메서드 안에만
-> 추가하면 됩니다. 다만 `User`처럼 `protected set` 캡슐화까지는 하지 않았습니다 — Hibernate
-> 지연 로딩 프록시 이슈(Step 2의 2-0 참고)는 `open` 클래스의 `private`/`final` 조합에서만
-> 발생하고, `var` 프로퍼티에 `setPublic()`을 얹는 것만으로는 그 문제가 생기지 않기 때문입니다.
+> 추가하면 됩니다. `User`와 동일하게 `protected set`으로 캡슐화합니다 — `@Entity` 클래스는
+> `allOpen` 설정으로 자동 `open` 처리되므로, Hibernate 지연 로딩 프록시가 이 프로퍼티에
+> 접근하려면 `private`이 아니라 `protected` 이상으로 열어둬야 합니다(Step 2의 2-0 참고).
+>
+> `toAdminSummary()`는 이 `QuestSet` 자신의 필드(`id`, `title`, `description`, `sandboxType`,
+> `category`, `isPublic`)를 `QuestSetAdminSummary`로 옮기는 변환만 맡습니다. `accessUsers`는
+> `questSetAccessRepository`/`userRepository` 조회 없이는 얻을 수 없는 값이라 엔티티가 직접
+> 가져올 수 없으므로(엔티티가 리포지토리를 의존하면 도메인 → 인프라 방향 의존이 되어 레이어
+> 역할이 깨집니다), 이미 조회된 값을 파라미터로 받기만 합니다.
+
+### `QuestSet` 자체의 행동을 검증하는 `QuestSetTest`
+
+`changePublic()`과 `toAdminSummary()`도 `User`와 마찬가지로 지금까지는 `QuestServiceTest`/
+`QuestControllerTest`를 통해서만 간접적으로 실행되고 있었습니다. `QuestSet`은 `Spring`이나 DB
+없이 순수 객체 생성만으로 검증 가능하므로, 엔티티 자체의 단위 테스트를 별도로 둡니다.
+
+`src/test/kotlin/com/etude/domain/quest/QuestSetTest.kt`:
+
+```kotlin
+package com.etude.domain.quest
+
+import com.etude.domain.auth.UserRole
+import com.etude.domain.auth.UserSummary
+import com.etude.support.TestQuestSets
+import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.shouldBe
+
+class QuestSetTest : FreeSpec({
+
+    "공개 여부를 변경하면" - {
+        "isPublic이 바뀐다" {
+            val questSet = TestQuestSets.public(title = "리눅스 기초")
+
+            questSet.changePublic(false)
+
+            questSet.isPublic shouldBe false
+        }
+    }
+
+    "관리자용 요약으로 변환하면" - {
+        "자신의 필드와 전달받은 accessUsers를 그대로 담는다" {
+            val questSet = TestQuestSets.private(title = "리눅스 기초", description = "설명")
+            val accessUsers = listOf(UserSummary(1L, "멤버", "member@okestro.com", UserRole.member))
+
+            val summary = questSet.toAdminSummary(accessUsers)
+
+            summary.title shouldBe "리눅스 기초"
+            summary.description shouldBe "설명"
+            summary.isPublic shouldBe false
+            summary.accessUsers shouldBe accessUsers
+        }
+    }
+})
+```
+
+> `TestQuestSets`(3-6a)는 이 문서 뒤쪽에서 정의되지만, `QuestSet` 자체는 Spring이나 DB 없이
+> 순수 객체로 만들어지므로 `public()`/`private()`처럼 저장을 거치지 않는 함수만 있으면 여기서도
+> 바로 재사용할 수 있습니다. 구현 순서상 `TestQuestSets.kt`를 먼저 만들어두고 이 테스트를
+> 작성해야 합니다.
+
+> `toAdminSummary` 테스트가 `accessUsers`를 파라미터로 그냥 넘겨 받는 이유는, `QuestSet`이
+> 리포지토리를 모르는 순수 엔티티라 "누가 접근 권한을 가졌는지"를 스스로 조회할 방법이 없기
+> 때문입니다(위 각주 참고). 이 테스트는 "전달받은 값을 있는 그대로 담는지"만 확인하면 되고,
+> 실제로 어떤 유저들이 조회되는지는 `QuestServiceTest.getQuestSetsForAdmin`(3-2)의 책임입니다.
+
+**검증**: `./gradlew test --tests "*.QuestSetTest"` — 2개 테스트 모두 통과해야 합니다.
 
 ### `Quest` (`domain/quest/Quest.kt`)
 
@@ -234,53 +313,31 @@ class Quest(
 > 늘어납니다. `Column(columnDefinition = "JSON")`을 명시한 이유는 Hibernate 기본 매핑이 `JSON`
 > 컬럼을 `VARCHAR(255)`로 오인해 `ddl-auto: validate`가 스키마 불일치로 실패하는 걸 막기 위함입니다.
 
-### `QuestSetAccess` — 복합키라 `BaseEntity`를 쓰지 않는다
+### `QuestSetAccess` — 단일 `id` PK + `(quest_set_id, user_id)` UNIQUE 제약
 
-`quest_set_access`는 `PRIMARY KEY (quest_set_id, user_id)`인 복합키 테이블입니다. `BaseEntity`는
-단일 `id` 컬럼을 전제하므로 이 엔티티는 상속하지 않고 `@IdClass`로 직접 키를 구성합니다.
-
-`domain/quest/QuestSetAccessId.kt` — 복합키 클래스 (JPA는 `@IdClass`에 쓸 클래스가 `Serializable`,
-`equals`/`hashCode` 구현, 기본 생성자를 요구합니다 — Kotlin `data class`가 이 요건을 한 번에
-충족시켜줍니다):
-
-```kotlin
-package com.etude.domain.quest
-
-import java.io.Serializable
-
-data class QuestSetAccessId(
-    val questSetId: Long = 0,
-    val userId: Long = 0,
-) : Serializable
-```
+`quest_set_access`는 `id BIGINT AUTO_INCREMENT PRIMARY KEY`를 가지며, `(quest_set_id, user_id)`는
+복합키가 아니라 `UNIQUE KEY uk_quest_set_access`로만 중복을 막습니다. 다른 엔티티와 마찬가지로
+`BaseEntity`를 그대로 상속합니다.
 
 `domain/quest/QuestSetAccess.kt`:
 
 ```kotlin
 package com.etude.domain.quest
 
+import com.etude.domain.BaseEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.Id
-import jakarta.persistence.IdClass
 import jakarta.persistence.Table
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "quest_set_access")
-@IdClass(QuestSetAccessId::class)
 class QuestSetAccess(
-    @Id
-    @Column(name = "quest_set_id")
+    @Column(name = "quest_set_id", nullable = false)
     val questSetId: Long,
 
-    @Id
-    @Column(name = "user_id")
+    @Column(name = "user_id", nullable = false)
     val userId: Long,
-
-    @Column(name = "granted_at", nullable = false)
-    val grantedAt: LocalDateTime = LocalDateTime.now(),
-)
+) : BaseEntity()
 ```
 
 **검증**: `./gradlew compileKotlin`이 통과하는지 확인.
@@ -453,7 +510,7 @@ class QuestService(
 
     fun setPublic(questSetId: Long, isPublic: Boolean) {
         val questSet = questSetRepository.findById(questSetId) ?: throw QuestSetNotFoundException()
-        questSet.setPublic(isPublic)
+        questSet.changePublic(isPublic)
         questSetRepository.save(questSet)
     }
 
@@ -469,10 +526,10 @@ class QuestService(
 ```
 
 > `grantAccess`가 저장 전에 `existsByQuestSetIdAndUserId`로 먼저 확인하고 조용히 반환하는 이유는
-> 기존 `INSERT IGNORE`(중복 PK를 에러 없이 무시)와 동일한 멱등성을 서비스 계층에서 명시적으로
-> 재현하기 위해서입니다 — JPA `save()`는 PK가 이미 있으면 insert가 아니라 update로 동작하므로,
-> 확인 없이 그�대로 `save()`하면 `grantedAt`이 갱신되어버려 "최초 부여 시점"이라는 의미가
-> 깨집니다.
+> 기존 `INSERT IGNORE`(중복을 에러 없이 무시)와 동일한 멱등성을 서비스 계층에서 명시적으로
+> 재현하기 위해서입니다 — `QuestSetAccess(questSetId, userId)`는 매번 새 엔티티(PK `id` 미할당)를
+> 만들므로 확인 없이 그대로 `save()`하면 `(quest_set_id, user_id)` UNIQUE 제약을 두 번째 호출에서
+> 위반해 예외가 던져집니다.
 > `revokeAccess`가 대상이 없어도 예외 없이 넘어가는 이유도 기존 `DELETE ... WHERE`(대상이 없으면
 > 0 rows affected로 조용히 끝남)와 동일한 동작을 맞추기 위해서입니다.
 >
@@ -497,6 +554,8 @@ package com.etude.domain.quest
 import com.etude.domain.auth.User
 import com.etude.domain.auth.UserRepository
 import com.etude.domain.auth.UserRole
+import com.etude.support.TestQuests
+import com.etude.support.TestQuestSets
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.every
@@ -514,7 +573,7 @@ class QuestServiceTest : FreeSpec({
     "퀘스트셋 접근 권한을 확인할 때" - {
         "공개 세트면" - {
             "member도 접근할 수 있다" {
-                val publicSet = QuestSet(title = "리눅스 기초", description = null, sandboxType = "linux", category = "리눅스", isPublic = true)
+                val publicSet = TestQuestSets.public()
                 every { questSetRepository.findById(1L) } returns publicSet
 
                 questService.canAccess(userId = 10L, role = UserRole.member, questSetId = 1L) shouldBe true
@@ -523,14 +582,14 @@ class QuestServiceTest : FreeSpec({
 
         "비공개 세트라도" - {
             "관리자면 접근할 수 있다" {
-                val privateSet = QuestSet(title = "비공개", description = null, sandboxType = "linux", category = "리눅스", isPublic = false)
+                val privateSet = TestQuestSets.private()
                 every { questSetRepository.findById(1L) } returns privateSet
 
                 questService.canAccess(userId = 1L, role = UserRole.admin, questSetId = 1L) shouldBe true
             }
 
             "member는 개별 권한이 있어야 접근할 수 있다" {
-                val privateSet = QuestSet(title = "비공개", description = null, sandboxType = "linux", category = "리눅스", isPublic = false)
+                val privateSet = TestQuestSets.private()
                 every { questSetRepository.findById(1L) } returns privateSet
                 every { questSetAccessRepository.existsByQuestSetIdAndUserId(1L, 10L) } returns true
 
@@ -538,7 +597,7 @@ class QuestServiceTest : FreeSpec({
             }
 
             "member가 개별 권한도 없으면 접근할 수 없다" {
-                val privateSet = QuestSet(title = "비공개", description = null, sandboxType = "linux", category = "리눅스", isPublic = false)
+                val privateSet = TestQuestSets.private()
                 every { questSetRepository.findById(1L) } returns privateSet
                 every { questSetAccessRepository.existsByQuestSetIdAndUserId(1L, 10L) } returns false
 
@@ -568,10 +627,10 @@ class QuestServiceTest : FreeSpec({
 
         "접근 권한이 있으면" - {
             "order_index 순으로 반환한다" {
-                val publicSet = QuestSet(title = "리눅스 기초", description = null, sandboxType = "linux", category = "리눅스", isPublic = true)
+                val publicSet = TestQuestSets.public()
                 every { questSetRepository.findById(1L) } returns publicSet
                 every { questRepository.findAllByQuestSetIdOrderByOrderIndex(1L) } returns listOf(
-                    Quest(questSetId = 1L, orderIndex = 0, title = "1번", description = "설명", hint = null, solution = null, setupCmd = null, gradeCmd = "[]"),
+                    TestQuests.create(questSetId = 1L, title = "1번"),
                 )
 
                 val result = questService.getQuests(userId = 10L, role = UserRole.member, questSetId = 1L)
@@ -585,7 +644,7 @@ class QuestServiceTest : FreeSpec({
     "관리자가 퀘스트셋 공개 여부를 바꿀 때" - {
         "대상이 존재하면" - {
             "isPublic이 바뀐다" {
-                val questSet = QuestSet(title = "리눅스 기초", description = null, sandboxType = "linux", category = "리눅스", isPublic = true)
+                val questSet = TestQuestSets.public()
                 every { questSetRepository.findById(1L) } returns questSet
                 every { questSetRepository.save(questSet) } returns questSet
 
@@ -962,17 +1021,15 @@ class QuestRepositoryImpl(
 
 ### `QuestSetAccessJpaRepository.kt`, `QuestSetAccessRepositoryImpl.kt`
 
-복합키 엔티티라 `JpaRepository<QuestSetAccess, QuestSetAccessId>`처럼 두 번째 타입 파라미터에
-`@IdClass`로 지정한 `QuestSetAccessId`를 그대로 씁니다.
+다른 엔티티와 동일하게 `BaseEntity`의 단일 `id`(`Long`)를 두 번째 타입 파라미터로 씁니다.
 
 ```kotlin
 package com.etude.infrastructure.persistence.quest
 
 import com.etude.domain.quest.QuestSetAccess
-import com.etude.domain.quest.QuestSetAccessId
 import org.springframework.data.jpa.repository.JpaRepository
 
-interface QuestSetAccessJpaRepository : JpaRepository<QuestSetAccess, QuestSetAccessId> {
+interface QuestSetAccessJpaRepository : JpaRepository<QuestSetAccess, Long> {
     fun existsByQuestSetIdAndUserId(questSetId: Long, userId: Long): Boolean
     fun findAllByQuestSetId(questSetId: Long): List<QuestSetAccess>
     fun deleteByQuestSetIdAndUserId(questSetId: Long, userId: Long)
@@ -1234,59 +1291,9 @@ object TestAuth {
 }
 ```
 
-**유저 픽스처는 별도 `TestUsers` 오브젝트로 뽑습니다** — `admin@okestro.com`/`member@okestro.com`
-같은 자격증명 문자열이 테스트마다 반복되고, `User(...)` 생성자 호출도 매번 거의 동일한 인자로
-반복됩니다. Kotlin의 named argument + default parameter를 쓰면 Builder 클래스 없이도 "기본값은
-그대로 쓰고 필요한 값만 오버라이드"가 가능합니다.
-
-`src/test/kotlin/com/etude/support/TestUsers.kt`:
-
-```kotlin
-package com.etude.support
-
-import com.etude.domain.auth.User
-import com.etude.domain.auth.UserRole
-import com.etude.infrastructure.persistence.auth.UserJpaRepository
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
-
-object TestUsers {
-    const val ADMIN_EMAIL = "admin@okestro.com"
-    const val ADMIN_PASSWORD = "admin123"
-    const val MEMBER_EMAIL = "member@okestro.com"
-    const val MEMBER_PASSWORD = "member123"
-
-    fun createAdmin(
-        userJpaRepository: UserJpaRepository,
-        name: String = "관리자",
-        email: String = ADMIN_EMAIL,
-        password: String = ADMIN_PASSWORD,
-    ): User =
-        userJpaRepository.save(
-            User(name = name, email = email, password = BCryptPasswordEncoder().encode(password)!!, role = UserRole.admin)
-        )
-
-    fun createMember(
-        userJpaRepository: UserJpaRepository,
-        name: String = "멤버",
-        email: String = MEMBER_EMAIL,
-        password: String = MEMBER_PASSWORD,
-    ): User =
-        userJpaRepository.save(
-            User(name = name, email = email, password = BCryptPasswordEncoder().encode(password)!!, role = UserRole.member)
-        )
-}
-```
-
-> `TestAuth`와 `TestUsers`를 나란히 별도 오브젝트로 둔 이유는 각자 하나의 관심사만 갖게 하기
-> 위해서입니다 — `TestAuth`는 "로그인해서 토큰을 받는 방법", `TestUsers`는 "테스트용 계정을
-> 만드는 방법"만 압니다. 어느 쪽도 `IntegrationTest`(환경 설정)나 서로를 참조하지 않으므로,
-> 나중에 셋 중 하나만 재사용하거나(예: 단위 테스트에서 `TestUsers`만 쓰는 경우) 교체하기
-> 쉽습니다.
->
-> `admin@okestro.com`/`member123` 같은 문자열은 `loginAndGetToken(...)` 호출부에서만
-> `TestUsers.ADMIN_EMAIL`/`TestUsers.ADMIN_PASSWORD`로 상수화합니다. `content("""{"email":"...",
-> ...}""")`처럼 JSON 바디 안에 인라인되는 리터럴까지 전부 상수로 바꾸면 문자열 템플릿 보간이
-> 늘어나 오히려 JSON 구조를 읽기 어려워지므로, 그 부분은 리터럴을 그대로 둡니다.
+**유저 픽스처(`TestUsers`)는 Step 2(2-0)에서 이미 만들어뒀습니다** — `User` 캡슐화 직후,
+`UserTest`(Step 2)가 필요한 시점에 미리 뽑아둔 것을 여기서도 그대로 재사용합니다. 새로 만들
+필요 없이 `import com.etude.support.TestUsers`만 하면 됩니다.
 
 **퀘스트셋 픽스처는 `TestQuestSets` 오브젝트로 뽑습니다** — `QuestSet(title = "공개 세트",
 description = null, sandboxType = "linux", category = "리눅스", isPublic = true)`처럼 필드 5개짜리
@@ -1302,16 +1309,27 @@ import com.etude.domain.quest.QuestSet
 import com.etude.infrastructure.persistence.quest.QuestSetJpaRepository
 
 object TestQuestSets {
+    fun public(
+        title: String = "공개 세트",
+        description: String? = null,
+        sandboxType: String = "linux",
+        category: String = "리눅스",
+    ): QuestSet = QuestSet(title = title, description = description, sandboxType = sandboxType, category = category, isPublic = true)
+
+    fun private(
+        title: String = "비공개 세트",
+        description: String? = null,
+        sandboxType: String = "linux",
+        category: String = "리눅스",
+    ): QuestSet = QuestSet(title = title, description = description, sandboxType = sandboxType, category = category, isPublic = false)
+
     fun createPublic(
         questSetJpaRepository: QuestSetJpaRepository,
         title: String = "공개 세트",
         description: String? = null,
         sandboxType: String = "linux",
         category: String = "리눅스",
-    ): QuestSet =
-        questSetJpaRepository.save(
-            QuestSet(title = title, description = description, sandboxType = sandboxType, category = category, isPublic = true)
-        )
+    ): QuestSet = questSetJpaRepository.save(public(title, description, sandboxType, category))
 
     fun createPrivate(
         questSetJpaRepository: QuestSetJpaRepository,
@@ -1319,18 +1337,20 @@ object TestQuestSets {
         description: String? = null,
         sandboxType: String = "linux",
         category: String = "리눅스",
-    ): QuestSet =
-        questSetJpaRepository.save(
-            QuestSet(title = title, description = description, sandboxType = sandboxType, category = category, isPublic = false)
-        )
+    ): QuestSet = questSetJpaRepository.save(private(title, description, sandboxType, category))
 }
 ```
 
-> `isPublic`만 다르고 나머지 필드가 똑같은 `createPublic`/`createPrivate` 두 메서드로 나눈
-> 이유는, `isPublic: Boolean` 파라미터 하나로 통합하면 호출부에서 `TestQuestSets.create(...,
-> isPublic = true)`처럼 매번 의도를 다시 적어야 하기 때문입니다. 메서드 이름 자체가 "공개
-> 세트인지 비공개 세트인지"를 드러내면 테스트 코드를 읽을 때 별도로 `isPublic` 값을 눈으로
-> 확인할 필요가 없습니다.
+> `isPublic`만 다르고 나머지 필드가 똑같은 메서드를 `public`/`private`(순수 생성)과
+> `createPublic`/`createPrivate`(생성 + 저장) 두 켤레로 나눈 이유는, `isPublic: Boolean`
+> 파라미터 하나로 통합하면 호출부에서 `TestQuestSets.create(..., isPublic = true)`처럼 매번
+> 의도를 다시 적어야 하기 때문입니다. 메서드 이름 자체가 "공개 세트인지 비공개 세트인지"를
+> 드러내면 테스트 코드를 읽을 때 별도로 `isPublic` 값을 눈으로 확인할 필요가 없습니다.
+>
+> `public()`/`private()`가 따로 있는 이유는 `TestUsers.admin()`/`member()`와 동일합니다 —
+> `createPublic`/`createPrivate`는 `QuestSetJpaRepository`가 필요해 `IntegrationTest`에서만
+> 쓸 수 있고, `QuestSetTest`(Spring/DB 없이 순수 `QuestSet` 객체만 다루는 단위 테스트)에서는
+> 저장 없이 객체만 만드는 `public()`/`private()`가 있어야 픽스처를 재사용할 수 있습니다.
 
 **퀘스트 픽스처는 `TestQuests` 오브젝트로 뽑습니다** — `Quest(questSetId = publicSet.id,
 orderIndex = 0, title = "1번 퀘스트", description = "설명", hint = null, solution = null, setupCmd
@@ -1347,6 +1367,26 @@ import com.etude.infrastructure.persistence.quest.QuestJpaRepository
 
 object TestQuests {
     fun create(
+        questSetId: Long,
+        orderIndex: Int = 0,
+        title: String = "1번 퀘스트",
+        description: String = "설명",
+        hint: String? = null,
+        solution: String? = null,
+        setupCmd: String? = null,
+        gradeCmd: String = "[]",
+    ): Quest = Quest(
+        questSetId = questSetId,
+        orderIndex = orderIndex,
+        title = title,
+        description = description,
+        hint = hint,
+        solution = solution,
+        setupCmd = setupCmd,
+        gradeCmd = gradeCmd,
+    )
+
+    fun createAndSave(
         questJpaRepository: QuestJpaRepository,
         questSetId: Long,
         orderIndex: Int = 0,
@@ -1356,21 +1396,14 @@ object TestQuests {
         solution: String? = null,
         setupCmd: String? = null,
         gradeCmd: String = "[]",
-    ): Quest =
-        questJpaRepository.save(
-            Quest(
-                questSetId = questSetId,
-                orderIndex = orderIndex,
-                title = title,
-                description = description,
-                hint = hint,
-                solution = solution,
-                setupCmd = setupCmd,
-                gradeCmd = gradeCmd,
-            )
-        )
+    ): Quest = questJpaRepository.save(create(questSetId, orderIndex, title, description, hint, solution, setupCmd, gradeCmd))
 }
 ```
+
+> `TestUsers`/`TestQuestSets`와 동일하게 순수 생성(`create`)과 저장(`createAndSave`)을
+> 나눕니다 — `QuestServiceTest`(3-2)처럼 mockk만으로 동작하는 순수 단위 테스트는
+> `QuestJpaRepository`가 없어도 `Quest` 객체가 필요하고, `QuestControllerTest`(3-6)처럼 실제
+> DB에 넣어야 하는 통합 테스트는 저장까지 하는 함수가 필요하기 때문입니다.
 
 > `TestQuestSets`와 달리 `questSetId`에는 기본값을 주지 않습니다 — 어느 퀘스트셋에 속한 퀘스트인지는
 > 테스트 시나리오마다 다르고(`publicSet.id`인지 `privateSet.id`인지), 잘못된 기본값을 실수로
@@ -1420,7 +1453,7 @@ class QuestControllerTest(
         TestUsers.createMember(userJpaRepository)
         publicSet = TestQuestSets.createPublic(questSetJpaRepository)
         privateSet = TestQuestSets.createPrivate(questSetJpaRepository)
-        TestQuests.create(questJpaRepository, questSetId = publicSet.id)
+        TestQuests.createAndSave(questJpaRepository, questSetId = publicSet.id)
     }
 
     "퀘스트셋 목록을 조회하면" - {

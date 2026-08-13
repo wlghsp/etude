@@ -4,6 +4,20 @@ import com.etude.domain.quest.QuestSet
 import com.etude.infrastructure.persistence.quest.QuestSetJpaRepository
 
 object TestQuestSets {
+    fun public(
+        title: String = "공개 세트",
+        description: String? = null,
+        sandboxType: String = "linux",
+        category: String = "리눅스",
+    ) : QuestSet = QuestSet(title = title, description = description, sandboxType = sandboxType, category = category, isPublic = true)
+
+    fun private(
+        title: String = "비공개 세트",
+        description: String? = null,
+        sandboxType: String = "linux",
+        category: String = "리눅스",
+    ) : QuestSet = QuestSet(title = title, description = description, sandboxType = sandboxType, category = category, isPublic = false)
+
     fun createPublic(
         questSetJpaRepository: QuestSetJpaRepository,
         title: String = "공개 세트",
@@ -11,9 +25,7 @@ object TestQuestSets {
         sandboxType: String = "linux",
         category: String = "리눅스",
     ) : QuestSet =
-        questSetJpaRepository.save(
-            QuestSet(title = title, description = description, sandboxType = sandboxType, category = category, isPublic = true)
-        )
+        questSetJpaRepository.save(public(title = title, description = description, sandboxType = sandboxType, category = category))
 
     fun createPrivate(
         questSetJpaRepository: QuestSetJpaRepository,
@@ -22,7 +34,5 @@ object TestQuestSets {
         sandboxType: String = "linux",
         category: String = "리눅스",
     ) : QuestSet =
-        questSetJpaRepository.save(
-            QuestSet(title = title, description = description, sandboxType = sandboxType, category = category, isPublic = false)
-        )
+        questSetJpaRepository.save(private(title = title, description = description, sandboxType = sandboxType, category = category))
 }

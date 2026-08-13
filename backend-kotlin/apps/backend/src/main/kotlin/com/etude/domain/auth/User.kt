@@ -27,6 +27,10 @@ class User(
     var password: String = password
         protected set
 
+    fun changeName(newName: String) {
+        name = newName
+    }
+
     fun changePassword(encodePassword: String) {
         password = encodePassword
     }
