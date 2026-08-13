@@ -47,7 +47,7 @@ class QuestService(
     }
 
     fun setPublic(questSetId: Long, isPublic: Boolean) {
-        val questSet = questSetRepository.findById(questSetId) ?: throw QuestSetNotFoundException()
+        val questSet = questSetRepository.getById(questSetId)
 
         questSet.changePublic(isPublic)
         questSetRepository.save(questSet)

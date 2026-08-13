@@ -8,6 +8,7 @@ import com.etude.domain.auth.UserRepository
 import com.etude.domain.auth.UserRole
 import com.etude.domain.auth.UserSummary
 import com.etude.domain.auth.WrongPasswordException
+import com.etude.domain.auth.getById
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -30,13 +31,13 @@ class UserService(
     }
 
     fun resetPassword(id: Long, newPassword: String) {
-        val user = userRepository.findById(id) ?: throw UserNotFoundException()
+        val user = userRepository.getById(id)
         user.changePassword(passwordEncoder.encode(newPassword))
         userRepository.save(user)
     }
 
     fun changeOwnPassword(userId: Long, currentPassword: String, newPassword: String) {
-        val user = userRepository.findById(userId) ?: throw UserNotFoundException()
+        val user = userRepository.getById(userId)
 
         if (!user.matchesPassword(currentPassword, passwordEncoder)) throw WrongPasswordException()
 

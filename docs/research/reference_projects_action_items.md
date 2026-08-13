@@ -38,7 +38,7 @@
 
 **할 일**: `fun UserRepository.getById(id: Long): User = findById(id) ?: throw UserNotFoundException()`
 처럼 리포지토리 인터페이스별 확장 함수를 추가. `QuestSetRepository`, `QuestRepository`도 동일
-패턴 적용.
+패턴 적용. 상세 가이드: [guide_repository_getby_extension.md](../guides/guide_repository_getby_extension.md).
 
 **시점**: Step 3부터 도메인이 늘어나며 반복이 커지기 전에 습관을 잡아두면 좋다. 기존 Step 1/2
 코드를 당장 리팩터링할 필요는 없음 — 새로 짜는 코드부터 적용.

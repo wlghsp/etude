@@ -6,3 +6,5 @@ interface QuestSetRepository {
     fun findAll(): List<QuestSet>
     fun save(questSet: QuestSet): QuestSet
 }
+
+fun QuestSetRepository.getById(id: Long): QuestSet = findById(id) ?: throw QuestSetNotFoundException()

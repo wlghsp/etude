@@ -7,3 +7,5 @@ interface UserRepository {
     fun findAllByRole(role: UserRole): List<User>
     fun save(user: User): User
 }
+
+fun UserRepository.getById(id: Long): User = findById(id) ?: throw UserNotFoundException()
