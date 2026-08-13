@@ -1,9 +1,10 @@
 package com.etude.config
 
-import com.etude.infrastructure.security.JwtAuthFilter
-import com.etude.infrastructure.security.REQUEST_ATTR_JWT_PAYLOAD
 import com.etude.domain.auth.JwtPayload
 import com.etude.domain.auth.UserRole
+import com.etude.infrastructure.security.JwtAuthFilter
+import com.etude.infrastructure.security.LoginUserArgumentResolver
+import com.etude.infrastructure.security.REQUEST_ATTR_JWT_PAYLOAD
 import com.etude.support.error.CoreException
 import com.etude.support.error.ErrorType
 import jakarta.servlet.http.HttpServletRequest
@@ -11,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse
 import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
@@ -28,6 +30,10 @@ class WebConfig(
             .addPathPatterns("/me", "/me/password", "/admin/**", "/quest-sets/**", "/progress", "/leaderboard")
         registry.addInterceptor(AdminInterceptor())
             .addPathPatterns("/admin/**")
+    }
+
+    override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
+        resolvers.add(LoginUserArgumentResolver())
     }
 }
 

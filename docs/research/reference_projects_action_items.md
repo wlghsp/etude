@@ -1,7 +1,8 @@
 # 참고 프로젝트 분석 종합 — Etude 적용 개선 항목
 
-세 참고 프로젝트를 분석한 결과([woowacourse_service_apply_analysis.md](woowacourse_service_apply_analysis.md),
-[cafekiosk_analysis.md](cafekiosk_analysis.md), [splearn_analysis.md](splearn_analysis.md))에서
+다섯 참고 프로젝트를 분석한 결과([woowacourse_service_apply_analysis.md](woowacourse_service_apply_analysis.md),
+[cafekiosk_analysis.md](cafekiosk_analysis.md), [splearn_analysis.md](splearn_analysis.md),
+[coffeehouse_analysis.md](coffeehouse_analysis.md), [todoapp_analysis.md](todoapp_analysis.md))에서
 나온 Etude 적용 제안을 한곳에 모은 실행 목록이다. 각 항목은 원본 분석 문서의 근거를 링크로만
 남기고, 여기서는 "무엇을 어떻게 할지"에 집중한다.
 
@@ -75,6 +76,29 @@ actual transaction available for current thread")으로 실패했다. `save()`(S
 때부터 클래스 레벨 `@Transactional`을 기본으로 붙인다 — "지금은 `save()`만 써서 안전하다"는
 판단에 기대지 않는다. 나중에 파생 쿼리를 추가하는 순간 조용히 깨질 수 있기 때문이다.
 
+### 1-5a. `@LoginUser` 리졸버 구현 시 `todoapp` 예제로 대조
+
+**출처**: [todoapp_analysis.md 1](todoapp_analysis.md)
+
+`todoapp`의 `UserSessionHandlerMethodArgumentResolver`(`web/support/method/`)가
+[guide_loginuser_resolver.md](../guides/guide_loginuser_resolver.md)에서 만들려는 것과 동일한
+`HandlerMethodArgumentResolver` 패턴을 실제로 동작시키고 있다 — 어노테이션 없이 파라미터 타입만
+보고 판단한다는 점만 다르다(Etude는 `@LoginUser` 어노테이션 기반으로 이미 결정).
+
+**할 일**: 별도 작업 아님 — 가이드대로 구현하다 막히면 이 파일을 코드 레벨로 대조하는 용도.
+
+### 1-5b. `ExecutionTimeHandlerInterceptor` — API 응답시간 로깅 인터셉터
+
+**출처**: [todoapp_analysis.md 7](todoapp_analysis.md)
+
+**문제**: 배포 후 API 응답 시간을 눈으로 확인할 방법이 아직 없다.
+
+**할 일**: `todoapp`의 `ExecutionTimeHandlerInterceptor`(`StopWatch`로 요청 처리시간 측정,
+`Ordered.MIN_VALUE`로 가장 먼저 실행)를 참고해 동일한 인터셉터를 추가하고 `WebConfig`에 등록.
+
+**시점**: 지금은 운영 모니터링 요구가 없어 보류. 배포 후 실제로 응답 시간을 확인하고 싶어지면
+가장 먼저 참고.
+
 ### 1-5. `QuestSet`/`Quest` fixture를 `TestUsers`처럼 공용 오브젝트로 (완료)
 
 **출처**: [cafekiosk_analysis.md 4-3](cafekiosk_analysis.md)
@@ -130,3 +154,10 @@ splearn 분석에서 "코드-문서 간 명시적 링크 부재"를 약점으로
 - **2단계 DTO 변환**(컨트롤러 DTO → 서비스 DTO, cafekiosk), **REST Docs**(cafekiosk), **동적
   테스트**(cafekiosk) — 지금 Etude 규모나 이미 갖춘 도구(springdoc, Kotest)를 감안하면 도입
   비용 대비 得이 낮다고 판단, 보류.
+- **모듈 간 호출을 인터페이스(포트) 뒤에 숨기고 구현체를 동기 HTTP/메시징으로 교체 가능하게
+  두기**(coffeehouse) — Etude가 지금 단일 모듈이라 적용 대상 자체가 없다. 나중에 도메인이 늘어나
+  물리적으로 모듈을 쪼갤 때, 도메인 서비스 간 호출도 이 원칙으로 감싸두면 통신 방식이 바뀌어도
+  호출부가 영향받지 않는다는 것만 기억해둔다.
+- **도메인별 물리적 모듈 분리 + `@EnableXxxModule` 부트스트랩 애노테이션**(coffeehouse) — 지금
+  도메인 개수(`auth`/`user`/`quest` 3개)에서는 오버엔지니어링. 도메인이 훨씬 늘어나 빌드 시간이나
+  팀 단위 소유권 분리가 실제 문제가 될 때 재검토.
