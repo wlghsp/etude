@@ -20,6 +20,7 @@
 - `docs/etude_dev_plan.md` — 개발 계획 및 아키텍처
 - `docs/etude_dev_guide.md` — Phase별 가이드 인덱스
 - `docs/guides/` — Phase별 구현 가이드
+- `docs/testing/` — 테스트 전략/원칙 (Phase 순서와 무관하게 계속 참고하는 문서)
 - `docs/ops/` — 운영 가이드 (배포 후 반복 운영 절차), 트러블슈팅 기록 (`troubleshooting_{날짜}_{주제}.md`)
 - `docs/specs/` — Phase별 명세
 - `docs/glossary/` — 개념 설명
