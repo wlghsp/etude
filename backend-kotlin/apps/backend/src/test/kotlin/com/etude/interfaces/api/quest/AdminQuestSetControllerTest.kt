@@ -132,4 +132,83 @@ class AdminQuestSetControllerTest(
                 .andExpect(status().isForbidden)
         }
     }
+
+    "토큰 없이 관리자용 퀘스트셋 목록을 조회하면" - {
+        "401을 반환한다" {
+            mockMvc.perform(get("/admin/quest-sets"))
+                .andExpect(status().isUnauthorized)
+        }
+    }
+
+    "member 권한으로 공개 여부를 변경하면" - {
+        "403을 반환한다" {
+            val token = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
+
+            mockMvc.perform(
+                patch("/admin/quest-sets/${privateSet.id}")
+                    .header("Authorization", "Bearer $token")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"isPublic":false}""")
+            )
+                .andExpect(status().isForbidden)
+        }
+    }
+
+    "member 권한으로 접근 권한을 부여하면" - {
+        "403을 반환한다" {
+            val token = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
+
+            mockMvc.perform(
+                post("/admin/quest-sets/${privateSet.id}/access")
+                    .header("Authorization", "Bearer $token")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"userId":${memberId}}""")
+            )
+                .andExpect(status().isForbidden)
+        }
+    }
+
+
+    "member 권한으로 접근 권한을 회수하면" - {
+        "403을 반환한다" {
+            val token = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
+
+            mockMvc.perform(
+                delete("/admin/quest-sets/${privateSet.id}/access/$memberId")
+                    .header("Authorization", "Bearer $token")
+            )
+                .andExpect(status().isForbidden)
+        }
+    }
+
+    "이미 접근 권한이 있는 사용자에게 다시 권한을 부여하면" - {
+        "에러 없이 200을 반환한다" {
+            val adminToken = loginAndGetToken(TestUsers.ADMIN_EMAIL, TestUsers.ADMIN_PASSWORD)
+            mockMvc.perform(
+                post("/admin/quest-sets/${privateSet.id}/access")
+                    .header("Authorization", "Bearer $adminToken")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"userId":$memberId}""")
+            ).andExpect(status().isOk)
+
+            mockMvc.perform(
+                post("/admin/quest-sets/${privateSet.id}/access")
+                    .header("Authorization", "Bearer $adminToken")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"userId":$memberId}""")
+            ).andExpect(status().isOk)
+        }
+    }
+
+    "권한이 없던 사용자의 접근 권한을 회수하면" - {
+        "에러 없이 200을 반환한다" {
+            val adminToken = loginAndGetToken(TestUsers.ADMIN_EMAIL, TestUsers.ADMIN_PASSWORD)
+            mockMvc.perform(
+                delete("/admin/quest-sets/${privateSet.id}/access/${memberId}")
+                    .header("Authorization", "Bearer $adminToken")
+            ).andExpect(status().isOk)
+
+        }
+    }
+
 })

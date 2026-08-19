@@ -42,7 +42,7 @@ ln -sf ~/.colima/default/docker.sock ~/.docker/run/docker.sock
 | Phase 9 — 인앱 피드백 | (Phase 7f 구현 완료, 가이드 미작성) | [specs/spec_phase9_feedback.md](specs/spec_phase9_feedback.md) | ✅ 완료 |
 | Phase 10 — vcluster 전환 + KLID CMP 현장실습 | [guides/guide_phase10_klid_cmp.md](guides/guide_phase10_klid_cmp.md) | [specs/spec_phase10_klid_cmp.md](specs/spec_phase10_klid_cmp.md) | 대기 |
 | Phase 11 — 퀘스트 콘텐츠 확장 2 | (Phase 10 완료 후 작성) | (Phase 10 완료 후 작성) | 대기 |
-| Phase 12 — 백엔드 Kotlin/Spring Boot 마이그레이션 | Step별 가이드 — 명세의 "마이그레이션 순서" 표 참고 | [specs/spec_phase12_kotlin_migration.md](specs/spec_phase12_kotlin_migration.md) | 진행 중 (Step 0) |
+| Phase 12 — 백엔드 Kotlin/Spring Boot 마이그레이션 | Step별 가이드 — 명세의 "마이그레이션 순서" 표 참고 | [specs/spec_phase12_kotlin_migration.md](specs/spec_phase12_kotlin_migration.md) | 진행 중 (Step 3 완료, Step 4 예정) |
 
 ---
 

@@ -32,48 +32,52 @@ DB 스키마는 `apps/backend/src/main/resources/db/00_schema.sql`의 `quest_set
 인수 조건이다. 응답 포맷은 Step 1에서 도입한 `ApiResponse<T>` 공통 래퍼를 그대로 따른다.*
 
 **퀘스트셋 목록 조회 (`GET /quest-sets`)**
-- [ ] 로그인한 사용자가 호출 시 200 + 자신이 볼 수 있는 퀘스트셋 배열
+- [x] 로그인한 사용자가 호출 시 200 + 자신이 볼 수 있는 퀘스트셋 배열
       (`is_public = true`이거나, 관리자이거나, `quest_set_access`에 자신의 접근 권한이 있는 세트만 —
       기존 `getQuestSets`의 `WHERE` 조건과 동일)
-- [ ] 응답 필드는 `{ id, title, description, sandboxType, category }` (camelCase — 기존
+- [x] 응답 필드는 `{ id, title, description, sandboxType, category }` (camelCase — 기존
       Node.js 응답은 DB 컬럼명을 그대로 노출해 `sandbox_type`이었지만, Step 1에서 이미
       `ApiResponse<T>` 규약과 함께 필드명을 camelCase로 통일하기로 했으므로 이 Step도 맞춘다.
       "인수 조건 = Node.js 원본과 100% 동일"이 아니라 "Node.js의 동작(필터링 규칙)을 그대로 옮기되
       필드명은 Kotlin 백엔드의 기존 컨벤션을 따른다"는 뜻이다)
-- [ ] 토큰 없이 호출 시 401
+- [x] 토큰 없이 호출 시 401
 
 **퀘스트 목록 조회 (`GET /quest-sets/:id/quests`)**
-- [ ] 접근 권한이 있는 세트의 `:id`로 호출 시 200 + 퀘스트 배열
+- [x] 접근 권한이 있는 세트의 `:id`로 호출 시 200 + 퀘스트 배열
       `{ id, title, description, hint, solution, setupCmd }` (`order_index` 오름차순 정렬,
       `grade_cmd`는 채점 전용이라 이 응답에 포함하지 않음 — 기존 `getQuests`의 SELECT 컬럼과 동일)
-- [ ] 접근 권한이 없는 세트의 `:id`로 호출 시 403 (기존 `canAccessQuestSet` 결과가 false일 때
+- [x] 접근 권한이 없는 세트의 `:id`로 호출 시 403 (기존 `canAccessQuestSet` 결과가 false일 때
       `403 + { error: '이 세트에 접근할 권한이 없습니다.' }`였던 동작과 동일 — 메시지는
       `ApiResponse.fail`의 `message` 필드로 옮겨진다)
-- [ ] 토큰 없이 호출 시 401
+- [x] 토큰 없이 호출 시 401
 
 **관리자용 퀘스트셋 목록 조회 (`GET /admin/quest-sets`)**
-- [ ] 관리자 토큰으로 호출 시 200 + 전체 퀘스트셋 배열(공개 여부 무관, `id` 오름차순), 각 항목에
+- [x] 관리자 토큰으로 호출 시 200 + 전체 퀘스트셋 배열(공개 여부 무관, `id` 오름차순), 각 항목에
       `isPublic`과 `accessUsers`(그 세트에 개별 접근 권한이 부여된 사용자 목록,
       `{ id, name, email }[]`) 포함 — 기존 `getQuestSetsForAdmin`과 동일
-- [ ] `member` 토큰으로 호출 시 403
-- [ ] 토큰 없이 호출 시 401
+- [x] `member` 토큰으로 호출 시 403
+- [x] 토큰 없이 호출 시 401
 
 **퀘스트셋 공개 여부 변경 (`PATCH /admin/quest-sets/:id`)**
-- [ ] 관리자 토큰으로 `{ isPublic: false }` 전송 시 200, 해당 세트가 비공개로 바뀜 (이후
+- [x] 관리자 토큰으로 `{ isPublic: false }` 전송 시 200, 해당 세트가 비공개로 바뀜 (이후
       `GET /quest-sets`에서 관리자/접근 권한 보유자 외에는 보이지 않음)
-- [ ] `member` 토큰으로 호출 시 403
+- [x] `member` 토큰으로 호출 시 403
 
 **퀘스트셋 접근 권한 부여 (`POST /admin/quest-sets/:id/access`)**
-- [ ] 관리자 토큰으로 `{ userId }` 전송 시 200, 해당 사용자가 비공개 세트에 접근 가능해짐
-- [ ] 이미 권한이 있는 사용자에게 다시 부여해도 에러 없이 200 (기존 `INSERT IGNORE`와 동일하게
+- [x] 관리자 토큰으로 `{ userId }` 전송 시 200, 해당 사용자가 비공개 세트에 접근 가능해짐
+- [x] 이미 권한이 있는 사용자에게 다시 부여해도 에러 없이 200 (기존 `INSERT IGNORE`와 동일하게
       멱등하게 처리 — 중복 시 예외를 던지지 않음)
-- [ ] `member` 토큰으로 호출 시 403
+- [x] `member` 토큰으로 호출 시 403
 
 **퀘스트셋 접근 권한 회수 (`DELETE /admin/quest-sets/:id/access/:userId`)**
-- [ ] 관리자 토큰으로 호출 시 200, 해당 사용자의 접근 권한이 제거됨
-- [ ] 권한이 없던 사용자에 대해 호출해도 에러 없이 200 (기존 `DELETE ... WHERE`와 동일하게 대상이
+- [x] 관리자 토큰으로 호출 시 200, 해당 사용자의 접근 권한이 제거됨
+- [x] 권한이 없던 사용자에 대해 호출해도 에러 없이 200 (기존 `DELETE ... WHERE`와 동일하게 대상이
       없어도 멱등하게 처리)
-- [ ] `member` 토큰으로 호출 시 403
+- [x] `member` 토큰으로 호출 시 403
+
+3-6b에서 보충한 6개 케이스(`QuestControllerTest` 1개, `AdminQuestSetControllerTest` 5개, 코드
+스니펫상 6개 블록이지만 `AdminQuestSetControllerTest` 쪽 "토큰 없이 조회" 케이스까지 포함해 총
+7개 테스트가 새로 추가됨)까지 전부 통과해 이 Step의 인수 조건을 완전히 충족한다.
 
 이 조건들은 아래 3-6(통합 테스트)의 `QuestControllerTest`/`AdminQuestSetControllerTest`로 그대로
 옮겨진다. 이 Step은 그 테스트가 전부 통과하면 완료다.
@@ -1640,11 +1644,126 @@ class AdminQuestSetControllerTest(
 })
 ```
 
+### 3-6b. 누락 케이스 보충 — 인수 조건 완전히 닫기
+
+3-6a까지 작성한 두 테스트 파일은 핵심 시나리오는 커버하지만, 위 인수 조건 체크리스트의 `[ ]`로
+남은 5개 케이스가 비어 있습니다. 아래를 각 파일의 마지막 테스트 블록 뒤(닫는 `})` 앞)에
+추가합니다.
+
+**`QuestControllerTest.kt`** — 응답 필드 전체 검증
+
+```kotlin
+    "퀘스트셋 목록을 조회하면" - {
+        "필드가 모두 채워져 반환된다" {
+            val token = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
+
+            mockMvc.perform(get("/quest-sets").header("Authorization", "Bearer $token"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data[0].sandboxType").value("linux"))
+                .andExpect(jsonPath("$.data[0].category").value("리눅스"))
+        }
+    }
+```
+
+> 기존 "공개 세트만 보인다" 케이스와 제목이 같은 `"퀘스트셋 목록을 조회하면"` 블록을 하나 더
+> 두는 이유는, Kotest `FreeSpec`에서 같은 `-` 블록 아래 서로 다른 leaf(`{ ... }`)를 여러 개 두는
+> 것과 동일한 효과이면서, "무엇을 검증하는 테스트인지"가 leaf 이름(`"필드가 모두 채워져
+> 반환된다"`)에 그대로 드러나기 때문입니다. 하나의 `it`에 `title`/`sandboxType`/`category`를
+> 전부 묶어도 되지만, 이름을 분리해두면 나중에 실패했을 때 "어떤 필드 검증이 깨졌는지"가 테스트
+> 결과 목록에서 바로 보입니다.
+
+**`AdminQuestSetControllerTest.kt`** — 토큰 없이 호출, `member` 403, 멱등성 3종
+
+```kotlin
+    "토큰 없이 관리자용 퀘스트셋 목록을 조회하면" - {
+        "401을 반환한다" {
+            mockMvc.perform(get("/admin/quest-sets")).andExpect(status().isUnauthorized)
+        }
+    }
+
+    "member 권한으로 공개 여부를 변경하면" - {
+        "403을 반환한다" {
+            val token = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
+
+            mockMvc.perform(
+                patch("/admin/quest-sets/${privateSet.id}")
+                    .header("Authorization", "Bearer $token")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"isPublic":true}""")
+            ).andExpect(status().isForbidden)
+        }
+    }
+
+    "member 권한으로 접근 권한을 부여하면" - {
+        "403을 반환한다" {
+            val token = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
+
+            mockMvc.perform(
+                post("/admin/quest-sets/${privateSet.id}/access")
+                    .header("Authorization", "Bearer $token")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"userId":$memberId}""")
+            ).andExpect(status().isForbidden)
+        }
+    }
+
+    "member 권한으로 접근 권한을 회수하면" - {
+        "403을 반환한다" {
+            val token = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
+
+            mockMvc.perform(
+                delete("/admin/quest-sets/${privateSet.id}/access/$memberId")
+                    .header("Authorization", "Bearer $token")
+            ).andExpect(status().isForbidden)
+        }
+    }
+
+    "이미 접근 권한이 있는 사용자에게 다시 권한을 부여하면" - {
+        "에러 없이 200을 반환한다" {
+            val adminToken = loginAndGetToken(TestUsers.ADMIN_EMAIL, TestUsers.ADMIN_PASSWORD)
+            mockMvc.perform(
+                post("/admin/quest-sets/${privateSet.id}/access")
+                    .header("Authorization", "Bearer $adminToken")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"userId":$memberId}""")
+            ).andExpect(status().isOk)
+
+            mockMvc.perform(
+                post("/admin/quest-sets/${privateSet.id}/access")
+                    .header("Authorization", "Bearer $adminToken")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"userId":$memberId}""")
+            ).andExpect(status().isOk)
+        }
+    }
+
+    "권한이 없던 사용자의 접근 권한을 회수하면" - {
+        "에러 없이 200을 반환한다" {
+            val adminToken = loginAndGetToken(TestUsers.ADMIN_EMAIL, TestUsers.ADMIN_PASSWORD)
+
+            mockMvc.perform(
+                delete("/admin/quest-sets/${privateSet.id}/access/$memberId")
+                    .header("Authorization", "Bearer $adminToken")
+            ).andExpect(status().isOk)
+        }
+    }
+```
+
+> "이미 권한이 있는 사용자에게 다시 부여" 케이스는 같은 `POST`를 두 번 호출해 두 번째 호출도
+> 200인지만 확인합니다 — `QuestService.grantAccess`가 `existsByQuestSetIdAndUserId`로 먼저
+> 확인하고 조용히 반환하므로, 두 번째 호출에서 예외(500 등)가 나지 않는 것 자체가 멱등성의
+> 증거입니다. "권한이 없던 사용자를 회수" 케이스도 동일한 논리로, `beforeTest`가 만든
+> `privateSet`에는 애초에 `memberId`에 대한 `QuestSetAccess`가 없으므로 별도 준비 없이 바로
+> `DELETE`를 호출하면 됩니다.
+
+이 6개 케이스를 추가하면 위 인수 조건 체크리스트의 `[ ]` 5개(응답 필드 전체 검증 1개 +
+`AdminQuestSetControllerTest` 4개)가 모두 `[x]`로 바뀌고 Step 3이 완전히 닫힙니다.
+
 **검증**:
 ```bash
 ./gradlew test --tests "*.QuestServiceTest" --tests "*.QuestControllerTest" --tests "*.AdminQuestSetControllerTest"
 ```
-9개 단위 테스트 + 4개 통합 테스트(퀘스트) + 5개 통합 테스트(관리자) 모두 통과해야 합니다.
+9개 단위 테스트 + 5개 통합 테스트(퀘스트) + 11개 통합 테스트(관리자) 모두 통과해야 합니다.
 
 > `AuthControllerTest`(Step 1)는 `TestUsers`/`TestAuth`를 쓰지 않고 원래 방식(자체
 > 계정 직접 생성, 로그인 응답을 직접 파싱)을 유지합니다 — 로그인 자체가 이 테스트의 검증

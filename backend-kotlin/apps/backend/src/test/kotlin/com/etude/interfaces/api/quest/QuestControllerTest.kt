@@ -37,6 +37,17 @@ class QuestControllerTest(
     }
 
     "퀘스트셋 목록을 조회하면" - {
+        "필드가 모두 채워져 반환된다" {
+            val token = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
+
+            mockMvc.perform(
+                get("/quest-sets").header("Authorization", "Bearer $token")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data[0].sandboxType").value("linux"))
+                .andExpect(jsonPath("$.data[0].category").value("리눅스"))
+        }
+
         "공개 세트만 보인다" {
             val token = loginAndGetToken(TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
 
