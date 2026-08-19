@@ -23,7 +23,6 @@ class UserAdminControllerTest(
     fun loginAndGetToken(email: String, password: String): String = TestAuth.loginAndGetToken(mockMvc, email, password)
 
     beforeTest {
-        userJpaRepository.deleteAll()
         TestUsers.createAdmin(userJpaRepository)
         TestUsers.createMember(userJpaRepository)
     }

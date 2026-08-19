@@ -34,10 +34,6 @@ class AdminQuestSetControllerTest(
     var memberId: Long by Delegates.notNull()
 
     beforeTest {
-        questSetAccessJpaRepository.deleteAll()
-        questSetJpaRepository.deleteAll()
-        userJpaRepository.deleteAll()
-
         TestUsers.createAdmin(userJpaRepository)
         val member = TestUsers.createMember(userJpaRepository)
         memberId = member.id

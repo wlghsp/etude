@@ -21,7 +21,6 @@ class AuthControllerTest(
 ) : IntegrationTest({
 
     beforeTest {
-        userJpaRepository.deleteAll()
         userJpaRepository.save(
             User(name = "테스트", email = "test@okestro.com", password = BCryptPasswordEncoder().encode("password123")!!, role = UserRole.member)
         )

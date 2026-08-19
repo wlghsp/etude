@@ -25,10 +25,6 @@ class QuestControllerTest(
     lateinit var privateSet: QuestSet
 
     beforeTest {
-        questJpaRepository.deleteAll()
-        questSetJpaRepository.deleteAll()
-        userJpaRepository.deleteAll()
-
         TestUsers.createAdmin(userJpaRepository)
         TestUsers.createMember(userJpaRepository)
         publicSet = TestQuestSets.createPublic(questSetJpaRepository)

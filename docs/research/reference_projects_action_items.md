@@ -74,6 +74,12 @@ actual transaction available for current thread")으로 실패했다. `save()`(S
 때부터 클래스 레벨 `@Transactional`을 기본으로 붙인다 — "지금은 `save()`만 써서 안전하다"는
 판단에 기대지 않는다. 나중에 파생 쿼리를 추가하는 순간 조용히 깨질 수 있기 때문이다.
 
+**추가 결정** (Step 4, [guide_phase12_step4_progress_feedback.md](../guides/guide_phase12_step4_progress_feedback.md)):
+조회만 하는 도메인 서비스(`ProgressService` 등)도 `@Transactional(readOnly = true)`를 명시적으로
+붙인다 — "쓰기가 없으면 안 붙여도 된다"는 게 아니라, 읽기 전용임을 코드로 드러내고 Hibernate의
+dirty checking을 생략하는 성능 이점을 얻기 위해서다. `AuthService.login`(Step 1)에는 이 어노테이션이
+없지만, 이후 새로 만드는 조회 전용 서비스는 이 방식을 기본으로 따른다.
+
 ### 1-5a. `@LoginUser` 리졸버 구현 시 `todoapp` 예제로 대조
 
 **출처**: [todoapp_analysis.md 1](todoapp_analysis.md)

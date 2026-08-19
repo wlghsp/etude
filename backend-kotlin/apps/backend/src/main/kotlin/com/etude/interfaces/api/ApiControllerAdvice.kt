@@ -8,6 +8,7 @@ import com.etude.support.error.ErrorType
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
@@ -50,6 +51,12 @@ class ApiControllerAdvice {
     @ExceptionHandler
     fun handle(e: QuestSetNotFoundException): ResponseEntity<ApiResponse<*>> =
         failureResponse(HttpStatus.NOT_FOUND, ErrorType.NOT_FOUND.code, e.message!!)
+
+    @ExceptionHandler
+    fun handle(e: MethodArgumentNotValidException): ResponseEntity<ApiResponse<*>> {
+        val message = e.bindingResult?.fieldErrors?.firstOrNull()?.defaultMessage ?: "잘못된 요청입니다."
+        return failureResponse(HttpStatus.BAD_REQUEST, ErrorType.BAD_REQUEST.code, message)
+    }
 
     private fun failureResponse(status: HttpStatus, errorCode: String, message: String): ResponseEntity<ApiResponse<*>> =
         ResponseEntity(ApiResponse.fail(errorCode = errorCode, errorMessage = message), status)

@@ -49,6 +49,11 @@ annotation class LoginUser
 
 ### 2. `LoginUserArgumentResolver` (`infrastructure/security/LoginUserArgumentResolver.kt`)
 
+파라미터를 `JwtPayload`(non-null)로 선언하면 payload가 없을 때 401을 던지고, `JwtPayload?`
+(nullable)로 선언하면 없을 때 그냥 `null`을 반환한다 — "필수 로그인"과 "선택적 로그인"을 별도
+어노테이션 없이 Kotlin의 nullable 타입만으로 구분한다. `MethodParameter.isOptional()`이
+Kotlin 파라미터의 nullable 여부를 인식하므로 이 판단에 그대로 쓸 수 있다.
+
 ```kotlin
 package com.etude.infrastructure.security
 
@@ -71,17 +76,24 @@ class LoginUserArgumentResolver : HandlerMethodArgumentResolver {
         mavContainer: ModelAndViewContainer?,
         webRequest: NativeWebRequest,
         binderFactory: WebDataBinderFactory?
-    ): Any {
-        val payload = webRequest.getAttribute(REQUEST_ATTR_JWT_PAYLOAD, NativeWebRequest.SCOPE_REQUEST)
-        return payload as? JwtPayload
-            ?: throw CoreException(ErrorType.UNAUTHORIZED, "인증이 필요합니다.")
+    ): JwtPayload? {
+        val payload = webRequest.getAttribute(REQUEST_ATTR_JWT_PAYLOAD, NativeWebRequest.SCOPE_REQUEST) as? JwtPayload
+        if (payload != null) return payload
+        if (parameter.isOptional) return null
+        throw CoreException(ErrorType.UNAUTHORIZED, "인증이 필요합니다.")
     }
 }
 ```
 
 > `AuthInterceptor`(`WebConfig.kt`)가 이미 인증이 필요한 경로에서 payload 존재 여부를 401로
-> 걸러주므로, 이 리졸버가 호출되는 시점엔 정상적으로는 payload가 항상 있다. 그래도 리졸버
-> 단독으로도 안전하도록 방어적으로 예외를 던진다.
+> 걸러주므로, `@LoginUser payload: JwtPayload`(non-null)로 선언한 파라미터에서는 이 리졸버가
+> 호출되는 시점에 정상적으로는 payload가 항상 있다. 그래도 리졸버 단독으로도 안전하도록
+> 방어적으로 예외를 던진다.
+>
+> `@LoginUser payload: JwtPayload?`(nullable)로 선언하면 `AuthInterceptor.addPathPatterns`
+> 목록에 없는(인증이 강제되지 않는) 경로에서도 안전하게 쓸 수 있다 — payload가 있으면 그대로
+> 받고, 없으면 예외 대신 `null`을 받는다. 이 경우 컨트롤러가 로그인 여부에 따라 분기하는 로직을
+> 직접 작성해야 한다(예: `payload?.userId`).
 
 ### 3. `WebConfig`에 등록
 
@@ -134,3 +146,6 @@ override fun me(@LoginUser payload: JwtPayload): ApiResponse<JwtPayload> =
       기존 테스트가 수정 없이 통과해야 한다 (토큰 없이 호출 시 401인 케이스 포함 — payload가 없을
       때 리졸버가 예외를 던지는 경로).
 - [ ] 새 컨트롤러(Step 4 이후)에서 로그인 사용자가 필요하면 이 패턴을 기본으로 쓴다.
+- [ ] 로그인 여부와 무관하게 동작해야 하는 엔드포인트(Step 4의 `/feedback` 등)는
+      `@LoginUser payload: JwtPayload?`(nullable)로 선언해 재사용한다 — 별도의
+      `@OptionalLoginUser` 어노테이션이나 리졸버를 새로 만들지 않는다.
