@@ -21,4 +21,5 @@ etude:
   jwt:
     secret: ${JWT_SECRET:dev-secret-must-be-at-least-256-bits-long-for-hmac-sha}
     expires-hours: 24
+  kubeconfig-path: ${KUBECONFIG_PATH:${HOME:${user.home}}/.kube/config}
 

@@ -21,8 +21,8 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
     // Docker 제어
-    implementation("com.github.docker-java:docker-java-core:3.4.0")
-    implementation("com.github.docker-java:docker-java-transport-httpclient5:3.4.0")
+    implementation("com.github.docker-java:docker-java-core:3.7.1")
+    implementation("com.github.docker-java:docker-java-transport-httpclient5:3.7.1")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
 
     // QueryDSL
