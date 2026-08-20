@@ -168,8 +168,8 @@ backend-kotlin/                         (루트 — 빌드 설정 총괄)
 | ✅ | 2 | [guide_phase12_step2_user_admin.md](../guides/guide_phase12_step2_user_admin.md) | `user.ts`(나머지), `admin.routes.ts`(user 부분) | 계정 생성/비밀번호 초기화 유스케이스 + 테스트 |
 | ✅ | 3 | [guide_phase12_step3_quest.md](../guides/guide_phase12_step3_quest.md) | `types.ts`, `quest.ts`(채점 제외), `quest.routes.ts`(채점 제외), `admin.routes.ts`(quest-set 부분) | `Quest`/`QuestSet`/`QuestSetAccess` 엔티티, `QuestService`(TDD) |
 | ✅ | 4 | [guide_phase12_step4_progress_feedback.md](../guides/guide_phase12_step4_progress_feedback.md) | `progress.ts`, `progress.routes.ts`, `feedback.ts`, `feedback.routes.ts` | `QuestAttempt`/`Feedback` 엔티티, 집계 쿼리 테스트 |
-| ▶️ | 5 | [guide_phase12_step5_docker.md](../guides/guide_phase12_step5_docker.md) | `docker.ts`, `sandbox.ts` | `ContainerRuntime` 포트/어댑터, 고아 컨테이너 정리 |
-| ⬜ | 6 | [guide_phase12_step6_terminal.md](../guides/guide_phase12_step6_terminal.md) | `terminal.ts`, `terminal.routes.ts` | `TerminalWebSocketHandler`, sandbox 5종 분기 (최고난도, 세부 Step으로 재분할될 수 있음) |
+| ✅ | 5 | [guide_phase12_step5_docker.md](../guides/guide_phase12_step5_docker.md) | `docker.ts`, `sandbox.ts` | `ContainerRuntime` 포트/어댑터, 고아 컨테이너 정리 |
+| ▶️ | 6 | [guide_phase12_step6_terminal.md](../guides/guide_phase12_step6_terminal.md) | `terminal.ts`, `terminal.routes.ts` | `TerminalWebSocketHandler`, sandbox 5종 분기 (최고난도, 세부 Step으로 재분할될 수 있음) |
 | ⬜ | 7 | [guide_phase12_step7_grading.md](../guides/guide_phase12_step7_grading.md) | `quest.ts`의 `execCheck`/`gradeQuest` | 채점 로직 + `/grade` 엔드포인트 |
 | ⬜ | 8 | [guide_phase12_step8_vcluster.md](../guides/guide_phase12_step8_vcluster.md) | `vcluster-pool.ts`, `k8s-namespace.ts` | `VclusterProvisioner` 포트/어댑터, 풀 관리 |
 | ⬜ | 9 | [guide_phase12_step9_session_shutdown.md](../guides/guide_phase12_step9_session_shutdown.md) | `session.routes.ts`, `index.ts`(정리 훅) | 세션 종료 API, graceful shutdown |
