@@ -3,6 +3,7 @@ package com.etude.domain.quest
 import com.etude.domain.auth.UserRepository
 import com.etude.domain.auth.UserRole
 import com.etude.domain.auth.UserSummary
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -13,6 +14,7 @@ class QuestService(
     private val questRepository: QuestRepository,
     private val questSetAccessRepository: QuestSetAccessRepository,
     private val userRepository: UserRepository,
+    private val objectMapper: ObjectMapper,
 ) {
     fun getQuestSets(userId: Long, role: UserRole): List<QuestSetSummary> {
         val questSets = if (role == UserRole.admin) {
@@ -60,6 +62,12 @@ class QuestService(
 
     fun revokeAccess(questSetId: Long, userId: Long) {
         questSetAccessRepository.deleteByQuestSetIdAndUserId(questSetId, userId)
+    }
+
+    fun getSetupCommand(questId: Long): List<String>? {
+        val quest = questRepository.findById(questId) ?: return null
+        val raw = quest.setupCmd ?: return null
+        return objectMapper.readValue(raw, Array<String>::class.java).toList()
     }
 
 }

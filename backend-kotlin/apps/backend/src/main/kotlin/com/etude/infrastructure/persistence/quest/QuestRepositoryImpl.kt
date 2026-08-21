@@ -10,4 +10,6 @@ class QuestRepositoryImpl(
 ) : QuestRepository {
     override fun findAllByQuestSetIdOrderByOrderIndex(questSetId: Long): List<Quest> =
         jpaRepository.findAllByQuestSetIdOrderByOrderIndex(questSetId)
+
+    override fun findById(id: Long): Quest? = jpaRepository.findById(id).orElse(null)
 }

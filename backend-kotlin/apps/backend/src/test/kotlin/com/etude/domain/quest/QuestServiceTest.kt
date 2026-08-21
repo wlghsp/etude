@@ -4,6 +4,7 @@ import com.etude.domain.auth.UserRepository
 import com.etude.domain.auth.UserRole
 import com.etude.support.TestQuestSets
 import com.etude.support.TestQuests
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -12,11 +13,12 @@ import io.mockk.mockk
 import io.mockk.verify
 
 class QuestServiceTest : FreeSpec({
+    val objectMapper = ObjectMapper()
     val questSetRepository = mockk<QuestSetRepository>()
     val questRepository = mockk<QuestRepository>()
     val questSetAccessRepository = mockk<QuestSetAccessRepository>()
     val userRepository = mockk<UserRepository>()
-    val questService = QuestService(questSetRepository, questRepository, questSetAccessRepository, userRepository)
+    val questService = QuestService(questSetRepository, questRepository, questSetAccessRepository, userRepository, objectMapper)
 
     "퀘스트셋 접근 권한을 확인할 때" -  {
         "공개 세트면" - {
