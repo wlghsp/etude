@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react"
-import { fetchProgess } from "../api/user"
+import { fetchProgress } from "../api/user"
 import { TopNav } from "../components/TopNav"
 import { SideNav } from "../components/SideNav"
 
 interface ProgressRow {
-    quest_set_id: number
+    questSetId: number
     title: string
     category: string
     total: number
@@ -27,7 +27,7 @@ export function Progress({ onBack, onLeaderboard, onAdmin, onLogout, onChangePas
 
     useEffect(() => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        fetchProgess().then((data: any[]) =>
+        fetchProgress().then((data: any[]) =>
             setRows(data.map((r) => ({ ...r, total: Number(r.total), completed: Number(r.completed) })))
         )
     }, [])
@@ -116,7 +116,7 @@ export function Progress({ onBack, onLeaderboard, onAdmin, onLogout, onChangePas
                                             const isComplete = r.completed === r.total && r.total > 0
                                             const isStarted = r.completed > 0
                                             return (
-                                                <tr key={r.quest_set_id} className="hover:bg-surface-container-highest/50 transition-colors">
+                                                <tr key={r.questSetId} className="hover:bg-surface-container-highest/50 transition-colors">
                                                     <td className="px-6 py-4 font-mono text-body-md">
                                                         <div className="flex items-center gap-2">
                                                             {isComplete

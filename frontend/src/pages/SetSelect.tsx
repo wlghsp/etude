@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { QuestSet } from "../types";
 import { fetchQuestSets } from "../api/quest";
-import { fetchProgess } from "../api/user";
+import { fetchProgress } from "../api/user";
 import { SideNav } from "../components/SideNav";
 import { TopNav } from "../components/TopNav";
 
@@ -31,9 +31,9 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
     useEffect(() => {
         fetchQuestSets().then(setSets)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        fetchProgess().then((rows: any[]) => {
+        fetchProgress().then((rows: any[]) => {
             const map: Record<number, { total: number; completed: number }> = {}
-            rows.forEach(r => { map[r.quest_set_id] = { total: Number(r.total), completed: Number(r.completed) } })
+            rows.forEach(r => { map[r.questSetId] = { total: Number(r.total), completed: Number(r.completed) } })
             setProgressMap(map)
         })
     }, [])
@@ -88,7 +88,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
                                                 return (
                                                     <button
                                                         key={s.id}
-                                                        onClick={() => onSelect(s.id, s.sandbox_type)}
+                                                        onClick={() => onSelect(s.id, s.sandboxType)}
                                                         className="text-left p-5 border border-outline-variant bg-surface-container-low hover:border-primary hover:bg-surface-container transition-all group"
                                                         onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
                                                         onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}

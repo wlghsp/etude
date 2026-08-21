@@ -31,7 +31,7 @@ export function Admin({ onHome, onProgress, onLeaderboard, onLogout, onChangePas
     useEffect(() => { reload() }, [])
 
     const handleTogglePublic = async (set: AdminQuestSet) => {
-        await setQuestSetPublic(set.id, !set.is_public)
+        await setQuestSetPublic(set.id, !set.isPublic)
         reload()
     }
 
@@ -71,16 +71,16 @@ export function Admin({ onHome, onProgress, onLeaderboard, onLogout, onChangePas
                         <td className="px-6 py-4">
                           <button
                             onClick={(e) => { e.stopPropagation(); handleTogglePublic(s) }}
-                            className={`font-mono text-code-sm px-2 py-1 border ${s.is_public ? 'text-success border-success/30 bg-success/5' : 'text-on-surface-variant border-outline-variant'}`}
+                            className={`font-mono text-code-sm px-2 py-1 border ${s.isPublic ? 'text-success border-success/30 bg-success/5' : 'text-on-surface-variant border-outline-variant'}`}
                           >
-                            {s.is_public ? '공개' : '비공개'}
+                            {s.isPublic ? '공개' : '비공개'}
                           </button>
                         </td>
                         <td className="px-6 py-4 font-mono text-code-sm text-on-surface-variant">
-                          {s.is_public ? '-' : s.accessUsers.length}
+                          {s.isPublic ? '-' : s.accessUsers.length}
                         </td>
                       </tr>
-                      {selectedSetId === s.id && !s.is_public && (
+                      {selectedSetId === s.id && !s.isPublic && (
                         <tr key={`${s.id}-access`} className="bg-surface-container-lowest">
                           <td colSpan={3} className="px-6 py-4">
                             <span className="font-mono text-label-caps text-on-surface-variant mb-2 block">접근 유저</span>

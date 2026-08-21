@@ -4,13 +4,13 @@ export interface Quest {
   description: string
   hint: string
   solution: string
-  setup_cmd: string[] | null
+  setupCmd: string[] | null
 }
 
 export interface QuestSet {
   id: number
   title: string
   description: string
-  sandbox_type: string
+  sandboxType: string
   category: string
 }
