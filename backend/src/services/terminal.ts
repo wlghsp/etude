@@ -3,6 +3,8 @@ import type { WebSocket } from 'ws'
 import { getSandboxConfig } from './sandbox.js'
 import { getSetupCmd } from './quest.js'
 import { assignFromPool, releaseVcluster } from './vcluster-pool.js'
+import { registerSession, removeSession } from './session-registry.js'
+import type { TerminalTicketInfo } from './terminal-ticket.js'
 
 async function waitForDocker(container: Docker.Container): Promise<void> {
     const exec = await container.exec({
@@ -11,12 +13,18 @@ async function waitForDocker(container: Docker.Container): Promise<void> {
         AttachStderr: false,
     })
     await exec.start({})
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, reject) => {
         const poll = setInterval(async () => {
-            const info = await exec.inspect()
-            if (!info.Running) {
+            try {
+                const info = await exec.inspect()
+                if (!info.Running) {
+                    clearInterval(poll)
+                    resolve()
+                }
+            } catch (err) {
+                // 준비 중 소켓이 닫혀 컨테이너가 삭제되면 inspect가 실패한다
                 clearInterval(poll)
-                resolve()
+                reject(err)
             }
         }, 300)
     })
@@ -29,12 +37,18 @@ async function waitForSystemd(container: Docker.Container): Promise<void> {
         AttachStderr: false,
     })
     await exec.start({})
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, reject) => {
         const poll = setInterval(async () => {
-            const info = await exec.inspect()
-            if (!info.Running) {
+            try {
+                const info = await exec.inspect()
+                if (!info.Running) {
+                    clearInterval(poll)
+                    resolve()
+                }
+            } catch (err) {
+                // 준비 중 소켓이 닫혀 컨테이너가 삭제되면 inspect가 실패한다
                 clearInterval(poll)
-                resolve()
+                reject(err)
             }
         }, 300)
     })
@@ -85,29 +99,90 @@ function attachResizeHandler(
 
 }
 
+// 핸들러가 만든 자원을 정리하는 함수. 핸들러는 자원을 만드는 즉시 등록해 두고,
+// 준비 도중 실패하거나 소켓이 닫혀도 handleTerminal이 이것 하나로 정리한다.
+interface TerminalCtx {
+  closed: boolean
+  cleanup: () => Promise<void>
+  // 자원을 받는 즉시 정리 방법을 등록한다. 이미 소켓이 닫혔다면 그 자원을 바로 정리하고 준비를 중단한다.
+  track: (cleanup: () => Promise<void>) => void
+}
+
+interface PreparedTerminal {
+  containerId: string
+  stream: NodeJS.ReadWriteStream
+  resizeTarget: { resize: (opts: { h: number, w: number }) => Promise<void> }
+}
+
+const OPEN = 1
+
+// stop이 실패해도(이미 종료됨, 시작 실패) 삭제는 시도한다.
+async function removeContainer(container: Docker.Container): Promise<void> {
+  await container.stop().catch(() => {})
+  await container.remove().catch(() => {})
+}
+
+// 정리 책임은 이 함수의 close handler 한 곳에만 둔다. 세션 종료 API는 없다.
 export async function handleTerminal(
     socket: WebSocket,
     docker: Docker,
-    sandboxType: string,
-    questId: number | null,
-    existingContainerId: string | null,
+    info: TerminalTicketInfo,
 ) {
-    const config = await getSandboxConfig(sandboxType)
+    const { sandboxType, questId, userId, questSetId } = info
+    const ctx: TerminalCtx = {
+        closed: false,
+        cleanup: async () => {},
+        track(cleanup) {
+            ctx.cleanup = cleanup
+            if (ctx.closed) {
+                cleanup().catch(() => {})
+                throw new Error('socket closed during setup')
+            }
+        },
+    }
 
-    if (sandboxType === 'linux-systemd') {
-        await handleSystemdTerminal(socket, docker, config, questId)
-    } else if (sandboxType === 'docker' || sandboxType === 'docker-persistent') {
-        await handleDockerTerminal(socket, docker, config, questId, existingContainerId)
-    } else if (sandboxType === 'k8s-isolated') {
-        await handleK8sIsolatedTerminal(socket, docker, questId)
-    } else if (sandboxType === 'k8s') {
-        await handleK8sTerminal(socket, docker, config, questId)
-    } else {
-        await handleDefaultTerminal(socket, docker, config, questId)
+    // 준비가 오래 걸리거나 멈춰도 소켓이 닫히면 그 시점까지 만든 자원을 바로 정리하도록 먼저 등록한다.
+    let registeredId: string | null = null
+    socket.on('close', () => {
+        ctx.closed = true
+        if (registeredId) removeSession(registeredId)
+        ctx.cleanup().catch(() => {})
+    })
+
+    try {
+        const config = await getSandboxConfig(sandboxType)
+
+        let prepared: PreparedTerminal
+        if (sandboxType === 'linux-systemd') {
+            prepared = await handleSystemdTerminal(docker, config, questId, ctx)
+        } else if (sandboxType === 'docker' || sandboxType === 'docker-persistent') {
+            prepared = await handleDockerTerminal(docker, config, questId, ctx)
+        } else if (sandboxType === 'k8s-isolated') {
+            prepared = await handleK8sIsolatedTerminal(docker, questId, ctx)
+        } else if (sandboxType === 'k8s') {
+            prepared = await handleK8sTerminal(docker, config, questId, ctx)
+        } else {
+            prepared = await handleDefaultTerminal(docker, config, questId, ctx)
+        }
+
+        // 준비하는 동안 소켓이 닫혔다면 등록하지 않는다. close 시점 이후에 만들어진 자원이 있을 수 있어 한 번 더 정리한다.
+        if (socket.readyState !== OPEN) {
+            await ctx.cleanup()
+            return
+        }
+
+        registerSession(prepared.containerId, { userId, questSetId, sandboxType })
+        registeredId = prepared.containerId
+        socket.send(JSON.stringify({ type: 'connected', containerId: prepared.containerId }))
+        attachResizeHandler(socket, prepared.stream, prepared.resizeTarget)
+    } catch (err) {
+        console.error('terminal error:', err)
+        await ctx.cleanup().catch(() => {})
+        socket.close()
     }
 }
 
-async function handleDefaultTerminal(socket: WebSocket, docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null) {
+async function handleDefaultTerminal(docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null, ctx: TerminalCtx): Promise<PreparedTerminal> {
   const container = await docker.createContainer({
     Image: config.image,
     Labels: { etude: 'sandbox'},
@@ -119,6 +194,7 @@ async function handleDefaultTerminal(socket: WebSocket, docker: Docker, config: 
     OpenStdin: true,
     Tty: true,
   })
+  ctx.track(() => removeContainer(container))
 
   const stream = await container.attach({
     stream: true,
@@ -131,38 +207,25 @@ async function handleDefaultTerminal(socket: WebSocket, docker: Docker, config: 
   await container.start()
   await runSetupCmd(container, questId)
 
-  socket.send(JSON.stringify({ type: 'connected', containerId: container.id }))
-
-  attachResizeHandler(socket, stream, container)
-  socket.on('close', () => {
-    container.stop().then(() => container.remove()).catch(() => {})
-  })
+  return { containerId: container.id, stream, resizeTarget: container }
 }
 
 async function handleDockerTerminal(
-  socket: WebSocket, 
-  docker: Docker, 
-  config: { image: string, binds: string[] | null, persistent: boolean }, 
+  docker: Docker,
+  config: { image: string, binds: string[] | null },
   questId: number | null,
-  existingContainerId: string | null
-) {
-  let container: Docker.Container
-
-  if (existingContainerId) {
-    // 기존 컨테이너 재사용
-    container = docker.getContainer(existingContainerId) 
-  } else {
-    // 새 컨테이너 생성
-    container = await docker.createContainer({
-      Image: config.image, 
-      Labels: { etude: 'sandbox'},
-      OpenStdin: false, Tty: false,
-      AttachStdin: false, AttachStdout: false, AttachStderr: false,
-      HostConfig: { Binds: config.binds ?? [], Privileged: true },
-    })
-    await container.start()
-    await waitForDocker(container)
-  }
+  ctx: TerminalCtx,
+): Promise<PreparedTerminal> {
+  const container = await docker.createContainer({
+    Image: config.image,
+    Labels: { etude: 'sandbox'},
+    OpenStdin: false, Tty: false,
+    AttachStdin: false, AttachStdout: false, AttachStderr: false,
+    HostConfig: { Binds: config.binds ?? [], Privileged: true },
+  })
+  ctx.track(() => removeContainer(container))
+  await container.start()
+  await waitForDocker(container)
 
   await runSetupCmd(container, questId)
 
@@ -172,17 +235,10 @@ async function handleDockerTerminal(
   })
   const stream = await exec.start({ hijack: true, stdin: true, Tty: true })
 
-  socket.send(JSON.stringify({ type: 'connected', containerId: container.id }))
-
-  attachResizeHandler(socket, stream, exec)
-  socket.on('close', () => {
-    if (!config.persistent) {
-      container.stop().then(() => container.remove()).catch(() => {})
-    }
-  })
+  return { containerId: container.id, stream, resizeTarget: exec }
 }
 
-async function handleSystemdTerminal(socket: WebSocket, docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null) {
+async function handleSystemdTerminal(docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null, ctx: TerminalCtx): Promise<PreparedTerminal> {
   const container = await docker.createContainer({
     Image: config.image,
     Labels: { etude: 'sandbox' },
@@ -194,6 +250,7 @@ async function handleSystemdTerminal(socket: WebSocket, docker: Docker, config: 
       CgroupnsMode: 'host',
     } as Docker.ContainerCreateOptions['HostConfig'],
   })
+  ctx.track(() => removeContainer(container))
   await container.start()
   await waitForSystemd(container)
 
@@ -205,15 +262,10 @@ async function handleSystemdTerminal(socket: WebSocket, docker: Docker, config: 
   })
   const stream = await exec.start({ hijack: true, stdin: true, Tty: true })
 
-  socket.send(JSON.stringify({ type: 'connected', containerId: container.id }))
-
-  attachResizeHandler(socket, stream, exec)
-  socket.on('close', () => {
-    container.stop().then(() => container.remove()).catch(() => {})
-  })
+  return { containerId: container.id, stream, resizeTarget: exec }
 }
 
-async function handleK8sTerminal(socket: WebSocket, docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null) {
+async function handleK8sTerminal(docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null, ctx: TerminalCtx): Promise<PreparedTerminal> {
   const container = await docker.createContainer({
     Image: config.image,
     Labels: { etude: 'sandbox'},
@@ -228,6 +280,19 @@ async function handleK8sTerminal(socket: WebSocket, docker: Docker, config: { im
     OpenStdin: true,
     Tty: true,
   })
+  const ns = `quest-${container.id.slice(0, 8)}`
+  ctx.track(async () => {
+    // namespace 삭제 후 컨테이너 제거
+    try {
+      const delExec = await container.exec({
+        Cmd: ['kubectl', 'delete', 'namespace', ns, '--ignore-not-found'],
+        AttachStdout: false,
+        AttachStderr: false,
+      })
+      await delExec.start({})
+    } catch {}
+    await removeContainer(container)
+  })
 
   const stream = await container.attach({
     stream: true,
@@ -240,7 +305,6 @@ async function handleK8sTerminal(socket: WebSocket, docker: Docker, config: { im
   await container.start()
 
   // namespace 생성
-  const ns = `quest-${container.id.slice(0, 8)}`
   const nsExec = await container.exec({
     Cmd: ['kubectl', 'create', 'namespace', ns],
     AttachStdout: false,
@@ -249,27 +313,13 @@ async function handleK8sTerminal(socket: WebSocket, docker: Docker, config: { im
   await nsExec.start({})
   await runSetupCmd(container, questId, container.id)
 
-  socket.send(JSON.stringify({ type: 'connected', containerId: container.id }))
-
-  attachResizeHandler(socket, stream, container)
-  socket.on('close', async () => {
-    // namespace 삭제 후 컨테이너 제거
-    try {
-      const delExec = await container.exec({
-      Cmd: ['kubectl', 'delete', 'namespace', ns, '--ignore-not-found'],
-      AttachStdout: false,
-      AttachStderr: false,
-    })
-    await delExec.start({})
-    } catch {}
-    container.stop().then(() => container.remove()).catch(() => {})
-  })
-
+  return { containerId: container.id, stream, resizeTarget: container }
 }
 
 
-async function handleK8sIsolatedTerminal(socket: WebSocket, docker: Docker, questId: number | null) {
+async function handleK8sIsolatedTerminal(docker: Docker, questId: number | null, ctx: TerminalCtx): Promise<PreparedTerminal> {
   const vcluster = await assignFromPool()
+  ctx.track(() => releaseVcluster(vcluster))
 
   const container = await docker.createContainer({
     Image: 'etude-k8s',
@@ -282,18 +332,15 @@ async function handleK8sIsolatedTerminal(socket: WebSocket, docker: Docker, ques
     AttachStdin: true, AttachStdout: true, AttachStderr: true,
     OpenStdin: true, Tty: true,
   })
+  ctx.track(async () => {
+    await releaseVcluster(vcluster)
+    await removeContainer(container)
+  })
 
   const stream = await container.attach({ stream: true, stdin: true, stdout: true, stderr: true, hijack: true })
 
   await container.start()
   await runSetupCmd(container, questId, container.id)
 
-  socket.send(JSON.stringify({ type: 'connected', containerId: container.id }))
-
-  attachResizeHandler(socket, stream, container)
-  socket.on('close', async () => {
-    await releaseVcluster(vcluster)
-    container.stop().then(() => container.remove()).catch(() => {})
-  })
-
+  return { containerId: container.id, stream, resizeTarget: container }
 }

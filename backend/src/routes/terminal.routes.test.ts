@@ -13,9 +13,12 @@ vi.mock('../services/quest.js', async (importOriginal) => ({
     canAccessQuestSet: vi.fn(),
 }))
 
+vi.mock('../services/terminal.js', () => ({ handleTerminal: vi.fn() }))
+
 import { buildApp } from '../app.js'
+import { handleTerminal } from '../services/terminal.js'
 import { getQuestContext, canAccessQuestSet } from '../services/quest.js'
-import { consumeTicket, pendingTicketCount } from '../services/terminal-ticket.js'
+import { consumeTicket, issueTicket, pendingTicketCount } from '../services/terminal-ticket.js'
 
 const getQuestContextMock = vi.mocked(getQuestContext)
 const canAccessQuestSetMock = vi.mocked(canAccessQuestSet)
@@ -131,5 +134,70 @@ describe('POST /terminal-sessions', () => {
 
         expect(consumeTicket(ticket)).not.toBeNull()
         expect(consumeTicket(ticket)).toBeNull()
+    })
+})
+
+describe('GET /ws/terminal', () => {
+    let app: FastifyInstance
+
+    beforeAll(async () => {
+        app = await buildApp()
+        await app.ready()
+    })
+
+    afterAll(async () => {
+        await app.close()
+    })
+
+    beforeEach(() => vi.mocked(handleTerminal).mockClear())
+
+    const info = { userId: 7, questId: 101, questSetId: 11, sandboxType: 'docker' }
+
+    const closeCodeOf = async (url: string) => {
+        const ws = await app.injectWS(url)
+        return new Promise<number>((resolve) => ws.on('close', (code: number) => resolve(code)))
+    }
+
+    it('ticket이 없으면 1008로 닫고 컨테이너를 만들지 않는다', async () => {
+        expect(await closeCodeOf('/ws/terminal')).toBe(1008)
+        expect(handleTerminal).not.toHaveBeenCalled()
+    })
+
+    it('모르는 ticket은 1008로 닫는다', async () => {
+        expect(await closeCodeOf('/ws/terminal?ticket=nope')).toBe(1008)
+        expect(handleTerminal).not.toHaveBeenCalled()
+    })
+
+    it('만료된 ticket은 1008로 닫는다', async () => {
+        const ticket = issueTicket(info)
+
+        // 발급 후 31초가 지난 시각으로 소비한다 (유효시간 30초)
+        vi.useFakeTimers({ toFake: ['Date'], now: Date.now() + 31_000 })
+        try {
+            expect(await closeCodeOf(`/ws/terminal?ticket=${ticket}`)).toBe(1008)
+        } finally {
+            vi.useRealTimers()
+        }
+        expect(handleTerminal).not.toHaveBeenCalled()
+    })
+
+    it('유효한 ticket은 서버가 확정한 정보로 터미널을 시작하고, 재사용은 1008로 거부한다', async () => {
+        const ticket = issueTicket(info)
+
+        const first = await app.injectWS(`/ws/terminal?ticket=${ticket}`)
+        expect(handleTerminal).toHaveBeenCalledTimes(1)
+        expect(vi.mocked(handleTerminal).mock.calls[0][2]).toEqual(info)
+        first.terminate()
+
+        expect(await closeCodeOf(`/ws/terminal?ticket=${ticket}`)).toBe(1008)
+        expect(handleTerminal).toHaveBeenCalledTimes(1)
+    })
+
+    it('클라이언트가 보낸 sandboxType·containerId·questId 쿼리는 무시한다', async () => {
+        const ticket = issueTicket(info)
+
+        const ws = await app.injectWS(`/ws/terminal?ticket=${ticket}&sandboxType=k8s&containerId=victim&questId=999`)
+        expect(vi.mocked(handleTerminal).mock.calls[0][2]).toEqual(info)
+        ws.terminate()
     })
 })

@@ -3,7 +3,7 @@ import { docker } from "../plugins/docker.js"
 import { handleTerminal } from "../services/terminal.js"
 import { authMiddleware } from "../plugins/auth-guard.js"
 import { canAccessQuestSet, getQuestContext } from "../services/quest.js"
-import { issueTicket } from "../services/terminal-ticket.js"
+import { consumeTicket, issueTicket } from "../services/terminal-ticket.js"
 
 
 export const terminalRoutes: FastifyPluginAsync = async (app) => {
@@ -29,14 +29,14 @@ export const terminalRoutes: FastifyPluginAsync = async (app) => {
         return { ticket }
     })
 
-    app.get('/ws/terminal', { websocket: true}, (socket, req) => {
-        const params = new URL(req.url, 'http://localhost').searchParams
-        const sandboxType = params.get('sandboxType') ?? 'linux'
-        const questId = params.get('questId') ? Number(params.get('questId')) : null
-        const containerId = params.get('containerId') ?? null
-        handleTerminal(socket, docker, sandboxType, questId, containerId).catch((err) => {
-            console.error('terminal error:', err)
-            socket.close()
-        })
+    // ticket만 받는다. 샌드박스 타입·퀘스트는 ticket에 담긴 서버 확정 값을 쓰고, 클라이언트가 컨테이너를 지정할 수 없다.
+    app.get('/ws/terminal', { websocket: true }, (socket, req) => {
+        const ticket = new URL(req.url, 'http://localhost').searchParams.get('ticket')
+        const info = ticket ? consumeTicket(ticket) : null
+        if (!info) {
+            socket.close(1008, 'invalid or expired ticket')
+            return
+        }
+        handleTerminal(socket, docker, info)
     })
 }

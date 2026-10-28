@@ -1,6 +1,7 @@
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
 import { mkdirSync } from 'node:fs'
+import { rm } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 
@@ -79,6 +80,7 @@ async function createVcluster(): Promise<PooledVCluster> {
 async function deleteVcluster(v: PooledVCluster): Promise<void> {
     const ns = `vcluster-${v.id}`
     await execAsync(`vcluster delete ${v.id} --namespace ${ns}`).catch(() => {})
+    await rm(v.kubeconfigPath, { force: true }).catch(() => {})
 }
 
 export async function cleanupOrphanVclusters(): Promise<void> {
