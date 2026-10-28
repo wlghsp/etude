@@ -58,6 +58,8 @@ export function Terminal({ sandboxType, questId, containerId, onConnected }: Pro
                 if (msg.type === 'connected') {
                     onConnected(msg.containerId)
                     setLoading(false)
+                    // onopen 시점의 resize는 백엔드 핸들러 등록 전이라 유실될 수 있어 다시 보낸다
+                    sendResize()
                 }
             } catch {
                 term.write(e.data)
