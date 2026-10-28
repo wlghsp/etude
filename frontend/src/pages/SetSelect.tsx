@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { QuestSet } from "../types";
 import { fetchQuestSets } from "../api/quest";
-import { fetchProgess } from "../api/user";
+import { fetchProgress } from "../api/user";
 import { SideNav } from "../components/SideNav";
 import { TopNav } from "../components/TopNav";
 
@@ -30,8 +30,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
 
     useEffect(() => {
         fetchQuestSets().then(setSets)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        fetchProgess().then((rows: any[]) => {
+        fetchProgress().then((rows) => {
             const map: Record<number, { total: number; completed: number }> = {}
             rows.forEach(r => { map[r.quest_set_id] = { total: Number(r.total), completed: Number(r.completed) } })
             setProgressMap(map)

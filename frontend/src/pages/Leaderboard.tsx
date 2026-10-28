@@ -1,23 +1,7 @@
 import { useEffect, useState } from "react"
-import { fetchLeaderboard } from "../api/user"
+import { fetchLeaderboard, type MemberProgress } from "../api/user"
 import { TopNav } from "../components/TopNav"
 import { SideNav } from "../components/SideNav"
-
-interface SetRow {
-    questSetId: number
-    questSetTitle: string
-    category: string
-    total: number
-    completed: number
-}
-
-interface UserRow {
-    userId: number
-    userName: string
-    total: number
-    completed: number
-    sets: SetRow[]
-}
 
 interface Props {
     onBack: () => void
@@ -31,12 +15,11 @@ interface Props {
 }
 
 export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
-    const [rows, setRows] = useState<UserRow[]>([])
+    const [rows, setRows] = useState<MemberProgress[]>([])
     const [openUsers, setOpenUsers] = useState<Set<number>>(new Set())
 
     useEffect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        fetchLeaderboard().then((data: any[]) =>
+        fetchLeaderboard().then((data) =>
             setRows(data.map(u => ({ ...u, total: Number(u.total), completed: Number(u.completed) })))
         )
     }, [])

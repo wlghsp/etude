@@ -1,15 +1,7 @@
 import { useEffect, useState } from "react"
-import { fetchProgess } from "../api/user"
+import { fetchProgress, type QuestSetProgress } from "../api/user"
 import { TopNav } from "../components/TopNav"
 import { SideNav } from "../components/SideNav"
-
-interface ProgressRow {
-    quest_set_id: number
-    title: string
-    category: string
-    total: number
-    completed: number
-}
 
 interface Props {
     onBack: () => void
@@ -23,11 +15,10 @@ interface Props {
 }
 
 export function Progress({ onBack, onLeaderboard, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
-    const [rows, setRows] = useState<ProgressRow[]>([])
+    const [rows, setRows] = useState<QuestSetProgress[]>([])
 
     useEffect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        fetchProgess().then((data: any[]) =>
+        fetchProgress().then((data) =>
             setRows(data.map((r) => ({ ...r, total: Number(r.total), completed: Number(r.completed) })))
         )
     }, [])
