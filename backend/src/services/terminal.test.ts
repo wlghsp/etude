@@ -264,4 +264,37 @@ describe('k8s 세션 정리', () => {
         const deleteNs = container.exec.mock.calls.map((c) => c[0].Cmd).find((c) => c[0] === 'kubectl' && c[1] === 'delete')
         expect(deleteNs).toEqual(['kubectl', 'delete', 'namespace', 'quest-abcdef12', '--ignore-not-found', '--wait=false'])
     })
+
+    it('정리 명령이 끝나지 않아도 제한 시간(15초) 뒤에 다음 정리와 컨테이너 삭제를 진행한다', async () => {
+        const socket = fakeSocket()
+        const { docker, container, events } = k8sDocker()
+        await handleTerminal(socket as any, docker, { ...info, sandboxType: 'k8s' })
+
+        // 이후 모든 exec가 영원히 끝나지 않는다 (예: 클러스터에 접속할 수 없음)
+        container.exec.mockImplementation(async (o: { Cmd: string[] }) => {
+            events.push(`start:${o.Cmd[0] === 'sh' ? 'pv-cleanup' : 'delete-namespace'}`)
+            return {
+                start: vi.fn(async () => ({ resume() {} })),
+                inspect: vi.fn(async () => ({ Running: true, ExitCode: 0 })),
+                resize: vi.fn(),
+            }
+        })
+        events.length = 0
+
+        vi.useFakeTimers({ toFake: ['setTimeout', 'Date'] })
+        try {
+            socket.emit('close')
+            await vi.advanceTimersByTimeAsync(14_000)
+            expect(events).toEqual(['start:pv-cleanup']) // 아직 제한 시간 전이라 다음 단계로 넘어가지 않는다
+
+            await vi.advanceTimersByTimeAsync(2_000) // PV 정리 15초 경과
+            expect(events).toContain('start:delete-namespace')
+            expect(container.remove).not.toHaveBeenCalled()
+
+            await vi.advanceTimersByTimeAsync(15_000) // 네임스페이스 삭제도 15초 경과
+            expect(container.remove).toHaveBeenCalled()
+        } finally {
+            vi.useRealTimers()
+        }
+    })
 })
