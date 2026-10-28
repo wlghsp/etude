@@ -6,7 +6,6 @@ import { authRoutes } from './routes/auth.routes.js'
 import { progressRoutes } from './routes/progress.routes.js'
 import { adminRoutes } from './routes/admin.routes.js'
 import { questRoutes } from './routes/quest.routes.js'
-import { sessionRoutes } from './routes/session.routes.js'
 import { feedbackRoutes } from './routes/feedback.routes.js'
 
 // 앱 구성만 한다. 기동 정리·종료 훅·listen 같은 인프라 작업은 index.ts가 맡는다.
@@ -21,7 +20,6 @@ export async function buildApp(options: { logger?: boolean } = {}) {
     await app.register(progressRoutes)
     await app.register(adminRoutes)
     await app.register(questRoutes)
-    await app.register(sessionRoutes)
     await app.register(feedbackRoutes)
 
     return app
