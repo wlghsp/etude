@@ -1,35 +1,14 @@
-import Fastify from 'fastify'
-import websocket from '@fastify/websocket'
-import cors from '@fastify/cors'
 import 'dotenv/config'
+import { buildApp } from './app.js'
 import { cleanupOrphanContainers, cleanupRunningContainers } from './plugins/docker.js'
-import { terminalRoutes } from './routes/terminal.routes.js'
-import { authRoutes } from './routes/auth.routes.js'
-import { progressRoutes } from './routes/progress.routes.js'
-import { adminRoutes } from './routes/admin.routes.js'
-import { questRoutes } from './routes/quest.routes.js'
-import { sessionRoutes } from './routes/session.routes.js'
-import { feedbackRoutes } from './routes/feedback.routes.js'
 import { cleanupOrphanVclusters, initPool } from './services/vcluster-pool.js'
 import { cleanupOrphanQuestNamespaces } from './plugins/k8s-namespace.js'
-
-const fastify = Fastify({ logger: true })
 
 await cleanupOrphanContainers()
 await cleanupOrphanQuestNamespaces()
 await initPool()
 
-await fastify.register(cors, { origin: true, methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'] })
-await fastify.register(websocket)
-
-await fastify.register(terminalRoutes)
-await fastify.register(authRoutes)
-await fastify.register(progressRoutes)
-await fastify.register(adminRoutes)
-await fastify.register(questRoutes)
-await fastify.register(sessionRoutes)
-await fastify.register(feedbackRoutes)
-
+const fastify = await buildApp({ logger: true })
 
 fastify.addHook('onClose', async () => {
     await cleanupRunningContainers()
