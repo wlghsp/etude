@@ -18,6 +18,9 @@ export async function cleanupOrphanQuestNamespaces(): Promise<void> {
         )
     )
 
+    // 세션의 ClusterRoleBinding은 클러스터 범위라 네임스페이스를 지워도 남는다 (k8s-session.ts가 etude=session 라벨을 붙인다)
+    await execAsync(`kubectl delete clusterrolebinding -l etude=session --ignore-not-found`).catch(() => {})
+
     await cleanupOrphanQuestVolumes()
 }
 

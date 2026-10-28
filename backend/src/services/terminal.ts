@@ -4,7 +4,8 @@ import { getSandboxConfig } from './sandbox.js'
 import { getSetupCmd } from './quest.js'
 import { assignFromPool, releaseVcluster } from './vcluster-pool.js'
 import { registerSession, removeSession } from './session-registry.js'
-import { pvCleanupCommand } from './k8s-cleanup.js'
+import { createSessionAccess, destroySessionAccess } from './k8s-session.js'
+import { installKubeconfig } from './container-kubeconfig.js'
 import type { TerminalTicketInfo } from './terminal-ticket.js'
 
 async function waitForDocker(container: Docker.Container): Promise<void> {
@@ -116,19 +117,6 @@ interface PreparedTerminal {
 }
 
 const OPEN = 1
-
-// 컨테이너 안에서 명령을 실행하고 끝날 때까지 기다린다 (제한 시간 안에).
-// 정리 직후 컨테이너를 중지하면 안의 프로세스도 죽으므로, 정리 명령은 시작만 하지 않고 끝나길 기다린다.
-async function execAndWait(container: Docker.Container, cmd: string[], timeoutMs = 15000): Promise<void> {
-    const exec = await container.exec({ Cmd: cmd, AttachStdout: false, AttachStderr: false })
-    await exec.start({})
-    const startedAt = Date.now()
-    while (Date.now() - startedAt < timeoutMs) {
-        const info = await exec.inspect()
-        if (!info.Running) return
-        await new Promise((r) => setTimeout(r, 100))
-    }
-}
 
 // stop이 실패해도(이미 종료됨, 시작 실패) 삭제는 시도한다.
 async function removeContainer(container: Docker.Container): Promise<void> {
@@ -279,12 +267,13 @@ async function handleSystemdTerminal(docker: Docker, config: { image: string, bi
   return { containerId: container.id, stream, resizeTarget: exec }
 }
 
+// k8s 샌드박스. 학습자에게 관리자 kubeconfig를 주지 않는다: DB의 binds(관리자 kubeconfig 마운트)는 무시하고,
+// 세션마다 자기 네임스페이스 안에서만 쓸 수 있는 제한 kubeconfig를 만들어 주입한다 (k8s-session.ts).
 async function handleK8sTerminal(docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null, ctx: TerminalCtx): Promise<PreparedTerminal> {
   const container = await docker.createContainer({
     Image: config.image,
     Labels: { etude: 'sandbox'},
     HostConfig: {
-      Binds: config.binds ?? [],
       NetworkMode: process.env.K3D_NETWORK ?? 'k3d-etude',
     },
     Cmd: ['/bin/bash'],
@@ -295,10 +284,9 @@ async function handleK8sTerminal(docker: Docker, config: { image: string, binds:
     Tty: true,
   })
   const ns = `quest-${container.id.slice(0, 8)}`
+  // 권한 삭제 → 컨테이너 삭제 순서. 권한 삭제가 일부만 만들어진 상태에서도 안전하다.
   ctx.track(async () => {
-    // 클러스터 범위 PV → namespace 삭제 → 컨테이너 제거 순서. 각 단계가 실패해도 다음으로 진행하고 컨테이너 제거는 항상 한다.
-    await execAndWait(container, pvCleanupCommand(ns)).catch(() => {})
-    await execAndWait(container, ['kubectl', 'delete', 'namespace', ns, '--ignore-not-found', '--wait=false']).catch(() => {})
+    await destroySessionAccess(ns).catch(() => {})
     await removeContainer(container)
   })
 
@@ -312,13 +300,7 @@ async function handleK8sTerminal(docker: Docker, config: { image: string, binds:
 
   await container.start()
 
-  // namespace 생성
-  const nsExec = await container.exec({
-    Cmd: ['kubectl', 'create', 'namespace', ns],
-    AttachStdout: false,
-    AttachStderr: false,
-  })
-  await nsExec.start({})
+  await installKubeconfig(container, await createSessionAccess(ns))
   await runSetupCmd(container, questId, container.id)
 
   return { containerId: container.id, stream, resizeTarget: container }

@@ -64,4 +64,21 @@ describe('cleanupOrphanQuestNamespaces', () => {
 
         await expect(cleanupOrphanQuestNamespaces()).resolves.toBeUndefined()
     })
+
+    it('고아 세션 ClusterRoleBinding(etude=session 라벨)을 지운다 (네임스페이스 없이 backend가 죽으면 클러스터 범위 바인딩이 남는다)', async () => {
+        const commands = stubKubectl({ namespaces: 'default', pvs: '' })
+
+        await cleanupOrphanQuestNamespaces()
+
+        expect(commands).toContain('kubectl delete clusterrolebinding -l etude=session --ignore-not-found')
+    })
+
+    it('ClusterRoleBinding 삭제가 실패해도 예외 없이 끝난다', async () => {
+        execMock.mockImplementation((cmd: string, cb: (err: Error | null, out?: unknown) => void) => {
+            if (cmd.includes('clusterrolebinding')) return cb(new Error('forbidden'))
+            return cb(null, { stdout: '', stderr: '' })
+        })
+
+        await expect(cleanupOrphanQuestNamespaces()).resolves.toBeUndefined()
+    })
 })

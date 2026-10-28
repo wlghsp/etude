@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { EventEmitter } from 'node:events'
 import { PassThrough } from 'node:stream'
 
@@ -6,6 +6,10 @@ vi.mock('./sandbox.js', () => ({
     getSandboxConfig: vi.fn(async () => ({ image: 'ubuntu', binds: null, persistent: true })),
 }))
 vi.mock('./quest.js', () => ({ getSetupCmd: vi.fn(async () => null) }))
+vi.mock('./k8s-session.js', () => ({
+    createSessionAccess: vi.fn(async () => 'apiVersion: v1\nkind: Config\n# limited-learner-kubeconfig\n'),
+    destroySessionAccess: vi.fn(async () => {}),
+}))
 vi.mock('./vcluster-pool.js', () => ({
     assignFromPool: vi.fn(async () => ({ id: 'pool-1', kubeconfigPath: '/tmp/pool-1-kubeconfig.yaml' })),
     releaseVcluster: vi.fn(async () => {}),
@@ -13,6 +17,8 @@ vi.mock('./vcluster-pool.js', () => ({
 
 import { handleTerminal } from './terminal.js'
 import { getSession } from './session-registry.js'
+import { getSandboxConfig } from './sandbox.js'
+import { createSessionAccess, destroySessionAccess } from './k8s-session.js'
 import { assignFromPool, releaseVcluster } from './vcluster-pool.js'
 
 const info = { userId: 7, questId: 101, questSetId: 11, sandboxType: 'docker-persistent' }
@@ -188,113 +194,117 @@ describe('handleTerminal', () => {
     })
 })
 
-describe('k8s 세션 정리', () => {
-    // exec 호출과 완료, 컨테이너 중지·삭제의 순서를 한 로그에 기록한다. 각 exec는 두 번째 inspect에서 끝난다.
+describe('k8s 세션 (제한 권한)', () => {
     function k8sDocker() {
         const events: string[] = []
+        const execs: Array<{ Cmd: string[]; Env?: string[] }> = []
         const container = {
             id: 'abcdef1234567890',
-            start: vi.fn(async () => {}),
+            start: vi.fn(async () => { events.push('start') }),
             attach: vi.fn(async () => new PassThrough()),
             stop: vi.fn(async () => { events.push('stop') }),
             remove: vi.fn(async () => { events.push('remove') }),
-            exec: vi.fn(async (o: { Cmd: string[] }) => {
-                const label = o.Cmd[0] === 'sh' ? 'pv-cleanup' : o.Cmd.slice(0, 3).join(' ')
-                events.push(`start:${label}`)
-                let polls = 0
+            exec: vi.fn(async (o: { Cmd: string[]; Env?: string[] }) => {
+                execs.push(o)
+                events.push(`exec:${o.Cmd[0]}`)
                 return {
                     start: vi.fn(async () => ({ resume() {} })),
-                    inspect: vi.fn(async () => {
-                        polls++
-                        if (polls < 2) return { Running: true, ExitCode: 0 }
-                        events.push(`done:${label}`)
-                        return { Running: false, ExitCode: 0 }
-                    }),
+                    inspect: vi.fn(async () => ({ Running: false, ExitCode: 0 })),
                     resize: vi.fn(),
                 }
             }),
         }
         const docker = { createContainer: vi.fn(async () => container) } as any
-        return { docker, container, events }
+        return { docker, container, events, execs }
     }
 
-    beforeEach(() => vi.clearAllMocks())
+    // 세션 레지스트리는 모듈 전역이라, 테스트가 끝날 때 열어 둔 소켓을 닫아 등록을 해제한다 (같은 컨테이너 ID를 재사용하므로)
+    const sockets: Array<ReturnType<typeof fakeSocket>> = []
+    const openSocket = () => { const s = fakeSocket(); sockets.push(s); return s }
+    afterEach(() => { sockets.splice(0).forEach((s) => s.emit('close')) })
 
-    it('종료 시 PV 삭제와 네임스페이스 삭제가 끝난 뒤에 컨테이너를 중지한다', async () => {
-        const socket = fakeSocket()
-        const { docker, events } = k8sDocker()
-        await handleTerminal(socket as any, docker, { ...info, sandboxType: 'k8s' })
-        events.length = 0 // 준비 단계(네임스페이스 생성)의 기록은 버린다
-
-        socket.emit('close')
-        await vi.waitFor(() => expect(events).toContain('remove'))
-
-        expect(events).toEqual([
-            'start:pv-cleanup', 'done:pv-cleanup',
-            'start:kubectl delete namespace', 'done:kubectl delete namespace',
-            'stop', 'remove',
-        ])
+    beforeEach(() => {
+        vi.clearAllMocks()
+        vi.mocked(getSandboxConfig).mockResolvedValue({ image: 'etude-k8s', binds: ['/home/u/.kube/config-etude:/root/.kube/config:ro'], persistent: false })
     })
 
-    it('PV 삭제가 실패해도 네임스페이스 삭제와 컨테이너 삭제는 진행한다', async () => {
-        const socket = fakeSocket()
-        const { docker, container, events } = k8sDocker()
+    it('DB의 binds에 관리자 kubeconfig 마운트가 있어도 무시하고 바인드 없이 컨테이너를 만든다', async () => {
+        const { docker } = k8sDocker()
+
+        await handleTerminal(openSocket() as any, docker, { ...info, sandboxType: 'k8s' })
+
+        const opts = docker.createContainer.mock.calls[0][0]
+        expect(opts.HostConfig.Binds ?? []).toEqual([])
+        expect(JSON.stringify(opts)).not.toContain('.kube')
+    })
+
+    it('컨테이너 ID로 정한 네임스페이스의 제한 권한을 만들고 kubeconfig를 컨테이너에 주입한 뒤에 connected를 보낸다', async () => {
+        const { docker, execs } = k8sDocker()
+        const socket = openSocket()
+        const order: string[] = []
+        vi.mocked(createSessionAccess).mockImplementationOnce(async () => { order.push('access'); return 'LIMITED-KUBECONFIG' })
+        socket.send.mockImplementation((m: string) => order.push(`send:${JSON.parse(m).type}`))
+
         await handleTerminal(socket as any, docker, { ...info, sandboxType: 'k8s' })
-        const realExec = container.exec.getMockImplementation()!
-        container.exec.mockImplementation(async (o: { Cmd: string[] }) => {
-            if (o.Cmd[0] === 'sh') throw new Error('exec failed')
-            return realExec(o)
-        })
+
+        expect(createSessionAccess).toHaveBeenCalledWith('quest-abcdef12')
+        const install = execs.find((e) => e.Env?.some((v) => v.startsWith('KUBECONFIG_B64=')))
+        expect(install).toBeDefined()
+        const b64 = install!.Env!.find((v) => v.startsWith('KUBECONFIG_B64='))!.slice('KUBECONFIG_B64='.length)
+        expect(Buffer.from(b64, 'base64').toString()).toBe('LIMITED-KUBECONFIG')
+        expect(install!.Cmd.join(' ')).toContain('/root/.kube/config')
+        expect(order).toEqual(['access', 'send:connected'])
+    })
+
+    it('세션 종료 시 제한 권한과 네임스페이스를 지운 뒤 컨테이너를 삭제한다', async () => {
+        const { docker, events } = k8sDocker()
+        const socket = openSocket()
+        vi.mocked(destroySessionAccess).mockImplementationOnce(async () => { events.push('destroy-access') })
+        await handleTerminal(socket as any, docker, { ...info, sandboxType: 'k8s' })
         events.length = 0
 
         socket.emit('close')
         await vi.waitFor(() => expect(events).toContain('remove'))
 
-        expect(events).toContain('done:kubectl delete namespace')
+        expect(destroySessionAccess).toHaveBeenCalledWith('quest-abcdef12')
+        expect(events.indexOf('destroy-access')).toBeLessThan(events.indexOf('stop'))
     })
 
-    it('네임스페이스 삭제는 종료를 기다리지 않는다 (--wait=false)', async () => {
-        const socket = fakeSocket()
+    it('정리 중 권한 삭제가 실패해도 컨테이너는 삭제한다', async () => {
         const { docker, container } = k8sDocker()
+        const socket = openSocket()
         await handleTerminal(socket as any, docker, { ...info, sandboxType: 'k8s' })
+        vi.mocked(destroySessionAccess).mockRejectedValueOnce(new Error('cluster unreachable'))
 
         socket.emit('close')
         await vi.waitFor(() => expect(container.remove).toHaveBeenCalled())
-
-        const deleteNs = container.exec.mock.calls.map((c) => c[0].Cmd).find((c) => c[0] === 'kubectl' && c[1] === 'delete')
-        expect(deleteNs).toEqual(['kubectl', 'delete', 'namespace', 'quest-abcdef12', '--ignore-not-found', '--wait=false'])
     })
 
-    it('정리 명령이 끝나지 않아도 제한 시간(15초) 뒤에 다음 정리와 컨테이너 삭제를 진행한다', async () => {
-        const socket = fakeSocket()
-        const { docker, container, events } = k8sDocker()
+    it('제한 권한을 만들지 못하면 연결하지 않고 만든 자원을 정리한 뒤 소켓을 닫는다', async () => {
+        const { docker, container } = k8sDocker()
+        const socket = openSocket()
+        vi.mocked(createSessionAccess).mockRejectedValueOnce(new Error('token failed'))
+
         await handleTerminal(socket as any, docker, { ...info, sandboxType: 'k8s' })
 
-        // 이후 모든 exec가 영원히 끝나지 않는다 (예: 클러스터에 접속할 수 없음)
-        container.exec.mockImplementation(async (o: { Cmd: string[] }) => {
-            events.push(`start:${o.Cmd[0] === 'sh' ? 'pv-cleanup' : 'delete-namespace'}`)
-            return {
-                start: vi.fn(async () => ({ resume() {} })),
-                inspect: vi.fn(async () => ({ Running: true, ExitCode: 0 })),
-                resize: vi.fn(),
-            }
-        })
-        events.length = 0
+        expect(socket.send).not.toHaveBeenCalled()
+        expect(socket.close).toHaveBeenCalled()
+        expect(destroySessionAccess).toHaveBeenCalledWith('quest-abcdef12') // 일부만 만들어졌을 수 있어 정리한다
+        expect(container.remove).toHaveBeenCalled()
+    })
 
-        vi.useFakeTimers({ toFake: ['setTimeout', 'Date'] })
-        try {
-            socket.emit('close')
-            await vi.advanceTimersByTimeAsync(14_000)
-            expect(events).toEqual(['start:pv-cleanup']) // 아직 제한 시간 전이라 다음 단계로 넘어가지 않는다
+    it('kubeconfig 주입 명령이 실패하면(종료 코드 비정상) 연결하지 않는다', async () => {
+        const { docker, container } = k8sDocker()
+        const socket = openSocket()
+        container.exec.mockImplementation(async () => ({
+            start: vi.fn(async () => ({ resume() {} })),
+            inspect: vi.fn(async () => ({ Running: false, ExitCode: 1 })),
+            resize: vi.fn(),
+        }) as any)
 
-            await vi.advanceTimersByTimeAsync(2_000) // PV 정리 15초 경과
-            expect(events).toContain('start:delete-namespace')
-            expect(container.remove).not.toHaveBeenCalled()
+        await handleTerminal(socket as any, docker, { ...info, sandboxType: 'k8s' })
 
-            await vi.advanceTimersByTimeAsync(15_000) // 네임스페이스 삭제도 15초 경과
-            expect(container.remove).toHaveBeenCalled()
-        } finally {
-            vi.useRealTimers()
-        }
+        expect(socket.send).not.toHaveBeenCalled()
+        expect(socket.close).toHaveBeenCalled()
     })
 })
