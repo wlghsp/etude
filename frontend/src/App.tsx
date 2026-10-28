@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Terminal } from './components/Terminal'
+import { Terminal, type TerminalStatus } from './components/Terminal'
 import { FeedbackButton } from './components/FeedbackButton'
 import { QuestPanel } from './components/QuestPanel'
 import { SetSelect } from './pages/SetSelect'
@@ -14,6 +14,12 @@ import { ChangePasswordModal } from './components/ChangePasswordModal'
 
 
 
+const TERMINAL_STATUS_VIEW: Record<TerminalStatus, { dot: string; label: string }> = {
+  connecting: { dot: 'bg-info animate-pulse', label: '연결 중' },
+  connected: { dot: 'bg-success', label: '연결됨' },
+  ended: { dot: 'bg-error', label: '연결 끊김' },
+}
+
 function App() {
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null)
   const [quests, setQuests] = useState<Quest[]>([])
@@ -27,6 +33,7 @@ function App() {
   const [sessionId, setSessionId] = useState('')
   const [resetKey, setResetKey] = useState(0)
   const [preparing, setPreparing] = useState(false)
+  const [terminalStatus, setTerminalStatus] = useState<TerminalStatus>('connecting')
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const openChangePassword = () => setChangePasswordOpen(true)
 
@@ -156,8 +163,8 @@ function App() {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-success"></span>
-              <span className="font-mono text-label-caps text-on-surface-variant">연결됨</span>
+              <span className={`w-2 h-2 rounded-full ${TERMINAL_STATUS_VIEW[terminalStatus].dot}`}></span>
+              <span className="font-mono text-label-caps text-on-surface-variant">{TERMINAL_STATUS_VIEW[terminalStatus].label}</span>
             </div>
           </div>
           {quest
@@ -165,7 +172,10 @@ function App() {
                 key={`${sandboxType === 'docker-persistent' ? `set-${selectedSetId}` : questIndex}-${resetKey}`}
                 questId={quest.id}
                 onConnected={(id) => { setContainerId(id); setPreparing(false) }}
-                onEnded={() => setPreparing(false)}
+                onStatus={(status) => {
+                  setTerminalStatus(status)
+                  if (status === 'ended') setPreparing(false)
+                }}
               />
             : null
           }
