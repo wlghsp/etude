@@ -12,7 +12,6 @@ const NODE_NAME = 'k3d-etude-server-0'
 // Colima(macOS) 환경에서 /tmp는 VM과 공유되지 않아 dockerode가 마운트할 파일을 찾지 못하고
 // 빈 디렉토리를 생성해버린다. $HOME 하위는 Colima 기본 공유 대상이라 여기에 저장한다.
 const KUBECONFIG_DIR = path.join(homedir(), '.etude', 'vcluster-kubeconfigs')
-mkdirSync(KUBECONFIG_DIR, { recursive: true })
 
 interface PooledVCluster {
     id: string     // vcluster 이름 (pool-{uuid})
@@ -29,6 +28,9 @@ async function createVcluster(): Promise<PooledVCluster> {
 
     // vcluster create --connect=false는 Pod가 Ready 될 때까지 기다리지 않고 바로 반환된다.
     // 컨트롤 플레인이 뜨기 전에 kubeconfig Secret을 조회하면 빈 값이 나오므로, Ready까지 명시적으로 대기한다.
+    // 반환 직후에는 Pod 리소스 자체가 아직 없을 수 있어(없으면 wait가 즉시 "no matching resources found"로 실패),
+    // 생성을 먼저 기다린 뒤 Ready를 확인한다. 복수 --for 지원 여부에 의존하지 않도록 명령을 나눈다.
+    await execAsync(`kubectl wait --for=create pod -l app=vcluster -n ${ns} --timeout=30s`)
     await execAsync(`kubectl wait --for=condition=ready pod -l app=vcluster -n ${ns} --timeout=60s`)
 
     // NodePort 전환 - 랜덤 포트가 이미 다른 vcluster에 할당되어 있으면 재시도한다
@@ -61,6 +63,8 @@ async function createVcluster(): Promise<PooledVCluster> {
         throw new Error(`vcluster ${id}: kubeconfig secret not ready after retries`)
     })()
 
+    // import 시점이 아니라 실제로 파일을 쓰는 시점에 만든다 (테스트가 buildApp()만 import해도 홈 디렉토리를 건드리지 않게)
+    mkdirSync(KUBECONFIG_DIR, { recursive: true })
     const kubeconfigPath = path.join(KUBECONFIG_DIR, `${id}-kubeconfig.yaml`)
     const patched = stdout.replace(
     /server: https:\/\/localhost:8443/,
