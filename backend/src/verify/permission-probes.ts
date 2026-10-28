@@ -30,6 +30,7 @@ export function buildProbes(): Probe[] {
         { name: 'baseline을 통과하는 파드(nginx)를 만들 수 있다', cmd: ['kubectl', 'run', 'probe-ok', '--image=nginx', '-n', '$NS'], expect: 'allow' },
         { name: '노드 목록을 읽을 수 있다', cmd: ['kubectl', 'get', 'nodes'], expect: 'allow' },
         { name: '네임스페이스 목록을 읽을 수 있다', cmd: ['kubectl', 'get', 'namespaces'], expect: 'allow' },
+        { name: '자기 네임스페이스의 쿼터를 조회할 수 있다', cmd: ['kubectl', 'get', 'resourcequota', '-n', '$NS'], expect: 'allow' },
 
         // --- 거부: can-i(변경 없음)
         { name: '전체 관리자 권한이 없다', cmd: ['kubectl', 'auth', 'can-i', '*', '*', '--all-namespaces'], expect: 'deny' },
@@ -40,6 +41,11 @@ export function buildProbes(): Probe[] {
         { name: 'PersistentVolume을 만들 수 없다 (hostPath로 노드에 닿는 경로)', cmd: ['kubectl', 'auth', 'can-i', 'create', 'persistentvolumes'], expect: 'deny' },
         { name: 'ClusterRole을 만들 수 없다', cmd: ['kubectl', 'auth', 'can-i', 'create', 'clusterroles'], expect: 'deny' },
         { name: 'ClusterRoleBinding을 만들 수 없다', cmd: ['kubectl', 'auth', 'can-i', 'create', 'clusterrolebindings'], expect: 'deny' },
+
+        // --- 거부: 자원 상한을 학습자가 풀 수 없다
+        { name: '쿼터를 삭제할 수 없다', cmd: ['kubectl', 'auth', 'can-i', 'delete', 'resourcequotas', '-n', '$NS'], expect: 'deny' },
+        { name: 'LimitRange를 수정할 수 없다', cmd: ['kubectl', 'auth', 'can-i', 'update', 'limitranges', '-n', '$NS'], expect: 'deny' },
+        { name: '컨테이너 상한을 넘는 요청(cpu 100)이 거부된다', cmd: ['sh', '-c', podManifest('', '    resources:\n      requests:\n        cpu: "100"\n')], expect: 'deny' },
 
         // --- 거부: Pod Security baseline이 막아야 하는 파드 (자기 네임스페이스에서 시도하고 거부되어야 한다)
         { name: 'hostPath 볼륨 파드가 거부된다', cmd: ['sh', '-c', podManifest('  volumes:\n  - name: h\n    hostPath:\n      path: /\n')], expect: 'deny' },

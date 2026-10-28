@@ -7,14 +7,16 @@ const API = 'https://k3d-etude-server-0:6443'
 // kubectl 호출을 기록하고, 명령별로 응답을 정해 둔 가짜. 응답이 없으면 빈 문자열.
 function fakeKubectl(responses: Record<string, string | Error> = {}) {
     const calls: string[][] = []
-    const kubectl: Kubectl = async (args) => {
+    const inputs: Array<{ args: string[]; input: string }> = []
+    const kubectl: Kubectl = async (args, input) => {
         calls.push(args)
+        if (input !== undefined) inputs.push({ args, input })
         const key = args.slice(0, 2).join(' ')
         const r = responses[key]
         if (r instanceof Error) throw r
         return r ?? ''
     }
-    return { kubectl, calls }
+    return { kubectl, calls, inputs }
 }
 
 const defaults = { 'create token': 'TOKEN-123\n', 'config view': 'Q0EtREFUQQ==' }
@@ -58,6 +60,47 @@ describe('createSessionAccess', () => {
         const present = fakeKubectl(defaults)
         await createSessionAccess(NS, { kubectl: present.kubectl, apiServer: API })
         expect(present.calls.some((c) => c[1] === 'clusterrole' && c[0] === 'create')).toBe(false)
+    })
+
+    it('자원 상한(ResourceQuota)을 만든다: 파드 수, CPU·메모리 요청/제한, PVC·저장 용량', async () => {
+        const { kubectl, calls } = fakeKubectl(defaults)
+
+        await createSessionAccess(NS, { kubectl, apiServer: API })
+
+        const quota = calls.find((c) => c[0] === 'create' && c[1] === 'quota')
+        expect(quota).toBeDefined()
+        expect(quota!.slice(0, 5)).toEqual(['create', 'quota', 'etude-quota', '-n', NS])
+        const hard = quota!.find((a) => a.startsWith('--hard='))!
+        for (const key of ['pods=', 'requests.cpu=', 'requests.memory=', 'limits.cpu=', 'limits.memory=', 'persistentvolumeclaims=', 'requests.storage=']) {
+            expect(hard).toContain(key)
+        }
+    })
+
+    it('요청/제한을 쓰지 않은 파드에 기본값을 채우는 LimitRange를 표준입력으로 적용한다 (없으면 쿼터 때문에 모든 파드가 거부된다)', async () => {
+        const { kubectl, inputs } = fakeKubectl(defaults)
+
+        await createSessionAccess(NS, { kubectl, apiServer: API })
+
+        const limitRange = inputs.find((i) => i.input.includes('kind: LimitRange'))
+        expect(limitRange).toBeDefined()
+        expect(limitRange!.args).toEqual(['apply', '-n', NS, '-f', '-'])
+        expect(limitRange!.input).toContain('defaultRequest')
+        expect(limitRange!.input).toContain('default:')
+        expect(limitRange!.input).toContain('type: Container')
+    })
+
+    it('쿼터와 LimitRange는 학습자 토큰을 만들기 전에 준비한다 (권한을 주기 전에 상한부터)', async () => {
+        const { kubectl, calls } = fakeKubectl(defaults)
+
+        await createSessionAccess(NS, { kubectl, apiServer: API })
+
+        const idx = (pred: (c: string[]) => boolean) => calls.findIndex(pred)
+        const quota = idx((c) => c[1] === 'quota')
+        const limitRange = idx((c) => c[0] === 'apply')
+        const token = idx((c) => c[1] === 'token')
+        expect(quota).toBeGreaterThanOrEqual(0) // 없으면 -1 < token 이 참이 되어 검사가 무의미해진다
+        expect(limitRange).toBeGreaterThanOrEqual(0)
+        expect(token).toBeGreaterThan(Math.max(quota, limitRange))
     })
 
     it('토큰을 8시간 유효기간으로 발급한다', async () => {

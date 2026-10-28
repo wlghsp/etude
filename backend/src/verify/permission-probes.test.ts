@@ -31,6 +31,15 @@ describe('buildProbes', () => {
         expect(deny).toContain('client-certificate')
     })
 
+    it('자원 제한도 검사한다: 쿼터·LimitRange를 지우거나 고칠 수 없고, 상한을 넘는 요청은 거부되며, 쿼터는 조회할 수 있다', () => {
+        const allow = probes.filter((p) => p.expect === 'allow').map(text).join('\n')
+        const deny = probes.filter((p) => p.expect === 'deny').map(text).join('\n')
+        expect(allow).toContain('get resourcequota')
+        expect(deny).toContain('delete resourcequotas')
+        expect(deny).toContain('update limitranges')
+        expect(deny).toMatch(/cpu: "?100"?/) // 컨테이너 상한(LimitRange max)을 넘는 요청
+    })
+
     it('안전성: 어떤 프로브도 delete를 실행하지 않고, 다른 네임스페이스에는 can-i(변경 없음)로만 접근한다', () => {
         for (const p of probes) {
             expect(text(p)).not.toMatch(/kubectl\s+delete/)
