@@ -4,6 +4,19 @@ import { FitAddon } from "@xterm/addon-fit";
 import '@xterm/xterm/css/xterm.css'
 import { issueTerminalTicket, terminalSocketUrl } from '../api/terminal'
 
+const FONT_SIZE_KEY = 'etude.terminalFontSize'
+const FONT_SIZE_DEFAULT = 14
+const FONT_SIZE_MIN = 10
+const FONT_SIZE_MAX = 24
+
+function loadFontSize(): number {
+    try {
+        const saved = Number(localStorage.getItem(FONT_SIZE_KEY))
+        if (Number.isInteger(saved) && saved >= FONT_SIZE_MIN && saved <= FONT_SIZE_MAX) return saved
+    } catch { /* 저장소를 못 읽어도 기본값으로 쓴다 */ }
+    return FONT_SIZE_DEFAULT
+}
+
 export type TerminalStatus = 'connecting' | 'connected' | 'ended'
 
 interface Props {
@@ -16,9 +29,21 @@ interface Props {
 export function Terminal({ questId, onConnected, onStatus }: Props) {
     const containerRef = useRef<HTMLDivElement>(null)
     const [loading, setLoading] = useState(true)
+    const [fontSize, setFontSize] = useState(loadFontSize)
+    // 연결 effect는 한 번만 실행되므로, 글꼴 크기 변경은 ref로 살아 있는 터미널에 전달한다
+    const termRef = useRef<XTerm | null>(null)
+    const resizeRef = useRef<() => void>(() => {})
+    const initialFontSize = useRef(fontSize)
 
     useEffect(() => {
-        const term = new XTerm({ cursorBlink: true, fontSize: 14, fontFamily: 'monospace', lineHeight: 1.2 })
+        if (!termRef.current) return
+        termRef.current.options.fontSize = fontSize
+        resizeRef.current() // 칸 수가 바뀌므로 맞춰 다시 계산하고 서버에도 알린다
+        try { localStorage.setItem(FONT_SIZE_KEY, String(fontSize)) } catch { /* 저장 실패는 무시 */ }
+    }, [fontSize])
+
+    useEffect(() => {
+        const term = new XTerm({ cursorBlink: true, fontSize: initialFontSize.current, fontFamily: 'monospace', lineHeight: 1.2 })
         const fitAddon = new FitAddon()
         term.loadAddon(fitAddon)
         term.open(containerRef.current!)
@@ -37,6 +62,9 @@ export function Terminal({ questId, onConnected, onStatus }: Props) {
             ws.send(JSON.stringify({ type: 'resize', cols, rows }))
         }
 
+
+        termRef.current = term
+        resizeRef.current = sendResize
 
         // 브라우저 창 크기 변경 대응
         const resizeObserver = new ResizeObserver(() => sendResize())
@@ -93,7 +121,38 @@ export function Terminal({ questId, onConnected, onStatus }: Props) {
             if (ws && ws.readyState === WebSocket.OPEN) ws.send(data)
         })
 
+        // 클립보드 접근은 보안 컨텍스트(https, localhost)에서만 되고 권한이 막힐 수 있어 실패해도 터미널은 계속 쓴다
+        const copySelection = () => {
+            const text = term.getSelection()
+            if (text) navigator.clipboard.writeText(text).catch(() => {})
+        }
+
+        // 드래그로 선택하면 바로 복사한다
+        term.onSelectionChange(() => { if (term.hasSelection()) copySelection() })
+
+        term.attachCustomKeyEventHandler((e) => {
+            if (e.type !== 'keydown' || !e.ctrlKey || e.altKey || e.metaKey) return true
+            const key = e.key.toLowerCase()
+            // Ctrl+Shift+C: 복사. 브라우저 기본 동작(개발자 도구 선택기)은 막는다
+            if (e.shiftKey && key === 'c') {
+                e.preventDefault()
+                copySelection()
+                return false
+            }
+            // Ctrl+Shift+V: xterm이 제어 문자를 보내지 않게만 하고, 붙여넣기는 브라우저의 paste 이벤트를 xterm이 처리한다
+            if (e.shiftKey && key === 'v') return false
+            // 선택이 있을 때 Ctrl+C는 복사만 하고 중단 신호(SIGINT)는 보내지 않는다
+            if (!e.shiftKey && key === 'c' && term.hasSelection()) {
+                copySelection()
+                term.clearSelection()
+                return false
+            }
+            return true
+        })
+
         return () => {
+            termRef.current = null
+            resizeRef.current = () => {}
             cancelled = true
             ws?.close()
             term.dispose()
@@ -104,6 +163,20 @@ export function Terminal({ questId, onConnected, onStatus }: Props) {
     return (
         <div className="relative" style={{ height: '100vh', background: '#000' }}>
             <div ref={containerRef} style={{ height: '100%', padding: '4px' }} />
+            <div className="absolute top-1 right-3 z-10 flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
+                <button
+                    onClick={() => setFontSize((n) => Math.max(FONT_SIZE_MIN, n - 1))}
+                    disabled={fontSize <= FONT_SIZE_MIN}
+                    title="글꼴 작게"
+                    className="border border-outline-variant bg-surface px-2 py-0.5 font-mono text-label-caps text-on-surface hover:bg-surface-container-high disabled:opacity-30"
+                >A−</button>
+                <button
+                    onClick={() => setFontSize((n) => Math.min(FONT_SIZE_MAX, n + 1))}
+                    disabled={fontSize >= FONT_SIZE_MAX}
+                    title="글꼴 크게"
+                    className="border border-outline-variant bg-surface px-2 py-0.5 font-mono text-label-caps text-on-surface hover:bg-surface-container-high disabled:opacity-30"
+                >A+</button>
+            </div>
             {loading && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 gap-3">
                     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
