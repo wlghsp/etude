@@ -11,7 +11,10 @@
     "8": "sed -i '2,4d' /tmp/multi.txt",
     "9": "sed -i 's/error/info/' /tmp/fix.txt",
     "10": "sed -i '1s/$/ # managed by etude/' /tmp/append.txt",
-    "11": "true",
+    "11": "echo redo_done >> /tmp/undo.txt",
     "12": "echo modified >> /tmp/readonly.txt"
+  },
+  "allowTriviallyPasses": {
+    "2": "정답 상태(파일이 비어 있음)가 초기 상태와 같아, 저장 없이 종료했는지를 상태로는 구분할 수 없다"
   }
 }

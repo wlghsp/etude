@@ -2,10 +2,10 @@
   "setId": 7,
   "answers": {
     "1": "tar -cvf /tmp/files.tar /tmp/files",
-    "2": "tar -tvf /tmp/files.tar",
+    "2": "tar -tvf /tmp/files.tar > /tmp/tar_list.txt",
     "3": "mkdir -p /tmp/extract && tar -xvf /tmp/files.tar -C /tmp/extract",
     "4": "tar -czvf /tmp/archive.tar.gz /tmp/files",
-    "5": "tar -tzvf /tmp/archive.tar.gz",
+    "5": "tar -tzvf /tmp/archive.tar.gz > /tmp/targz_list.txt",
     "6": "mkdir -p /tmp/extract && tar -xzvf /tmp/archive.tar.gz -C /tmp/extract",
     "7": "zip -r /tmp/files.zip /tmp/files",
     "8": "unzip /tmp/files.zip -d /tmp/unzipped",

@@ -72,11 +72,11 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    '["sh", "-c", "grep -q ''managed by etude'' /tmp/append.txt"]'),
 
   (9, 11, '실행 취소와 다시 실행 (u, Ctrl+r)',
-   '/tmp/undo.txt 를 vim으로 열어 내용을 수정했다가 u 로 되돌리고 저장하세요. 파일 내용이 원본과 같아야 합니다.',
-   'vim에서 수정 후 ESC → u 로 실행 취소합니다.',
-   'vim /tmp/undo.txt 후 수정 → ESC → u → :wq',
+   '/tmp/undo.txt 를 vim으로 열어 맨 아래에 redo_done 한 줄을 추가하세요. u 로 취소해 본 뒤 Ctrl+r 로 다시 실행해서 그 줄이 돌아온 상태로 저장하세요. 파일에 original content 와 redo_done 이 모두 있어야 합니다.',
+   'o 로 새 줄을 열어 redo_done 입력 → ESC → u (취소) → Ctrl+r (다시 실행) → :wq',
+   'vim /tmp/undo.txt 후 o → redo_done → ESC → u → Ctrl+r → :wq',
    '["sh", "-c", "printf ''original content\\n'' > /tmp/undo.txt"]',
-   '["sh", "-c", "grep -q ''original content'' /tmp/undo.txt"]'),
+   '["sh", "-c", "grep -q ''original content'' /tmp/undo.txt && grep -q redo_done /tmp/undo.txt"]'),
 
   (9, 12, '읽기 전용 파일 수정 저장하기',
    '/tmp/readonly.txt 는 root 소유의 읽기 전용 파일입니다. vim으로 열어 "modified" 한 줄을 추가하고 :w !sudo tee % 로 저장하세요.',

@@ -9,11 +9,11 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    '["sh", "-c", "tar -tf /tmp/files.tar | grep -q a.txt"]'),
 
   (7,  2, 'tar 아카이브 내용 확인하기 (-tvf)',
-   '/tmp/files.tar 아카이브에 어떤 파일이 들어있는지 목록을 확인하세요.',
-   'tar -tvf 옵션을 사용하세요. t=목록확인, v=상세출력(권한/날짜 포함), f=파일명 지정.',
-   'tar -tvf /tmp/files.tar',
+   '/tmp/files.tar 아카이브에 어떤 파일이 들어있는지 목록을 확인하고, 결과를 /tmp/tar_list.txt 에 저장하세요.',
+   'tar -tvf 옵션과 리다이렉션(>)을 사용하세요. t=목록확인, v=상세출력(권한/날짜 포함), f=파일명 지정.',
+   'tar -tvf /tmp/files.tar > /tmp/tar_list.txt',
    '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && tar -cf /tmp/files.tar /tmp/files"]',
-   '["sh", "-c", "tar -tf /tmp/files.tar | grep -q files"]'),
+   '["sh", "-c", "grep -q a.txt /tmp/tar_list.txt"]'),
 
   (7,  3, 'tar 해제하기 (-xvf)',
    '/tmp/files.tar 를 /tmp/extract 디렉토리에 압축 해제하세요. 해제되는 파일 목록이 출력되어야 합니다.',
@@ -30,11 +30,11 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    '["sh", "-c", "tar -tzf /tmp/archive.tar.gz | grep -q a.txt"]'),
 
   (7,  5, 'tar.gz 내용 확인하기 (-tzvf)',
-   '/tmp/archive.tar.gz 아카이브의 내용을 확인하세요.',
-   'tar -tzvf 옵션을 사용하세요. z 옵션이 있어야 .gz 파일을 읽을 수 있습니다.',
-   'tar -tzvf /tmp/archive.tar.gz',
+   '/tmp/archive.tar.gz 아카이브의 내용을 확인하고, 결과를 /tmp/targz_list.txt 에 저장하세요.',
+   'tar -tzvf 옵션과 리다이렉션(>)을 사용하세요. z 옵션이 있어야 .gz 파일을 읽을 수 있습니다.',
+   'tar -tzvf /tmp/archive.tar.gz > /tmp/targz_list.txt',
    '["sh", "-c", "mkdir -p /tmp/files && echo hello > /tmp/files/a.txt && tar -czvf /tmp/archive.tar.gz /tmp/files"]',
-   '["sh", "-c", "tar -tzf /tmp/archive.tar.gz | grep -q files"]'),
+   '["sh", "-c", "grep -q a.txt /tmp/targz_list.txt"]'),
 
   (7,  6, 'tar.gz 압축 해제하기 (-xzvf)',
    '/tmp/archive.tar.gz 를 /tmp/extract 디렉토리에 압축 해제하세요. 해제되는 파일 목록이 출력되어야 합니다.',

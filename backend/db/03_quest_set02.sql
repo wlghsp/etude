@@ -22,11 +22,11 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    '["sh", "-c", "grep -q done /tmp/cat_result.txt"]'),
 
   (2,  4, '파일에서 문자열 검색하기',
-   '/tmp/answer.txt 파일에서 "done" 문자열이 포함된 줄을 출력하세요.',
-   'grep 명령어를 사용하세요.',
-   'grep "done" /tmp/answer.txt',
+   '/tmp/answer.txt 파일에서 "done" 문자열이 포함된 줄을 찾아 결과를 /tmp/grep_result.txt 에 저장하세요.',
+   'grep 명령어와 리다이렉션(>)을 사용하세요.',
+   'grep "done" /tmp/answer.txt > /tmp/grep_result.txt',
    '["sh", "-c", "echo done > /tmp/answer.txt"]',
-   '["grep", "-q", "done", "/tmp/answer.txt"]'),
+   '["grep", "-q", "done", "/tmp/grep_result.txt"]'),
 
   (2,  5, '여러 줄 파일 만들기',
    '/tmp/multiline.txt 파일을 만들고 첫 줄에 "line1", 둘째 줄에 "line2"를 입력하세요.',
