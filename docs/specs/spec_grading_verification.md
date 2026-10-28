@@ -1,6 +1,6 @@
 # 채점 검증 러너 명세 — 채점이 맞다는 것을 자동으로 확인한다
 
-> 상태: **V1~V3 구현 완료 (`linux`, `docker`, `docker-persistent`, `linux-ssh`, `linux-systemd`), V4(k8s) 이후 대기** — 설계 결정은 "결정" 참고. [Phase 8d 명세](spec_phase8d_session_security.md)의 "범위 밖"에서 "퀘스트 채점식 전수 감사와 채점 검증 러너(다음 단계)"로 분리된 작업이다. 이 문서는 목표·결정·조각 분할만 다루고, 조각별 상세는 착수할 때 별도로 쓴다.
+> 상태: **V1~V4 구현 완료 (전 샌드박스 타입, `k8s-isolated` 제외), V5(오답 검사) 대기** — 설계 결정은 "결정" 참고. [Phase 8d 명세](spec_phase8d_session_security.md)의 "범위 밖"에서 "퀘스트 채점식 전수 감사와 채점 검증 러너(다음 단계)"로 분리된 작업이다. 이 문서는 목표·결정·조각 분할만 다루고, 조각별 상세는 착수할 때 별도로 쓴다.
 
 ## 목표
 
@@ -150,3 +150,33 @@
 - 4.1, 4.2, 4.3, 4.5는 외부 네트워크(`example.com`, `8.8.8.8`)에 의존한다. 폐쇄망/오프라인 서버에서는 통과하지 못할 수 있다.
 - `linux-ssh`는 앱이 `/bin/bash`를 띄우므로(sshd는 퀘스트 setup이 시작) 검증도 `linux`와 같은 프로필을 쓴다. `linux-systemd`는 Privileged, `CgroupnsMode: host`, `/sys/fs/cgroup` 바인드로 만들고 `systemctl is-system-running`이 `running`/`degraded`가 될 때까지 기다린다.
 - 누적: V1~V3로 132개 중 **94개(71%)**를 검증했고, 결함 **14건**을 찾아 모두 고쳤다. 남은 것은 k8s 세트 6, 12, 13, 14 (38개).
+
+## V4 결과 (2026-10-28, `k8s` 세트 6, 12, 13, 14 — 38개 중 31 통과, 7 실패 → 수정 후 38 통과, 0 실패)
+
+| 퀘스트 | 판정 | 원인 | 수정 |
+|--------|------|------|------|
+| 6.4 Pod 목록 확인하기 | 무행동 통과 | 보기만 하는 퀘스트라 흔적이 없고 setup이 만든 파드가 채점을 통과시킨다 | 결과를 `/tmp/pods_result.txt`에 저장하게 하고 그 파일을 채점 |
+| 6.13 Deployment 롤링 업데이트 | 정답 거부 | `kubectl create deployment my-app --image=nginx`의 컨테이너 이름은 `my-app`이 아니라 `nginx`다. 풀이(`my-app=nginx:alpine`)대로 하면 `unable to find container`로 **학습자도 항상 실패** | 풀이를 `nginx=nginx:alpine`으로, 힌트에 컨테이너 이름 안내 추가 |
+| 6.14 Deployment 롤백 | 정답 거부 | setup의 `set image`가 6.13과 같은 이유로 조용히 실패. 게다가 채점식(`rollout history`에 `2\|3`)은 *setup만으로도* 리비전 2가 있어 통과 | setup을 바로잡고, 롤백 후 이미지가 `alpine`이 아니어야 통과하도록 채점 변경 |
+| 12.6 Secret 값 확인하기 | 정답 거부 | `etude-k8s`는 busybox라 `base64 --decode`를 지원하지 않는다(`-d`만). 힌트대로 하면 **학습자도 실패** | 힌트·풀이를 `base64 -d`로 |
+| 13.5 port-forward | 정답 거부 | 풀이의 `a && b && c & sleep 2 && curl`은 체인 전체가 백그라운드로 가서 `curl`이 port-forward보다 먼저 실행된다. 풀이를 그대로 따라 하면 실패 | 파드 준비를 기다리고 port-forward만 백그라운드로 보내는 순서로 풀이 수정 |
+| 14.2 Helm repo 업데이트 | 무행동 통과 | 채점식이 `helm repo update`를 스스로 실행한다 | 출력을 `/tmp/helm_update.txt`에 저장하게 하고 그 파일을 채점 |
+| 14.7 릴리스 업그레이드 | 무행동 통과 | `grep -c deployed >= 1`은 setup의 최초 설치만으로 통과 | 업그레이드한 값(`replicaCount: 3`)을 채점 |
+
+- 수정은 원본 SQL과 [update_2026-10-28_grading_fixes_k8s.sql](../../backend/db/update_2026-10-28_grading_fixes_k8s.sql)에 함께 반영했다. **서버 DB에는 이 파일을 한 번 실행해야 반영된다.**
+- **실행 방법:** 컨테이너 안에서 닿는 서버 주소의 kubeconfig가 필요하다 ([개발 환경 가이드](../ops/guide_local_dev_env.md)의 `config-etude`). 호스트 `~/.kube/config`의 `https://127.0.0.1:6443`을 `https://k3d-etude-server-0:6443`으로 바꾼 사본을 만들어 `KUBECONFIG_PATH=...`로 지정한다. 자격 증명이 들어 있으므로 저장소 밖에 권한 600으로 둔다. `cd backend && KUBECONFIG_PATH=<경로> npm run verify:quests -- --set 6,12,13,14`
+- 컨테이너마다 `verify-<ID 앞 8자>` 네임스페이스를 만들고 끝나면 지운다. 앱의 `quest-*` 접두어와 달리 `verify-`를 쓰는 이유: 앱은 기동 시 `quest-*` 네임스페이스를 전부 정리하므로, 같은 접두어면 검증 중인 네임스페이스가 지워질 수 있다. `$NS` 치환은 앱과 같은 방식으로 setup·채점·정답 명령에 적용한다.
+- 정리 시 이 네임스페이스를 `claimRef`로 가진 **PersistentVolume도 함께 지운다.** PV는 클러스터 범위라 네임스페이스를 지워도 남는다(처음 구현에서는 이 점이 빠져 `pv-local-verify-*`가 남았고, 세트 13을 다시 돌려 남지 않는 것을 확인했다).
+- 외부 의존: 파드 이미지(`nginx`, `ubuntu`, `busybox`, `bitnami` 차트와 이미지)를 인터넷에서 받는다. 폐쇄망에서는 통과하지 못한다. Bitnami의 차트·이미지 배포 정책이 바뀌면 14.x가 깨질 수 있다 (이번 실행에서는 통과).
+- 한 번의 전체 실행(4세트, 퀘스트당 컨테이너 2개)은 약 5분 걸렸다.
+
+### 앱 쪽에서 발견한 별도 결함 (채점 검증 범위 밖)
+
+검증 중 클러스터에서 **앱 자체의 자원 누수**를 확인했다: `pv-local-quest-8a1fb9aa`, `pv-local-quest-d0daf6cd` (Available)는 검증이 만든 것이 아니라 실제 `quest-*` 세션이 남긴 `PersistentVolume`이다. 13.x는 클러스터 범위 `PersistentVolume`(`pv-local-$NS`)을 만드는데, 앱의 세션 정리(`handleK8sTerminal`의 `kubectl delete namespace`)는 이를 지우지 않는다. 13.x를 풀 때마다 PV와 노드의 hostPath 데이터(`/tmp/pv-data`)가 쌓인다.
+
+- 해결 방향(제안, 별도 조각): 정리 시 해당 네임스페이스를 `claimRef`로 가진 PV를 함께 지우고(러너와 같은 방식), 기동 시 정리(`cleanupOrphanQuestNamespaces`)에서 `Available`/`Released` 상태의 `pv-local-quest-*`도 정리한다. 서버에도 이미 쌓여 있을 수 있어, 서버에서 `kubectl get pv`로 확인이 필요하다.
+- 이 결함은 이 명세의 범위가 아니라 `terminal.ts`와 `k8s-namespace.ts` 변경이므로 [spec_k8s_pv_cleanup.md](spec_k8s_pv_cleanup.md)로 분리해 처리했다.
+
+### 누적
+
+V1~V4로 현재 DB의 퀘스트 **132개 전부**(49 + 26 + 19 + 38)를 검증했다. 결함 **21건**을 찾아 모두 고쳤다 (V1 8, V2 3, V3 3, V4 7). `k8s-isolated`(vcluster) 타입은 러너가 아직 지원하지 않지만, 이 타입을 쓰는 세트가 현재 없다(KLID CMP 세트는 보류). 해당 세트가 생기면 그때 프로필을 추가한다.
