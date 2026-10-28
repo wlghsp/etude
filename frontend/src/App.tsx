@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Terminal } from './components/Terminal'
 import { FeedbackButton } from './components/FeedbackButton'
 import { QuestPanel } from './components/QuestPanel'
@@ -7,7 +7,7 @@ import { Progress } from './pages/Progress'
 import { Leaderboard } from './pages/Leaderboard'
 import { Admin } from './pages/Admin'
 import type { Quest } from './types'
-import { fetchQuests, endSession } from './api/quest'
+import { fetchQuests } from './api/quest'
 import { fetchMe, token } from './api/auth'
 import { Login } from './pages/Login'
 import { ChangePasswordModal } from './components/ChangePasswordModal'
@@ -29,11 +29,6 @@ function App() {
   const [preparing, setPreparing] = useState(false)
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const openChangePassword = () => setChangePasswordOpen(true)
-  const containerIdRef = useRef(containerId)
-  const sandboxTypeRef = useRef(sandboxType)
-
-  useEffect(() => { containerIdRef.current = containerId }, [containerId])
-  useEffect(() => { sandboxTypeRef.current = sandboxType }, [sandboxType])
 
   useEffect(() => {
     fetchMe()
@@ -44,18 +39,16 @@ function App() {
   
   useEffect(() => {
     if (selectedSetId === null) return
+    let cancelled = false
     fetchQuests(selectedSetId)
       .then((data: Quest[]) => {
+        if (cancelled) return
         setQuests(data)
         setQuestIndex(0)
         setCompletedIndices(new Set())
         setSessionId(`${Date.now()}-${Math.random().toString(36).slice(2)}`)
       })
-    return () => {
-      if (containerIdRef.current && sandboxTypeRef.current === 'docker-persistent') {
-        endSession(containerIdRef.current).catch(() => {})
-      }
-    }
+    return () => { cancelled = true }
   }, [selectedSetId])
 
   // 토큰 검증 전 - 빈 화면 (깜박임 방지)
@@ -97,6 +90,9 @@ function App() {
   if (selectedSetId === null) {
     function handleSetSelect(id: number, sandboxType: string) {
       setSelectedSetId(id)
+      // 이전 세트의 퀘스트로 터미널이 마운트되면 서버가 잘못된 세트로 세션을 만든다. 새 목록이 올 때까지 비운다.
+      setQuests([])
+      setQuestIndex(0)
       setSandboxType(sandboxType)
       setContainerId('')
       setPreparing(true)
@@ -136,7 +132,6 @@ function App() {
               key={quest.id}
               quest={quest}
               containerId={containerId}
-              questSetId={selectedSetId}
               sessionId={sessionId}
               total={quests.length}
               index={questIndex}
@@ -144,9 +139,8 @@ function App() {
               onPrev={() => setQuestIndex((i) => i - 1)}
               onNext={() => setQuestIndex((i) => i + 1)}
               onHome={() => setSelectedSetId(null)}
-              onReset={async () => {
+              onReset={() => {
                 setPreparing(true)
-                if (containerId) await endSession(containerId).catch(() => {})
                 setContainerId('')
                 setResetKey(k => k + 1)
               }}
@@ -169,10 +163,9 @@ function App() {
           {quest
             ? <Terminal
                 key={`${sandboxType === 'docker-persistent' ? `set-${selectedSetId}` : questIndex}-${resetKey}`}
-                sandboxType={sandboxType}
                 questId={quest.id}
-                containerId={containerId || null}
                 onConnected={(id) => { setContainerId(id); setPreparing(false) }}
+                onEnded={() => setPreparing(false)}
               />
             : null
           }

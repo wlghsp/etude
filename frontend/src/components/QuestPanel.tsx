@@ -5,7 +5,6 @@ import { gradeQuest } from '../api/quest'
 interface Props {
     quest: Quest
     containerId: string
-    questSetId: number
     sessionId: string
     total: number
     index: number
@@ -17,7 +16,7 @@ interface Props {
     onComplete: (index: number) => void
 }
 
-export function QuestPanel({ quest, containerId, questSetId, sessionId, total, index, onPrev, onNext, onHome, onReset, onComplete }: Props) {
+export function QuestPanel({ quest, containerId, sessionId, total, index, onPrev, onNext, onHome, onReset, onComplete }: Props) {
     const startTimeRef = useRef(0)
     useEffect(() => { startTimeRef.current = Date.now() }, [])
     const [hintUsed, setHintUsed] = useState(false)
@@ -40,7 +39,7 @@ export function QuestPanel({ quest, containerId, questSetId, sessionId, total, i
         setLoading(true)
         try {
             const elapsedSec = Math.round((Date.now() - startTimeRef.current) / 1000)
-            const data = await gradeQuest(containerId, quest.id, questSetId, sessionId, elapsedSec, hintUsed, solutionUsed)
+            const data = await gradeQuest(containerId, quest.id, sessionId, elapsedSec, hintUsed, solutionUsed)
             setResult(data.passed)
             if (data.passed) onComplete(index)
         } finally {

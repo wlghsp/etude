@@ -11,7 +11,6 @@ export async function fetchQuests(setId: number) {
 export async function gradeQuest(
   containerId: string,
   questId: number,
-  questSetId: number,
   sessionId: string,
   elapsedSec: number,
   hintUsed: boolean,
@@ -20,14 +19,6 @@ export async function gradeQuest(
   return fetch(`${BASE}/grade`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ containerId, questId, questSetId, sessionId, elapsedSec, hintUsed, solutionUsed }),
-  }).then((r) => r.json())
-}
-
-export async function endSession(containerId: string) {
-  return fetch(`${BASE}/session/end`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ containerId }),
+    body: JSON.stringify({ containerId, questId, sessionId, elapsedSec, hintUsed, solutionUsed }),
   }).then((r) => r.json())
 }
