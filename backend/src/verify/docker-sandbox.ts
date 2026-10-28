@@ -7,9 +7,21 @@ const DEFAULT_EXEC_TIMEOUT_MS = 120_000
 // 그대로 쓰되 Privileged로 만들고 데몬이 응답할 때까지 기다린다 (실제 앱의 handleDockerTerminal과 같은 구성).
 export interface SandboxProfile {
     privileged?: boolean
+    extraBinds?: string[]
+    cgroupnsHost?: boolean
     readyCmd?: string[]
     readyTimeoutMs?: number
     readyIntervalMs?: number
+}
+
+// 실제 앱의 handleSystemdTerminal과 같은 구성. systemd가 부팅을 마칠 때까지(running/degraded) 기다린다.
+export const SYSTEMD_PROFILE: SandboxProfile = {
+    privileged: true,
+    extraBinds: ['/sys/fs/cgroup:/sys/fs/cgroup:rw'],
+    cgroupnsHost: true,
+    readyCmd: ['sh', '-c', 'systemctl is-system-running 2>/dev/null | grep -qE "running|degraded"'],
+    readyTimeoutMs: 90_000,
+    readyIntervalMs: 500,
 }
 
 export const DIND_PROFILE: SandboxProfile = { privileged: true, readyCmd: ['docker', 'info'], readyTimeoutMs: 90_000, readyIntervalMs: 500 }
@@ -22,7 +34,11 @@ export function dockerSandboxFactory(docker: Docker, config: { image: string; bi
         const container = await docker.createContainer({
             Image: config.image,
             Labels: { etude: 'verify' },
-            HostConfig: { Binds: config.binds ?? [], ...(profile.privileged ? { Privileged: true } : {}) },
+            HostConfig: {
+                Binds: [...(config.binds ?? []), ...(profile.extraBinds ?? [])],
+                ...(profile.privileged ? { Privileged: true } : {}),
+                ...(profile.cgroupnsHost ? { CgroupnsMode: 'host' } : {}),
+            } as Docker.ContainerCreateOptions['HostConfig'],
             // dind 같은 서비스형 이미지는 기본 entrypoint가 본체라 Cmd를 덮어쓰지 않는다
             ...(profile.readyCmd ? {} : { Cmd: ['/bin/bash'], OpenStdin: true, Tty: true }),
         })

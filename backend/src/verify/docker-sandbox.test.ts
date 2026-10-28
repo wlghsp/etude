@@ -97,4 +97,31 @@ describe('dockerSandboxFactory', () => {
         ).rejects.toThrow(/준비/)
         expect(container.remove).toHaveBeenCalled()
     })
+
+    it('systemd 프로필: cgroup 바인드와 CgroupnsMode host, Privileged로 만들고 기본 Cmd를 유지한다', async () => {
+        const container = {
+            start: vi.fn(async () => {}),
+            stop: vi.fn(async () => {}),
+            remove: vi.fn(async () => {}),
+            exec: vi.fn(async () => ({
+                start: vi.fn(async () => ({ resume() {} })),
+                inspect: vi.fn(async () => ({ Running: false, ExitCode: 0 })),
+            })),
+        }
+        const docker = { createContainer: vi.fn(async () => container) } as any
+
+        await dockerSandboxFactory(docker, { image: 'rockylinux/rockylinux:9-ubi-init', binds: ['/a:/b'] }, {
+            privileged: true,
+            extraBinds: ['/sys/fs/cgroup:/sys/fs/cgroup:rw'],
+            cgroupnsHost: true,
+            readyCmd: ['sh', '-c', 'systemctl is-system-running'],
+            readyIntervalMs: 10,
+        })()
+
+        const opts = docker.createContainer.mock.calls[0][0]
+        expect(opts.HostConfig.Privileged).toBe(true)
+        expect(opts.HostConfig.CgroupnsMode).toBe('host')
+        expect(opts.HostConfig.Binds).toEqual(['/a:/b', '/sys/fs/cgroup:/sys/fs/cgroup:rw'])
+        expect(opts.Cmd).toBeUndefined()
+    })
 })
