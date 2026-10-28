@@ -123,6 +123,8 @@ docker ps -a --filter "name=etude-" --format "{{.ID}}" | xargs docker rm -f
 kubectl get ns | grep vcluster-
 ```
 
+backend는 기동할 때 위 리소스와 실습 컨테이너, pool kubeconfig 파일을 전부 정리한다. 그래서 **backend가 이미 실행 중이면 두 번째 프로세스는 포트 3001 확인에서 정리 없이 종료**(exit 1)한다. 로그에 "포트 3001이 이미 사용 중이라 기동을 중단합니다"가 보이면 이미 떠 있는 backend가 있다는 뜻이니 먼저 확인한다. 단, 서로 다른 포트·컨테이너가 같은 Docker 데몬을 공유하는 이중 실행은 막지 못한다.
+
 ---
 
 ## DB 직접 접속
