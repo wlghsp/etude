@@ -3,7 +3,7 @@ import { docker } from '../plugins/docker.js'
 import { db } from '../db.js'
 import { getSandboxConfig } from '../services/sandbox.js'
 import { loadFixture } from './fixtures.js'
-import { dockerSandboxFactory, DIND_PROFILE, SYSTEMD_PROFILE, type SandboxProfile } from './docker-sandbox.js'
+import { dockerSandboxFactory, DIND_PROFILE, SYSTEMD_PROFILE, k8sProfile, type SandboxProfile } from './docker-sandbox.js'
 import { runPersistentSet, runSet } from './run-set.js'
 import { summarize, type QuestResult, type VerifyQuest } from './verify-quest.js'
 
@@ -16,6 +16,8 @@ const PROFILES: Record<string, SandboxProfile> = {
     // 앱은 linux-ssh에서도 /bin/bash를 띄운다(sshd는 퀘스트 setup이 직접 시작). 그래서 linux와 같다.
     'linux-ssh': {},
     'linux-systemd': SYSTEMD_PROFILE,
+    // 컨테이너가 k3d 네트워크에서 클러스터에 닿아야 한다. KUBECONFIG_PATH는 컨테이너 안에서 닿는 서버 주소의 kubeconfig여야 한다 (개발 가이드 참고)
+    k8s: k8sProfile(process.env.K3D_NETWORK ?? 'k3d-etude'),
 }
 const SUPPORTED_TYPES = new Set(Object.keys(PROFILES))
 

@@ -124,4 +124,79 @@ describe('dockerSandboxFactory', () => {
         expect(opts.HostConfig.Binds).toEqual(['/a:/b', '/sys/fs/cgroup:/sys/fs/cgroup:rw'])
         expect(opts.Cmd).toBeUndefined()
     })
+
+    describe('k8s 프로필', () => {
+        function fakeK8sDocker() {
+            const execCalls: string[][] = []
+            const container = {
+                id: 'abcdef1234567890',
+                start: vi.fn(async () => {}),
+                stop: vi.fn(async () => {}),
+                remove: vi.fn(async () => {}),
+                exec: vi.fn(async (o: { Cmd: string[] }) => {
+                    execCalls.push(o.Cmd)
+                    return {
+                        start: vi.fn(async () => ({ resume() {} })),
+                        inspect: vi.fn(async () => ({ Running: false, ExitCode: 0 })),
+                    }
+                }),
+            }
+            const docker = { createContainer: vi.fn(async () => container) } as any
+            return { docker, container, execCalls }
+        }
+        const profile = { networkMode: 'k3d-etude', namespacePrefix: 'verify' }
+
+        it('k3d 네트워크로 만들고 컨테이너마다 네임스페이스를 먼저 만든다', async () => {
+            const { docker, execCalls } = fakeK8sDocker()
+
+            await dockerSandboxFactory(docker, { image: 'etude-k8s', binds: ['/k:/root/.kube/config:ro'] }, profile)()
+
+            expect(docker.createContainer.mock.calls[0][0].HostConfig.NetworkMode).toBe('k3d-etude')
+            expect(execCalls[0]).toEqual(['kubectl', 'create', 'namespace', 'verify-abcdef12'])
+        })
+
+        it('이후 모든 명령의 $NS를 그 네임스페이스로 치환한다 (앱이 setup·채점에서 하는 것과 같다)', async () => {
+            const { docker, execCalls } = fakeK8sDocker()
+            const sandbox = await dockerSandboxFactory(docker, { image: 'etude-k8s', binds: null }, profile)()
+
+            await sandbox.exec(['sh', '-c', 'kubectl get pods -n $NS | grep nginx'])
+
+            expect(execCalls.at(-1)).toEqual(['sh', '-c', 'kubectl get pods -n verify-abcdef12 | grep nginx'])
+        })
+
+        it('정리할 때 네임스페이스를 지운 뒤 컨테이너를 삭제한다', async () => {
+            const { docker, container, execCalls } = fakeK8sDocker()
+            const sandbox = await dockerSandboxFactory(docker, { image: 'etude-k8s', binds: null }, profile)()
+
+            await sandbox.dispose()
+
+            expect(execCalls.at(-1)).toEqual(['kubectl', 'delete', 'namespace', 'verify-abcdef12', '--ignore-not-found', '--wait=false'])
+            expect(container.remove).toHaveBeenCalled()
+        })
+
+        it('정리할 때 이 네임스페이스의 claimRef를 가진 PersistentVolume(클러스터 범위)도 지운다', async () => {
+            const { docker, execCalls } = fakeK8sDocker()
+            const sandbox = await dockerSandboxFactory(docker, { image: 'etude-k8s', binds: null }, profile)()
+
+            await sandbox.dispose()
+
+            const pvCleanup = execCalls.find((c) => c[0] === 'sh' && c[2]?.includes('kubectl delete pv'))
+            expect(pvCleanup).toBeDefined()
+            expect(pvCleanup![2]).toContain('verify-abcdef12')
+            expect(pvCleanup![2]).toContain('claimRef.namespace')
+            // 네임스페이스 삭제보다 먼저 한다 (claimRef를 찾으려면 PV가 아직 있어야 하고, 컨테이너도 살아 있어야 한다)
+            expect(execCalls.indexOf(pvCleanup!)).toBeLessThan(execCalls.findIndex((c) => c[1] === 'delete' && c[2] === 'namespace'))
+        })
+
+        it('네임스페이스를 만들지 못하면 컨테이너를 정리하고 실패한다', async () => {
+            const { docker, container } = fakeK8sDocker()
+            container.exec.mockImplementation(async () => ({
+                start: vi.fn(async () => ({ resume() {} })),
+                inspect: vi.fn(async () => ({ Running: false, ExitCode: 1 })),
+            }) as any)
+
+            await expect(dockerSandboxFactory(docker, { image: 'etude-k8s', binds: null }, profile)()).rejects.toThrow(/네임스페이스/)
+            expect(container.remove).toHaveBeenCalled()
+        })
+    })
 })
