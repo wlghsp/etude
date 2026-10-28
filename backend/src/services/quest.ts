@@ -30,6 +30,17 @@ export async function canAccessQuestSet(userId: number, role: string, questSetId
   return rows.length > 0
 }
 
+// 퀘스트가 속한 세트와 샌드박스 타입을 DB에서 확정한다. 터미널 접근 권한과 컨테이너 종류의 기준이 된다.
+export async function getQuestContext(questId: number): Promise<{ questSetId: number; sandboxType: string } | null> {
+  const [rows] = await db.query<any[]>(`
+    SELECT q.quest_set_id, qs.sandbox_type
+    FROM quest q
+    JOIN quest_set qs ON qs.id = q.quest_set_id
+    WHERE q.id = ?`, [questId])
+  const row = rows[0]
+  return row ? { questSetId: row.quest_set_id, sandboxType: row.sandbox_type } : null
+}
+
 export async function getQuestSets(userId: number, role: string): Promise<QuestSet[]> {
   const [rows] = await db.query(`
     SELECT qs.id, qs.title, qs.description, qs.sandbox_type, qs.category
