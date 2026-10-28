@@ -1,12 +1,11 @@
-import {authHeaders, apiFetch} from './base'
-import type {Quest, QuestSet} from "../types.ts";
+import { BASE, authHeaders } from './base'
 
 export async function fetchQuestSets() {
-  return apiFetch<QuestSet[]>('/quest-sets', { headers: authHeaders() })
+  return fetch(`${BASE}/quest-sets`, { headers: authHeaders() }).then((r) => r.json())
 }
 
 export async function fetchQuests(setId: number) {
-  return apiFetch<Quest[]>(`/quest-sets/${setId}/quests`, { headers: authHeaders() })
+  return fetch(`${BASE}/quest-sets/${setId}/quests`, { headers: authHeaders() }).then((r) => r.json())
 }
 
 export async function gradeQuest(
@@ -18,17 +17,17 @@ export async function gradeQuest(
   hintUsed: boolean,
   solutionUsed: boolean,
 ) {
-  return apiFetch<{ passed: boolean }>('/grade', {
+  return fetch(`${BASE}/grade`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ containerId, questId, questSetId, sessionId, elapsedSec, hintUsed, solutionUsed })
-  })
+    body: JSON.stringify({ containerId, questId, questSetId, sessionId, elapsedSec, hintUsed, solutionUsed }),
+  }).then((r) => r.json())
 }
 
 export async function endSession(containerId: string) {
-  return apiFetch<void>(`/session/end`, {
+  return fetch(`${BASE}/session/end`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ containerId }),
-  })
+  }).then((r) => r.json())
 }

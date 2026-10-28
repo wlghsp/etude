@@ -1,4 +1,4 @@
-import {authHeaders, apiFetch} from './base.js'
+import { BASE, authHeaders } from './base.js'
 
 
 export interface AdminUser {
@@ -12,30 +12,32 @@ export interface AdminQuestSet {
     id: number
     title: string
     description: string
-    sandboxType: string
+    sandbox_type: string
     category: string
-    isPublic: boolean
+    is_public: boolean
     accessUsers: { id: number; name: string; email: string}[]
 }
 
 export async function fetchAllUsers(): Promise<AdminUser[]> {
-    return apiFetch<AdminUser[]>(`/admin/users`, { headers: authHeaders() })
+    const res = await fetch(`${BASE}/admin/users`, { headers: authHeaders() })
+    return res.json()
 }
 
 export async function fetchAdminQuestSets(): Promise<AdminQuestSet[]> {
-    return apiFetch<AdminQuestSet[]>(`/admin/quest-sets`, { headers: authHeaders() })
+    const res = await fetch(`${BASE}/admin/quest-sets`, { headers: authHeaders() })
+    return res.json()
 }
 
 export async function setQuestSetPublic(id: number, isPublic: boolean) {
-    await apiFetch<void>(`/admin/quest-sets/${id}`, {
+    await fetch(`${BASE}/admin/quest-sets/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type' : 'application/json', ...authHeaders() },
-        body: JSON.stringify({ isPublic })
+        body: JSON.stringify({ is_public: isPublic})
     })
 }
 
 export async function grantAccess(questSetId: number, userId: number) {
-    await apiFetch<void>(`/admin/quest-sets/${questSetId}/access`, {
+    await fetch(`${BASE}/admin/quest-sets/${questSetId}/access`, {
         method: 'POST',
         headers: { 'Content-Type' : 'application/json', ...authHeaders() },
         body: JSON.stringify({ userId })
@@ -43,7 +45,7 @@ export async function grantAccess(questSetId: number, userId: number) {
 }
 
 export async function revokeAccess(questSetId: number, userId: number) {
-    await apiFetch<void>(`/admin/quest-sets/${questSetId}/access/${userId}`, {
+    await fetch(`${BASE}/admin/quest-sets/${questSetId}/access/${userId}`, {
         method: 'DELETE',
         headers: authHeaders(),
     })

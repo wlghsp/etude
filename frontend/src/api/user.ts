@@ -1,33 +1,11 @@
-import { apiFetch, authHeaders } from './base'
+import { BASE, authHeaders } from './base'
 
-export interface QuestSetProgress {
-  questSetId: number
-  title: string
-  category: string
-  total: number
-  completed: number
-}
-
-export interface QuestSetProgressDetail {
-  questSetId: number
-  questSetTitle: string
-  category: string
-  total: number
-  completed: number
-}
-
-export interface MemberProgress {
-  userId: number
-  userName: string
-  total: number
-  completed: number
-  sets: QuestSetProgressDetail[]
-}
-
-export async function fetchProgress() {
-  return apiFetch<QuestSetProgress[]>('/progress', { headers: authHeaders() })
+export async function fetchProgess() {
+  const res = await fetch(`${BASE}/progress`, { headers: authHeaders() })
+  return res.json()
 }
 
 export async function fetchLeaderboard() {
-  return apiFetch<MemberProgress[]>('/leaderboard', { headers: authHeaders() })
+  const res = await fetch(`${BASE}/leaderboard`, { headers: authHeaders() })
+  return res.json()
 }

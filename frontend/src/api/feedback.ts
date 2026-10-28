@@ -1,4 +1,4 @@
-import { apiFetch } from './base'
+import { BASE, authHeaders } from './base'
 
 export async function submitFeedback(data: {
     page: string
@@ -6,9 +6,9 @@ export async function submitFeedback(data: {
     questSetId?: number | null
     body: string
 }) {
-    return apiFetch<void>('/feedback', {
+    return fetch(`${BASE}/feedback`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(data),
-    })
+    }).then((r) => r.json())
 }
