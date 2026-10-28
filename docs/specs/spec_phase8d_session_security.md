@@ -145,9 +145,9 @@ backend를 여러 인스턴스로 늘리거나 재시작 후 세션 복구가 �
 - [x] WebSocket 종료 후 해당 vcluster와 그 kubeconfig 파일이 모두 제거된다
 - [x] backend 시작 시 이전 프로세스가 남긴 pool kubeconfig 파일이 정리된다
 - [x] pong이 없는 연결이 제한 시간(최대 약 60초) 안에 끊기고 같은 close handler로 정리된다
-- [ ] heartbeat 타이머가 연결 종료·서버 종료 시 해제 (연결 종료 시 해제는 테스트됨, 서버 종료 경로는 `unref`와 소켓 close에 의존하며 미검증)
+- [ ] heartbeat 타이머가 연결 종료·서버 종료 시 해제 (연결 종료 시 해제는 테스트됨. 서버 종료는 `@fastify/websocket`이 각 연결에 `close()`를 호출해 close 이벤트로 이어지는 라이브러리 동작에 의존하며, `injectWS` 하네스가 close 핸드셰이크를 끝내지 못해 자동 테스트로 재현할 수 없음. 타이머는 `unref`라 종료를 막지 않음)
 - [x] 컨테이너 생성 실패 시 레지스트리에 항목이 남지 않는다
-- [ ] 서버 종료·재시작 시 고아 컨테이너 정리 (기존 `index.ts` 로직, 이번 Phase에서 자동 테스트 없음)
+- [x] 서버 종료·재시작 시 고아 컨테이너 정리 (`cleanupOrphanContainers`/`cleanupRunningContainers`는 `plugins/docker.test.ts`로 검증. `index.ts`가 이를 기동·종료 훅에서 호출하는 연결 자체는 자동 테스트 없음)
 
 ## 테스트 전략
 
