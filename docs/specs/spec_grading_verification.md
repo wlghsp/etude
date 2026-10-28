@@ -1,6 +1,6 @@
 # 채점 검증 러너 명세 — 채점이 맞다는 것을 자동으로 확인한다
 
-> 상태: **V1, V2 구현 완료 (`linux`, `docker`, `docker-persistent`), V3 이후 대기** — 설계 결정은 "결정" 참고. [Phase 8d 명세](spec_phase8d_session_security.md)의 "범위 밖"에서 "퀘스트 채점식 전수 감사와 채점 검증 러너(다음 단계)"로 분리된 작업이다. 이 문서는 목표·결정·조각 분할만 다루고, 조각별 상세는 착수할 때 별도로 쓴다.
+> 상태: **V1~V3 구현 완료 (`linux`, `docker`, `docker-persistent`, `linux-ssh`, `linux-systemd`), V4(k8s) 이후 대기** — 설계 결정은 "결정" 참고. [Phase 8d 명세](spec_phase8d_session_security.md)의 "범위 밖"에서 "퀘스트 채점식 전수 감사와 채점 검증 러너(다음 단계)"로 분리된 작업이다. 이 문서는 목표·결정·조각 분할만 다루고, 조각별 상세는 착수할 때 별도로 쓴다.
 
 ## 목표
 
@@ -133,3 +133,20 @@
 - `docker` 계열 샌드박스는 실제 앱(`handleDockerTerminal`)과 같이 Privileged dind로 만들고, 앱이 소켓 존재만 기다리는 것과 달리 `docker info`가 성공할 때까지 기다린다 (검증의 오탐을 줄이기 위함이며, 실제 앱의 기동 직후 경쟁 상태는 이 검증이 보지 않는다).
 - 세트 5와 11은 퀘스트마다 새 dind를 띄워 느리다 (세트 5, 8 합쳐 약 3분, 세트 5, 11 합쳐 약 4분).
 - 앱은 상태가 이어지는 세트에서 첫 퀘스트의 `setup_cmd`만 실행한다 (재접속이 없어져 이후 퀘스트의 setup은 실행되지 않음). 세트 8은 `setup_cmd`가 없어 영향이 없다. 러너는 퀘스트마다 setup을 실행하므로, 이후 `setup_cmd`가 있는 persistent 세트가 생기면 이 차이를 다시 봐야 한다.
+
+## V3 결과 (2026-10-28, `linux-ssh` 세트 4, `linux-systemd` 세트 10 — 19개 중 12 통과, 7 실패 → 수정 후 19 통과, 0 실패)
+
+세트 10(`linux-systemd`)은 처음부터 12개 모두 통과했다 (systemd가 실제로 부팅되어 `systemctl`과 `dnf install` 퀘스트까지 검증됨). 결함은 모두 세트 4(`linux-ssh`)에서 나왔다.
+
+| 퀘스트 | 판정 | 원인 | 수정 |
+|--------|------|------|------|
+| 4.1 HTTP 요청 보내기 | 무행동 통과 | 채점식이 `curl`을 스스로 다시 실행한다 | 응답을 `/tmp/curl_result.txt`에 저장하게 하고 그 파일을 채점 |
+| 4.3 네트워크 연결 확인하기 | 무행동 통과 | 채점식이 `ping`을 스스로 실행한다 | 결과를 `/tmp/ping_result.txt`에 저장하게 하고 `3 packets transmitted`를 채점 (응답 수신 여부는 보지 않아 외부망 상태에 덜 민감) |
+| 4.4 열린 포트 확인하기 | 정답 거부 | `etude-ssh` 이미지에 nginx가 없어 setup(`nginx &`)이 실패하고 80번 포트가 없다. **정답을 해도 풀 수 없었다** | 이미지는 건드리지 않고 setup을 `sshd` 시작으로, 채점을 22번 포트로 변경 |
+| 4.5, 4.6, 4.7 (scp, rsync, ssh) | 정답 거부 | 결함이 아니라 **검증 방법의 한계**: 정답 명령이 비밀번호(`root`)를 묻는데 러너는 입력할 수 없다 | fixture의 정답 앞에 키 인증 설정(`ssh-keygen`, `authorized_keys`)을 붙여 같은 최종 상태를 만든다 |
+
+- 수정은 원본 SQL과 [update_2026-10-28_grading_fixes_ssh.sql](../../backend/db/update_2026-10-28_grading_fixes_ssh.sql)에 함께 반영했다. **서버 DB에는 이 파일을 한 번 실행해야 반영된다.**
+- **검증하지 못하는 것:** 4.5~4.7에서 학습자가 비밀번호를 입력하는 경로 자체. `etude-ssh` 이미지의 `root` 비밀번호 설정(`chpasswd`)과 `PermitRootLogin yes`가 실제로 비밀번호 로그인을 허용하는지는 이 러너가 확인하지 못한다 (키 인증으로 대체해서 통과시켰기 때문). 필요하면 `sshpass` 같은 도구를 이미지에 넣거나 `expect`로 별도 검증해야 한다.
+- 4.1, 4.2, 4.3, 4.5는 외부 네트워크(`example.com`, `8.8.8.8`)에 의존한다. 폐쇄망/오프라인 서버에서는 통과하지 못할 수 있다.
+- `linux-ssh`는 앱이 `/bin/bash`를 띄우므로(sshd는 퀘스트 setup이 시작) 검증도 `linux`와 같은 프로필을 쓴다. `linux-systemd`는 Privileged, `CgroupnsMode: host`, `/sys/fs/cgroup` 바인드로 만들고 `systemctl is-system-running`이 `running`/`degraded`가 될 때까지 기다린다.
+- 누적: V1~V3로 132개 중 **94개(71%)**를 검증했고, 결함 **14건**을 찾아 모두 고쳤다. 남은 것은 k8s 세트 6, 12, 13, 14 (38개).
