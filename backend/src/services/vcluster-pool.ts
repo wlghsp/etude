@@ -119,13 +119,30 @@ export async function cleanupOrphanVclusters(): Promise<void> {
     await cleanupOrphanKubeconfigs()
 }
 
-export async function initPool(): Promise<void> {
+export function getPoolSize(): number {
+    return pool.length
+}
+
+// 기동 시 pool을 채운다. 하나가 실패해도 프로세스를 죽이지 않는다 (assignFromPool은 pool이 비면 요청 시 생성한다).
+// 컨테이너가 새로 만들어진 첫 기동에서는 vcluster CLI가 helm을 내려받는데, 동시에 만들면 한쪽이 내려받는 중인 파일을 실행해
+// "permission denied"로 실패한다. 그래서 실패한 만큼은 순차로 한 번 더 시도한다 (그때는 helm이 이미 있다).
+export async function initPool(create: () => Promise<PooledVCluster> = createVcluster): Promise<void> {
     await cleanupOrphanVclusters()
 
-    const created = await Promise.all(
-        Array.from({ length: POOL_SIZE }, () => createVcluster())
-    )
-    pool.push(...created)
+    const results = await Promise.allSettled(Array.from({ length: POOL_SIZE }, () => create()))
+    for (const r of results) {
+        if (r.status === 'fulfilled') pool.push(r.value)
+        else console.error('[vcluster] pool 생성 실패, 순차로 다시 시도합니다:', r.reason)
+    }
+
+    while (pool.length < POOL_SIZE) {
+        try {
+            pool.push(await create())
+        } catch (err) {
+            console.error('[vcluster] pool 생성 재시도 실패. 요청 시 생성으로 대체됩니다:', err)
+            break
+        }
+    }
 }
 
 export async function assignFromPool(): Promise<PooledVCluster> {
