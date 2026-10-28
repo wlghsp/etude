@@ -41,7 +41,7 @@ ln -sf ~/.colima/default/docker.sock ~/.docker/run/docker.sock
 | Phase 8 — 서버 배포 (OCI) | [guides/completed/guide_phase8_deploy.md](guides/completed/guide_phase8_deploy.md) | [specs/spec_phase8_deploy.md](specs/spec_phase8_deploy.md) | ✅ 완료 |
 | Phase 8b — CI/CD (GitHub Actions) | [guides/completed/guide_phase8b_cicd.md](guides/completed/guide_phase8b_cicd.md) | [specs/spec_phase8b_cicd.md](specs/spec_phase8b_cicd.md) | ✅ 완료 |
 | Phase 8c — 도메인 + HTTPS + 보안 점검 | [guides/guide_phase8c_https.md](guides/guide_phase8c_https.md) | [specs/spec_phase8c_https.md](specs/spec_phase8c_https.md) | 진행 중 — HTTPS 적용 완료, 자동 갱신 검증 대기 |
-| Phase 8d — 실습 세션 보안 (인증 + 컨테이너 소유권) | (명세 확정 후 작성) | [specs/spec_phase8d_session_security.md](specs/spec_phase8d_session_security.md) | 명세 확정 |
+| Phase 8d — 실습 세션 보안 (인증 + 컨테이너 소유권) | (명세 확정 후 작성) | [specs/spec_phase8d_session_security.md](specs/spec_phase8d_session_security.md) | 구현 완료, 수동 검증·배포 대기 |
 | Phase 9 — 인앱 피드백 | (Phase 7f 구현 완료, 가이드 미작성) | [specs/spec_phase9_feedback.md](specs/spec_phase9_feedback.md) | ✅ 완료 |
 | Phase 10 — vcluster 전환 + KLID CMP 현장실습 | [guides/guide_phase10_klid_cmp.md](guides/guide_phase10_klid_cmp.md) | [specs/spec_phase10_klid_cmp.md](specs/spec_phase10_klid_cmp.md) | 대기 |
 | Phase 11 — 퀘스트 콘텐츠 확장 2 | (Phase 10 완료 후 작성) | (Phase 10 완료 후 작성) | 대기 |

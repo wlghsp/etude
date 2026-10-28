@@ -130,24 +130,24 @@ backend를 여러 인스턴스로 늘리거나 재시작 후 세션 복구가 �
 
 ## 수용 조건
 
-- [ ] 인증 없이 `POST /terminal-sessions` → `401`
-- [ ] 접근 권한 없는 퀘스트로 ticket 발급 → `403`
-- [ ] 유효하지 않거나 만료된 ticket → WebSocket 거부 (`1008`)
-- [ ] 같은 ticket 재사용 → 거부
-- [ ] 클라이언트가 `containerId`를 보내 기존 컨테이너에 붙는 경로가 없다
-- [ ] 임의 `sandboxType` 지정 불가 (서버가 DB에서 확정)
-- [ ] 남의 컨테이너 채점 → `403`
-- [ ] 요청한 quest가 세션의 세트에 속하지 않음 → `403`
-- [ ] `/grade`가 body의 `questSetId`가 아니라 서버 조회 값으로 기록한다
-- [ ] `/session/end` 라우트가 존재하지 않는다 (프론트에도 호출이 없다)
-- [ ] 레지스트리 등록은 `connected` 전송 전에 일어난다
-- [ ] WebSocket 종료 시 **persistent 포함** 모든 컨테이너와 레지스트리 항목 정리 (`k8s-isolated`는 vcluster 반환 포함)
-- [ ] WebSocket 종료 후 해당 vcluster와 그 kubeconfig 파일이 모두 제거된다
-- [ ] backend 시작 시 이전 프로세스가 남긴 pool kubeconfig 파일이 정리된다
-- [ ] pong이 없는 연결이 제한 시간(최대 약 60초) 안에 끊기고 같은 close handler로 정리된다
-- [ ] heartbeat 타이머가 연결 종료·서버 종료 시 해제된다
-- [ ] 컨테이너 생성 실패 시 레지스트리에 항목이 남지 않는다
-- [ ] 서버 종료·재시작 시 고아 컨테이너 정리
+- [x] 인증 없이 `POST /terminal-sessions` → `401`
+- [x] 접근 권한 없는 퀘스트로 ticket 발급 → `403`
+- [x] 유효하지 않거나 만료된 ticket → WebSocket 거부 (`1008`)
+- [x] 같은 ticket 재사용 → 거부
+- [x] 클라이언트가 `containerId`를 보내 기존 컨테이너에 붙는 경로가 없다
+- [x] 임의 `sandboxType` 지정 불가 (서버가 DB에서 확정)
+- [x] 남의 컨테이너 채점 → `403`
+- [x] 요청한 quest가 세션의 세트에 속하지 않음 → `403`
+- [x] `/grade`가 body의 `questSetId`가 아니라 서버 조회 값으로 기록한다
+- [x] `/session/end` 라우트가 존재하지 않는다 (프론트에도 호출이 없다)
+- [x] 레지스트리 등록은 `connected` 전송 전에 일어난다
+- [x] WebSocket 종료 시 **persistent 포함** 모든 컨테이너와 레지스트리 항목 정리 (`k8s-isolated`는 vcluster 반환 포함)
+- [x] WebSocket 종료 후 해당 vcluster와 그 kubeconfig 파일이 모두 제거된다
+- [x] backend 시작 시 이전 프로세스가 남긴 pool kubeconfig 파일이 정리된다
+- [x] pong이 없는 연결이 제한 시간(최대 약 60초) 안에 끊기고 같은 close handler로 정리된다
+- [ ] heartbeat 타이머가 연결 종료·서버 종료 시 해제 (연결 종료 시 해제는 테스트됨, 서버 종료 경로는 `unref`와 소켓 close에 의존하며 미검증)
+- [x] 컨테이너 생성 실패 시 레지스트리에 항목이 남지 않는다
+- [ ] 서버 종료·재시작 시 고아 컨테이너 정리 (기존 `index.ts` 로직, 이번 Phase에서 자동 테스트 없음)
 
 ## 테스트 전략
 
