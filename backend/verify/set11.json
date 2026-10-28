@@ -1,0 +1,11 @@
+{
+  "setId": 11,
+  "answers": {
+    "1": "mkdir -p /tmp/myapp && printf 'FROM ubuntu\nCMD [\"echo\", \"hello\"]\n' > /tmp/myapp/Dockerfile",
+    "2": "docker build -t my-app:1.0 /tmp/myapp",
+    "3": "printf 'FROM ubuntu\nRUN apt-get update && apt-get install -y curl\nCMD [\"curl\", \"--version\"]\n' > /tmp/myapp/Dockerfile && docker build -t my-app:2.0 /tmp/myapp",
+    "4": "echo \"<h1>hello</h1>\" > /tmp/myapp/index.html && printf 'FROM ubuntu\nCOPY index.html /var/www/html/\n' > /tmp/myapp/Dockerfile && docker build -t my-app:3.0 /tmp/myapp",
+    "5": "docker tag my-app:3.0 my-app:latest",
+    "6": "docker run --rm my-app:latest cat /var/www/html/index.html > /tmp/run_result.txt"
+  }
+}

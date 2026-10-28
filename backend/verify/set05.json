@@ -1,0 +1,18 @@
+{
+  "setId": 5,
+  "answers": {
+    "1": "docker images > /tmp/images.txt",
+    "2": "docker pull hello-world",
+    "3": "docker run hello-world",
+    "4": "docker run -d --name my-nginx nginx",
+    "5": "docker ps > /tmp/containers.txt",
+    "6": "docker logs my-nginx > /tmp/nginx_logs.txt 2>&1",
+    "7": "docker stop my-nginx",
+    "8": "docker rm my-nginx\ndocker ps -a > /tmp/final.txt",
+    "9": "docker exec my-nginx ls /usr/share/nginx/html/index.html > /tmp/exec_result.txt",
+    "10": "docker run -d -p 8080:80 --name port-nginx nginx",
+    "11": "docker run -d --name env-test -e MY_ENV=hello ubuntu sleep 60 && docker exec env-test printenv MY_ENV > /tmp/env_result.txt",
+    "12": "mkdir -p /tmp/webroot && echo \"hello\" > /tmp/webroot/index.html && docker run -d -v /tmp/webroot:/usr/share/nginx/html --name vol-nginx nginx",
+    "13": "docker run -d --name my-nginx nginx && docker inspect my-nginx | grep IPAddress > /tmp/inspect.txt"
+  }
+}

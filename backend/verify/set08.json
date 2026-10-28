@@ -1,0 +1,12 @@
+{
+  "setId": 8,
+  "answers": {
+    "1": "docker pull alpine && docker save -o /tmp/alpine.tar alpine",
+    "2": "docker rmi alpine",
+    "3": "docker load -i /tmp/alpine.tar",
+    "4": "docker run -d -p 5000:5000 --name registry registry:2",
+    "5": "docker tag alpine localhost:5000/alpine:latest",
+    "6": "docker push localhost:5000/alpine:latest",
+    "7": "docker run localhost:5000/alpine:latest echo hello > /tmp/run_result.txt"
+  }
+}

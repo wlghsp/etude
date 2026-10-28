@@ -43,11 +43,11 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    'docker push <이미지> 형식을 사용하세요.',
    'docker push localhost:5000/alpine:latest',
    NULL,
-   '["sh", "-c", "curl -s http://localhost:5000/v2/alpine/tags/list | grep -q latest"]'),
+   '["sh", "-c", "wget -qO- http://localhost:5000/v2/alpine/tags/list | grep -q latest"]'),
 
   (8,  7, '레지스트리에서 이미지 받아 컨테이너 실행하기',
-   '로컬 레지스트리(localhost:5000)에서 alpine 이미지를 받아 echo hello 명령어를 실행하세요. 이것이 실제 배포 환경에서 내부 레지스트리 이미지를 사용하는 패턴입니다.',
-   'docker run localhost:5000/alpine:latest echo hello',
-   'docker run localhost:5000/alpine:latest echo hello',
+   '로컬 레지스트리(localhost:5000)에서 alpine 이미지를 받아 echo hello 명령어를 실행하고, 출력 결과를 /tmp/run_result.txt 에 저장하세요. 이것이 실제 배포 환경에서 내부 레지스트리 이미지를 사용하는 패턴입니다.',
+   'docker run localhost:5000/alpine:latest echo hello 를 실행하고 리다이렉션(>)으로 저장하세요.',
+   'docker run localhost:5000/alpine:latest echo hello > /tmp/run_result.txt',
    NULL,
-   '["sh", "-c", "docker images localhost:5000/alpine | grep -q alpine"]');
+   '["sh", "-c", "grep -q hello /tmp/run_result.txt"]');

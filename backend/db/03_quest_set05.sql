@@ -47,7 +47,7 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    'docker stop 명령어를 사용하세요.',
    'docker stop my-nginx',
    '["sh", "-c", "docker run -d --name my-nginx nginx"]',
-   '["sh", "-c", "docker ps | grep -qv my-nginx"]'),
+   '["sh", "-c", "! docker ps | grep -q my-nginx"]'),
 
   (5,  8, '컨테이너 삭제하고 결과 저장하기',
    'my-nginx 컨테이너를 삭제한 뒤, 전체 컨테이너 목록(중지 포함)을 /tmp/final.txt 에 저장하세요.',
