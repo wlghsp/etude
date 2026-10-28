@@ -1,0 +1,15 @@
+{
+  "setId": 2,
+  "answers": {
+    "1": "rm /tmp/renamed.txt",
+    "2": "rm -r /tmp/hello",
+    "3": "cat /tmp/answer.txt > /tmp/cat_result.txt",
+    "4": "grep \"done\" /tmp/answer.txt",
+    "5": "printf \"line1\nline2\n\" > /tmp/multiline.txt",
+    "6": "chmod +x /tmp/answer.txt",
+    "7": "ln -s /tmp/answer.txt /tmp/link.txt",
+    "8": "mkdir -p /tmp/a/b/c",
+    "9": "find /tmp -name \"*.txt\" > /tmp/find_result.txt",
+    "10": "du -sh /tmp > /tmp/du_result.txt"
+  }
+}

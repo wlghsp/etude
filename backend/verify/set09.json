@@ -1,0 +1,17 @@
+{
+  "setId": 9,
+  "answers": {
+    "1": "echo 'hello vim' > /tmp/hello.txt",
+    "2": "true",
+    "3": "sed -n '5p' /tmp/lines.txt > /tmp/result.txt",
+    "4": "grep -n port /tmp/config.txt > /tmp/result.txt",
+    "5": "sed -i '2d' /tmp/remove.txt",
+    "6": "head -1 /tmp/copy.txt >> /tmp/copy.txt",
+    "7": "sed -i 's/localhost/192.168.1.10/g' /tmp/app.conf",
+    "8": "sed -i '2,4d' /tmp/multi.txt",
+    "9": "sed -i 's/error/info/' /tmp/fix.txt",
+    "10": "sed -i '1s/$/ # managed by etude/' /tmp/append.txt",
+    "11": "true",
+    "12": "echo modified >> /tmp/readonly.txt"
+  }
+}

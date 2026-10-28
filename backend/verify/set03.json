@@ -1,0 +1,13 @@
+{
+  "setId": 3,
+  "answers": {
+    "1": "ps aux > /tmp/ps_result.txt",
+    "2": "ps aux | grep bash > /tmp/bash_proc.txt",
+    "3": "sleep 60 & echo $! > /tmp/sleep_pid.txt",
+    "4": "kill $(cat /tmp/sleep_pid.txt)",
+    "5": "df -h > /tmp/df_result.txt",
+    "6": "free -h > /tmp/mem_result.txt",
+    "7": "export MY_NAME=etude; echo $MY_NAME > /tmp/env_result.txt",
+    "8": "env > /tmp/all_env.txt"
+  }
+}

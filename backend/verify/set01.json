@@ -1,0 +1,15 @@
+{
+  "setId": 1,
+  "answers": {
+    "1": "pwd > /tmp/pwd_result.txt",
+    "2": "cd /tmp && pwd > /tmp/pwd_result.txt",
+    "3": "ls /etc > /tmp/ls_result.txt",
+    "4": "ls -al /etc > /tmp/ls_detail.txt",
+    "5": "mkdir /tmp/hello",
+    "6": "touch /tmp/empty.txt",
+    "7": "echo \"done\" > /tmp/answer.txt",
+    "8": "touch /tmp/.hidden",
+    "9": "cp /tmp/answer.txt /tmp/backup.txt",
+    "10": "mv /tmp/backup.txt /tmp/renamed.txt"
+  }
+}
