@@ -1,6 +1,7 @@
 import type Docker from 'dockerode'
 import type { SandboxFactory, VerifySandbox } from './verify-quest.js'
-import { pvCleanupCommand } from '../services/k8s-cleanup.js'
+import { createSessionAccess, destroySessionAccess } from '../services/k8s-session.js'
+import { installKubeconfig } from '../services/container-kubeconfig.js'
 
 const DEFAULT_EXEC_TIMEOUT_MS = 120_000
 
@@ -11,7 +12,8 @@ export interface SandboxProfile {
     extraBinds?: string[]
     cgroupnsHost?: boolean
     // k8s: 컨테이너가 붙을 네트워크와, 컨테이너마다 만들 네임스페이스의 접두어.
-    // 앱(handleK8sTerminal)은 quest-<컨테이너ID 앞 8자>를 쓰지만, 앱 기동 시 quest-* 정리와 겹치지 않게 접두어를 따로 둔다.
+    // 앱(handleK8sTerminal)과 같이 관리자 kubeconfig는 주지 않고 세션 전용 제한 권한(k8s-session.ts)으로 실행한다.
+    // 앱은 quest-<컨테이너ID 앞 8자>를 쓰지만, 앱 기동 시 quest-* 정리와 겹치지 않게 접두어를 따로 둔다.
     networkMode?: string
     namespacePrefix?: string
     readyCmd?: string[]
@@ -44,7 +46,8 @@ export function dockerSandboxFactory(docker: Docker, config: { image: string; bi
             Image: config.image,
             Labels: { etude: 'verify' },
             HostConfig: {
-                Binds: [...(config.binds ?? []), ...(profile.extraBinds ?? [])],
+                // k8s는 DB의 binds(관리자 kubeconfig 마운트)를 무시한다. 앱과 같다.
+                Binds: profile.namespacePrefix ? [] : [...(config.binds ?? []), ...(profile.extraBinds ?? [])],
                 ...(profile.privileged ? { Privileged: true } : {}),
                 ...(profile.cgroupnsHost ? { CgroupnsMode: 'host' } : {}),
                 ...(profile.networkMode ? { NetworkMode: profile.networkMode } : {}),
@@ -52,16 +55,12 @@ export function dockerSandboxFactory(docker: Docker, config: { image: string; bi
             // dind 같은 서비스형 이미지는 기본 entrypoint가 본체라 Cmd를 덮어쓰지 않는다
             ...(profile.readyCmd ? {} : { Cmd: ['/bin/bash'], OpenStdin: true, Tty: true }),
         })
-        // 네임스페이스는 컨테이너가 시작된 뒤에 만든다. 이름은 컨테이너 ID에서 정한다.
+        // 네임스페이스와 권한은 컨테이너가 시작된 뒤에 만든다. 이름은 컨테이너 ID에서 정한다.
         const ns = profile.namespacePrefix ? `${profile.namespacePrefix}-${container.id.slice(0, 8)}` : null
-        let nsCreated = false
+        let accessStarted = false
         const discard = async () => {
-            // 컨테이너가 살아 있어야 kubectl을 쓸 수 있으므로 네임스페이스부터 지운다 (종료를 기다리지 않는다)
-            if (ns && nsCreated) {
-                // PersistentVolume은 클러스터 범위라 네임스페이스를 지워도 남는다. 앱의 세션 정리와 같은 명령으로 먼저 지운다.
-                await rawExec(pvCleanupCommand(ns), 30_000).catch(() => {})
-                await rawExec(['kubectl', 'delete', 'namespace', ns, '--ignore-not-found', '--wait=false'], 30_000).catch(() => {})
-            }
+            // 권한(ClusterRoleBinding)과 네임스페이스를 먼저 지운다. 일부만 만들어진 상태에서도 안전하다.
+            if (ns && accessStarted) await destroySessionAccess(ns).catch(() => {})
             await container.stop({ t: 0 }).catch(() => {})
             await container.remove({ force: true }).catch(() => {})
         }
@@ -91,10 +90,8 @@ export function dockerSandboxFactory(docker: Docker, config: { image: string; bi
             await container.start()
             if (profile.readyCmd) await waitUntilReady(sandbox, profile)
             if (ns) {
-                if ((await rawExec(['kubectl', 'create', 'namespace', ns], 30_000)) !== 0) {
-                    throw new Error(`네임스페이스를 만들지 못했다: ${ns}`)
-                }
-                nsCreated = true
+                accessStarted = true // 중간에 실패해도 정리 대상이 되도록 먼저 표시한다
+                await installKubeconfig(container, await createSessionAccess(ns))
             }
         } catch (err) {
             await discard()
