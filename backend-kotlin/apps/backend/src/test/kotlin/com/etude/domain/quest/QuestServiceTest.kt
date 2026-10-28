@@ -2,14 +2,19 @@ package com.etude.domain.quest
 
 import com.etude.domain.auth.UserRepository
 import com.etude.domain.auth.UserRole
+import com.etude.domain.quest.QQuest.quest
+import com.etude.domain.terminal.ContainerRuntime
 import com.etude.support.TestQuestSets
 import com.etude.support.TestQuests
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
+import io.mockk.clearAllMocks
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 
 class QuestServiceTest : FreeSpec({
@@ -18,7 +23,12 @@ class QuestServiceTest : FreeSpec({
     val questRepository = mockk<QuestRepository>()
     val questSetAccessRepository = mockk<QuestSetAccessRepository>()
     val userRepository = mockk<UserRepository>()
-    val questService = QuestService(questSetRepository, questRepository, questSetAccessRepository, userRepository, objectMapper)
+    val containerRuntime = mockk<ContainerRuntime>()
+    val questService = QuestService(questSetRepository, questRepository, questSetAccessRepository, userRepository, objectMapper, containerRuntime)
+
+    beforeTest {
+        clearMocks(containerRuntime)
+    }
 
     "퀘스트셋 접근 권한을 확인할 때" -  {
         "공개 세트면" - {
@@ -135,6 +145,42 @@ class QuestServiceTest : FreeSpec({
                 questService.grantAccess(1L, 10L)
 
                 verify(exactly = 1) { questSetAccessRepository.save(any()) }
+            }
+        }
+    }
+
+    "채점할 때" - {
+        "grade_cmd의 \$NS를 quest={컨테이너ID 앞 8자}로 치환해서 컨테이너에 실행시킨다" {
+            val quest = TestQuests.create(
+                questSetId = 1L,
+                gradeCmd = """["sh", "-c", "test ${'$'}NS = x"]""",
+            )
+            every { questRepository.findById(1L) } returns quest
+            val executed = slot<List<String>>()
+            every { containerRuntime.execAndCheck("abcdef1234567890", capture(executed), any()) } returns true
+
+            questService.grade("abcdef1234567890", 1L) shouldBe true
+
+            executed.captured shouldBe listOf("sh", "-c", "test quest-abcdef12 = x")
+        }
+
+        "컨테이너에서 채점 명령이 실패하면" - {
+            "false를 반환한다" {
+                val quest = TestQuests.create(questSetId = 1L, gradeCmd = """["false"]""")
+                every { questRepository.findById(1L) } returns quest
+                every { containerRuntime.execAndCheck(any(), any(), any()) } returns false
+
+                questService.grade("abcdef1234567890", 1L) shouldBe false
+            }
+        }
+
+        "존재하지 않는 퀘스트면" - {
+            "예외 없이 false를 반환하고 컨테이너를 호출하지 않는다" {
+                every { questRepository.findById(999L) } returns null
+
+                questService.grade("abcdef1234567890", 999L) shouldBe false
+
+                verify(exactly = 0) { containerRuntime.execAndCheck(any(), any(), any()) }
             }
         }
     }

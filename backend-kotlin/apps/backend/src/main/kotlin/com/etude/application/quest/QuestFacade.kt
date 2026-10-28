@@ -1,6 +1,7 @@
 package com.etude.application.quest
 
 import com.etude.domain.auth.UserRole
+import com.etude.domain.progress.ProgressService
 import com.etude.domain.quest.QuestService
 import com.etude.domain.quest.QuestSetAdminSummary
 import com.etude.domain.quest.QuestSetSummary
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component
 @Component
 class QuestFacade(
     private val questService: QuestService,
+    private val progressService: ProgressService,
 ) {
     fun getQuestSets(userId: Long, role: UserRole): List<QuestSetSummary> = questService.getQuestSets(userId, role)
 
@@ -27,6 +29,30 @@ class QuestFacade(
 
     fun revokeAccess(questSetId: Long, userId: Long) {
         questService.revokeAccess(questSetId, userId)
+    }
+
+    fun grade(containerId: String, questId: Long): Boolean = questService.grade(containerId, questId)
+
+    fun recordAttempt(
+        userId: Long,
+        questId: Long,
+        questSetId: Long,
+        sessionId: String,
+        passed: Boolean,
+        elapsedSec: Int?,
+        hintUsed: Boolean,
+        solutionUsed: Boolean,
+    ) {
+        progressService.recordAttempt(
+            userId = userId,
+            questId = questId,
+            questSetId = questSetId,
+            sessionId = sessionId,
+            passed = passed,
+            elapsedSec = elapsedSec,
+            hintUsed = hintUsed,
+            solutionUsed = solutionUsed,
+        )
     }
 
 }

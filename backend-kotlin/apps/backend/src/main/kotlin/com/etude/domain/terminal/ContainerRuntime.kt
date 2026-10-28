@@ -9,6 +9,7 @@ interface ContainerRuntime {
     fun attachToMainProcess(containerId: String): TerminalStream
     fun execShell(containerId: String, command: List<String>): TerminalStream
     fun execAndWait(containerId: String, command: List<String>)
+    fun execAndCheck(containerId: String, command: List<String>, timeoutMs: Long = 15_000): Boolean
 }
 
 data class ContainerSpec(

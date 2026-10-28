@@ -5,8 +5,10 @@ import com.etude.domain.terminal.ContainerSpec
 import com.etude.domain.terminal.TerminalStream
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.async.ResultCallback
+import com.github.dockerjava.api.model.Frame
 import com.github.dockerjava.api.model.HostConfig
 import org.springframework.stereotype.Component
+import java.util.concurrent.TimeUnit
 
 @Component
 class DockerContainerRuntime(
@@ -71,6 +73,24 @@ class DockerContainerRuntime(
         dockerClient.execStartCmd(execId).exec(
             ResultCallback.Adapter()
         ).awaitCompletion()
+    }
+
+    override fun execAndCheck(
+        containerId: String,
+        command: List<String>,
+        timeoutMs: Long
+    ): Boolean {
+        val execId = dockerClient.execCreateCmd(containerId)
+            .withCmd(*command.toTypedArray())
+            .withAttachStdout(true)
+            .withAttachStderr(true)
+            .exec()
+            .id
+        return runCatching {
+            dockerClient.execStartCmd(execId).exec(ResultCallback.Adapter<Frame>())
+                    .awaitCompletion(timeoutMs, TimeUnit.MILLISECONDS)
+            dockerClient.inspectExecCmd(execId).exec().exitCodeLong == 0L
+        }.getOrDefault(false)
     }
 
 }

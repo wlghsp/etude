@@ -1,6 +1,7 @@
 package com.etude.infrastructure.persistence.progress
 
 import com.etude.domain.progress.MemberProgress
+import com.etude.domain.progress.QuestAttempt
 import com.etude.domain.progress.QuestAttemptRepository
 import com.etude.domain.progress.QuestSetProgress
 import org.springframework.stereotype.Repository
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Repository
 @Repository
 class QuestAttemptRepositoryImpl(
     private val querydslRepository: QuestAttemptQuerydslRepository,
+    private val questAttemptJpaRepository: QuestAttemptJpaRepository,
 ) : QuestAttemptRepository {
     override fun findProgressByUserId(userId: Long): List<QuestSetProgress> =
         querydslRepository.findProgressByUserId(userId)
@@ -24,5 +26,9 @@ class QuestAttemptRepositoryImpl(
                 sets = details.filter { it.userId == summary.userId }.map { it.detail },
             )
         }
+    }
+
+    override fun save(attempt: QuestAttempt) {
+        questAttemptJpaRepository.save(attempt)
     }
 }

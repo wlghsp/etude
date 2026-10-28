@@ -3,6 +3,7 @@ package com.etude.domain.quest
 import com.etude.domain.auth.UserRepository
 import com.etude.domain.auth.UserRole
 import com.etude.domain.auth.UserSummary
+import com.etude.domain.terminal.ContainerRuntime
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -15,6 +16,7 @@ class QuestService(
     private val questSetAccessRepository: QuestSetAccessRepository,
     private val userRepository: UserRepository,
     private val objectMapper: ObjectMapper,
+    private val containerRuntime: ContainerRuntime,
 ) {
     fun getQuestSets(userId: Long, role: UserRole): List<QuestSetSummary> {
         val questSets = if (role == UserRole.admin) {
@@ -68,6 +70,16 @@ class QuestService(
         val quest = questRepository.findById(questId) ?: return null
         val raw = quest.setupCmd ?: return null
         return objectMapper.readValue(raw, Array<String>::class.java).toList()
+    }
+
+    fun grade(containerId: String, questId: Long): Boolean {
+        val quest = questRepository.findById(questId) ?: return false
+        val cmd = objectMapper.readValue(quest.gradeCmd, Array<String>::class.java).toList()
+
+        val ns = "quest-${containerId.take(8)}"
+        val resolveCmd = cmd.map { it.replace("\$NS", ns) }
+
+        return containerRuntime.execAndCheck(containerId, resolveCmd)
     }
 
 }
