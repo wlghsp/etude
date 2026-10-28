@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import type { Quest } from '../types'
-import { gradeQuest } from '../api/quest'
+import { gradeQuest, GradeRequestError } from '../api/quest'
 
 interface Props {
     quest: Quest
@@ -14,6 +14,14 @@ interface Props {
     onHome: () => void
     onReset: () => void
     onComplete: (index: number) => void
+}
+
+function gradeErrorMessage(err: unknown): string {
+    const status = err instanceof GradeRequestError ? err.status : null
+    if (status === 401) return '로그인이 만료되었습니다. 다시 로그인해 주세요.'
+    if (status === 403) return '이 환경에서는 채점할 수 없습니다. 환경 초기화 후 다시 시도해 주세요.'
+    if (status === 404) return '퀘스트를 찾을 수 없습니다.'
+    return '채점 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.'
 }
 
 export function QuestPanel({ quest, containerId, sessionId, total, index, onPrev, onNext, onHome, onReset, onComplete }: Props) {
@@ -31,17 +39,22 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, onPrev
 
     const [result, setResult] = useState<boolean | null>(null)
     const [loading, setLoading] = useState(false)
+    const [gradeError, setGradeError] = useState<string | null>(null)
     const ns = containerId ? `quest-${containerId.slice(0, 8)}` : '$NS'
     const resolve = (text: string) => text.replace(/\$NS/g, ns)
     const pct = Math.round(((index + 1) / total) * 100)
 
     const grade = async () => {
         setLoading(true)
+        setGradeError(null)
         try {
             const elapsedSec = Math.round((Date.now() - startTimeRef.current) / 1000)
             const data = await gradeQuest(containerId, quest.id, sessionId, elapsedSec, hintUsed, solutionUsed)
             setResult(data.passed)
             if (data.passed) onComplete(index)
+        } catch (err) {
+            setResult(null)
+            setGradeError(gradeErrorMessage(err))
         } finally {
             setLoading(false)
         }
@@ -134,6 +147,12 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, onPrev
                     </button>
 
                     {/* Result */}
+                    {gradeError && (
+                        <div className="border border-error/30 bg-error/5 p-4 flex items-center gap-3">
+                            <span className="material-symbols-outlined text-error text-[20px]">error</span>
+                            <p className="font-mono text-body-md text-error">{gradeError}</p>
+                        </div>
+                    )}
                     {result === false && (
                         <div className="border border-error/30 bg-error/5 p-4 flex items-center gap-3">
                             <span className="material-symbols-outlined text-error text-[20px]">cancel</span>
