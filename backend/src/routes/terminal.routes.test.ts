@@ -14,9 +14,11 @@ vi.mock('../services/quest.js', async (importOriginal) => ({
 }))
 
 vi.mock('../services/terminal.js', () => ({ handleTerminal: vi.fn() }))
+vi.mock('../services/heartbeat.js', () => ({ startHeartbeat: vi.fn() }))
 
 import { buildApp } from '../app.js'
 import { handleTerminal } from '../services/terminal.js'
+import { startHeartbeat } from '../services/heartbeat.js'
 import { getQuestContext, canAccessQuestSet } from '../services/quest.js'
 import { consumeTicket, issueTicket, pendingTicketCount } from '../services/terminal-ticket.js'
 
@@ -149,7 +151,10 @@ describe('GET /ws/terminal', () => {
         await app.close()
     })
 
-    beforeEach(() => vi.mocked(handleTerminal).mockClear())
+    beforeEach(() => {
+        vi.mocked(handleTerminal).mockClear()
+        vi.mocked(startHeartbeat).mockClear()
+    })
 
     const info = { userId: 7, questId: 101, questSetId: 11, sandboxType: 'docker' }
 
@@ -166,6 +171,7 @@ describe('GET /ws/terminal', () => {
     it('모르는 ticket은 1008로 닫는다', async () => {
         expect(await closeCodeOf('/ws/terminal?ticket=nope')).toBe(1008)
         expect(handleTerminal).not.toHaveBeenCalled()
+        expect(startHeartbeat).not.toHaveBeenCalled()
     })
 
     it('만료된 ticket은 1008로 닫는다', async () => {
@@ -186,6 +192,7 @@ describe('GET /ws/terminal', () => {
 
         const first = await app.injectWS(`/ws/terminal?ticket=${ticket}`)
         expect(handleTerminal).toHaveBeenCalledTimes(1)
+        expect(startHeartbeat).toHaveBeenCalledTimes(1)
         expect(vi.mocked(handleTerminal).mock.calls[0][2]).toEqual(info)
         first.terminate()
 

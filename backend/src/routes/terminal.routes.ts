@@ -3,6 +3,7 @@ import { docker } from "../plugins/docker.js"
 import { handleTerminal } from "../services/terminal.js"
 import { authMiddleware } from "../plugins/auth-guard.js"
 import { canAccessQuestSet, getQuestContext } from "../services/quest.js"
+import { startHeartbeat } from '../services/heartbeat.js'
 import { consumeTicket, issueTicket } from "../services/terminal-ticket.js"
 
 
@@ -37,6 +38,7 @@ export const terminalRoutes: FastifyPluginAsync = async (app) => {
             socket.close(1008, 'invalid or expired ticket')
             return
         }
+        startHeartbeat(socket)
         handleTerminal(socket, docker, info)
     })
 }
