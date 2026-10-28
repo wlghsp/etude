@@ -1,7 +1,7 @@
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
 import { mkdirSync } from 'node:fs'
-import { rm } from 'node:fs/promises'
+import { readdir, rm } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 
@@ -83,6 +83,25 @@ async function deleteVcluster(v: PooledVCluster): Promise<void> {
     await rm(v.kubeconfigPath, { force: true }).catch(() => {})
 }
 
+// 이전 프로세스가 남긴 pool kubeconfig 파일을 지운다. 디렉터리가 없으면 할 일이 없고,
+// 그 밖의 오류(권한, I/O)는 정리가 안 됐다는 걸 알 수 있게 로그로 남긴다.
+async function cleanupOrphanKubeconfigs(): Promise<void> {
+    const files = await readdir(KUBECONFIG_DIR).catch((err) => {
+        if (err?.code !== 'ENOENT') console.error(`[vcluster] kubeconfig 디렉터리를 읽지 못했습니다: ${KUBECONFIG_DIR}`, err)
+        return [] as string[]
+    })
+    await Promise.all(
+        files
+            .filter((f) => /^pool-.+-kubeconfig\.yaml$/.test(f))
+            .map((f) => {
+                const file = path.join(KUBECONFIG_DIR, f)
+                return rm(file, { force: true }).catch((err) => {
+                    console.error(`[vcluster] kubeconfig 삭제 실패: ${file}`, err)
+                })
+            })
+    )
+}
+
 export async function cleanupOrphanVclusters(): Promise<void> {
     const { stdout } = await execAsync(
         `kubectl get ns -o jsonpath='{.items[*].metadata.name}'`
@@ -96,6 +115,8 @@ export async function cleanupOrphanVclusters(): Promise<void> {
             return execAsync(`vcluster delete ${id} --namespace ${ns}`).catch(() => {})
         })
     )
+
+    await cleanupOrphanKubeconfigs()
 }
 
 export async function initPool(): Promise<void> {
