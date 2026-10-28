@@ -40,4 +40,12 @@ describe('loadFixture', () => {
 
         expect(() => loadFixture(6, dir)).toThrow(/set06\.json/)
     })
+
+    it('allowTriviallyPasses는 이유가 적힌 문자열 맵이어야 한다', () => {
+        write('set07.json', { setId: 7, answers: { '1': 'x' }, allowTriviallyPasses: { '1': 'reason' } })
+        write('set08.json', { setId: 8, answers: { '1': 'x' }, allowTriviallyPasses: { '1': '' } })
+
+        expect(loadFixture(7, dir).allowTriviallyPasses).toEqual({ '1': 'reason' })
+        expect(() => loadFixture(8, dir)).toThrow(/allowTriviallyPasses/)
+    })
 })

@@ -13,6 +13,38 @@ function goodFactory(): SandboxFactory {
     }
 }
 
+// 무행동 통과를 알려진 예외로 허용하는 fixture 케이스
+describe('runSet — allowTriviallyPasses', () => {
+    // grade가 항상 통과 → 정답은 통과하지만 무행동도 통과(trivially-passes)
+    const alwaysPass: SandboxFactory = async () => ({ exec: async () => 0, dispose: async () => {} })
+
+    it('이유가 적힌 예외는 무행동 통과를 허용하고 이유를 note로 남긴다', async () => {
+        const results = await runSet([q(1)], { setId: 1, answers: { '1': 'a' }, allowTriviallyPasses: { '1': '정답 상태가 초기 상태와 같다' } }, alwaysPass)
+
+        expect(results[0]).toMatchObject({ ok: true, note: '정답 상태가 초기 상태와 같다' })
+    })
+
+    it('예외가 없으면 같은 상황이 trivially-passes 실패다', async () => {
+        const results = await runSet([q(1)], { setId: 1, answers: { '1': 'a' } }, alwaysPass)
+
+        expect(results[0]).toMatchObject({ ok: false, reason: 'trivially-passes' })
+    })
+
+    it('예외가 있는데 이제 무행동이 실패하면 stale-allowance로 실패시킨다 (예외가 낡지 않게)', async () => {
+        const results = await runSet([q(1)], { setId: 1, answers: { '1': 'a' }, allowTriviallyPasses: { '1': '사유' } }, goodFactory())
+
+        expect(results[0]).toMatchObject({ ok: false, reason: 'stale-allowance' })
+    })
+
+    it('예외가 있어도 정답이 거부되면 그대로 실패다', async () => {
+        const neverPass: SandboxFactory = async () => ({ exec: async (cmd) => (cmd[0] === 'grade' ? 1 : 0), dispose: async () => {} })
+
+        const results = await runSet([q(1)], { setId: 1, answers: { '1': 'a' }, allowTriviallyPasses: { '1': '사유' } }, neverPass)
+
+        expect(results[0]).toMatchObject({ ok: false, reason: 'answer-rejected' })
+    })
+})
+
 describe('runSet', () => {
     it('fixture가 있는 퀘스트는 검증하고, 없는 퀘스트는 no-fixture로 실패시킨다', async () => {
         const results = await runSet([q(1), q(2)], { setId: 1, answers: { '1': 'a' } }, goodFactory())

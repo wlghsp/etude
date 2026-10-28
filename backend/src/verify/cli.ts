@@ -33,7 +33,7 @@ async function loadQuests(setId: number): Promise<VerifyQuest[]> {
 
 function print(result: QuestResult) {
     console.log(result.ok
-        ? `  ✓ ${result.orderIndex}. ${result.title}`
+        ? `  ${result.note ? '△' : '✓'} ${result.orderIndex}. ${result.title}${result.note ? `  (알려진 예외: ${result.note})` : ''}`
         : `  ✗ ${result.orderIndex}. ${result.title}  [${result.reason}] ${result.detail}`)
 }
 

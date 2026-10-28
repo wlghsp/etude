@@ -18,10 +18,10 @@ export interface VerifySandbox {
 
 export type SandboxFactory = () => Promise<VerifySandbox>
 
-export type FailureReason = 'setup-failed' | 'answer-rejected' | 'trivially-passes' | 'no-fixture' | 'orphan-fixture' | 'error'
+export type FailureReason = 'setup-failed' | 'answer-rejected' | 'trivially-passes' | 'no-fixture' | 'orphan-fixture' | 'stale-allowance' | 'error'
 
 export type QuestResult =
-    | { orderIndex: number; title: string; ok: true }
+    | { orderIndex: number; title: string; ok: true; note?: string }
     | { orderIndex: number; title: string; ok: false; reason: FailureReason; detail: string }
 
 // 퀘스트(order_index)마다 정답 fixture가 있는지, 퀘스트 없는 fixture가 남아 있지는 않은지 확인한다.
