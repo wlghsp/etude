@@ -187,3 +187,81 @@ describe('handleTerminal', () => {
         expect(docker.createContainer).not.toHaveBeenCalled()
     })
 })
+
+describe('k8s 세션 정리', () => {
+    // exec 호출과 완료, 컨테이너 중지·삭제의 순서를 한 로그에 기록한다. 각 exec는 두 번째 inspect에서 끝난다.
+    function k8sDocker() {
+        const events: string[] = []
+        const container = {
+            id: 'abcdef1234567890',
+            start: vi.fn(async () => {}),
+            attach: vi.fn(async () => new PassThrough()),
+            stop: vi.fn(async () => { events.push('stop') }),
+            remove: vi.fn(async () => { events.push('remove') }),
+            exec: vi.fn(async (o: { Cmd: string[] }) => {
+                const label = o.Cmd[0] === 'sh' ? 'pv-cleanup' : o.Cmd.slice(0, 3).join(' ')
+                events.push(`start:${label}`)
+                let polls = 0
+                return {
+                    start: vi.fn(async () => ({ resume() {} })),
+                    inspect: vi.fn(async () => {
+                        polls++
+                        if (polls < 2) return { Running: true, ExitCode: 0 }
+                        events.push(`done:${label}`)
+                        return { Running: false, ExitCode: 0 }
+                    }),
+                    resize: vi.fn(),
+                }
+            }),
+        }
+        const docker = { createContainer: vi.fn(async () => container) } as any
+        return { docker, container, events }
+    }
+
+    beforeEach(() => vi.clearAllMocks())
+
+    it('종료 시 PV 삭제와 네임스페이스 삭제가 끝난 뒤에 컨테이너를 중지한다', async () => {
+        const socket = fakeSocket()
+        const { docker, events } = k8sDocker()
+        await handleTerminal(socket as any, docker, { ...info, sandboxType: 'k8s' })
+        events.length = 0 // 준비 단계(네임스페이스 생성)의 기록은 버린다
+
+        socket.emit('close')
+        await vi.waitFor(() => expect(events).toContain('remove'))
+
+        expect(events).toEqual([
+            'start:pv-cleanup', 'done:pv-cleanup',
+            'start:kubectl delete namespace', 'done:kubectl delete namespace',
+            'stop', 'remove',
+        ])
+    })
+
+    it('PV 삭제가 실패해도 네임스페이스 삭제와 컨테이너 삭제는 진행한다', async () => {
+        const socket = fakeSocket()
+        const { docker, container, events } = k8sDocker()
+        await handleTerminal(socket as any, docker, { ...info, sandboxType: 'k8s' })
+        const realExec = container.exec.getMockImplementation()!
+        container.exec.mockImplementation(async (o: { Cmd: string[] }) => {
+            if (o.Cmd[0] === 'sh') throw new Error('exec failed')
+            return realExec(o)
+        })
+        events.length = 0
+
+        socket.emit('close')
+        await vi.waitFor(() => expect(events).toContain('remove'))
+
+        expect(events).toContain('done:kubectl delete namespace')
+    })
+
+    it('네임스페이스 삭제는 종료를 기다리지 않는다 (--wait=false)', async () => {
+        const socket = fakeSocket()
+        const { docker, container } = k8sDocker()
+        await handleTerminal(socket as any, docker, { ...info, sandboxType: 'k8s' })
+
+        socket.emit('close')
+        await vi.waitFor(() => expect(container.remove).toHaveBeenCalled())
+
+        const deleteNs = container.exec.mock.calls.map((c) => c[0].Cmd).find((c) => c[0] === 'kubectl' && c[1] === 'delete')
+        expect(deleteNs).toEqual(['kubectl', 'delete', 'namespace', 'quest-abcdef12', '--ignore-not-found', '--wait=false'])
+    })
+})
