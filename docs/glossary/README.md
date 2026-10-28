@@ -17,3 +17,4 @@ Etude 개발 중 나오는 개념 정리. Spring/Java 기준으로 비교 설명
 | [kubeconfig.md](kubeconfig.md) | kubeconfig란 무엇이고 왜 컨테이너에 마운트해야 하는가 |
 | [vcluster.md](vcluster.md) | vcluster란 무엇이고 왜 namespace 격리만으로는 부족한가 |
 | [git_restore_deleted_files.md](git_restore_deleted_files.md) | 삭제된 파일을 git 히스토리에서 복원하는 방법 |
+| [container_pid1_signals.md](container_pid1_signals.md) | 컨테이너 PID 1과 SIGTERM — `docker stop`이 10초 걸리는 이유, `trap`/`wait`로 해결 |
