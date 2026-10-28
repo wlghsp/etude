@@ -76,7 +76,7 @@ class QuestService(
         val quest = questRepository.findById(questId) ?: return false
         val cmd = objectMapper.readValue(quest.gradeCmd, Array<String>::class.java).toList()
 
-        val ns = "quest-${containerId.take(8)}"
+        val ns = questNamespace(containerId)
         val resolveCmd = cmd.map { it.replace("\$NS", ns) }
 
         return containerRuntime.execAndCheck(containerId, resolveCmd)

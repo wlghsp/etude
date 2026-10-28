@@ -35,6 +35,7 @@ class DockerContainerRuntime(
             .withBinds(spec.binds.map { com.github.dockerjava.api.model.Bind.parse(it) })
             .withPrivileged(spec.privileged)
             .apply { spec.networkMode?.let { withNetworkMode(it) } }
+            .apply { spec.cgroupnsMode?.let { withCgroupnsMode(it) } }
 
         return dockerClient.createContainerCmd(spec.image)
             .withLabels(mapOf("etude" to "sandbox") + spec.extraLabels)

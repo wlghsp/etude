@@ -20,6 +20,7 @@ data class ContainerSpec(
     val openStdin: Boolean,
     val privileged: Boolean = false,
     val networkMode: String? = null,
+    val cgroupnsMode: String? = null, // "host" 등. systemd 컨테이너용
     val extraLabels: Map<String, String> = emptyMap(),
 )
 
