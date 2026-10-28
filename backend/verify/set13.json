@@ -1,10 +1,10 @@
 {
   "setId": 13,
   "answers": {
-    "1": "kubectl apply -f - <<EOF\napiVersion: v1\nkind: PersistentVolume\nmetadata:\n  name: pv-local-$NS\nspec:\n  capacity:\n    storage: 1Gi\n  accessModes:\n  - ReadWriteOnce\n  hostPath:\n    path: /tmp/pv-data\n  claimRef:\n    namespace: $NS\n    name: pvc-local\nEOF",
-    "2": "kubectl apply -f - <<EOF\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: pvc-local\n  namespace: $NS\nspec:\n  accessModes:\n  - ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\nEOF",
+    "1": "kubectl apply -f - <<EOF\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: pvc-local\n  namespace: $NS\nspec:\n  accessModes:\n  - ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\nEOF",
+    "2": "kubectl apply -f - <<EOF\napiVersion: v1\nkind: Pod\nmetadata:\n  name: pvc-pod\n  namespace: $NS\nspec:\n  containers:\n  - name: nginx\n    image: nginx\n    volumeMounts:\n    - name: data-vol\n      mountPath: /data\n  volumes:\n  - name: data-vol\n    persistentVolumeClaim:\n      claimName: pvc-local\nEOF",
     "3": "kubectl get pvc pvc-local -n $NS > /tmp/pvc_status.txt",
-    "4": "kubectl apply -f - <<EOF\napiVersion: v1\nkind: Pod\nmetadata:\n  name: pvc-pod\n  namespace: $NS\nspec:\n  containers:\n  - name: nginx\n    image: nginx\n    volumeMounts:\n    - name: data-vol\n      mountPath: /data\n  volumes:\n  - name: data-vol\n    persistentVolumeClaim:\n      claimName: pvc-local\nEOF",
+    "4": "kubectl exec pvc-pod -n $NS -- sh -c 'echo persisted > /data/hello.txt'",
     "5": "kubectl run pf-nginx --image=nginx -n $NS && kubectl expose pod pf-nginx --port=80 -n $NS && kubectl wait --for=condition=ready pod/pf-nginx -n $NS --timeout=60s && (kubectl port-forward svc/pf-nginx 9090:80 -n $NS > /dev/null 2>&1 &) && sleep 3 && curl -s localhost:9090 > /tmp/pf_result.txt",
     "6": "kubectl logs crash-pod -n $NS > /tmp/crash_log.txt 2>&1 || kubectl logs crash-pod -n $NS --previous > /tmp/crash_log.txt 2>&1",
     "7": "kubectl describe pod crash-pod -n $NS > /tmp/describe_result.txt",
