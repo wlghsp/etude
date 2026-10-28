@@ -53,4 +53,48 @@ describe('dockerSandboxFactory', () => {
 
         expect(container.remove).toHaveBeenCalled()
     })
+
+    it('dind 프로필: Privileged로 만들고 기본 Cmd를 덮어쓰지 않으며, docker info가 성공할 때까지 기다린다', async () => {
+        // docker info: 처음 두 번은 실패(1), 세 번째 성공(0)
+        const results = [
+            { Running: false, ExitCode: 1 }, { Running: false, ExitCode: 1 }, { Running: false, ExitCode: 0 },
+        ]
+        let call = 0
+        const container = {
+            start: vi.fn(async () => {}),
+            stop: vi.fn(async () => {}),
+            remove: vi.fn(async () => {}),
+            exec: vi.fn(async () => ({
+                start: vi.fn(async () => ({ resume() {} })),
+                inspect: vi.fn(async () => results[Math.min(call++, results.length - 1)]),
+            })),
+        }
+        const docker = { createContainer: vi.fn(async () => container) } as any
+
+        await dockerSandboxFactory(docker, { image: 'docker:dind', binds: null }, { privileged: true, readyCmd: ['docker', 'info'], readyTimeoutMs: 5000, readyIntervalMs: 10 })()
+
+        const opts = docker.createContainer.mock.calls[0][0]
+        expect(opts.HostConfig.Privileged).toBe(true)
+        expect(opts.Cmd).toBeUndefined() // dind 이미지의 기본 entrypoint(dockerd)를 그대로 쓴다
+        expect(container.exec).toHaveBeenCalledTimes(3)
+        expect(container.exec.mock.calls[0][0]).toEqual({ Cmd: ['docker', 'info'] })
+    })
+
+    it('준비가 끝나지 않으면 컨테이너를 정리하고 실패한다', async () => {
+        const container = {
+            start: vi.fn(async () => {}),
+            stop: vi.fn(async () => {}),
+            remove: vi.fn(async () => {}),
+            exec: vi.fn(async () => ({
+                start: vi.fn(async () => ({ resume() {} })),
+                inspect: vi.fn(async () => ({ Running: false, ExitCode: 1 })),
+            })),
+        }
+        const docker = { createContainer: vi.fn(async () => container) } as any
+
+        await expect(
+            dockerSandboxFactory(docker, { image: 'docker:dind', binds: null }, { privileged: true, readyCmd: ['docker', 'info'], readyTimeoutMs: 100, readyIntervalMs: 10 })(),
+        ).rejects.toThrow(/준비/)
+        expect(container.remove).toHaveBeenCalled()
+    })
 })
