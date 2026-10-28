@@ -1,11 +1,11 @@
 -- 세트 4: 리눅스 네트워크/파일 전송 (order 1~7)
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
   (4,  1, 'HTTP 요청 보내기',
-   'curl 명령어로 http://example.com 에 GET 요청을 보내고 응답을 출력하세요.',
-   'curl 명령어를 사용하세요.',
-   'curl http://example.com',
+   'curl 명령어로 http://example.com 에 GET 요청을 보내고, 응답을 /tmp/curl_result.txt 에 저장하세요.',
+   'curl 명령어와 리다이렉션(>)을 사용하세요.',
+   'curl http://example.com > /tmp/curl_result.txt',
    NULL,
-   '["sh", "-c", "curl -s http://example.com | grep -q html"]'),
+   '["sh", "-c", "grep -qi html /tmp/curl_result.txt"]'),
 
   (4,  2, '파일 다운로드하기',
    'curl 명령어로 http://example.com 의 내용을 /tmp/index.html 파일로 저장하세요.',
@@ -15,18 +15,18 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    '["test", "-f", "/tmp/index.html"]'),
 
   (4,  3, '네트워크 연결 확인하기',
-   '8.8.8.8 주소로 ping을 3번만 보내고 결과를 확인하세요.',
-   'ping -c 옵션으로 횟수를 지정할 수 있습니다.',
-   'ping -c 3 8.8.8.8',
+   '8.8.8.8 주소로 ping을 3번만 보내고, 결과를 /tmp/ping_result.txt 에 저장하세요.',
+   'ping -c 옵션으로 횟수를 지정하고, 리다이렉션(>)으로 저장하세요.',
+   'ping -c 3 8.8.8.8 > /tmp/ping_result.txt',
    NULL,
-   '["sh", "-c", "ping -c 1 8.8.8.8 > /dev/null 2>&1 && echo ok | grep -q ok"]'),
+   '["sh", "-c", "grep -q ''3 packets transmitted'' /tmp/ping_result.txt"]'),
 
   (4,  4, '열린 포트 확인하기',
    '현재 수신 대기 중인 TCP 포트 목록을 확인하고, 결과를 /tmp/ports.txt 에 저장하세요.',
    'ss -tlnp 명령어를 사용하세요.',
    'ss -tlnp > /tmp/ports.txt',
-   '["sh", "-c", "nginx &"]',
-   '["sh", "-c", "grep -q :80 /tmp/ports.txt"]'),
+   '["sh", "-c", "/usr/sbin/sshd"]',
+   '["sh", "-c", "grep -q '':22 '' /tmp/ports.txt"]'),
 
   (4,  5, 'SSH로 원격 파일 복사하기',
    '/tmp/index.html 파일을 scp 명령어로 root@localhost:/tmp/remote_copy.html 에 복사하세요. (비밀번호: root)',
