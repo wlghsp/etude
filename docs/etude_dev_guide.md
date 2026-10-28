@@ -46,7 +46,7 @@ ln -sf ~/.colima/default/docker.sock ~/.docker/run/docker.sock
 | Phase 10 — vcluster 전환 + KLID CMP 현장실습 | [guides/guide_phase10_klid_cmp.md](guides/guide_phase10_klid_cmp.md) | [specs/spec_phase10_klid_cmp.md](specs/spec_phase10_klid_cmp.md) | 대기 |
 | Phase 11 — 퀘스트 콘텐츠 확장 2 | (Phase 10 완료 후 작성) | (Phase 10 완료 후 작성) | 대기 |
 | Node 테스트 기반 Step 1 — 첫 테스트와 `buildApp()` | [guides/completed/guide_node_testing_01_first_test.md](guides/completed/guide_node_testing_01_first_test.md) | (가이드에 포함) | ✅ 완료 |
-| 채점 검증 러너 — V1 `linux` 세트 | (가이드에 포함) | [specs/spec_grading_verification.md](specs/spec_grading_verification.md) | V1 구현·결함 8건 수정 완료 (서버 반영 대기), V2~V5 대기 |
+| 채점 검증 러너 — V1~V2 (`linux`, `docker`) | (가이드에 포함) | [specs/spec_grading_verification.md](specs/spec_grading_verification.md) | V1~V2 구현·결함 11건 수정 완료 (서버 반영 대기), V3~V5 대기 |
 | Node 20 → 24 (LTS) 업그레이드 | [guides/guide_node_upgrade_24.md](guides/guide_node_upgrade_24.md) | (가이드에 포함) | 대기 (테스트 Step 1 이후) |
 
 ---
