@@ -170,9 +170,9 @@ backend-kotlin/                         (루트 — 빌드 설정 총괄)
 | ✅ | 4 | [guide_phase12_step4_progress_feedback.md](../guides/guide_phase12_step4_progress_feedback.md) | `progress.ts`, `progress.routes.ts`, `feedback.ts`, `feedback.routes.ts` | `QuestAttempt`/`Feedback` 엔티티, 집계 쿼리 테스트 |
 | ✅ | 5 | [guide_phase12_step5_docker.md](../guides/guide_phase12_step5_docker.md) | `docker.ts`, `sandbox.ts` | `ContainerRuntime` 포트/어댑터, 고아 컨테이너 정리 |
 | ✅ | 6-1 | [guide_phase12_step6_terminal.md](../guides/guide_phase12_step6_terminal.md) | `terminal.ts`(공통 유틸 + default/docker 분기), `terminal.routes.ts` | `TerminalWebSocketHandler`, WebSocket attach/exec 스트림 브리징, `ContainerRuntime` 포트 확장 |
-| ▶️ | 6-2 | (미작성) | `terminal.ts`(linux-systemd/k8s 분기) | systemd 대기, k8s 네임스페이스 생성/삭제 |
+| ▶️ | 6-2 | [guide_phase12_step6_2_systemd_k8s.md](../guides/guide_phase12_step6_2_systemd_k8s.md) | `terminal.ts`(linux-systemd/k8s 분기) | systemd 대기, k8s 네임스페이스 생성/삭제 |
 | ⬜ | 6-3 | (미작성, Step 8 이후) | `terminal.ts`(k8s-isolated 분기) | `VclusterProvisioner` 연동 (Step 8 선행 필요) |
-| ⬜ | 7 | [guide_phase12_step7_grading.md](../guides/guide_phase12_step7_grading.md) | `quest.ts`의 `execCheck`/`gradeQuest` | 채점 로직 + `/grade` 엔드포인트 |
+| ▶️ | 7 | [guide_phase12_step7_grading.md](../guides/guide_phase12_step7_grading.md) | `quest.ts`의 `execCheck`/`gradeQuest` | 채점 로직 + `/grade` 엔드포인트 |
 | ⬜ | 8 | [guide_phase12_step8_vcluster.md](../guides/guide_phase12_step8_vcluster.md) | `vcluster-pool.ts`, `k8s-namespace.ts` | `VclusterProvisioner` 포트/어댑터, 풀 관리 |
 | ⬜ | 9 | [guide_phase12_step9_session_shutdown.md](../guides/guide_phase12_step9_session_shutdown.md) | `session.routes.ts`, `index.ts`(정리 훅) | 세션 종료 API, graceful shutdown |
 | ⬜ | 10 | [guide_phase12_step10_cutover.md](../guides/guide_phase12_step10_cutover.md) | - | 전체 회귀 테스트, **프론트엔드 API 모듈 일괄 전환**, 배포 전환, 문서/CLAUDE.md 갱신 |

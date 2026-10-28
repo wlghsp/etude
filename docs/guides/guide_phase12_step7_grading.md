@@ -36,17 +36,18 @@
 `quest.routes.ts`의 `POST /grade`)의 실제 동작이 곧 인수 조건이다.*
 
 **채점 (`POST /grade`)**
-- [ ] `{ containerId, questId, questSetId, sessionId, elapsedSec?, hintUsed?, solutionUsed? }`
+- [x] `{ containerId, questId, questSetId, sessionId, elapsedSec?, hintUsed?, solutionUsed? }`
       전송 시 200 + `{ passed: boolean }` (실제 컨테이너에서 `grade_cmd` 실행 결과)
-- [ ] `grade_cmd`의 `$NS`가 `quest-${containerId 앞 8자}`로 치환된 뒤 실행된다
-- [ ] 채점 명령이 15초 안에 끝나지 않으면 `passed: false` (원본 `execCheck`의 `timeoutMs`
-      기본값과 동일)
-- [ ] `Authorization: Bearer <유효한 토큰>`이 있으면 `quest_attempt`에 시도가 기록된다
+- [x] `grade_cmd`의 `$NS`가 `quest-${containerId 앞 8자}`로 치환된 뒤 실행된다
+- [x] 채점 명령이 15초 안에 끝나지 않으면 `passed: false` (원본 `execCheck`의 `timeoutMs`
+      기본값과 동일) — 컨트롤러 테스트가 아니라 `DockerContainerRuntimeTest`(7-4b)에서
+      `timeoutMs`를 줄여 검증한다
+- [x] `Authorization: Bearer <유효한 토큰>`이 있으면 `quest_attempt`에 시도가 기록된다
       (`userId`는 토큰에서, 나머지는 요청 바디에서)
-- [ ] `Authorization` 헤더가 없거나 유효하지 않은 토큰이어도 **401이 아니라 200** —
+- [x] `Authorization` 헤더가 없거나 유효하지 않은 토큰이어도 **401이 아니라 200** —
       `recordAttempt`만 건너뛰고 채점 자체는 정상 수행된다 (원본이 `try/catch`로
       `verifyToken` 실패를 무시하는 것과 동일)
-- [ ] 이 엔드포인트는 `WebConfig`의 `AuthInterceptor` 대상 경로 목록(`/quest-sets/**` 등)에
+- [x] 이 엔드포인트는 `WebConfig`의 `AuthInterceptor` 대상 경로 목록(`/quest-sets/**` 등)에
       **포함하지 않는다** — 다른 REST 엔드포인트와 달리 로그인 없이도 채점만은 가능해야 한다
 
 이 조건들은 아래 7-4(통합 테스트)로 옮겨집니다.
@@ -156,6 +157,78 @@ fun grade(containerId: String, questId: Long): Boolean {
 > 인증조차 필요 없는 엔드포인트) `QuestSetAccessDeniedException` 같은 예외를 새로 도입할
 > 이유가 없습니다.
 
+### 7-1b. `QuestServiceTest` — 채점 단위 테스트
+
+`grade`는 DB 조회와 문자열 치환, 그리고 `ContainerRuntime` 호출을 조율하는 도메인 서비스
+로직이므로, 실제 Docker 없이 MockK로 검증합니다(`docs/testing/testing_layers.md`의 "도메인 서비스
+단위 테스트" 원칙). 실제 컨테이너에서 명령이 실행되는지는 7-4/7-4b의 몫입니다.
+
+`QuestService` 생성자에 `containerRuntime`이 추가됐으므로 `QuestServiceTest` 상단의 mock과
+생성자 호출부를 먼저 맞춥니다.
+
+```kotlin
+val containerRuntime = mockk<ContainerRuntime>()
+val questService = QuestService(
+    questSetRepository, questRepository, questSetAccessRepository,
+    userRepository, objectMapper, containerRuntime,
+)
+
+beforeTest { clearMocks(containerRuntime) }   // 테스트 사이에 호출 기록이 섞이지 않게 비운다
+```
+
+`io.mockk.slot`, `io.mockk.clearMocks` import를 추가하고, 파일 끝(`})` 직전)에 다음 케이스를 추가합니다.
+
+```kotlin
+"채점할 때" - {
+    "grade_cmd의 \$NS를 quest-{컨테이너ID 앞 8자}로 치환해서 컨테이너에 실행시킨다" {
+        val quest = TestQuests.create(
+            questSetId = 1L,
+            gradeCmd = """["sh", "-c", "test ${'$'}NS = x"]""",
+        )
+        every { questRepository.findById(1L) } returns quest
+        val executed = slot<List<String>>()
+        every { containerRuntime.execAndCheck("abcdef1234567890", capture(executed), any()) } returns true
+
+        questService.grade("abcdef1234567890", 1L) shouldBe true
+
+        executed.captured shouldBe listOf("sh", "-c", "test quest-abcdef12 = x")
+    }
+
+    "컨테이너에서 채점 명령이 실패하면" - {
+        "false를 반환한다" {
+            val quest = TestQuests.create(questSetId = 1L, gradeCmd = """["false"]""")
+            every { questRepository.findById(1L) } returns quest
+            every { containerRuntime.execAndCheck(any(), any(), any()) } returns false
+
+            questService.grade("abcdef1234567890", 1L) shouldBe false
+        }
+    }
+
+    "존재하지 않는 퀘스트면" - {
+        "예외 없이 false를 반환하고 컨테이너를 호출하지 않는다" {
+            every { questRepository.findById(999L) } returns null
+
+            questService.grade("abcdef1234567890", 999L) shouldBe false
+
+            verify(exactly = 0) { containerRuntime.execAndCheck(any(), any(), any()) }
+        }
+    }
+}
+```
+
+> `execAndCheck`는 기본 파라미터(`timeoutMs = 15_000`)가 있어도 MockK 스텁에서는 3번째 인자를
+> `any()`로 명시해야 합니다. 서비스 코드는 `timeoutMs`를 생략해 호출하지만, 컴파일된 호출은 기본값이
+> 채워진 3-인자 호출이기 때문입니다.
+>
+> **`beforeTest { clearMocks(containerRuntime) }`가 꼭 필요한 이유**: mock은 스펙 최상단에서 한 번만
+> 만들어져 모든 케이스가 같은 인스턴스를 씁니다. MockK의 호출 기록도 인스턴스에 쌓이므로, 비우지
+> 않으면 세 번째 케이스의 `verify(exactly = 0) { containerRuntime.execAndCheck(...) }`가 **앞선
+> 두 케이스가 남긴 호출**까지 세어서 "call 1 of 1: ... should not be called"로 실패합니다.
+> `grade` 코드의 버그가 아니라 테스트 격리 문제입니다.
+>
+> `questRepository.findById`는 `getById` 확장 함수가 아니라 `Quest?`를 반환하는 원본 메서드입니다
+> (`grade`가 `?: return false`로 null을 관용하기 위해 쓰는 쪽).
+
 ---
 
 ## 7-2. `ProgressService` — 시도 기록 저장
@@ -181,9 +254,17 @@ override fun save(attempt: QuestAttempt) {
 ```
 
 > `QuestAttemptJpaRepository`(`JpaRepository<QuestAttempt, Long>`)는 이미 `save`를 상속받고
-> 있으므로 이 어댑터가 새로 주입받을 의존성은 없습니다 — Step 4에서 `QuestAttemptRepositoryImpl`이
-> `QuestAttemptQuerydslRepository`만 주입받고 있었다면, 집계 전용이 아닌 단순 저장에는
-> QueryDSL이 필요 없으므로 `QuestAttemptJpaRepository`를 함께 주입받도록 생성자를 넓힙니다.
+> 있습니다. 다만 Step 4의 `QuestAttemptRepositoryImpl`은 집계 쿼리용
+> `QuestAttemptQuerydslRepository`만 주입받고 있었으므로, 단순 저장에 쓸
+> `QuestAttemptJpaRepository`를 **생성자에 추가로 주입**받도록 넓혀야 합니다. 저장에는 QueryDSL이
+> 필요 없기 때문입니다.
+>
+> ```kotlin
+> class QuestAttemptRepositoryImpl(
+>     private val querydslRepository: QuestAttemptQuerydslRepository,
+>     private val questAttemptJpaRepository: QuestAttemptJpaRepository,   // 추가
+> ) : QuestAttemptRepository
+> ```
 
 `domain/progress/ProgressService.kt`에 추가 — `@Transactional(readOnly = true)`가 클래스
 레벨에 붙어 있으므로 쓰기 메서드에는 `@Transactional`을 개별로 다시 붙여 오버라이드합니다:
@@ -294,6 +375,56 @@ override fun grade(
 > Step 1부터 지켜온 레이어 원칙(Facade가 여러 도메인 서비스를 조합, 컨트롤러는 얇게 유지)과
 > 일치합니다. `QuestFacade`가 `ProgressService`를 새로 주입받아야 합니다.
 
+`application/quest/QuestFacade.kt`를 아래처럼 고칩니다. 생성자에 `ProgressService`를 추가하고,
+두 메서드는 각 도메인 서비스로 **위임만** 합니다(기존 메서드들과 같은 한 줄 위임 스타일).
+
+```kotlin
+import com.etude.domain.progress.ProgressService   // 추가
+
+@Component
+class QuestFacade(
+    private val questService: QuestService,
+    private val progressService: ProgressService,   // 추가
+) {
+    // ... 기존 메서드 생략 ...
+
+    fun grade(containerId: String, questId: Long): Boolean = questService.grade(containerId, questId)
+
+    fun recordAttempt(
+        userId: Long,
+        questId: Long,
+        questSetId: Long,
+        sessionId: String,
+        passed: Boolean,
+        elapsedSec: Int?,
+        hintUsed: Boolean,
+        solutionUsed: Boolean,
+    ) {
+        progressService.recordAttempt(
+            userId = userId,
+            questId = questId,
+            questSetId = questSetId,
+            sessionId = sessionId,
+            passed = passed,
+            elapsedSec = elapsedSec,
+            hintUsed = hintUsed,
+            solutionUsed = solutionUsed,
+        )
+    }
+}
+```
+
+> `grade`와 `recordAttempt`를 하나의 Facade 메서드로 합치지 않고 둘로 나눈 이유는 "토큰이
+> 없으면 기록만 건너뛴다"는 분기를 컨트롤러가 이미 `payload != null`로 결정하기 때문입니다.
+> Facade 메서드 하나로 합치면 `userId: Long?`을 받아 내부에서 또 분기해야 해서, 인증 여부라는
+> HTTP 계층의 관심사가 `application` 계층으로 새어 들어갑니다.
+>
+> 또 하나 주의할 점: `grade`는 DB 조회 + Docker exec(최대 15초 대기)를 하는 메서드이고
+> `recordAttempt`는 쓰기 트랜잭션입니다. Facade에는 `@Transactional`을 붙이지 않았으므로
+> (트랜잭션은 `ProgressService.recordAttempt`가 자기 범위만 연다) 채점 대기 시간 동안 DB
+> 커넥션을 점유하지 않습니다. 나중에 Facade에 `@Transactional`을 붙이고 싶어지더라도 이
+> 이유 때문에 붙이지 않는 것이 맞습니다.
+
 `/grade`는 `WebConfig`의 `AuthInterceptor` 경로 패턴(`/quest-sets/**` 등)에 **추가하지
 않습니다** — 그대로 두면 인증 없이도 도달 가능한 상태가 유지되어 인수 조건과 일치합니다.
 
@@ -303,42 +434,274 @@ override fun grade(
 
 Step 6-1과 마찬가지로 실제 Docker 데몬이 필요한 첫 REST 통합 테스트입니다. `MockMvc`로
 `/grade`를 호출하되, 사전에 `ContainerRuntime`(실제 `DockerContainerRuntime`)으로 컨테이너를
-띄우고 그 안에서 채점 명령이 성공/실패하는 두 시나리오를 검증합니다.
+띄우고 그 안에서 채점 명령이 성공/실패하는 시나리오와 토큰 유무에 따른 기록 여부를
+검증합니다.
+
+`src/test/kotlin/com/etude/interfaces/api/quest/QuestGradeControllerTest.kt` (전체):
 
 ```kotlin
+package com.etude.interfaces.api.quest
+
+import com.etude.domain.terminal.ContainerRuntime
+import com.etude.domain.terminal.ContainerSpec
+import com.etude.infrastructure.persistence.auth.UserJpaRepository
+import com.etude.infrastructure.persistence.progress.QuestAttemptJpaRepository
+import com.etude.infrastructure.persistence.quest.QuestJpaRepository
+import com.etude.infrastructure.persistence.quest.QuestSetJpaRepository
+import com.etude.support.IntegrationTest
+import com.etude.support.TestAuth
+import com.etude.support.TestQuestSets
+import com.etude.support.TestQuests
+import com.etude.support.TestUsers
+import io.kotest.matchers.shouldBe
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.http.MediaType
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.ResultActions
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+
+@AutoConfigureMockMvc
 class QuestGradeControllerTest(
-    private val containerRuntime: ContainerRuntime,
-    private val questRepository: QuestRepository,
+    @Autowired private val mockMvc: MockMvc,
+    @Autowired private val containerRuntime: ContainerRuntime,
+    @Autowired private val userJpaRepository: UserJpaRepository,
+    @Autowired private val questSetJpaRepository: QuestSetJpaRepository,
+    @Autowired private val questJpaRepository: QuestJpaRepository,
+    @Autowired private val questAttemptJpaRepository: QuestAttemptJpaRepository,
 ) : IntegrationTest({
+    var userId = 0L
+    var questSetId = 0L
+    lateinit var containerId: String
+
+    // 채점 명령이 실행될 컨테이너 — 테스트마다 하나 띄우고 끝나면 지운다.
+    // TerminalWebSocketHandlerTest와 같은 이유로 로컬에 이미 있는 etude-linux 이미지를 쓴다
+    // (createContainer는 이미지를 자동으로 pull하지 않는다).
+    beforeTest {
+        userId = TestUsers.createMember(userJpaRepository).id
+        questSetId = TestQuestSets.createPublic(questSetJpaRepository).id
+
+        containerId = containerRuntime.createContainer(
+            ContainerSpec(
+                image = "etude-linux",
+                binds = emptyList(),
+                command = listOf("sh", "-c", "trap 'exit 0' TERM; sleep 300 & wait"),
+                tty = false,
+                openStdin = false,
+            )
+        )
+        containerRuntime.startContainer(containerId)
+    }
+
+    afterTest {
+        containerRuntime.stopAndRemove(containerId)
+    }
+
+    fun saveQuest(gradeCmd: String): Long =
+        TestQuests.createAndSave(questJpaRepository, questSetId = questSetId, gradeCmd = gradeCmd).id
+
+    fun grade(questId: Long, token: String? = null): ResultActions =
+        mockMvc.perform(
+            post("/grade")
+                .contentType(MediaType.APPLICATION_JSON)
+                .apply { token?.let { header("Authorization", "Bearer $it") } }
+                .content(
+                    """
+                    {
+                      "containerId": "$containerId",
+                      "questId": $questId,
+                      "questSetId": $questSetId,
+                      "sessionId": "session-1",
+                      "elapsedSec": 42,
+                      "hintUsed": true,
+                      "solutionUsed": false
+                    }
+                    """.trimIndent()
+                )
+        )
+
+    fun memberToken(): String =
+        TestAuth.loginAndGetToken(mockMvc, TestUsers.MEMBER_EMAIL, TestUsers.MEMBER_PASSWORD)
+
     "채점 명령이 성공하면" - {
         "passed: true를 응답하고, 토큰이 있으면 quest_attempt에 기록한다" {
-            // given: grade_cmd가 항상 성공하는 퀘스트를 시드하고 컨테이너를 하나 띄운다
-            // when: 유효한 회원 토큰으로 /grade 호출
-            // then: 200, passed=true, quest_attempt 테이블에 1건 저장됨을 확인
+            val questId = saveQuest("""["true"]""")
+
+            grade(questId, memberToken())
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.passed").value(true))
+
+            val attempts = questAttemptJpaRepository.findAll()
+            attempts.size shouldBe 1
+            attempts[0].userId shouldBe userId
+            attempts[0].questId shouldBe questId
+            attempts[0].questSetId shouldBe questSetId
+            attempts[0].sessionId shouldBe "session-1"
+            attempts[0].elapsedSec shouldBe 42
+            attempts[0].hintUsed shouldBe true
+            attempts[0].solutionUsed shouldBe false
+            attempts[0].passed shouldBe true
+        }
+
+        "grade_cmd의 \$NS를 quest-{컨테이너ID 앞 8자}로 치환해서 실행한다" {
+            // 치환이 틀리면 test가 실패(exit 1)해서 passed=false가 된다
+            val questId = saveQuest(
+                """["sh", "-c", "test ${'$'}NS = quest-${containerId.take(8)}"]"""
+            )
+
+            grade(questId)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.passed").value(true))
         }
     }
 
     "토큰 없이 호출하면" - {
         "401이 아니라 채점 결과만 응답하고 기록은 남기지 않는다" {
-            // when: Authorization 헤더 없이 /grade 호출
-            // then: 200, quest_attempt에는 추가되지 않음
+            val questId = saveQuest("""["true"]""")
+
+            grade(questId)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.passed").value(true))
+
+            questAttemptJpaRepository.count() shouldBe 0
+        }
+    }
+
+    "유효하지 않은 토큰으로 호출하면" - {
+        "401이 아니라 채점 결과만 응답하고 기록은 남기지 않는다" {
+            val questId = saveQuest("""["true"]""")
+
+            grade(questId, token = "invalid.token.value")
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.passed").value(true))
+
+            questAttemptJpaRepository.count() shouldBe 0
         }
     }
 
     "채점 명령이 실패하면" - {
-        "passed: false를 응답한다" {
-            // grade_cmd가 항상 실패(exit 1)하는 퀘스트로 검증
+        "passed: false를 응답하고, 토큰이 있으면 실패한 시도도 기록한다" {
+            val questId = saveQuest("""["false"]""")
+
+            grade(questId, memberToken())
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.passed").value(false))
+
+            val attempts = questAttemptJpaRepository.findAll()
+            attempts.size shouldBe 1
+            attempts[0].passed shouldBe false
+        }
+    }
+
+    "존재하지 않는 questId로 호출하면" - {
+        "예외 없이 passed: false를 응답한다" {
+            grade(questId = 999_999L)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.passed").value(false))
         }
     }
 })
 ```
 
-> 이 테스트가 시드하는 퀘스트의 `grade_cmd`는 `03_quest_set*.sql`의 실제 퀘스트를 재사용하지
-> 않고, 테스트 전용으로 `["true"]`(항상 성공) / `["false"]`(항상 실패) 같은 단순 명령을 직접
-> INSERT합니다 — 실제 시드 데이터의 채점 명령은 특정 리눅스 환경 설정을 전제해 통합 테스트
-> 환경(범용 이미지)에서 그대로 통과한다는 보장이 없기 때문입니다. `$NS` 치환 자체를 검증하려면
-> `["sh", "-c", "test $NS = quest-${컨테이너ID 앞 8자}"]`처럼 치환 결과를 직접 확인하는 명령을
-> 시드에 넣습니다.
+> **원래 스켈레톤에서 바뀐 점**
+> - `@AutoConfigureMockMvc`와 `@Autowired`를 붙였습니다. 다른 컨트롤러 테스트
+>   (`ProgressControllerTest` 등)와 같은 방식이고, 이게 없으면 `MockMvc`를 주입받지 못합니다.
+> - `QuestRepository`는 뺐습니다. 시드는 `QuestJpaRepository`로 하는 게 기존 `TestQuests`
+>   픽스처(`createAndSave`)와 맞습니다.
+> - 응답 경로가 `$.data.passed`인 이유는 Step 1부터 모든 응답이 `ApiResponse`(`{ meta, data }`)로
+>   감싸지기 때문입니다.
+> - 컨테이너는 `beforeTest`에서 만들고 `afterTest`에서 `stopAndRemove`로 지웁니다. 이 정리가
+>   빠지면 테스트를 돌릴 때마다 `sleep 300` 컨테이너가 남습니다.
+> - 컨테이너가 `tty = false`, `openStdin = false`인 이유는 채점이 `exec`로 실행되기 때문입니다.
+>   메인 프로세스가 살아 있기만 하면 되고 터미널 attach는 필요 없습니다.
+> - **`command`를 `sleep 300`이 아니라 `sh -c "trap 'exit 0' TERM; sleep 300 & wait"`로 쓰는
+>   이유**: `sleep`이 PID 1이면 SIGTERM을 무시해서 `afterTest`의 `docker stop`이 케이스마다
+>   10초씩 걸립니다(6개 케이스에 약 1분). `trap`으로 SIGTERM 핸들러를 달면 0.1초대로 끝납니다.
+>   자세한 원리와 실측은 [glossary/container_pid1_signals.md](../glossary/container_pid1_signals.md)
+>   를 참고하세요. `exec sleep 300`처럼 `exec`를 붙이면 핸들러가 사라져 다시 느려집니다.
+>
+> **테스트 실행 전 확인**
+> - Docker 데몬이 떠 있어야 하고 `etude-linux` 이미지가 로컬에 있어야 합니다
+>   (`docker images | grep etude-linux`).
+> - `"\$NS를 ..."` 테스트에서 `${'$'}NS`로 쓴 이유는 Kotlin 문자열 안의 `$NS`가 템플릿 변수로
+>   해석되기 때문입니다. 서비스가 치환하는 건 컨테이너에 전달되기 전의 리터럴 `$NS`입니다.
+> - 15초 타임아웃은 이 테스트에서 검증하지 않습니다. 컨트롤러 테스트는 `timeoutMs`를 바꿀 수
+>   없어 실제로 15초를 기다려야 하고, 타임아웃 처리는 HTTP 계약이 아니라 `ContainerRuntime`
+>   어댑터의 책임이기 때문입니다. 아래 7-4b에서 검증합니다.
+
+> 이 테스트가 `saveQuest()`로 저장하는 퀘스트의 `grade_cmd`는 `03_quest_set*.sql`의 실제
+> 퀘스트를 재사용하지 않고, 테스트 전용으로 `["true"]`(항상 성공) / `["false"]`(항상 실패) 같은
+> 단순 명령을 씁니다 — 실제 시드 데이터의 채점 명령은 특정 리눅스 환경 설정을 전제해 통합 테스트
+> 환경(범용 이미지)에서 그대로 통과한다는 보장이 없기 때문입니다. `$NS` 치환 자체는
+> `["sh", "-c", "test $NS = quest-{컨테이너ID 앞 8자}"]`처럼 치환 결과를 직접 확인하는 명령으로
+> 검증합니다(위 두 번째 케이스).
+
+---
+
+## 7-4b. 타임아웃 검증 — `DockerContainerRuntimeTest`
+
+채점 타임아웃은 `DockerContainerRuntime.execAndCheck`의 동작이므로 어댑터를 직접 호출하고
+`timeoutMs`를 1초로 줄여 검증합니다(기본값 15초를 기다리지 않음). `QuestGradeControllerTest`와
+같은 전제(Docker 데몬, 로컬 `etude-linux` 이미지)가 필요합니다.
+
+`src/test/kotlin/com/etude/infrastructure/docker/DockerContainerRuntimeTest.kt` (전체):
+
+```kotlin
+package com.etude.infrastructure.docker
+
+import com.etude.domain.terminal.ContainerRuntime
+import com.etude.domain.terminal.ContainerSpec
+import com.etude.support.IntegrationTest
+import io.kotest.matchers.shouldBe
+import org.springframework.beans.factory.annotation.Autowired
+
+class DockerContainerRuntimeTest(
+    @Autowired private val containerRuntime: ContainerRuntime,
+) : IntegrationTest({
+    lateinit var containerId: String
+
+    beforeTest {
+        containerId = containerRuntime.createContainer(
+            ContainerSpec(
+                image = "etude-linux",
+                binds = emptyList(),
+                command = listOf("sh", "-c", "trap 'exit 0' TERM; sleep 300 & wait"),
+                tty = false,
+                openStdin = false,
+            )
+        )
+        containerRuntime.startContainer(containerId)
+    }
+
+    afterTest {
+        containerRuntime.stopAndRemove(containerId)
+    }
+
+    "execAndCheck는" - {
+        "명령이 exit 0으로 끝나면 true를 반환한다" {
+            containerRuntime.execAndCheck(containerId, listOf("true")) shouldBe true
+        }
+
+        "명령이 0이 아닌 exit code로 끝나면 false를 반환한다" {
+            containerRuntime.execAndCheck(containerId, listOf("false")) shouldBe false
+        }
+
+        "timeoutMs 안에 끝나지 않으면 false를 반환한다" {
+            containerRuntime.execAndCheck(containerId, listOf("sleep", "30"), timeoutMs = 1_000) shouldBe false
+        }
+    }
+})
+```
+
+> `IntegrationTest`를 상속하는 이유는 `QuestGradeControllerTest`와 같은 스프링 컨텍스트를 재사용해
+> `ContainerRuntime` 빈을 주입받기 위해서입니다(프로젝트에 이미 있는 기반 클래스라 새 설정이
+> 필요 없습니다).
+>
+> 이 테스트가 실패하면(`timeoutMs` 케이스에서 `true`가 나오거나 테스트가 30초 가까이 걸리면)
+> `execAndCheck`의 `awaitCompletion(timeoutMs, ...)` 반환값과 `exitCodeLong` 처리를 먼저
+> 의심하세요. 정상이라면 이 케이스는 약 1초에 끝납니다.
 
 **수동 검증**: 브라우저로 실제 퀘스트를 열어 터미널에서 정답/오답을 각각 입력한 뒤 채점 버튼을
 눌러, `passed` 값과 `/progress` 페이지의 진행률 반영을 눈으로 확인합니다.
@@ -347,9 +710,11 @@ class QuestGradeControllerTest(
 
 ## 완료 기준
 
-- [ ] 위 인수 조건 체크리스트 전부 통과
-- [ ] `QuestGradeControllerTest`(실제 Docker 데몬 대상 통합 테스트) 통과
-- [ ] `./gradlew test` 전체 클래스를 한 번에 실행해도 Step 1~7 테스트 모두 통과
+- [x] 위 인수 조건 체크리스트 전부 통과
+- [ ] `QuestServiceTest`의 채점 케이스(7-1b) 통과
+- [x] `QuestGradeControllerTest`(실제 Docker 데몬 대상 통합 테스트) 통과
+- [x] `DockerContainerRuntimeTest`(성공/실패/타임아웃) 통과
+- [x] `./gradlew test` 전체 클래스를 한 번에 실행해도 Step 1~7 테스트 모두 통과
 - [ ] 수동 검증으로 브라우저에서 채점 결과와 진행률 반영이 기존 Node.js 백엔드와 동일하게
       동작함을 확인
 - [ ] `frontend/src/api/quest.ts`의 `gradeQuest()` 응답 타입(`{ passed: boolean }`)이 실제
