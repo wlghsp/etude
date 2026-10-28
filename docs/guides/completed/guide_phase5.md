@@ -176,7 +176,7 @@ docker build -f docker/Dockerfile.ssh -t etude-ssh .
 sandbox_type: `docker` / 이미지: `docker:dind` | 퀘스트: 8개
 
 Docker-in-Docker 환경. `waitForDocker`가 dockerd 소켓(`/var/run/docker.sock`)이 생길 때까지 대기 후 shell exec으로 연결.
-구현 상세는 `docs/guides/guide_phase5b_docker_sandbox.md` 참고.
+구현 상세는 `docs/guides/completed/guide_phase5b_docker_sandbox.md` 참고.
 
 | order | 제목 | setup_cmd | grade_cmd |
 |-------|------|-----------|-----------|
@@ -212,4 +212,4 @@ AI가 지문 + 힌트 + 풀이 + setup_cmd + grade_cmd를 포함한 INSERT 쿼�
 ### 컨테이너 고아 처리
 
 서버 재시작 또는 브라우저 강제 종료 시 컨테이너가 stop/remove 되지 않고 남는다.
-구현 방법: `docs/guides/guide_phase5c_container_cleanup.md` 참고.
+구현 방법: `docs/guides/completed/guide_phase5c_container_cleanup.md` 참고.

@@ -1,6 +1,6 @@
 # 트러블슈팅 기록 — Phase 8 최초 배포 (2026-07-02)
 
-Phase 8(OCI 서버 배포)을 처음 실제로 진행하며 겪은 문제들을 순서대로 정리한다. 각 문제는 "가이드대로 했는데 안 됨" → "원인 확인" → "해결"의 흐름이었다. 세부 기술 로그는 [session-log/2026-07-02.md](../session-log/2026-07-02.md) 참고, 실제 적용된 최종 절차는 [guide_phase8_deploy.md](../guides/guide_phase8_deploy.md)에 반영되어 있다.
+Phase 8(OCI 서버 배포)을 처음 실제로 진행하며 겪은 문제들을 순서대로 정리한다. 각 문제는 "가이드대로 했는데 안 됨" → "원인 확인" → "해결"의 흐름이었다. 세부 기술 로그는 [session-log/2026-07-02.md](../session-log/2026-07-02.md) 참고, 실제 적용된 최종 절차는 [guide_phase8_deploy.md](../guides/completed/guide_phase8_deploy.md)에 반영되어 있다.
 
 ---
 

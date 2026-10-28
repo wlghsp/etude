@@ -1,6 +1,6 @@
 # Phase 8b 구현 가이드 — CI/CD (GitHub Actions)
 
-명세: [specs/spec_phase8b_cicd.md](../specs/spec_phase8b_cicd.md)
+명세: [specs/spec_phase8b_cicd.md](../../specs/spec_phase8b_cicd.md)
 
 전제: [Phase 8 서버 배포](guide_phase8_deploy.md)가 완료되어 서버가 이미 떠 있는 상태.
 

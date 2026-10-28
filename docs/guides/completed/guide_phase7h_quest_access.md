@@ -1,6 +1,6 @@
 # Phase 7h 구현 가이드 — 퀘스트 세트 접근 제어
 
-명세: [specs/spec_phase7_quest_access.md](../specs/spec_phase7_quest_access.md)
+명세: [specs/spec_phase7_quest_access.md](../../specs/spec_phase7_quest_access.md)
 
 이 문서를 보고 `spec_phase7_quest_access.md`를 구현합니다.
 

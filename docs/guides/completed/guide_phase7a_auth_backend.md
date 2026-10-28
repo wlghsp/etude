@@ -1,6 +1,6 @@
 # Phase 7a 구현 가이드 — 백엔드 인증
 
-명세: [specs/spec_phase7_auth.md](../specs/spec_phase7_auth.md)
+명세: [specs/spec_phase7_auth.md](../../specs/spec_phase7_auth.md)
 
 이 문서를 보고 `spec_phase7_auth.md`의 백엔드 부분을 구현합니다.
 

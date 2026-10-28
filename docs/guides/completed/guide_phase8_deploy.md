@@ -1,6 +1,6 @@
 # Phase 8 구현 가이드 — 서버 배포 (OCI Free Tier)
 
-명세: [specs/spec_phase8_deploy.md](../specs/spec_phase8_deploy.md)
+명세: [specs/spec_phase8_deploy.md](../../specs/spec_phase8_deploy.md)
 
 ---
 
@@ -363,7 +363,7 @@ ssh -i ~/.ssh/etude_oci ubuntu@{공인IP}
 
 ## Step 4. k3d 클러스터 생성 + kubeconfig 구성
 
-> 이 클러스터(`etude`, 노드명 `k3d-etude-server-0`)는 [Phase 10](guide_phase10_klid_cmp.md)에서 vcluster를 얹는 호스트 클러스터로 그대로 재사용된다. 별도 클러스터를 추가로 만들 필요 없음.
+> 이 클러스터(`etude`, 노드명 `k3d-etude-server-0`)는 [Phase 10](../guide_phase10_klid_cmp.md)에서 vcluster를 얹는 호스트 클러스터로 그대로 재사용된다. 별도 클러스터를 추가로 만들 필요 없음.
 
 서버에 SSH 접속 후 실행:
 
@@ -455,7 +455,7 @@ EOF
 >
 > `KUBECONFIG_PATH`는 **호스트 파일시스템 기준 경로**여야 한다 (`/root/...`처럼 컨테이너 내부 경로가 아니다). `backend/src/services/sandbox.ts`가 이 값을 읽어 k8s 실습 컨테이너를 만들 때 바인드 마운트 소스로 그대로 쓰는데, `etude-backend`는 호스트의 `/var/run/docker.sock`을 직접 제어하므로(dind 아님) dockerd가 이 경로를 호스트 기준으로 해석한다. 컨테이너 내부 경로를 넣으면 호스트에 그 경로가 없어 Docker가 자동으로 빈 디렉토리를 만들어버리고, k8s 실습 컨테이너 안에서 `kubectl`이 `config: is a directory` 에러를 낸다.
 >
-> [Phase 10](guide_phase10_klid_cmp.md)(vcluster pool) 적용 시 pool 크기 등 추가 환경변수가 필요할 수 있다 — 해당 가이드 구현 시점에 이 파일에 반영한다.
+> [Phase 10](../guide_phase10_klid_cmp.md)(vcluster pool) 적용 시 pool 크기 등 추가 환경변수가 필요할 수 있다 — 해당 가이드 구현 시점에 이 파일에 반영한다.
 
 ### 6-4. 프로젝트 루트 `.env` 작성
 
@@ -638,7 +638,7 @@ open http://{공인IP}
 
 ### 검증 순서
 
-배포 직후 반복 확인용 체크리스트는 [docs/ops/guide_post_deploy_checklist.md](../ops/guide_post_deploy_checklist.md) 참고.
+배포 직후 반복 확인용 체크리스트는 [docs/ops/guide_post_deploy_checklist.md](../../ops/guide_post_deploy_checklist.md) 참고.
 
 1. `docker images | grep etude`로 `etude-k8s`, `etude-ssh`, `etude-linux`가 모두 빌드되어 있는지 확인 (Step 5 누락 여부)
 2. 세트 선택 화면 로드 확인
@@ -650,7 +650,7 @@ open http://{공인IP}
 
 ## 재배포 절차 + 운영 명령어
 
-최초 배포 이후 반복되는 재배포/운영 명령어는 [docs/ops/guide_server_operations.md](../ops/guide_server_operations.md)에 정리되어 있다.
+최초 배포 이후 반복되는 재배포/운영 명령어는 [docs/ops/guide_server_operations.md](../../ops/guide_server_operations.md)에 정리되어 있다.
 
 ---
 

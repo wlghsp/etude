@@ -1,6 +1,6 @@
 # Phase 7c 구현 가이드 — 진행 추적 + 대시보드
 
-명세: [specs/spec_phase7_auth.md](../specs/spec_phase7_auth.md)  
+명세: [specs/spec_phase7_auth.md](../../specs/spec_phase7_auth.md)  
 선행: [guide_phase7b_auth_frontend.md](guide_phase7b_auth_frontend.md) 완료 후 진행
 
 Stitch 참고 화면:

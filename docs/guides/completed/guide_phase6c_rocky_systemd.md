@@ -1,6 +1,6 @@
 # Phase 6c 구현 가이드 — Rocky Linux systemd sandbox 타입 추가
 
-명세: [specs/spec_phase6c_rocky_systemd.md](../specs/spec_phase6c_rocky_systemd.md)
+명세: [specs/spec_phase6c_rocky_systemd.md](../../specs/spec_phase6c_rocky_systemd.md)
 
 전제: [Phase 6](guide_phase6.md)(k8s 기초)가 구현되어 있는 상태. `terminal.ts`의 `handleDockerTerminal`(DinD, privileged 컨테이너 처리)을 그대로 참고한다.
 

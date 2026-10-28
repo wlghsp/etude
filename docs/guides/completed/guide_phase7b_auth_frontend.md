@@ -1,6 +1,6 @@
 # Phase 7b 구현 가이드 — 프론트 인증 + 라우팅
 
-명세: [specs/spec_phase7_auth.md](../specs/spec_phase7_auth.md)  
+명세: [specs/spec_phase7_auth.md](../../specs/spec_phase7_auth.md)  
 선행: [guide_phase7a_auth_backend.md](guide_phase7a_auth_backend.md) 완료 후 진행
 
 ---

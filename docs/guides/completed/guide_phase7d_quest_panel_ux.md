@@ -1,6 +1,6 @@
 # Phase 7d 구현 가이드 — 실습 화면 UX 개선
 
-명세: [specs/spec_phase7_auth.md](../specs/spec_phase7_auth.md)  
+명세: [specs/spec_phase7_auth.md](../../specs/spec_phase7_auth.md)  
 선행: [guide_phase7c_progress_tracking.md](guide_phase7c_progress_tracking.md) 완료 후 진행
 
 Stitch 참고 화면:

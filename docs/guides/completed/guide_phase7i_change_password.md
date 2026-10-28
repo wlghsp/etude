@@ -1,6 +1,6 @@
 # Phase 7i 구현 가이드 — 본인 비밀번호 변경
 
-명세: [specs/spec_phase7i_change_password.md](../specs/spec_phase7i_change_password.md)
+명세: [specs/spec_phase7i_change_password.md](../../specs/spec_phase7i_change_password.md)
 
 전제: Phase 7(인증)이 구현되어 있는 상태. `authMiddleware`, `resetPassword()`(관리자용) 등 기존 코드를 재사용/참고한다.
 
@@ -214,11 +214,11 @@ export function ChangePasswordModal({ open, onClose }: Props) {
 
 ## Step 5. `SideNav.tsx`에 진입점 추가
 
-`SideNav`는 모달을 직접 열고 닫는 state 없이 부모로부터 콜백만 받는 순수 표시 컴포넌트다([SideNav.tsx](../../frontend/src/components/SideNav.tsx) 참고 — `onHome`, `onLogout` 같은 콜백 패턴). 모달의 열림 상태는 `SideNav`를 쓰는 부모(`App.tsx`)가 들고, `SideNav`에는 "비밀번호 변경" 버튼과 그걸 눌렀을 때 부를 콜백만 추가한다.
+`SideNav`는 모달을 직접 열고 닫는 state 없이 부모로부터 콜백만 받는 순수 표시 컴포넌트다([SideNav.tsx](../../../frontend/src/components/SideNav.tsx) 참고 — `onHome`, `onLogout` 같은 콜백 패턴). 모달의 열림 상태는 `SideNav`를 쓰는 부모(`App.tsx`)가 들고, `SideNav`에는 "비밀번호 변경" 버튼과 그걸 눌렀을 때 부를 콜백만 추가한다.
 
 ### `SideNav.tsx` — 버튼 추가
 
-유저 이름/이메일 표시 영역([SideNav.tsx:44-47](../../frontend/src/components/SideNav.tsx#L44-L47)) 아래, 로그아웃 버튼 위에 추가한다.
+유저 이름/이메일 표시 영역([SideNav.tsx:44-47](../../../frontend/src/components/SideNav.tsx#L44-L47)) 아래, 로그아웃 버튼 위에 추가한다.
 
 ```tsx
 interface Props {
@@ -269,7 +269,7 @@ export function SetSelect({ /* ...기존 */ onChangePassword }: Props) {
 
 ### `App.tsx` — 모달 state + 4개 페이지에 배선
 
-`App.tsx`가 `handleLogout`을 4개 페이지 모두에 내려주는 최상위이므로([App.tsx:67,71,77-81,98-103](../../frontend/src/App.tsx) 참고), `onChangePassword`도 같은 자리에서 배선한다.
+`App.tsx`가 `handleLogout`을 4개 페이지 모두에 내려주는 최상위이므로([App.tsx:67,71,77-81,98-103](../../../frontend/src/App.tsx) 참고), `onChangePassword`도 같은 자리에서 배선한다.
 
 ```tsx
 import { ChangePasswordModal } from './components/ChangePasswordModal'

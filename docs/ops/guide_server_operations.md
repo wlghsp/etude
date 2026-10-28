@@ -1,6 +1,6 @@
 # 운영 가이드 — 서버 운영 명령어 모음
 
-배포된 OCI 서버(`~/etude`)에서 반복적으로 쓰는 명령어를 정리한다. 배포 자체는 [guide_phase8_deploy.md](../guides/guide_phase8_deploy.md), CI/CD는 [guide_phase8b_cicd.md](../guides/guide_phase8b_cicd.md) 참고.
+배포된 OCI 서버(`~/etude`)에서 반복적으로 쓰는 명령어를 정리한다. 배포 자체는 [guide_phase8_deploy.md](../guides/completed/guide_phase8_deploy.md), CI/CD는 [guide_phase8b_cicd.md](../guides/completed/guide_phase8b_cicd.md) 참고.
 
 모든 `docker compose` 명령은 `~/etude`(프로젝트 루트)에서 실행한다. `--project-directory .`는 `deploy/` 안의 compose 파일 내부 상대경로(`.env.prod` 등)가 프로젝트 루트 기준으로 해석되도록 하는 데 필수다.
 
@@ -39,7 +39,7 @@ docker compose -f deploy/docker-compose.prod.yml --project-directory . logs --ta
 
 ### 방법 1 — GitHub Actions CI/CD (권장)
 
-로컬 터미널에서 `gh` CLI로 브라우저 없이 바로 트리거할 수 있다 ([guide_phase8b_cicd.md](../guides/guide_phase8b_cicd.md) 참고).
+로컬 터미널에서 `gh` CLI로 브라우저 없이 바로 트리거할 수 있다 ([guide_phase8b_cicd.md](../guides/completed/guide_phase8b_cicd.md) 참고).
 
 ```bash
 gh workflow run deploy.yml

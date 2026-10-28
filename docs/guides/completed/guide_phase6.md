@@ -1,6 +1,6 @@
 # Phase 6 구현 가이드 — k8s 기초 실습 세트
 
-명세: [specs/spec_phase6_k8s.md](../specs/spec_phase6_k8s.md)
+명세: [specs/spec_phase6_k8s.md](../../specs/spec_phase6_k8s.md)
 
 ---
 

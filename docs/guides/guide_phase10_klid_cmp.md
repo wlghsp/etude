@@ -2,7 +2,7 @@
 
 명세: [specs/spec_phase10_klid_cmp.md](../specs/spec_phase10_klid_cmp.md)
 
-전제: [Phase 6](guide_phase6.md)(k8s 기초, `k8s` sandbox 타입)이 이미 구현되어 있고 로컬/서버에 k3d 클러스터(`etude`)가 떠 있는 상태.
+전제: [Phase 6](completed/guide_phase6.md)(k8s 기초, `k8s` sandbox 타입)이 이미 구현되어 있고 로컬/서버에 k3d 클러스터(`etude`)가 떠 있는 상태.
 
 ---
 

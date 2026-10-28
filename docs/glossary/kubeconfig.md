@@ -94,7 +94,7 @@ export async function getSandboxConfig(sandboxType: string) {
 
 ## 서버에서는 왜 `config-etude`라는 별도 파일을 쓰는가
 
-[guide_phase8_deploy.md](../guides/guide_phase8_deploy.md) Step 4를 보면, k3d 클러스터를 만든 뒤 표준 kubeconfig(`~/.kube/config`)를 그대로 쓰지 않고 별도 파일을 하나 더 만든다.
+[guide_phase8_deploy.md](../guides/completed/guide_phase8_deploy.md) Step 4를 보면, k3d 클러스터를 만든 뒤 표준 kubeconfig(`~/.kube/config`)를 그대로 쓰지 않고 별도 파일을 하나 더 만든다.
 
 ```bash
 k3d cluster create etude --api-port 127.0.0.1:6443
@@ -129,6 +129,6 @@ Etude에는 kubeconfig를 다루는 방식이 다른 두 sandbox 타입이 있�
 ## 관련 문서
 
 - [sandbox_table.md](sandbox_table.md) — `sandbox` 테이블 전체 구조
-- [guide_phase6.md](../guides/guide_phase6.md) — `k8s` 타입 최초 구현
-- [guide_phase8_deploy.md](../guides/guide_phase8_deploy.md) Step 4 — 서버에서 `config-etude` 만드는 절차
+- [guide_phase6.md](../guides/completed/guide_phase6.md) — `k8s` 타입 최초 구현
+- [guide_phase8_deploy.md](../guides/completed/guide_phase8_deploy.md) Step 4 — 서버에서 `config-etude` 만드는 절차
 - [guide_phase10_klid_cmp.md](../guides/guide_phase10_klid_cmp.md) — vcluster별 kubeconfig를 세션마다 만드는 방식

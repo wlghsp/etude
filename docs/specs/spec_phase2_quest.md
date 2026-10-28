@@ -89,5 +89,5 @@
 
 ## 참고
 
-- 구현 가이드: `docs/guides/guide_phase2.md`
+- 구현 가이드: `docs/guides/completed/guide_phase2.md`
 - 아키텍처: `docs/etude_dev_plan.md`

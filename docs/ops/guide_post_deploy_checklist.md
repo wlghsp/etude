@@ -1,6 +1,6 @@
 # 배포 직후 체크리스트
 
-서버를 새로 세팅하거나(`setup.sh` 재실행), `docker compose up -d --build`로 backend를 재기동한 뒤 매번 확인한다. 절차 상세는 [guide_phase8_deploy.md](../guides/guide_phase8_deploy.md) 참고 — 여기는 "뭘 놓쳤는지"만 빠르게 훑는 용도.
+서버를 새로 세팅하거나(`setup.sh` 재실행), `docker compose up -d --build`로 backend를 재기동한 뒤 매번 확인한다. 절차 상세는 [guide_phase8_deploy.md](../guides/completed/guide_phase8_deploy.md) 참고 — 여기는 "뭘 놓쳤는지"만 빠르게 훑는 용도.
 
 이 체크리스트가 생긴 이유: 이미지 빌드 누락([troubleshooting_2026-07-03](troubleshooting_2026-07-03_missing_sandbox_images.md))과 환경변수 미반영([troubleshooting_2026-07-24](troubleshooting_2026-07-24_k8s_quest_env_prep.md))이 각각 별개 시점에 재발했다. 둘 다 "배포는 끝났다고 생각했는데 특정 퀘스트 타입만 안 되더라" 패턴.
 
@@ -52,7 +52,7 @@ cd ~/etude
 docker compose -f deploy/docker-compose.prod.yml --project-directory . up -d --build backend
 ```
 
-`KUBECONFIG_PATH`는 반드시 **호스트 기준 경로**(`/home/ubuntu/.kube/config-etude`)여야 한다 — `/root/...`처럼 컨테이너 내부 경로를 넣으면 k8s 퀘스트가 "환경 준비 중"에서 멈춘다. 이유는 [guide_phase8_deploy.md Step 6-3](../guides/guide_phase8_deploy.md)에 설명되어 있다.
+`KUBECONFIG_PATH`는 반드시 **호스트 기준 경로**(`/home/ubuntu/.kube/config-etude`)여야 한다 — `/root/...`처럼 컨테이너 내부 경로를 넣으면 k8s 퀘스트가 "환경 준비 중"에서 멈춘다. 이유는 [guide_phase8_deploy.md Step 6-3](../guides/completed/guide_phase8_deploy.md)에 설명되어 있다.
 
 ---
 

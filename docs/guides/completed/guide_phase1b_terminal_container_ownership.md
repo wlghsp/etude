@@ -1,6 +1,6 @@
 # Phase 1b 구현 가이드 — containerId 관리 주체를 Terminal로 이전
 
-명세: [specs/spec_phase1b_terminal_container_ownership.md](../specs/spec_phase1b_terminal_container_ownership.md)
+명세: [specs/spec_phase1b_terminal_container_ownership.md](../../specs/spec_phase1b_terminal_container_ownership.md)
 
 전제: [Phase 1](guide_phase1.md)(터미널 샌드박스)이 구현되어 있는 상태. 임시방편 커밋(`f3d44e8`, `App.tsx`의 `onNext`/`onPrev`에 `containerId` 리셋)을 제거하고 이 가이드의 구조로 대체한다.
 
@@ -18,7 +18,7 @@ Step 3. 검증
 
 ## Step 1. `Terminal.tsx` — 재사용 판단을 컴포넌트 내부로 캡슐화
 
-현재 [Terminal.tsx:26](../../frontend/src/components/Terminal.tsx#L26)은 `containerId` prop이 있으면 무조건 URL에 실어 재접속을 시도한다:
+현재 [Terminal.tsx:26](../../../frontend/src/components/Terminal.tsx#L26)은 `containerId` prop이 있으면 무조건 URL에 실어 재접속을 시도한다:
 
 ```typescript
 if (containerId) params.set('containerId', containerId)  // 추가
@@ -40,7 +40,7 @@ if (sandboxType === 'docker-persistent' && containerId) {
 
 ## Step 2. `App.tsx` — 임시 리셋 코드 제거
 
-[App.tsx](../../frontend/src/App.tsx)의 `onNext`/`onPrev`에 있는 아래 임시 코드를 제거하고 원래 형태로 되돌린다.
+[App.tsx](../../../frontend/src/App.tsx)의 `onNext`/`onPrev`에 있는 아래 임시 코드를 제거하고 원래 형태로 되돌린다.
 
 ```typescript
 // 제거 대상

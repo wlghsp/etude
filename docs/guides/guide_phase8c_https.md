@@ -2,7 +2,7 @@
 
 명세: [specs/spec_phase8c_https.md](../specs/spec_phase8c_https.md)
 
-전제: [Phase 8 서버 배포](guide_phase8_deploy.md)가 완료되어 `http://{공인IP}`로 접속 가능한 상태.
+전제: [Phase 8 서버 배포](completed/guide_phase8_deploy.md)가 완료되어 `http://{공인IP}`로 접속 가능한 상태.
 
 ---
 

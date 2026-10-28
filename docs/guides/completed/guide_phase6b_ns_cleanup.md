@@ -1,8 +1,8 @@
 # Phase 6b 구현 가이드 — k8s namespace 고아 정리
 
-명세: [specs/spec_phase6b_ns_cleanup.md](../specs/spec_phase6b_ns_cleanup.md)
+명세: [specs/spec_phase6b_ns_cleanup.md](../../specs/spec_phase6b_ns_cleanup.md)
 
-전제: [Phase 6](guide_phase6.md)(k8s 기초 실습 세트)와 [Phase 10](guide_phase10_klid_cmp.md)(vcluster pool)이 구현되어 있는 상태. `cleanupOrphanVclusters()`의 구조를 그대로 참고한다.
+전제: [Phase 6](guide_phase6.md)(k8s 기초 실습 세트)와 [Phase 10](../guide_phase10_klid_cmp.md)(vcluster pool)이 구현되어 있는 상태. `cleanupOrphanVclusters()`의 구조를 그대로 참고한다.
 
 ---
 
@@ -20,7 +20,7 @@ Step 3. 로컬에서 강제 종료로 재현 + 정리 확인
 
 `docker.ts`(Docker 컨테이너 정리)와 `vcluster-pool.ts`(vcluster 정리)처럼, "이 리소스 종류를 다루는 파일"이 리소스별로 나뉘어 있다. `terminal.ts`는 WebSocket 연결 처리가 본연의 역할이라, 서버 기동 시 1회 실행되는 정리 로직을 거기 얹으면 역할이 섞인다 — `plugins/`에 전담 파일을 새로 만든다.
 
-`k8s` 타입이 만드는 namespace 이름 규칙은 `quest-{containerId 앞 8자리}` ([terminal.ts:174](../../backend/src/services/terminal.ts#L174)의 `handleK8sTerminal` 참고). 이 접두사로 걸러서 지운다.
+`k8s` 타입이 만드는 namespace 이름 규칙은 `quest-{containerId 앞 8자리}` ([terminal.ts:174](../../../backend/src/services/terminal.ts#L174)의 `handleK8sTerminal` 참고). 이 접두사로 걸러서 지운다.
 
 `vcluster-pool.ts`의 `cleanupOrphanVclusters()`와 완전히 같은 구조다 — `execAsync`로 `kubectl`을 직접 호출하는 점도 동일.
 
@@ -66,7 +66,7 @@ await cleanupOrphanQuestNamespaces()
 await initPool()
 ```
 
-`kubectl`이 backend 컨테이너 안에서 실행되는 컨텍스트는 [Phase 10](guide_phase10_klid_cmp.md) Step 1에서 이미 Dockerfile에 설치해뒀으므로 별도 설치는 불필요하다 — `KUBECONFIG` 환경변수도 `docker-compose.prod.yml`에 이미 설정되어 있어 `k8s`/`k8s-isolated` 양쪽에서 공유된다.
+`kubectl`이 backend 컨테이너 안에서 실행되는 컨텍스트는 [Phase 10](../guide_phase10_klid_cmp.md) Step 1에서 이미 Dockerfile에 설치해뒀으므로 별도 설치는 불필요하다 — `KUBECONFIG` 환경변수도 `docker-compose.prod.yml`에 이미 설정되어 있어 `k8s`/`k8s-isolated` 양쪽에서 공유된다.
 
 ---
 

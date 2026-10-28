@@ -1,6 +1,6 @@
 # 구현 가이드 — 인앱 피드백
 
-명세: [specs/spec_phase9_feedback.md](../specs/spec_phase9_feedback.md)
+명세: [specs/spec_phase9_feedback.md](../../specs/spec_phase9_feedback.md)
 
 선행: [guide_phase7g_route_split.md](guide_phase7g_route_split.md) — 백엔드 라우트가 `routes/` 디렉터리로 분리된 구조를 전제로 한다.
 
