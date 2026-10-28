@@ -1,6 +1,6 @@
 # k8s PersistentVolume 정리 명세 — 세션이 남기는 클러스터 범위 리소스 제거
 
-> 상태: **구현 완료 (Codex 리뷰 대기)**. [채점 검증 러너 명세](spec_grading_verification.md)의 V4 검증 중 발견한 앱 쪽 결함이다.
+> 상태: **구현 완료**. 단, 세션 종료 시 PV 정리 부분은 [spec_k8s_session_permissions.md](spec_k8s_session_permissions.md)로 **대체됐다**: 학습자가 더 이상 PV를 만들 수 없고(제한 권한), 세트 13은 PVC만 쓰며 동적 PV는 네임스페이스와 함께 자동 삭제된다. 기동 시 `quest-*` 참조 PV 정리(레거시 누수 청소)는 그대로 유효하다. [채점 검증 러너 명세](spec_grading_verification.md)의 V4 검증 중 발견한 앱 쪽 결함이다.
 
 ## 목표
 
