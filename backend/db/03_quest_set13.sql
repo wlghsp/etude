@@ -76,7 +76,7 @@ EOF',
   (13, 5, 'Service 생성하고 port-forward로 접근하기',
    '$NS 네임스페이스에 nginx Pod와 Service를 생성한 뒤, kubectl port-forward 로 로컬 9090 포트를 Service 80 포트에 연결하고 curl로 응답을 확인해서 /tmp/pf_result.txt 에 저장하세요.',
    'kubectl port-forward svc/<서비스명> <로컬포트>:<서비스포트> -n <namespace> & 로 백그라운드 실행 후 curl localhost:<로컬포트> 로 확인합니다.',
-   'kubectl run pf-nginx --image=nginx -n $NS && kubectl expose pod pf-nginx --port=80 -n $NS && sleep 3 && kubectl port-forward svc/pf-nginx 9090:80 -n $NS & sleep 2 && curl -s localhost:9090 > /tmp/pf_result.txt',
+   'kubectl run pf-nginx --image=nginx -n $NS && kubectl expose pod pf-nginx --port=80 -n $NS && kubectl wait --for=condition=ready pod/pf-nginx -n $NS --timeout=60s && (kubectl port-forward svc/pf-nginx 9090:80 -n $NS > /dev/null 2>&1 &) && sleep 3 && curl -s localhost:9090 > /tmp/pf_result.txt',
    NULL,
    '["sh", "-c", "grep -qiE \\\"nginx|html\\\" /tmp/pf_result.txt"]'),
 

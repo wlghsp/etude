@@ -1,0 +1,13 @@
+{
+  "setId": 14,
+  "answers": {
+    "1": "helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo list",
+    "2": "helm repo update > /tmp/helm_update.txt 2>&1",
+    "3": "helm search repo nginx > /tmp/helm_search.txt",
+    "4": "helm install my-nginx bitnami/nginx -n $NS",
+    "5": "helm list -n $NS > /tmp/helm_list.txt",
+    "6": "helm install custom-nginx bitnami/nginx --set replicaCount=2 -n $NS",
+    "7": "helm upgrade my-nginx bitnami/nginx --set replicaCount=3 -n $NS",
+    "8": "helm uninstall my-nginx -n $NS"
+  }
+}

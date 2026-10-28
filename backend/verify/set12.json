@@ -1,0 +1,13 @@
+{
+  "setId": 12,
+  "answers": {
+    "1": "kubectl create configmap app-config --from-literal=APP_ENV=production --from-literal=APP_PORT=8080 -n $NS",
+    "2": "kubectl get configmap app-config -n $NS -o yaml > /tmp/cm_result.txt",
+    "3": "kubectl apply -f - <<EOF\napiVersion: v1\nkind: Pod\nmetadata:\n  name: cm-pod\n  namespace: $NS\nspec:\n  containers:\n  - name: nginx\n    image: nginx\n    envFrom:\n    - configMapRef:\n        name: app-config\nEOF",
+    "4": "kubectl apply -f - <<EOF\napiVersion: v1\nkind: Pod\nmetadata:\n  name: cm-vol-pod\n  namespace: $NS\nspec:\n  containers:\n  - name: nginx\n    image: nginx\n    volumeMounts:\n    - name: config-vol\n      mountPath: /etc/config\n  volumes:\n  - name: config-vol\n    configMap:\n      name: app-config\nEOF",
+    "5": "kubectl create secret generic db-secret --from-literal=DB_USER=admin --from-literal=DB_PASSWORD=s3cur3 -n $NS",
+    "6": "kubectl get secret db-secret -n $NS -o jsonpath='{.data.DB_USER}' | base64 -d > /tmp/secret_result.txt",
+    "7": "kubectl apply -f - <<EOF\napiVersion: v1\nkind: Pod\nmetadata:\n  name: secret-pod\n  namespace: $NS\nspec:\n  containers:\n  - name: nginx\n    image: nginx\n    env:\n    - name: DB_USER\n      valueFrom:\n        secretKeyRef:\n          name: db-secret\n          key: DB_USER\n    - name: DB_PASSWORD\n      valueFrom:\n        secretKeyRef:\n          name: db-secret\n          key: DB_PASSWORD\nEOF",
+    "8": "kubectl apply -f - <<EOF\napiVersion: v1\nkind: Pod\nmetadata:\n  name: full-pod\n  namespace: $NS\nspec:\n  containers:\n  - name: nginx\n    image: nginx\n    envFrom:\n    - configMapRef:\n        name: app-config\n    - secretRef:\n        name: db-secret\nEOF"
+  }
+}

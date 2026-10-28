@@ -1,0 +1,19 @@
+{
+  "setId": 6,
+  "answers": {
+    "1": "kubectl get nodes > /tmp/nodes_result.txt",
+    "2": "kubectl get namespaces > /tmp/ns_result.txt",
+    "3": "kubectl run nginx --image=nginx -n $NS",
+    "4": "kubectl get pods -n $NS > /tmp/pods_result.txt",
+    "5": "kubectl logs nginx -n $NS > /tmp/log_result.txt 2>&1",
+    "6": "kubectl delete pod nginx -n $NS",
+    "7": "kubectl create deployment my-app --image=nginx -n $NS",
+    "8": "kubectl scale deployment my-app --replicas=3 -n $NS",
+    "9": "kubectl expose deployment my-app --port=80 -n $NS",
+    "10": "kubectl get all -n $NS > /tmp/all_result.txt",
+    "11": "cat > /tmp/pod.yaml << EOF\napiVersion: v1\nkind: Pod\nmetadata:\n  name: yaml-pod\n  namespace: $NS\nspec:\n  containers:\n  - name: nginx\n    image: nginx\nEOF\nkubectl apply -f /tmp/pod.yaml",
+    "12": "kubectl exec yaml-pod -n $NS -- nginx -v > /tmp/exec_result.txt 2>&1",
+    "13": "kubectl set image deployment/my-app nginx=nginx:alpine -n $NS",
+    "14": "kubectl rollout undo deployment/my-app -n $NS"
+  }
+}

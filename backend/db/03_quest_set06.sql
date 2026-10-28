@@ -23,11 +23,11 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    '["sh", "-c", "kubectl get pod nginx -n $NS 2>/dev/null | grep -E ''Running|ContainerCreating''"]'),
 
   (6,  4, 'Pod 목록 확인하기',
-   '$NS 네임스페이스의 Pod 목록을 확인하세요.',
-   'kubectl get pods -n <namespace>',
-   'kubectl get pods -n $NS',
+   '$NS 네임스페이스의 Pod 목록을 확인하고, 결과를 /tmp/pods_result.txt 에 저장하세요.',
+   'kubectl get pods -n <namespace> 의 결과를 리다이렉션(>)으로 저장하세요.',
+   'kubectl get pods -n $NS > /tmp/pods_result.txt',
    '["sh", "-c", "kubectl run nginx --image=nginx -n $NS 2>/dev/null; true"]',
-   '["sh", "-c", "kubectl get pods -n $NS | grep nginx"]'),
+   '["sh", "-c", "grep -q nginx /tmp/pods_result.txt"]'),
 
   (6,  5, 'Pod 로그 확인하기',
    '$NS 네임스페이스의 nginx Pod 로그를 확인하고, 결과를 /tmp/log_result.txt 에 저장하세요.',
@@ -98,8 +98,8 @@ kubectl apply -f /tmp/pod.yaml',
 
   (6, 13, 'Deployment 롤링 업데이트하기',
    '$NS 네임스페이스의 my-app Deployment 이미지를 nginx:alpine 으로 업데이트하세요.',
-   'kubectl set image deployment/<name> <container명>=<새이미지> -n <namespace> 를 사용합니다.',
-   'kubectl set image deployment/my-app my-app=nginx:alpine -n $NS',
+   'kubectl set image deployment/<name> <container명>=<새이미지> -n <namespace> 를 사용합니다. kubectl create deployment 로 만든 컨테이너의 이름은 이미지 이름(nginx)입니다.',
+   'kubectl set image deployment/my-app nginx=nginx:alpine -n $NS',
    '["sh", "-c", "kubectl create deployment my-app --image=nginx -n $NS 2>/dev/null; true"]',
    '["sh", "-c", "kubectl get deployment my-app -n $NS -o jsonpath=''{.spec.template.spec.containers[0].image}'' | grep -q alpine"]'),
 
@@ -107,5 +107,5 @@ kubectl apply -f /tmp/pod.yaml',
    '$NS 네임스페이스의 my-app Deployment를 이전 버전으로 롤백하세요.',
    'kubectl rollout undo deployment/<name> -n <namespace> 를 사용합니다.',
    'kubectl rollout undo deployment/my-app -n $NS',
-   '["sh", "-c", "kubectl create deployment my-app --image=nginx -n $NS 2>/dev/null; kubectl set image deployment/my-app my-app=nginx:alpine -n $NS 2>/dev/null; true"]',
-   '["sh", "-c", "kubectl rollout history deployment/my-app -n $NS | grep -qE ''2|3''"]');
+   '["sh", "-c", "kubectl create deployment my-app --image=nginx -n $NS 2>/dev/null; kubectl set image deployment/my-app nginx=nginx:alpine -n $NS 2>/dev/null; true"]',
+   '["sh", "-c", "! kubectl get deployment my-app -n $NS -o jsonpath=''{.spec.template.spec.containers[0].image}'' | grep -q alpine"]');

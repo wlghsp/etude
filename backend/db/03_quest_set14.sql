@@ -9,11 +9,11 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    '["sh", "-c", "helm repo list | grep -q bitnami"]'),
 
   (14, 2, 'Helm repo 업데이트하기',
-   'Helm 저장소 인덱스를 최신 상태로 갱신하세요.',
-   'helm repo update 를 실행합니다.',
-   'helm repo update',
+   'Helm 저장소 인덱스를 최신 상태로 갱신하고, 출력 결과를 /tmp/helm_update.txt 에 저장하세요.',
+   'helm repo update 를 실행하고 리다이렉션(> 파일 2>&1)으로 저장합니다.',
+   'helm repo update > /tmp/helm_update.txt 2>&1',
    '["sh", "-c", "helm repo add bitnami https://charts.bitnami.com/bitnami 2>/dev/null; true"]',
-   '["sh", "-c", "helm repo update 2>&1 | grep -qiE \\\"update complete|Successfully\\\""]'),
+   '["sh", "-c", "grep -qi ''update complete'' /tmp/helm_update.txt"]'),
 
   (14, 3, '차트 검색하기',
    'Bitnami 저장소에서 nginx 차트를 검색하고 결과를 /tmp/helm_search.txt 에 저장하세요.',
@@ -48,7 +48,7 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
    'helm upgrade <릴리스명> <차트> --set <키>=<값> -n <namespace> 로 설정을 변경합니다.',
    'helm upgrade my-nginx bitnami/nginx --set replicaCount=3 -n $NS',
    '["sh", "-c", "helm repo add bitnami https://charts.bitnami.com/bitnami 2>/dev/null && helm repo update 2>/dev/null && helm install my-nginx bitnami/nginx -n $NS 2>/dev/null; true"]',
-   '["sh", "-c", "helm history my-nginx -n $NS | grep -c deployed | xargs -I{} test {} -ge 1"]'),
+   '["sh", "-c", "helm get values my-nginx -n $NS | grep -q ''replicaCount: 3''"]'),
 
   (14, 8, '릴리스 삭제하기',
    '$NS 네임스페이스의 my-nginx 릴리스를 완전히 삭제하세요.',

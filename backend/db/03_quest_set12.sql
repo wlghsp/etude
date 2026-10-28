@@ -68,8 +68,8 @@ EOF',
 
   (12, 6, 'Secret 값 확인하기',
    '$NS 네임스페이스의 db-secret 에서 DB_USER 값을 디코딩해서 /tmp/secret_result.txt 에 저장하세요.',
-   'kubectl get secret <name> -n <namespace> -o jsonpath=''{.data.DB_USER}'' 로 값을 꺼낸 뒤 base64 --decode 로 디코딩합니다.',
-   'kubectl get secret db-secret -n $NS -o jsonpath=''{.data.DB_USER}'' | base64 --decode > /tmp/secret_result.txt',
+   'kubectl get secret <name> -n <namespace> -o jsonpath=''{.data.DB_USER}'' 로 값을 꺼낸 뒤 base64 -d 로 디코딩합니다.',
+   'kubectl get secret db-secret -n $NS -o jsonpath=''{.data.DB_USER}'' | base64 -d > /tmp/secret_result.txt',
    '["sh", "-c", "kubectl create secret generic db-secret --from-literal=DB_USER=admin --from-literal=DB_PASSWORD=s3cur3 -n $NS 2>/dev/null; true"]',
    '["sh", "-c", "grep -q ''admin'' /tmp/secret_result.txt"]'),
 
