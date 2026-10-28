@@ -68,6 +68,16 @@ resource "oci_core_security_list" "etude" {
     }
   }
 
+  # HTTPS
+  ingress_security_rules {
+    protocol = "6"
+    source   = "0.0.0.0/0"
+    tcp_options {
+      min = 443
+      max = 443
+    }
+  }
+
   # 아웃바운드 전체 허용
   egress_security_rules {
     protocol    = "all"
@@ -123,6 +133,13 @@ resource "oci_core_instance" "etude" {
 
   metadata = {
     ssh_authorized_keys = var.ssh_public_key
+  }
+
+  # 이미지는 "최신 조회"라서 Oracle이 새 이미지를 내놓으면 source_id가 바뀐 것으로 보인다.
+  # 그대로 apply하면 부트 볼륨이 새 이미지로 교체되어 서버(DB 데이터 포함)가 초기화되므로 무시한다.
+  # 의도적으로 OS를 새로 올릴 때만 이 줄을 잠시 빼고 apply한다.
+  lifecycle {
+    ignore_changes = [source_details[0].source_id]
   }
 }
 
