@@ -1,0 +1,15 @@
+{
+  "setId": 17,
+  "answers": {
+    "1": "cat > /tmp/hello.sh <<'EOF'\n#!/bin/bash\necho \"hello etude\"\nEOF\nchmod +x /tmp/hello.sh",
+    "2": "cat > /tmp/greet.sh <<'EOF'\n#!/bin/bash\necho \"Hello, $1\"\nEOF\nchmod +x /tmp/greet.sh",
+    "3": "cat > /tmp/count_args.sh <<'EOF'\n#!/bin/bash\necho $#\nEOF\nchmod +x /tmp/count_args.sh",
+    "4": "cat > /tmp/check_file.sh <<'EOF'\n#!/bin/bash\nif [ -e \"$1\" ]; then echo exists; else echo missing; fi\nEOF\nchmod +x /tmp/check_file.sh",
+    "5": "cat > /tmp/is_big.sh <<'EOF'\n#!/bin/bash\nif [ \"$1\" -ge 100 ]; then echo big; else echo small; fi\nEOF\nchmod +x /tmp/is_big.sh",
+    "6": "cat > /tmp/seq_sum.sh <<'EOF'\n#!/bin/bash\nsum=0\nfor i in $(seq 1 $1); do\n  sum=$((sum+i))\ndone\necho $sum\nEOF\nchmod +x /tmp/seq_sum.sh",
+    "7": "cat > /tmp/count_logs.sh <<'EOF'\n#!/bin/bash\nn=0\nfor f in \"$1\"/*.log; do\n  [ -e \"$f\" ] && n=$((n+1))\ndone\necho $n\nEOF\nchmod +x /tmp/count_logs.sh",
+    "8": "cat > /tmp/must_have.sh <<'EOF'\n#!/bin/bash\nif grep -q OK \"$1\"; then exit 0; else exit 1; fi\nEOF\nchmod +x /tmp/must_have.sh",
+    "9": "cat > /tmp/alert.sh <<'EOF'\n#!/bin/bash\nn=$(grep -c ERROR \"$1\")\necho \"ERROR count: $n\"\nif [ \"$n\" -ge 3 ]; then exit 1; fi\nexit 0\nEOF\nchmod +x /tmp/alert.sh",
+    "10": "cat > /tmp/admins.sh <<'EOF'\n#!/bin/bash\nwhile IFS=, read -r name role; do\n  if [ \"$role\" = admin ]; then echo \"$name\"; fi\ndone < \"$1\"\nEOF\nchmod +x /tmp/admins.sh"
+  }
+}

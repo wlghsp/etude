@@ -1,8 +1,10 @@
 FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y \
-    vim iproute2 zip unzip \
+    vim iproute2 zip unzip curl netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 # 퀘스트 세트 15(로그와 텍스트 처리)용 고정 샘플 데이터
 COPY docker/samples/var-log-app/ /var/log/app/
 COPY docker/samples/etc-app/ /etc/app/
+# 퀘스트 세트 18(네트워크 진단)용 작은 HTTP 서버
+COPY docker/samples/bin/etude-httpd /usr/local/bin/etude-httpd
 CMD ["/bin/bash"]

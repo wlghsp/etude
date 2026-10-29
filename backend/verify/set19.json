@@ -1,0 +1,15 @@
+{
+  "setId": 19,
+  "answers": {
+    "1": "kubectl run web --image=nginx --dry-run=client -o yaml > /tmp/web.yaml",
+    "2": "kubectl create deployment api --image=nginx --replicas=3 --dry-run=client -o yaml > /tmp/api.yaml\nkubectl apply -f /tmp/api.yaml -n $NS",
+    "3": "kubectl scale deployment app --replicas=4 -n $NS\nkubectl set image deployment/app nginx=nginx:1.25-alpine -n $NS\nkubectl set env deployment/app APP_ENV=prod -n $NS",
+    "4": "kubectl label deployment app tier=backend -n $NS\nkubectl annotate deployment app owner=team-a -n $NS",
+    "5": "kubectl expose deployment app --port=80 --name=app-svc -n $NS",
+    "6": "kubectl get deployment app -n $NS -o jsonpath='{.spec.template.spec.containers[0].image}' > /tmp/image.txt",
+    "7": "kubectl get deploy -n $NS -o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image --no-headers > /tmp/deploys.txt",
+    "8": "kubectl explain pod.spec.containers.imagePullPolicy > /tmp/explain.txt",
+    "9": "kubectl patch deployment app -n $NS -p '{\"spec\":{\"replicas\":5}}'",
+    "10": "kubectl api-resources | grep -w deployments | awk '{print $2}' > /tmp/short.txt"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "setId": 18,
+  "answers": {
+    "1": "curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/ > /tmp/status.txt",
+    "2": "curl -s http://localhost:8080/ > /tmp/body.txt",
+    "3": "curl -sI http://localhost:8080/ | grep -i '^x-env' | awk '{print $2}' | tr -d '\\r' > /tmp/env.txt",
+    "4": "curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/health > /tmp/health.txt",
+    "5": "for p in 8080 9999; do nc -z localhost $p && echo $p; done > /tmp/open_ports.txt",
+    "6": "ss -ltn | awk 'NR>1 {print $4}' | awk -F: '{print $NF}' | sort -n > /tmp/ports.txt",
+    "7": "echo '127.0.0.1 myapp.local' >> /etc/hosts\ncurl -s http://myapp.local:8080/ > /tmp/by_name.txt",
+    "8": "nohup etude-httpd 9090 >/dev/null 2>&1 &\nsleep 1\ncurl -s -o /dev/null -w '%{http_code}' http://localhost:9090/",
+    "9": "curl -s http://localhost:9999/; echo $? > /tmp/curl_rc.txt",
+    "10": "curl -s -X POST -d 'name=etude' http://localhost:8080/ > /tmp/post.txt"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "setId": 20,
+  "answers": {
+    "1": "kubectl config view --minify -o jsonpath='{..namespace}' > /tmp/ns.txt",
+    "2": "kubectl get pod web -n $NS -o jsonpath='{.spec.nodeName}' > /tmp/node.txt",
+    "3": "kubectl get pod web -n $NS -o jsonpath='{.status.podIP}' > /tmp/pod_ip.txt",
+    "4": "kubectl exec web -n $NS -- hostname > /tmp/host.txt",
+    "5": "kubectl logs logger -n $NS --tail=3 > /tmp/tail3.txt",
+    "6": "kubectl get pods -n $NS -l app=web -o name | sed 's#^pod/##' | sort > /tmp/web_pods.txt",
+    "7": "kubectl delete pod -n $NS -l app=db",
+    "8": "kubectl get events -n $NS --field-selector involvedObject.name=web -o custom-columns=REASON:.reason --no-headers > /tmp/reasons.txt",
+    "9": "kubectl rollout history deployment/app -n $NS | grep -c '^[0-9]' > /tmp/revisions.txt",
+    "10": "kubectl rollout restart deployment/app -n $NS",
+    "11": "kubectl get deployment app -n $NS -o yaml > /tmp/app-backup.yaml",
+    "12": "kubectl run hello --image=busybox --restart=Never -n $NS -- echo hello\nkubectl wait --for=jsonpath='{.status.phase}'=Succeeded pod/hello -n $NS --timeout=90s\nkubectl logs hello -n $NS > /tmp/hello.txt"
+  }
+}
