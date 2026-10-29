@@ -103,5 +103,96 @@
     "image": "etude-k8s",
     "cmd": "kubectl get pods --all 2>&1 | head -n 1",
     "expect": "unknown flag"
+  },
+  {
+    "set": 30,
+    "order": 1,
+    "image": "etude-linux",
+    "cmd": "mkdir -p /var/log/app && printf '%s\\n' '2026-10-29 10:00:01 ERROR db connection refused' '2026-10-29 10:00:02 ERROR db connection refused' '2026-10-29 10:00:03 ERROR db connection refused' '2026-10-29 10:00:04 ERROR db connection refused' '2026-10-29 10:00:05 ERROR db connection refused' '2026-10-29 10:00:06 ERROR db connection refused' '2026-10-29 10:00:07 ERROR db connection refused' '2026-10-29 10:01:01 WARN slow response' '2026-10-29 10:01:02 WARN slow response' '2026-10-29 10:01:03 WARN slow response' '2026-10-29 10:01:04 WARN slow response' '2026-10-29 10:02:01 INFO recovered from error on retry' '2026-10-29 10:02:02 INFO cache cleared after error' '2026-10-29 10:02:03 INFO request ok' '2026-10-29 10:02:04 INFO request ok' '2026-10-29 10:02:05 INFO request ok' '2026-10-29 10:02:06 INFO request ok' '2026-10-29 10:02:07 INFO request ok' '2026-10-29 10:02:08 INFO request ok' '2026-10-29 10:02:09 INFO request ok' > /var/log/app/app.log && echo n=$(grep -c ERROR /var/log/app/app.log)",
+    "expect": "n=7"
+  },
+  {
+    "set": 30,
+    "order": 1,
+    "image": "etude-linux",
+    "cmd": "mkdir -p /var/log/app && printf '%s\\n' '2026-10-29 10:00:01 ERROR db connection refused' '2026-10-29 10:00:02 ERROR db connection refused' '2026-10-29 10:00:03 ERROR db connection refused' '2026-10-29 10:00:04 ERROR db connection refused' '2026-10-29 10:00:05 ERROR db connection refused' '2026-10-29 10:00:06 ERROR db connection refused' '2026-10-29 10:00:07 ERROR db connection refused' '2026-10-29 10:01:01 WARN slow response' '2026-10-29 10:01:02 WARN slow response' '2026-10-29 10:01:03 WARN slow response' '2026-10-29 10:01:04 WARN slow response' '2026-10-29 10:02:01 INFO recovered from error on retry' '2026-10-29 10:02:02 INFO cache cleared after error' '2026-10-29 10:02:03 INFO request ok' '2026-10-29 10:02:04 INFO request ok' '2026-10-29 10:02:05 INFO request ok' '2026-10-29 10:02:06 INFO request ok' '2026-10-29 10:02:07 INFO request ok' '2026-10-29 10:02:08 INFO request ok' '2026-10-29 10:02:09 INFO request ok' > /var/log/app/app.log && echo n=$(grep -ci error /var/log/app/app.log)",
+    "expect": "n=9"
+  },
+  {
+    "set": 30,
+    "order": 1,
+    "image": "etude-linux",
+    "cmd": "mkdir -p /var/log/app && printf '%s\\n' '2026-10-29 10:00:01 ERROR db connection refused' '2026-10-29 10:00:02 ERROR db connection refused' '2026-10-29 10:00:03 ERROR db connection refused' '2026-10-29 10:00:04 ERROR db connection refused' '2026-10-29 10:00:05 ERROR db connection refused' '2026-10-29 10:00:06 ERROR db connection refused' '2026-10-29 10:00:07 ERROR db connection refused' '2026-10-29 10:01:01 WARN slow response' '2026-10-29 10:01:02 WARN slow response' '2026-10-29 10:01:03 WARN slow response' '2026-10-29 10:01:04 WARN slow response' '2026-10-29 10:02:01 INFO recovered from error on retry' '2026-10-29 10:02:02 INFO cache cleared after error' '2026-10-29 10:02:03 INFO request ok' '2026-10-29 10:02:04 INFO request ok' '2026-10-29 10:02:05 INFO request ok' '2026-10-29 10:02:06 INFO request ok' '2026-10-29 10:02:07 INFO request ok' '2026-10-29 10:02:08 INFO request ok' '2026-10-29 10:02:09 INFO request ok' > /var/log/app/app.log && echo n=$(grep -c -e ERROR -e WARN /var/log/app/app.log)",
+    "expect": "n=11"
+  },
+  {
+    "set": 30,
+    "order": 1,
+    "image": "etude-linux",
+    "cmd": "mkdir -p /var/log/app && printf '%s\\n' '2026-10-29 10:00:01 ERROR db connection refused' '2026-10-29 10:00:02 ERROR db connection refused' '2026-10-29 10:00:03 ERROR db connection refused' '2026-10-29 10:00:04 ERROR db connection refused' '2026-10-29 10:00:05 ERROR db connection refused' '2026-10-29 10:00:06 ERROR db connection refused' '2026-10-29 10:00:07 ERROR db connection refused' '2026-10-29 10:01:01 WARN slow response' '2026-10-29 10:01:02 WARN slow response' '2026-10-29 10:01:03 WARN slow response' '2026-10-29 10:01:04 WARN slow response' '2026-10-29 10:02:01 INFO recovered from error on retry' '2026-10-29 10:02:02 INFO cache cleared after error' '2026-10-29 10:02:03 INFO request ok' '2026-10-29 10:02:04 INFO request ok' '2026-10-29 10:02:05 INFO request ok' '2026-10-29 10:02:06 INFO request ok' '2026-10-29 10:02:07 INFO request ok' '2026-10-29 10:02:08 INFO request ok' '2026-10-29 10:02:09 INFO request ok' > /var/log/app/app.log && echo n=$(wc -l < /var/log/app/app.log)",
+    "expect": "n=20"
+  },
+  {
+    "set": 30,
+    "order": 2,
+    "image": "etude-linux",
+    "cmd": "mkdir -p /var/log/app && printf '%s\\n' '10.0.0.2 - GET /index.html 200' '10.0.0.5 - GET /index.html 200' '10.0.0.9 - GET /index.html 200' '10.0.0.5 - GET /index.html 200' '10.0.0.2 - GET /index.html 200' '10.0.0.5 - GET /index.html 200' '10.0.0.9 - GET /index.html 200' '10.0.0.7 - GET /index.html 200' '10.0.0.5 - GET /index.html 200' '10.0.0.9 - GET /index.html 200' '10.0.0.2 - GET /index.html 200' '10.0.0.5 - GET /index.html 200' '10.0.0.9 - GET /index.html 200' '10.0.0.5 - GET /index.html 200' > /var/log/app/access.log && awk '{print $1}' /var/log/app/access.log | sort | uniq -c | sort -rn | head -n 1",
+    "expect": "6 10.0.0.5"
+  },
+  {
+    "set": 30,
+    "order": 3,
+    "image": "etude-linux",
+    "cmd": "mkdir -p /data/logs /data/backup /data/cache && for i in $(seq 1 20); do echo log > /data/logs/f$i.log; done && dd if=/dev/zero of=/data/backup/db.dump bs=1M count=9 2>/dev/null && dd if=/dev/zero of=/data/cache/a.bin bs=1M count=3 2>/dev/null && dd if=/dev/zero of=/data/cache/b.bin bs=1M count=2 2>/dev/null && du -sk /data/* | sort -rn | head -n 1",
+    "expect": "/data/backup"
+  },
+  {
+    "set": 30,
+    "order": 4,
+    "image": "etude-linux",
+    "cmd": "mkdir -p /srv && echo 'id,amount' > /srv/report.csv && chmod 640 /srv/report.csv && stat -c %a /srv/report.csv",
+    "expect": "640"
+  },
+  {
+    "set": 30,
+    "order": 4,
+    "image": "etude-linux",
+    "cmd": "mkdir -p /srv && echo 'id,amount' > /srv/report.csv && chmod 640 /srv/report.csv && ls -l /srv/report.csv",
+    "expect": "-rw-r-----"
+  },
+  {
+    "set": 30,
+    "order": 5,
+    "image": "etude-linux",
+    "cmd": "printf '%s\\n' '# port = 8080' 'port = 9090' '#port=7070' 'timeout = 30' '# old port = 6060' > /etc/app.conf && grep '^port' /etc/app.conf",
+    "expect": "port = 9090"
+  },
+  {
+    "set": 30,
+    "order": 6,
+    "image": "etude-linux",
+    "cmd": "printf '%s\\n' 'apple' 'banana' 'cherry' > /tmp/words.txt && grep -q mango /tmp/words.txt; echo rc=$?",
+    "expect": "rc=1"
+  },
+  {
+    "set": 30,
+    "order": 6,
+    "image": "etude-linux",
+    "cmd": "printf '%s\\n' 'apple' 'banana' 'cherry' > /tmp/words.txt && grep -q mango /tmp/nope.txt 2>/dev/null; echo rc=$?",
+    "expect": "rc=2"
+  },
+  {
+    "set": 30,
+    "order": 7,
+    "image": "etude-linux",
+    "cmd": "printf '%s\\n' 'apple' 'banana' 'apple' 'cherry' 'banana' 'date' 'banana' > /tmp/dup.txt && sort /tmp/dup.txt | uniq -c | sort -rn | head -n 1",
+    "expect": "3 banana"
+  },
+  {
+    "set": 30,
+    "order": 8,
+    "image": "etude-linux",
+    "cmd": "mkdir -p /opt/releases && cd /opt/releases && touch -d '2025-12-01 09:00' v0.9.tar && touch -d '2026-01-10 09:00' v1.0.tar && touch -d '2026-05-20 09:00' v1.1.tar && touch -d '2026-03-05 09:00' v1.2.tar && ls -t /opt/releases | head -n 1",
+    "expect": "v1.1.tar"
   }
 ]

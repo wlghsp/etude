@@ -27,4 +27,5 @@ INSERT INTO quest_set (id, title, description, sandbox_type, category) VALUES
   (26, 'k8s 스케줄링과 배포 전략', 'taint·toleration, nodeAffinity, podAntiAffinity, 롤링 업데이트 전략, StatefulSet, PodDisruptionBudget, graceful shutdown, kubectl diff 등 Pod 배치와 배포 방식을 다루는 기본기를 실습합니다.', 'k8s', 'k8s'),
   (27, '리눅스 성능과 스토리지(NFS) 점검', '메모리·CPU·로드를 점검하고 df 계열 출력을 읽으며, NFS 마운트 설정(fstab, exports)과 출력을 해석하는 현장 점검 패턴을 실습합니다.', 'linux', '리눅스'),
   (28, '리눅스 명령어 확인 퀴즈', '명령어의 옵션 의미, 권한과 출력 읽기, 용량·메모리 해석, 종료 코드, NFS 장애 해석까지 객관식으로 확인합니다. 정답과 함께 오답이 왜 틀렸는지 해설을 봅니다.', 'quiz', '리눅스'),
-  (29, 'k8s CKA 개념·명령 퀴즈', 'Pod/Deployment/Service, 장애 상태(CrashLoopBackOff, Pending, OOMKilled), 프로브, 롤백, Secret, kubectl 사용법을 CKA 연습처럼 객관식으로 확인합니다.', 'quiz', 'k8s');
+  (29, 'k8s CKA 개념·명령 퀴즈', 'Pod/Deployment/Service, 장애 상태(CrashLoopBackOff, Pending, OOMKilled), 프로브, 롤백, Secret, kubectl 사용법을 CKA 연습처럼 객관식으로 확인합니다.', 'quiz', 'k8s'),
+  (30, '리눅스 터미널로 확인하고 고르기', '터미널에서 직접 명령을 실행해 로그, 디렉터리 용량, 권한, 종료 코드, 설정 파일을 확인하고 그 결과로 정답을 고르는 실습형 객관식입니다. 정답과 함께 오답이 왜 틀렸는지 해설을 봅니다.', 'linux', '리눅스');
