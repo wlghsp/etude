@@ -87,6 +87,22 @@ describe('dockerSandboxFactory', () => {
         expect(container.exec.mock.calls[0][0]).toEqual({ Cmd: ['docker', 'info'] })
     })
 
+    it('VERIFY_RUNTIME이 있으면 특권 프로필을 Privileged·cgroup 바인드 없이 그 런타임으로 만든다', async () => {
+        vi.stubEnv('VERIFY_RUNTIME', 'sysbox-runc')
+        try {
+            const { docker } = fakeDocker([{ Running: false, ExitCode: 0 }])
+            await dockerSandboxFactory(docker, { image: 'x', binds: ['/a:/b'] }, SYSTEMD_PROFILE)()
+
+            const hc = docker.createContainer.mock.calls[0][0].HostConfig
+            expect(hc.Runtime).toBe('sysbox-runc')
+            expect(hc.Privileged).toBeUndefined()
+            expect(hc.CgroupnsMode).toBeUndefined()
+            expect(hc.Binds).toEqual(['/a:/b'])
+        } finally {
+            vi.unstubAllEnvs()
+        }
+    })
+
     it('준비가 끝나지 않으면 컨테이너를 정리하고 실패한다', async () => {
         const container = {
             start: vi.fn(async () => {}),

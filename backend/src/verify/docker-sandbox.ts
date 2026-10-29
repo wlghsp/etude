@@ -45,16 +45,18 @@ const TIMEOUT_EXIT_CODE = -1
 // 검증용 컨테이너를 만든다. 이미지·binds는 서비스의 샌드박스 설정을 그대로 받는다.
 // 라벨은 etude=verify: 실행 중인 backend의 기동·종료 정리(etude=sandbox)가 검증 컨테이너를 지우지 않게 한다.
 export function dockerSandboxFactory(docker: Docker, config: { image: string; binds: string[] | null }, profile: SandboxProfile = {}): SandboxFactory {
+    // VERIFY_RUNTIME(예: sysbox-runc)을 주면 특권 프로필을 Privileged 없이 그 런타임으로 만든다 (privileged 샌드박스 격리 명세 조각 A 검증용).
+    const runtime = profile.privileged ? process.env.VERIFY_RUNTIME : undefined
     return async () => {
         const container = await docker.createContainer({
             Image: config.image,
             Labels: { etude: 'verify' },
             HostConfig: {
                 // k8s는 DB의 binds(관리자 kubeconfig 마운트)를 무시한다. 앱과 같다.
-                Binds: profile.namespacePrefix ? [] : [...(config.binds ?? []), ...(profile.extraBinds ?? [])],
+                Binds: profile.namespacePrefix ? [] : [...(config.binds ?? []), ...(runtime ? [] : profile.extraBinds ?? [])],
                 ...sandboxLimits(profile.limitClass ?? 'default'),
-                ...(profile.privileged ? { Privileged: true } : {}),
-                ...(profile.cgroupnsHost ? { CgroupnsMode: 'host' } : {}),
+                ...(runtime ? { Runtime: runtime } : profile.privileged ? { Privileged: true } : {}),
+                ...(profile.cgroupnsHost && !runtime ? { CgroupnsMode: 'host' } : {}),
                 ...(profile.networkMode ? { NetworkMode: profile.networkMode } : {}),
             } as Docker.ContainerCreateOptions['HostConfig'],
             // dind 같은 서비스형 이미지는 기본 entrypoint가 본체라 Cmd를 덮어쓰지 않는다
