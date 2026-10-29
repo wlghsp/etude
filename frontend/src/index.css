@@ -33,3 +33,19 @@ body {
 ::-webkit-scrollbar-track { background: #141313; }
 ::-webkit-scrollbar-thumb { background: #333333; border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: #444444; }
+
+/* 채점 결과 피드백 효과 (정답: 톡 튀어나옴·빛·색종이, 오답: 흔들림·빨간 번쩍임) */
+@keyframes fx-pop { 0% { transform: scale(0.3); opacity: 0 } 60% { transform: scale(1.35); opacity: 1 } 100% { transform: scale(1) } }
+@keyframes fx-shake { 0%, 100% { transform: translateX(0) } 15% { transform: translateX(-9px) } 30% { transform: translateX(8px) } 45% { transform: translateX(-6px) } 60% { transform: translateX(5px) } 75% { transform: translateX(-3px) } }
+@keyframes fx-glow-success { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55) } 100% { box-shadow: 0 0 0 22px rgba(34, 197, 94, 0) } }
+@keyframes fx-glow-error { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); background-color: rgba(239, 68, 68, 0.22) } 100% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0) } }
+@keyframes fx-confetti { 0% { transform: translateY(0) rotate(0deg); opacity: 1 } 100% { transform: translateY(170px) rotate(520deg); opacity: 0 } }
+.fx-pop { animation: fx-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both }
+.fx-shake { animation: fx-shake 0.5s ease-in-out both }
+.fx-glow-success { animation: fx-glow-success 0.9s ease-out both }
+.fx-glow-error { animation: fx-glow-error 0.7s ease-out both }
+.fx-confetti-piece { position: absolute; top: -6px; opacity: 0; width: 7px; height: 12px; animation: fx-confetti 1.3s ease-out forwards; animation-delay: var(--d); left: var(--x); transform: rotate(var(--r)) }
+@media (prefers-reduced-motion: reduce) {
+  .fx-pop, .fx-shake, .fx-glow-success, .fx-glow-error { animation: none }
+  .fx-confetti-piece { display: none }
+}

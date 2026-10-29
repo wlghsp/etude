@@ -1,6 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import type { Quest } from '../types'
 import { gradeQuest, GradeRequestError } from '../api/quest'
+import { useQuestTimer, formatClock, formatDuration } from './useQuestTimer'
+import type { QuestRecord } from './SetComplete'
 
 // `백틱`은 코드 모양으로, **별표 두 개**는 굵게 보여 준다 (명령어·파일 경로·값과 강조를 본문과 구분하기 위해).
 function RichText({ text }: { text: string }) {
@@ -17,6 +19,22 @@ function RichText({ text }: { text: string }) {
     )
 }
 
+// 정답을 맞혔을 때 박스 위에서 한 번 떨어지는 색종이 (고정된 값이라 다시 그려도 모양이 바뀌지 않는다)
+const CONFETTI_COLORS = ['bg-success', 'bg-primary', 'bg-info', 'bg-on-surface']
+function Confetti() {
+    return (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+            {Array.from({ length: 22 }, (_, i) => (
+                <span
+                    key={i}
+                    className={`fx-confetti-piece ${CONFETTI_COLORS[i % CONFETTI_COLORS.length]}`}
+                    style={{ '--x': `${(i * 37 + 7) % 96}%`, '--d': `${(i % 7) * 0.07}s`, '--r': `${(i * 53) % 180}deg` } as React.CSSProperties}
+                />
+            ))}
+        </div>
+    )
+}
+
 interface Props {
     quest: Quest
     containerId: string
@@ -26,9 +44,9 @@ interface Props {
     completedIndices: Set<number>
     onPrev: () => void
     onNext: () => void
-    onHome: () => void
+    onFinish: () => void
     onReset: () => void
-    onComplete: (index: number) => void
+    onComplete: (index: number, record: QuestRecord) => void
 }
 
 function gradeErrorMessage(err: unknown): string {
@@ -39,9 +57,10 @@ function gradeErrorMessage(err: unknown): string {
     return '채점 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.'
 }
 
-export function QuestPanel({ quest, containerId, sessionId, total, index, onPrev, onNext, onHome, onReset, onComplete }: Props) {
-    const startTimeRef = useRef(0)
-    useEffect(() => { startTimeRef.current = Date.now() }, [])
+export function QuestPanel({ quest, containerId, sessionId, total, index, completedIndices, onPrev, onNext, onFinish, onReset, onComplete }: Props) {
+    const timer = useQuestTimer(sessionId, quest.id)
+    const [finalSeconds, setFinalSeconds] = useState<number | null>(null)
+    const [failedAttempts, setFailedAttempts] = useState(0)
     const [hintUsed, setHintUsed] = useState(false)
     const [solutionUsed, setSolutionUsed] = useState(false)
     const [hintOpen, setHintOpen] = useState(false)
@@ -62,15 +81,21 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, onPrev
     const ns = containerId ? `quest-${containerId.slice(0, 8)}` : '$NS'
     const resolve = (text: string) => text.replace(/\$NS/g, ns)
     const pct = Math.round(((index + 1) / total) * 100)
+    const allDone = completedIndices.size >= total
 
     const grade = async () => {
         setLoading(true)
         setGradeError(null)
         try {
-            const elapsedSec = Math.round((Date.now() - startTimeRef.current) / 1000)
-            const data = await gradeQuest(containerId, quest.id, sessionId, elapsedSec, hintUsed, solutionUsed)
+            const data = await gradeQuest(containerId, quest.id, sessionId, timer.getSeconds(), hintUsed, solutionUsed)
             setResult(data.passed)
-            if (data.passed) onComplete(index)
+            if (data.passed) {
+                const seconds = timer.finish()
+                setFinalSeconds(seconds)
+                onComplete(index, { seconds, hintUsed, solutionUsed, attempts: failedAttempts + 1 })
+            } else {
+                setFailedAttempts((n) => n + 1)
+            }
         } catch (err) {
             setResult(null)
             setGradeError(gradeErrorMessage(err))
@@ -105,6 +130,13 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, onPrev
                         <h1 className="font-sans text-headline-lg text-on-surface truncate">{quest.title}</h1>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
+                        <div
+                            title="이 문제를 푸는 데 쓴 시간 (탭이 보일 때만 셉니다)"
+                            className={`flex items-center gap-1.5 border px-3 py-1.5 mr-2 ${finalSeconds !== null ? 'border-success/50 bg-success/10 text-success' : 'border-outline-variant bg-surface-container text-on-surface'}`}
+                        >
+                            <span className={`material-symbols-outlined text-[20px] ${finalSeconds !== null ? 'text-success' : 'text-primary'}`}>timer</span>
+                            <span className="font-mono text-body-lg font-semibold tabular-nums">{formatClock(finalSeconds ?? timer.seconds)}</span>
+                        </div>
                         <button onClick={onPrev} disabled={index === 0} title="이전" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center font-sans text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
                             <span className="material-symbols-outlined text-[18px]">chevron_left</span>이전
                         </button>
@@ -150,6 +182,12 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, onPrev
                         )}
                     </div>
 
+                    {allDone && result !== true && (
+                        <button onClick={onFinish} className="w-full border border-success/50 bg-success/10 text-success py-3 font-sans font-bold hover:bg-success/20 transition-colors flex items-center justify-center gap-2">
+                            <span className="material-symbols-outlined text-[20px]">emoji_events</span>모든 퀘스트 완료 · 결과 보기
+                        </button>
+                    )}
+
                     {/* Grade Button */}
                     <button
                         onClick={grade}
@@ -168,26 +206,35 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, onPrev
                         </div>
                     )}
                     {result === false && (
-                        <div className="border border-error/30 bg-error/5 p-4 flex items-center gap-3">
-                            <span className="material-symbols-outlined text-error text-[20px]">cancel</span>
-                            <p className="font-sans text-body-md text-error">아직이에요. 다시 시도해보세요.</p>
+                        <div key={`fail-${failedAttempts}`} className="fx-shake fx-glow-error border-2 border-error bg-error/10 p-4 flex items-center gap-3">
+                            <span className="material-symbols-outlined text-error text-[34px] shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>cancel</span>
+                            <div>
+                                <p className="font-sans text-body-lg font-bold text-error">틀렸어요</p>
+                                <p className="font-sans text-body-md text-on-surface-variant">
+                                    완료 조건을 다시 확인하고 한 번 더 시도해 보세요.
+                                    {failedAttempts >= 2 && !hintUsed && ' 막히면 힌트를 열어 볼 수 있어요.'}
+                                </p>
+                            </div>
                         </div>
                     )}
                     {result === true && (
-                        <div className="border border-success/30 bg-success/5 p-4 border-l-4 border-l-success">
-                            <div className="flex items-center gap-3 mb-3">
-                                <span className="material-symbols-outlined text-success" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                        <div className="fx-glow-success relative overflow-hidden border border-success/40 bg-success/10 p-4 border-l-4 border-l-success">
+                            <Confetti />
+                            <div className="relative flex items-center gap-3 mb-3">
+                                <span className="fx-pop material-symbols-outlined text-success text-[36px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                                 <div>
                                     <h4 className="font-sans text-body-md font-bold text-success">퀘스트 완료!</h4>
-                                    <p className="font-sans text-label-caps text-success/80">정답입니다</p>
+                                    <p className="font-sans text-label-caps text-success/80">
+                                        정답입니다{finalSeconds !== null && ` · 걸린 시간 ${formatDuration(finalSeconds)}`}{hintUsed && ' · 힌트 사용'}{solutionUsed && ' · 풀이 사용'}
+                                    </p>
                                 </div>
                             </div>
-                            {index < total - 1
+                            {index < total - 1 && !allDone
                                 ? <button onClick={handleNext} className="w-full bg-success text-on-primary py-3 font-sans font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2">
                                     다음 퀘스트 <span className="material-symbols-outlined">arrow_forward</span>
                                   </button>
-                                : <button onClick={onHome} className="w-full bg-success text-on-primary py-3 font-sans font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2">
-                                    세트 완료! 홈으로 <span className="material-symbols-outlined">home</span>
+                                : <button onClick={onFinish} className="w-full bg-success text-on-primary py-3 font-sans font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2">
+                                    결과 보기 <span className="material-symbols-outlined">emoji_events</span>
                                   </button>
                             }
                         </div>

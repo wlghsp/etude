@@ -74,3 +74,20 @@ CREATE TABLE IF NOT EXISTS feedback (
   created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES user(id)
 );
+
+-- 세트 완료 기록: 한 번 입장해서 세트의 모든 퀘스트를 통과하면 1건. 서버가 quest_attempt 로 확인한 뒤에만 저장한다.
+CREATE TABLE IF NOT EXISTS set_completion (
+  id                  INT AUTO_INCREMENT PRIMARY KEY,
+  user_id             INT NOT NULL,
+  quest_set_id        INT NOT NULL,
+  session_id          VARCHAR(36) NOT NULL,
+  completed_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  quest_count         INT NOT NULL,
+  total_seconds       INT NOT NULL,
+  hint_free_count     INT NOT NULL,
+  solution_free_count INT NOT NULL,
+  detail              JSON,
+  UNIQUE KEY uq_set_completion_session (user_id, quest_set_id, session_id),
+  KEY idx_set_completion_set (quest_set_id)
+  -- 외래 키는 두지 않는다: 기존 테이블의 id 타입(INT/BIGINT)이 환경마다 달라 맞추기 어렵고, 이 값은 서버가 검증한 뒤에만 쓴다.
+);

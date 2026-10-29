@@ -34,3 +34,13 @@ export async function gradeQuest(
     return r.json()
   })
 }
+
+// 세트 완료 기록을 저장한다. 서버가 이 세션의 채점 기록으로 직접 확인한 뒤에만 저장하고, 같은 세션의 중복 요청은 한 번만 저장된다.
+export async function completeSet(setId: number, sessionId: string): Promise<void> {
+  const r = await fetch(`${BASE}/quest-sets/${setId}/complete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ sessionId }),
+  })
+  if (!r.ok) throw new GradeRequestError(r.status)
+}

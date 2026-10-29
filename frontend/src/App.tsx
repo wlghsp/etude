@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { Terminal, type TerminalStatus } from './components/Terminal'
 import { FeedbackButton } from './components/FeedbackButton'
 import { QuestPanel } from './components/QuestPanel'
+import { SetComplete, type QuestRecord } from './components/SetComplete'
 import { SetSelect } from './pages/SetSelect'
 import { Progress } from './pages/Progress'
 import { Leaderboard } from './pages/Leaderboard'
 import { Admin } from './pages/Admin'
 import type { Quest } from './types'
-import { fetchQuests } from './api/quest'
+import { fetchQuests, completeSet } from './api/quest'
 import { fetchMe, token } from './api/auth'
 import { Login } from './pages/Login'
 import { ChangePasswordModal } from './components/ChangePasswordModal'
@@ -30,6 +31,11 @@ function App() {
   const [authChecked, setAuthChecked] = useState(false)
   const [page, setPage] = useState<'home' | 'progress' | 'leaderboard' | 'admin'>('home')
   const [completedIndices, setCompletedIndices] = useState<Set<number>>(new Set())
+  // 이번에 세트에 들어와서 푼 기록 (세트 완료 화면에서 보여 준다). 세트가 바뀌면 비운다.
+  const [records, setRecords] = useState<Record<number, QuestRecord>>({})
+  const [summaryOpen, setSummaryOpen] = useState(false)
+  // 세트 완료 기록 저장 상태 (모든 퀘스트를 통과하면 서버에 한 번 저장한다)
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
   const [sessionId, setSessionId] = useState('')
   const [resetKey, setResetKey] = useState(0)
   const [preparing, setPreparing] = useState(false)
@@ -53,10 +59,31 @@ function App() {
         setQuests(data)
         setQuestIndex(0)
         setCompletedIndices(new Set())
+        setRecords({})
+        setSummaryOpen(false)
+        setSaveState('idle')
         setSessionId(`${Date.now()}-${Math.random().toString(36).slice(2)}`)
       })
     return () => { cancelled = true }
   }, [selectedSetId])
+
+  function handleSetSelect(id: number, sandboxType: string) {
+    setSelectedSetId(id)
+    // 이전 세트의 퀘스트로 터미널이 마운트되면 서버가 잘못된 세트로 세션을 만든다. 새 목록이 올 때까지 비운다.
+    setQuests([])
+    setQuestIndex(0)
+    setSandboxType(sandboxType)
+    setContainerId('')
+    setPreparing(true)
+  }
+
+  // 세트의 모든 퀘스트를 통과하면 완료 기록을 저장한다. 서버가 이 세션의 채점 기록으로 확인하고, 같은 세션의 중복 요청은 한 번만 저장된다.
+  useEffect(() => {
+    if (saveState !== 'idle' || selectedSetId === null || !sessionId) return
+    if (quests.length === 0 || completedIndices.size < quests.length) return
+    setSaveState('saving')
+    completeSet(selectedSetId, sessionId).then(() => setSaveState('saved')).catch(() => setSaveState('failed'))
+  }, [saveState, selectedSetId, sessionId, quests.length, completedIndices])
 
   // 토큰 검증 전 - 빈 화면 (깜박임 방지)
   if (!authChecked) return null
@@ -95,15 +122,6 @@ function App() {
   }
 
   if (selectedSetId === null) {
-    function handleSetSelect(id: number, sandboxType: string) {
-      setSelectedSetId(id)
-      // 이전 세트의 퀘스트로 터미널이 마운트되면 서버가 잘못된 세트로 세션을 만든다. 새 목록이 올 때까지 비운다.
-      setQuests([])
-      setQuestIndex(0)
-      setSandboxType(sandboxType)
-      setContainerId('')
-      setPreparing(true)
-    }
     return <>
       <SetSelect
           onSelect={handleSetSelect}
@@ -134,7 +152,17 @@ function App() {
       </header>
       <main className="flex flex-1 overflow-hidden">
         <section className="w-[40%] flex flex-col">
-          {quest && (
+          {summaryOpen
+            ? <SetComplete
+                setId={selectedSetId}
+                quests={quests}
+                records={records}
+                saveState={saveState}
+                onRetrySave={() => setSaveState('idle')}
+                onHome={() => setSelectedSetId(null)}
+                onReview={(i) => { setQuestIndex(i); setSummaryOpen(false) }}
+              />
+            : quest && (
             <QuestPanel
               key={quest.id}
               quest={quest}
@@ -145,13 +173,16 @@ function App() {
               completedIndices={completedIndices}
               onPrev={() => setQuestIndex((i) => i - 1)}
               onNext={() => setQuestIndex((i) => i + 1)}
-              onHome={() => setSelectedSetId(null)}
+              onFinish={() => setSummaryOpen(true)}
               onReset={() => {
                 setPreparing(true)
                 setContainerId('')
                 setResetKey(k => k + 1)
               }}
-              onComplete={(i) => setCompletedIndices(prev => new Set(prev).add(i))}
+              onComplete={(i, record) => {
+                setCompletedIndices(prev => new Set(prev).add(i))
+                setRecords(prev => ({ ...prev, [i]: record }))
+              }}
             />
           )}
         </section>

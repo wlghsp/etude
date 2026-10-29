@@ -78,7 +78,7 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
                                             />
                                         </div>
                                         <span className="font-sans text-code-sm text-on-surface-variant w-20 text-right shrink-0">
-                                            {u.completed}/{u.total}
+                                            {u.completed}/{u.total} 세트
                                         </span>
                                         <span className={`font-sans text-body-md font-bold w-12 text-right shrink-0 ${pct === 100 ? 'text-success' : 'text-primary'}`}>
                                             {pct}%
@@ -94,24 +94,15 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
                                     {isOpen && (
                                         <div className="border-t border-outline-variant bg-surface-container-lowest">
                                             {u.sets.map(s => {
-                                                const sPct = s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0
-                                                const sComplete = s.completed === s.total && s.total > 0
+                                                const sComplete = s.completed > 0
                                                 return (
                                                     <div key={s.questSetId} className="flex items-center gap-4 px-4 py-3 border-b border-outline-variant/50 last:border-0">
                                                         <span className="w-8 shrink-0" />
                                                         <span className="font-sans text-code-sm text-on-surface-variant w-32 shrink-0">{s.category}</span>
                                                         <span className="font-sans text-code-sm text-on-surface flex-1">{s.questSetTitle}</span>
-                                                        <div className="w-24 h-1 bg-surface-container-highest shrink-0">
-                                                            <div
-                                                                className={`h-full ${sComplete ? 'bg-success' : 'bg-primary'}`}
-                                                                style={{ width: `${sPct}%` }}
-                                                            />
-                                                        </div>
-                                                        <span className="font-sans text-code-sm text-on-surface-variant w-20 text-right shrink-0">
-                                                            {s.completed}/{s.total}
-                                                        </span>
-                                                        <span className={`font-sans text-code-sm font-bold w-12 text-right shrink-0 ${sComplete ? 'text-success' : sPct > 0 ? 'text-primary' : 'text-on-surface-variant'}`}>
-                                                            {sPct}%
+                                                        <span className={`font-sans text-code-sm w-24 text-right shrink-0 flex items-center justify-end gap-1 ${sComplete ? 'text-success font-bold' : 'text-on-surface-variant'}`}>
+                                                            {sComplete && <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>}
+                                                            {sComplete ? '완료' : '미완료'}
                                                         </span>
                                                         <span className="w-[20px] shrink-0" />
                                                     </div>

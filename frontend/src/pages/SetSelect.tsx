@@ -25,16 +25,17 @@ const CATEGORY_META: Record<string, { icon: string }> = {
 
 export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
     const [sets, setSets] = useState<QuestSet[]>([])
-    const [progressMap, setProgressMap] = useState<Record<number, { total: number; completed: number }>>({})
+    // 세트별 완료 횟수. 세트 완료만 기록으로 보여 주고, 문제별 진행은 보여 주지 않는다.
+    const [completedCount, setCompletedCount] = useState<Record<number, number>>({})
     const [openCategories, setOpenCategories] = useState<Set<string>>(new Set())
 
     useEffect(() => {
         fetchQuestSets().then(setSets)
         fetchProgress().then((rows) => {
-            const map: Record<number, { total: number; completed: number }> = {}
-            rows.forEach(r => { map[r.quest_set_id] = { total: Number(r.total), completed: Number(r.completed) } })
-            setProgressMap(map)
-        })
+            const map: Record<number, number> = {}
+            rows.forEach(r => { map[r.questSetId] = r.completions.length })
+            setCompletedCount(map)
+        }).catch(() => { /* 완료 표시가 없어도 세트는 고를 수 있다 */ })
     }, [])
 
     const grouped = sets.reduce<Record<string, QuestSet[]>>((acc, s) => {
@@ -81,9 +82,8 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
                                     {isOpen && (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                                             {items.map((s) => {
-                                                const p = progressMap[s.id]
-                                                const pct = p ? Math.round((p.completed / p.total) * 100) : 0
-                                                const isComplete = p && p.completed === p.total && p.total > 0
+                                                const doneCount = completedCount[s.id] ?? 0
+                                                const isComplete = doneCount > 0
                                                 return (
                                                     <button
                                                         key={s.id}
@@ -100,25 +100,11 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
                                                                 </h3>
                                                                 <p className="font-sans text-code-sm text-on-surface-variant">{s.description}</p>
                                                             </div>
-                                                            {isComplete && (
-                                                                <span className="material-symbols-outlined text-success text-[24px] shrink-0 ml-2" style={{ fontVariationSettings: "'FILL' 1" }}>
-                                                                    check_circle
-                                                                </span>
-                                                            )}
                                                         </div>
-                                                        <div className="flex justify-between items-center mb-1">
-                                                            <span className="font-sans text-code-sm text-on-surface-variant">
-                                                                {p ? `${p.completed}/${p.total} 완료` : '미시작'}
-                                                            </span>
-                                                            <span className={`font-sans text-code-sm font-bold ${isComplete ? 'text-success' : p && p.completed > 0 ? 'text-primary' : 'text-on-surface-variant'}`}>
-                                                                {pct}%
-                                                            </span>
-                                                        </div>
-                                                        <div className="w-full h-1 bg-surface-container-highest">
-                                                            <div
-                                                                className={`h-full ${isComplete ? 'bg-success' : 'bg-primary'}`}
-                                                                style={{ width: `${pct}%` }}
-                                                            />
+                                                        <div className={`flex items-center gap-1.5 font-sans text-code-sm ${isComplete ? 'text-success font-bold' : 'text-on-surface-variant'}`}>
+                                                            {isComplete
+                                                                ? <><span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>완료{doneCount > 1 ? ` · ${doneCount}회` : ''}</>
+                                                                : '미완료'}
                                                         </div>
                                                     </button>
                                                 )
