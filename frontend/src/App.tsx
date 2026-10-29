@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Terminal, type TerminalStatus } from './components/Terminal'
+import { useTerminalFontSize } from './components/useTerminalFontSize'
 import { FeedbackButton } from './components/FeedbackButton'
 import { QuestPanel } from './components/QuestPanel'
 import { SetComplete, type QuestRecord } from './components/SetComplete'
@@ -12,6 +13,7 @@ import { fetchQuests, completeSet } from './api/quest'
 import { fetchMe, token } from './api/auth'
 import { Login } from './pages/Login'
 import { ChangePasswordModal } from './components/ChangePasswordModal'
+import { ConfirmModal } from './components/ConfirmModal'
 
 
 
@@ -41,6 +43,7 @@ function App() {
   const [sessionId, setSessionId] = useState('')
   const [resetKey, setResetKey] = useState(0)
   const [preparing, setPreparing] = useState(false)
+  const termFont = useTerminalFontSize()
   const [terminalStatus, setTerminalStatus] = useState<TerminalStatus>('connecting')
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const openChangePassword = () => setChangePasswordOpen(true)
@@ -67,12 +70,17 @@ function App() {
       message: partial ? `이 세트에서 나가면 지금까지 푼 ${completedIndices.size}/${quests.length}개가 기록되지 않아요. (세트를 한 번에 끝까지 풀어야 완료로 기록돼요) 나갈까요?` : null,
     }
   }, [selectedSetId, quests.length, completedIndices])
+  const leaveBypassRef = useRef(false)
+  const [leaveMessage, setLeaveMessage] = useState<string | null>(null)
   useEffect(() => {
     history.replaceState({ page: 'home', setId: null }, '')
     const onPop = (e: PopStateEvent) => {
       const guard = leaveGuardRef.current
-      if (guard.inSet !== null && guard.message && !window.confirm(guard.message)) {
-        history.pushState({ page: 'home', setId: guard.inSet }, '') // 나가지 않기로 했으니 문제 화면 기록을 다시 쌓는다
+      if (leaveBypassRef.current) {
+        leaveBypassRef.current = false // 나가기로 확인한 뒤 다시 건 뒤로가기이므로 한 번만 통과시킨다
+      } else if (guard.inSet !== null && guard.message) {
+        history.pushState({ page: 'home', setId: guard.inSet }, '') // 일단 문제 화면에 머물고, 모달에서 나가기를 고르면 다시 뒤로 간다
+        setLeaveMessage(guard.message)
         return
       }
       const st = e.state as { page?: Page; setId?: number | null } | null
@@ -253,7 +261,21 @@ function App() {
                   <span className="material-symbols-outlined text-[16px]">terminal</span> 터미널
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={termFont.smaller}
+                    disabled={!termFont.canSmaller}
+                    title="글꼴 작게"
+                    className="border border-outline-variant bg-surface px-2 py-0.5 font-sans text-label-caps text-on-surface hover:bg-surface-container-high disabled:opacity-30"
+                  >A−</button>
+                  <button
+                    onClick={termFont.larger}
+                    disabled={!termFont.canLarger}
+                    title="글꼴 크게"
+                    className="border border-outline-variant bg-surface px-2 py-0.5 font-sans text-label-caps text-on-surface hover:bg-surface-container-high disabled:opacity-30"
+                  >A+</button>
+                </div>
                 <span className={`w-2 h-2 rounded-full ${TERMINAL_STATUS_VIEW[terminalStatus].dot}`}></span>
                 <span className="font-sans text-label-caps text-on-surface-variant">{TERMINAL_STATUS_VIEW[terminalStatus].label}</span>
               </div>
@@ -262,6 +284,7 @@ function App() {
               ? <Terminal
                   key={`${sandboxType === 'docker-persistent' ? `set-${selectedSetId}` : questIndex}-${resetKey}`}
                   questId={quest.id}
+                  fontSize={termFont.fontSize}
                   onConnected={(id) => { setContainerId(id); setPreparing(false) }}
                   onStatus={(status) => {
                     setTerminalStatus(status)
@@ -279,6 +302,15 @@ function App() {
           </section>
         )}
       </main>
+      <ConfirmModal
+        open={leaveMessage !== null}
+        title="세트에서 나갈까요?"
+        message={leaveMessage ?? ''}
+        confirmLabel="나가기"
+        cancelLabel="계속 풀기"
+        onConfirm={() => { leaveBypassRef.current = true; setLeaveMessage(null); history.back() }}
+        onCancel={() => setLeaveMessage(null)}
+      />
     </div>
   )
 }

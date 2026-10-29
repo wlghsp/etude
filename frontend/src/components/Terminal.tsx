@@ -4,32 +4,19 @@ import { FitAddon } from "@xterm/addon-fit";
 import '@xterm/xterm/css/xterm.css'
 import { issueTerminalTicket, terminalSocketUrl } from '../api/terminal'
 
-const FONT_SIZE_KEY = 'etude.terminalFontSize'
-const FONT_SIZE_DEFAULT = 14
-const FONT_SIZE_MIN = 10
-const FONT_SIZE_MAX = 24
-
-function loadFontSize(): number {
-    try {
-        const saved = Number(localStorage.getItem(FONT_SIZE_KEY))
-        if (Number.isInteger(saved) && saved >= FONT_SIZE_MIN && saved <= FONT_SIZE_MAX) return saved
-    } catch { /* 저장소를 못 읽어도 기본값으로 쓴다 */ }
-    return FONT_SIZE_DEFAULT
-}
-
 export type TerminalStatus = 'connecting' | 'connected' | 'ended'
 
 interface Props {
     questId: number
+    fontSize: number
     onConnected: (containerId: string) => void
     // 연결 상태가 바뀔 때 (상위의 로딩·상태 표시용). 연결을 만들지 못했거나 끊기면 'ended'
     onStatus: (status: TerminalStatus) => void
 }
 
-export function Terminal({ questId, onConnected, onStatus }: Props) {
+export function Terminal({ questId, fontSize, onConnected, onStatus }: Props) {
     const containerRef = useRef<HTMLDivElement>(null)
     const [loading, setLoading] = useState(true)
-    const [fontSize, setFontSize] = useState(loadFontSize)
     // 연결 effect는 한 번만 실행되므로, 글꼴 크기 변경은 ref로 살아 있는 터미널에 전달한다
     const termRef = useRef<XTerm | null>(null)
     const resizeRef = useRef<() => void>(() => {})
@@ -39,7 +26,6 @@ export function Terminal({ questId, onConnected, onStatus }: Props) {
         if (!termRef.current) return
         termRef.current.options.fontSize = fontSize
         resizeRef.current() // 칸 수가 바뀌므로 맞춰 다시 계산하고 서버에도 알린다
-        try { localStorage.setItem(FONT_SIZE_KEY, String(fontSize)) } catch { /* 저장 실패는 무시 */ }
     }, [fontSize])
 
     useEffect(() => {
@@ -163,20 +149,6 @@ export function Terminal({ questId, onConnected, onStatus }: Props) {
     return (
         <div className="relative" style={{ height: '100vh', background: '#000' }}>
             <div ref={containerRef} style={{ height: '100%', padding: '4px' }} />
-            <div className="absolute top-1 right-3 z-10 flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
-                <button
-                    onClick={() => setFontSize((n) => Math.max(FONT_SIZE_MIN, n - 1))}
-                    disabled={fontSize <= FONT_SIZE_MIN}
-                    title="글꼴 작게"
-                    className="border border-outline-variant bg-surface px-2 py-0.5 font-sans text-label-caps text-on-surface hover:bg-surface-container-high disabled:opacity-30"
-                >A−</button>
-                <button
-                    onClick={() => setFontSize((n) => Math.min(FONT_SIZE_MAX, n + 1))}
-                    disabled={fontSize >= FONT_SIZE_MAX}
-                    title="글꼴 크게"
-                    className="border border-outline-variant bg-surface px-2 py-0.5 font-sans text-label-caps text-on-surface hover:bg-surface-container-high disabled:opacity-30"
-                >A+</button>
-            </div>
             {loading && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 gap-3">
                     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />

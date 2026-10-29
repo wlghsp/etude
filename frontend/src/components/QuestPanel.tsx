@@ -3,6 +3,7 @@ import type { Quest } from '../types'
 import { gradeQuest, answerChoice, GradeRequestError } from '../api/quest'
 import { useQuestTimer, formatClock, formatDuration } from './useQuestTimer'
 import type { QuestRecord } from './SetComplete'
+import { ConfirmModal } from './ConfirmModal'
 
 // `백틱`은 코드 모양으로, **별표 두 개**는 굵게 보여 준다 (명령어·파일 경로·값과 강조를 본문과 구분하기 위해).
 function RichText({ text }: { text: string }) {
@@ -84,6 +85,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
     const [result, setResult] = useState<boolean | null>(null)
     const [loading, setLoading] = useState(false)
     const [gradeError, setGradeError] = useState<string | null>(null)
+    const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
     const ns = containerId ? `quest-${containerId.slice(0, 8)}` : '$NS'
     const resolve = (text: string) => text.replace(/\$NS/g, ns)
     const pct = Math.round(((index + 1) / total) * 100)
@@ -127,9 +129,8 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
     }
 
     function handleReset() {
-        if (window.confirm('환경을 초기화하면 터미널이 재시작됩니다. 계속할까요?')) {
-            onReset()
-        }
+        setResetConfirmOpen(false)
+        onReset()
     }
 
     function handleNext() {
@@ -166,7 +167,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                             다음<span className="material-symbols-outlined text-[18px]">chevron_right</span>
                         </button>
                         {!isChoice && (
-                            <button onClick={handleReset} title="환경 초기화" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center justify-center transition-colors ml-2">
+                            <button onClick={() => setResetConfirmOpen(true)} title="환경 초기화" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center justify-center transition-colors ml-2">
                                 <span className="material-symbols-outlined text-[18px] text-on-surface-variant">restart_alt</span>
                             </button>
                         )}
@@ -305,6 +306,15 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                     )}
                 </div>
             </div>
+            <ConfirmModal
+                open={resetConfirmOpen}
+                title="환경 초기화"
+                message="환경을 초기화하면 터미널이 재시작돼요. 계속할까요?"
+                confirmLabel="초기화"
+                cancelLabel="취소"
+                onConfirm={handleReset}
+                onCancel={() => setResetConfirmOpen(false)}
+            />
         </div>
     )
 }
