@@ -8,6 +8,10 @@
     "5": "kubectl patch deployment cfg-app -n $NS --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/template/spec/containers/0/env/0/valueFrom/configMapKeyRef/key\",\"value\":\"APP_MODE\"}]'",
     "6": "kubectl patch deployment health-app -n $NS --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/template/spec/containers/0/readinessProbe/httpGet/path\",\"value\":\"/\"}]'",
     "7": "kubectl patch service api2-svc -n $NS --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/ports/0/targetPort\",\"value\":80}]'",
-    "8": "kubectl create secret generic db-pass --from-literal=PASS=s3cret -n $NS"
+    "8": "kubectl create secret generic db-pass --from-literal=PASS=s3cret -n $NS",
+    "9": "kubectl get pods -n $NS                          # RESTARTS 가 계속 증가\nkubectl describe pod -l app=live-app -n $NS      # Liveness probe failed ... 404\n\n# 프로브가 확인하는 경로를 실제 응답하는 경로(/)로 수정\nkubectl patch deployment live-app -n $NS --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/template/spec/containers/0/livenessProbe/httpGet/path\",\"value\":\"/\"}]'",
+    "10": "kubectl get deployment idle-app -n $NS          # READY 0/0 → 원하는 Pod 수가 0\n\n# 복제본을 2개로 복구\nkubectl scale deployment/idle-app --replicas=2 -n $NS",
+    "11": "kubectl describe pod -l app=mem-app -n $NS      # Last State: Terminated, Reason: OOMKilled\n\n# 메모리 limit 을 충분히 늘림\nkubectl set resources deployment/mem-app -n $NS --limits=memory=128Mi",
+    "12": "kubectl logs -l app=mode-app -n $NS             # 'MODE is required'\n\n# 필요한 환경변수 추가\nkubectl set env deployment/mode-app MODE=prod -n $NS"
   }
 }

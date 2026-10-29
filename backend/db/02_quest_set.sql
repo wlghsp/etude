@@ -23,4 +23,5 @@ INSERT INTO quest_set (id, title, description, sandbox_type, category) VALUES
   (22, 'k8s 워크로드 기본', 'Job·CronJob, DaemonSet, requests/limits, 프로브, nodeSelector, initContainers, HPA 등 워크로드의 기본 구성 요소를 실습합니다.', 'k8s', 'k8s'),
   (23, 'k8s 트러블슈팅 실전', '깨진 워크로드의 원인을 describe·logs·events 로 찾아 직접 고칩니다. 이미지 오타, 셀렉터·포트 불일치, CrashLoopBackOff, Pending, 설정 참조 오류 등.', 'k8s', 'k8s'),
   (24, '리눅스 패키지와 systemd 로그', 'rpm 으로 패키지를 조회·검증하고, journalctl·logger 로 로그를 찾고, systemd 유닛을 만들어 시작하고 실패 원인을 찾는 현장 패턴을 실습합니다.', 'linux-systemd', '리눅스'),
-  (25, 'k8s 서비스와 네트워킹', 'Service 유형, 엔드포인트, 클러스터 DNS, Ingress, NetworkPolicy, Headless Service 등 k8s 네트워킹의 기본 구성을 실습합니다.', 'k8s', 'k8s');
+  (25, 'k8s 서비스와 네트워킹', 'Service 유형, 엔드포인트, 클러스터 DNS, Ingress, NetworkPolicy, Headless Service 등 k8s 네트워킹의 기본 구성을 실습합니다.', 'k8s', 'k8s'),
+  (26, 'k8s 스케줄링과 배포 전략', 'taint·toleration, nodeAffinity, podAntiAffinity, 롤링 업데이트 전략, StatefulSet, PodDisruptionBudget, graceful shutdown, kubectl diff 등 Pod 배치와 배포 방식을 다루는 기본기를 실습합니다.', 'k8s', 'k8s');

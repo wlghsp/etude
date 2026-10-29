@@ -1,0 +1,15 @@
+{
+  "setId": 26,
+  "answers": {
+    "1": "kubectl apply -n $NS -f - <<EOF\napiVersion: v1\nkind: Pod\nmetadata:\n  name: gpu-pod\nspec:\n  tolerations:\n  - key: dedicated\n    operator: Equal       # 키와 값이 모두 같을 때\n    value: gpu\n    effect: NoSchedule    # 새 Pod 배치를 막는 taint 를 견딤\n  containers:\n  - name: nginx\n    image: nginx\nEOF",
+    "2": "kubectl apply -n $NS -f - <<EOF\napiVersion: v1\nkind: Pod\nmetadata:\n  name: affinity-pod\nspec:\n  affinity:\n    nodeAffinity:\n      requiredDuringSchedulingIgnoredDuringExecution:   # 반드시 만족해야 배치\n        nodeSelectorTerms:\n        - matchExpressions:\n          - key: disktype\n            operator: In      # 값이 목록 중 하나\n            values:\n            - ssd\n  containers:\n  - name: nginx\n    image: nginx\nEOF",
+    "3": "kubectl apply -n $NS -f - <<EOF\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: spread-app\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: spread-app\n  template:\n    metadata:\n      labels:\n        app: spread-app\n    spec:\n      affinity:\n        podAntiAffinity:\n          preferredDuringSchedulingIgnoredDuringExecution:   # 가능하면\n          - weight: 100\n            podAffinityTerm:\n              labelSelector:\n                matchLabels:\n                  app: spread-app       # 같은 앱 Pod 를 피함\n              topologyKey: kubernetes.io/hostname   # 같은 노드 기준\n      containers:\n      - name: nginx\n        image: nginx\nEOF",
+    "4": "kubectl patch deployment app -n $NS -p '{\"spec\":{\"strategy\":{\"rollingUpdate\":{\"maxSurge\":1,\"maxUnavailable\":0}}}}'\n\n\nkubectl get deployment app -n $NS -o jsonpath='{.spec.strategy}'",
+    "5": "kubectl rollout pause deployment/app -n $NS",
+    "6": "kubectl patch deployment app -n $NS -p '{\"spec\":{\"revisionHistoryLimit\":3}}'\n",
+    "7": "kubectl apply -n $NS -f - <<EOF\napiVersion: apps/v1\nkind: StatefulSet\nmetadata:\n  name: web-sts\nspec:\n  serviceName: web-headless    # 각 Pod 의 DNS 이름을 만들 Headless Service\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web-sts\n  template:\n    metadata:\n      labels:\n        app: web-sts\n    spec:\n      containers:\n      - name: nginx\n        image: nginx\nEOF\n",
+    "8": "kubectl create pdb app-pdb --selector=app=app --min-available=1 -n $NS\n\nkubectl get pdb app-pdb -n $NS",
+    "9": "kubectl apply -n $NS -f - <<EOF\napiVersion: v1\nkind: Pod\nmetadata:\n  name: graceful\nspec:\n  terminationGracePeriodSeconds: 60   # 종료 신호 후 강제 종료까지 60초 대기\n  containers:\n  - name: nginx\n    image: nginx\n    lifecycle:\n      preStop:                         # 종료 직전에 실행\n        exec:\n          command: [\"sh\", \"-c\", \"sleep 5\"]\nEOF",
+    "10": "kubectl diff -f /tmp/app-new.yaml -n $NS > /tmp/diff.txt || true\n"
+  }
+}
