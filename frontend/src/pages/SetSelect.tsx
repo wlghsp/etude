@@ -97,6 +97,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
                                                             <div className="flex flex-col gap-1">
                                                                 <h3 className="font-sans text-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">
                                                                     <span className="text-on-surface-variant font-normal mr-2">#{s.id}</span>{s.title}
+                                                                    {s.sandbox_type === 'quiz' && <span className="ml-2 px-1.5 py-0.5 align-middle border border-primary/50 text-primary font-sans text-label-caps font-normal">퀴즈</span>}
                                                                 </h3>
                                                                 <p className="font-sans text-code-sm text-on-surface-variant">{s.description}</p>
                                                             </div>

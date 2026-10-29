@@ -86,14 +86,51 @@ export async function revokeQuestSetAccess(questSetId: number, userId: number) {
 }
 
 export async function getQuests(questSetId: number): Promise<Quest[]> {
+  // answer_index, explanation 은 일부러 조회하지 않는다 (정답이 화면으로 나가면 안 된다)
   const [rows] = await db.query(
-    'SELECT id, title, description, hint, solution, setup_cmd FROM quest WHERE quest_set_id = ? ORDER BY order_index',
+    'SELECT id, title, description, hint, solution, setup_cmd, kind, choices FROM quest WHERE quest_set_id = ? ORDER BY order_index',
     [questSetId]
   )
   return (rows as any[]).map((r) => ({
     ...r,
     setup_cmd: r.setup_cmd ? JSON.parse(r.setup_cmd) : null,
+    choices: r.choices ? (typeof r.choices === 'string' ? JSON.parse(r.choices) : r.choices) : null,
   })) as Quest[]
+}
+
+export interface ChoiceQuest {
+  questId: number
+  questSetId: number
+  kind: string
+  choiceCount: number
+  answerIndex: number | null
+  explanation: string | null
+}
+
+/** 객관식 판정에 필요한 값을 DB에서 읽는다 (정답과 해설 포함 — 서버 안에서만 쓴다). */
+export async function getChoiceQuest(questId: number): Promise<ChoiceQuest | null> {
+  const [rows] = await db.query<any[]>(
+    'SELECT id, quest_set_id, kind, choices, answer_index, explanation FROM quest WHERE id = ?',
+    [questId]
+  )
+  const r = rows[0]
+  if (!r) return null
+  const choices = r.choices ? (typeof r.choices === 'string' ? JSON.parse(r.choices) : r.choices) : []
+  return {
+    questId: r.id,
+    questSetId: r.quest_set_id,
+    kind: r.kind,
+    choiceCount: Array.isArray(choices) ? choices.length : 0,
+    answerIndex: r.answer_index === null ? null : Number(r.answer_index),
+    explanation: r.explanation ?? null,
+  }
+}
+
+/** 선택한 번호가 정답인지 판정한다. 객관식이 아니거나 정답이 없거나 번호가 범위 밖이면 null (잘못된 요청). */
+export function judgeChoice(quest: ChoiceQuest, choiceIndex: unknown): boolean | null {
+  if (quest.kind !== 'choice' || quest.answerIndex === null) return null
+  if (typeof choiceIndex !== 'number' || !Number.isInteger(choiceIndex) || choiceIndex < 0 || choiceIndex >= quest.choiceCount) return null
+  return choiceIndex === quest.answerIndex
 }
 
 export async function getSetupCmd(questId: number): Promise<string[] | null> {

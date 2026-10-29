@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { canAccessQuestSet, getQuestContext, getQuests, getQuestSets, gradeQuest } from "../services/quest.js";
+import { canAccessQuestSet, getChoiceQuest, getQuestContext, getQuests, getQuestSets, gradeQuest, judgeChoice } from "../services/quest.js";
 import { getSession } from "../services/session-registry.js";
 import { recordAttempt } from "../services/progress.js";
 import { recordSetCompletion } from "../services/set-completion.js";
@@ -16,6 +16,32 @@ export const questRoutes: FastifyPluginAsync = async (app) => {
         const allowed = await canAccessQuestSet(req.user.userId, req.user.role, questSetId)
         if (!allowed) return reply.code(403).send({ error: '이 세트에 접근할 권한이 없습니다.'})
         return getQuests(questSetId)
+    })
+
+    // 객관식 답 제출 (docs/specs/spec_quiz_sets.md). 컨테이너 없이 서버가 정답을 판정하고 채점 기록을 남긴다.
+    // 정답일 때만 해설을 돌려준다 (오답일 때 정답이 드러나지 않게).
+    app.post<{ Params: { id: string }, Body: { questId?: number; sessionId?: string; choiceIndex?: number; elapsedSec?: number; hintUsed?: boolean } }>(
+        '/quest-sets/:id/answer', { preHandler: authMiddleware }, async (req: any, reply) => {
+        const questSetId = Number(req.params.id)
+        const { questId, sessionId, choiceIndex, elapsedSec, hintUsed } = req.body ?? {}
+        if (!Number.isInteger(questSetId) || !Number.isInteger(questId) || typeof sessionId !== 'string' || sessionId.length === 0 || sessionId.length > 36) {
+            return reply.code(400).send({ error: '요청이 올바르지 않습니다.' })
+        }
+        const allowed = await canAccessQuestSet(req.user.userId, req.user.role, questSetId)
+        if (!allowed) return reply.code(403).send({ error: '이 세트에 접근할 권한이 없습니다.' })
+
+        const quest = await getChoiceQuest(questId as number)
+        if (!quest || quest.questSetId !== questSetId || quest.kind !== 'choice') {
+            return reply.code(404).send({ error: '객관식 퀘스트를 찾을 수 없습니다.' })
+        }
+        const passed = judgeChoice(quest, choiceIndex)
+        if (passed === null) return reply.code(400).send({ error: '선택한 번호가 올바르지 않습니다.' })
+
+        try {
+            await recordAttempt(req.user.userId, questId as number, questSetId, sessionId, passed, elapsedSec, hintUsed, false)
+        } catch (e) { console.error('[answer] recordAttempt error:', e) }
+
+        return passed ? { passed, explanation: quest.explanation } : { passed }
     })
 
     // 세트 완료 기록. 이 세션에서 세트의 모든 퀘스트를 통과했는지 서버가 quest_attempt 로 직접 확인한 뒤에만 저장한다.

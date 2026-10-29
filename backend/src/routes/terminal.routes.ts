@@ -21,6 +21,9 @@ export const terminalRoutes: FastifyPluginAsync = async (app) => {
         const allowed = await canAccessQuestSet(req.user.userId, req.user.role, quest.questSetId)
         if (!allowed) return reply.code(403).send({ error: '이 퀘스트에 접근할 권한이 없습니다.' })
 
+        // 퀴즈 세트는 터미널과 컨테이너가 없다 (docs/specs/spec_quiz_sets.md)
+        if (quest.sandboxType === 'quiz') return reply.code(400).send({ error: '퀴즈 세트는 터미널을 사용하지 않습니다.' })
+
         const ticket = issueTicket({
             userId: req.user.userId,
             questId,

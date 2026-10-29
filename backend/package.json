@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify:quests": "tsx src/verify/cli.ts",
-    "verify:k8s-permissions": "tsx src/verify/k8s-permissions-cli.ts"
+    "verify:k8s-permissions": "tsx src/verify/k8s-permissions-cli.ts",
+    "verify:quiz": "tsx src/verify/quiz-cli.ts"
   },
   "keywords": [],
   "author": "",

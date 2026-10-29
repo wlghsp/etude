@@ -74,7 +74,8 @@ function App() {
     setQuestIndex(0)
     setSandboxType(sandboxType)
     setContainerId('')
-    setPreparing(true)
+    // 퀴즈 세트는 터미널과 컨테이너가 없어 환경 준비 단계가 없다
+    setPreparing(sandboxType !== 'quiz')
   }
 
   // 세트의 모든 퀘스트를 통과하면 완료 기록을 저장한다. 서버가 이 세션의 채점 기록으로 확인하고, 같은 세션의 중복 요청은 한 번만 저장된다.
@@ -140,6 +141,7 @@ function App() {
   }
 
   const quest = quests[questIndex] ?? null
+  const isQuiz = sandboxType === 'quiz'
 
   return (
     <div className="dark h-screen flex flex-col bg-surface overflow-hidden relative">
@@ -151,7 +153,7 @@ function App() {
         </button>
       </header>
       <main className="flex flex-1 overflow-hidden">
-        <section className="w-[40%] flex flex-col">
+        <section className={isQuiz ? 'w-full max-w-3xl mx-auto flex flex-col' : 'w-[40%] flex flex-col'}>
           {summaryOpen
             ? <SetComplete
                 setId={selectedSetId}
@@ -166,6 +168,7 @@ function App() {
             <QuestPanel
               key={quest.id}
               quest={quest}
+              setId={selectedSetId}
               containerId={containerId}
               sessionId={sessionId}
               total={quests.length}
@@ -186,37 +189,39 @@ function App() {
             />
           )}
         </section>
-        <section className="w-[60%] flex flex-col bg-surface-container-lowest">
-          <div className="h-9 border-b border-outline-variant flex items-center px-4 bg-surface justify-between shrink-0">
-            <div className="flex items-center gap-4">
-              <span className="font-sans text-label-caps text-on-surface flex items-center gap-2">
-                <span className="material-symbols-outlined text-[16px]">terminal</span> 터미널
-              </span>
+        {!isQuiz && (
+          <section className="w-[60%] flex flex-col bg-surface-container-lowest">
+            <div className="h-9 border-b border-outline-variant flex items-center px-4 bg-surface justify-between shrink-0">
+              <div className="flex items-center gap-4">
+                <span className="font-sans text-label-caps text-on-surface flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px]">terminal</span> 터미널
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${TERMINAL_STATUS_VIEW[terminalStatus].dot}`}></span>
+                <span className="font-sans text-label-caps text-on-surface-variant">{TERMINAL_STATUS_VIEW[terminalStatus].label}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${TERMINAL_STATUS_VIEW[terminalStatus].dot}`}></span>
-              <span className="font-sans text-label-caps text-on-surface-variant">{TERMINAL_STATUS_VIEW[terminalStatus].label}</span>
-            </div>
-          </div>
-          {quest
-            ? <Terminal
-                key={`${sandboxType === 'docker-persistent' ? `set-${selectedSetId}` : questIndex}-${resetKey}`}
-                questId={quest.id}
-                onConnected={(id) => { setContainerId(id); setPreparing(false) }}
-                onStatus={(status) => {
-                  setTerminalStatus(status)
-                  if (status === 'ended') setPreparing(false)
-                }}
-              />
-            : null
-          }
-          {preparing && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface/80 z-50">
-              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <span className="font-sans text-label-caps text-on-surface-variant">환경 준비 중...</span>
-            </div>
-          )}
-        </section>
+            {quest
+              ? <Terminal
+                  key={`${sandboxType === 'docker-persistent' ? `set-${selectedSetId}` : questIndex}-${resetKey}`}
+                  questId={quest.id}
+                  onConnected={(id) => { setContainerId(id); setPreparing(false) }}
+                  onStatus={(status) => {
+                    setTerminalStatus(status)
+                    if (status === 'ended') setPreparing(false)
+                  }}
+                />
+              : null
+            }
+            {preparing && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface/80 z-50">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="font-sans text-label-caps text-on-surface-variant">환경 준비 중...</span>
+              </div>
+            )}
+          </section>
+        )}
       </main>
     </div>
   )

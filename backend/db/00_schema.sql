@@ -26,6 +26,11 @@ CREATE TABLE quest (
   solution     TEXT,
   setup_cmd    JSON,
   grade_cmd    JSON NOT NULL,
+  -- 객관식 퀴즈(docs/specs/spec_quiz_sets.md): kind='choice' 이면 choices/answer_index/explanation 을 쓰고 grade_cmd 는 []
+  kind         VARCHAR(10) NOT NULL DEFAULT 'terminal',
+  choices      JSON NULL,
+  answer_index INT NULL,
+  explanation  TEXT NULL,
   FOREIGN KEY (quest_set_id) REFERENCES quest_set(id)
 );
 

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Quest } from '../types'
-import { gradeQuest, GradeRequestError } from '../api/quest'
+import { gradeQuest, answerChoice, GradeRequestError } from '../api/quest'
 import { useQuestTimer, formatClock, formatDuration } from './useQuestTimer'
 import type { QuestRecord } from './SetComplete'
 
@@ -37,6 +37,7 @@ function Confetti() {
 
 interface Props {
     quest: Quest
+    setId: number | null
     containerId: string
     sessionId: string
     total: number
@@ -57,7 +58,7 @@ function gradeErrorMessage(err: unknown): string {
     return '채점 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.'
 }
 
-export function QuestPanel({ quest, containerId, sessionId, total, index, completedIndices, onPrev, onNext, onFinish, onReset, onComplete }: Props) {
+export function QuestPanel({ quest, setId, containerId, sessionId, total, index, completedIndices, onPrev, onNext, onFinish, onReset, onComplete }: Props) {
     const timer = useQuestTimer(sessionId, quest.id)
     const [finalSeconds, setFinalSeconds] = useState<number | null>(null)
     const [failedAttempts, setFailedAttempts] = useState(0)
@@ -75,6 +76,11 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, comple
         setSolutionUsed(true)
     }
 
+    // 객관식 상태: 고른 번호, 이미 틀린 번호(다시 고를 수 없게), 정답을 맞힌 뒤에 받는 해설
+    const isChoice = quest.kind === 'choice'
+    const [selected, setSelected] = useState<number | null>(null)
+    const [wrongChoices, setWrongChoices] = useState<Set<number>>(new Set())
+    const [explanation, setExplanation] = useState<string | null>(null)
     const [result, setResult] = useState<boolean | null>(null)
     const [loading, setLoading] = useState(false)
     const [gradeError, setGradeError] = useState<string | null>(null)
@@ -87,6 +93,22 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, comple
         setLoading(true)
         setGradeError(null)
         try {
+            if (isChoice) {
+                if (selected === null || setId === null) return
+                const data = await answerChoice(setId, { questId: quest.id, sessionId, choiceIndex: selected, elapsedSec: timer.getSeconds(), hintUsed })
+                setResult(data.passed)
+                if (data.passed) {
+                    setExplanation(data.explanation ?? null)
+                    const seconds = timer.finish()
+                    setFinalSeconds(seconds)
+                    onComplete(index, { seconds, hintUsed, solutionUsed: false, attempts: failedAttempts + 1 })
+                } else {
+                    setWrongChoices((prev) => new Set(prev).add(selected))
+                    setSelected(null)
+                    setFailedAttempts((n) => n + 1)
+                }
+                return
+            }
             const data = await gradeQuest(containerId, quest.id, sessionId, timer.getSeconds(), hintUsed, solutionUsed)
             setResult(data.passed)
             if (data.passed) {
@@ -143,9 +165,11 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, comple
                         <button onClick={handleNext} disabled={index === total - 1} title="다음" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center font-sans text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
                             다음<span className="material-symbols-outlined text-[18px]">chevron_right</span>
                         </button>
-                        <button onClick={handleReset} title="환경 초기화" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center justify-center transition-colors ml-2">
-                            <span className="material-symbols-outlined text-[18px] text-on-surface-variant">restart_alt</span>
-                        </button>
+                        {!isChoice && (
+                            <button onClick={handleReset} title="환경 초기화" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center justify-center transition-colors ml-2">
+                                <span className="material-symbols-outlined text-[18px] text-on-surface-variant">restart_alt</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -157,6 +181,38 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, comple
                     <div className="border border-outline-variant bg-surface-container p-4">
                         <p className="font-sans text-body-lg text-on-surface leading-7 break-words whitespace-pre-wrap"><RichText text={resolve(quest.description)} /></p>
                     </div>
+
+                    {isChoice && quest.choices && (
+                        <div role="radiogroup" aria-label="선택지" className="space-y-2">
+                            {quest.choices.map((choice, i) => {
+                                const isWrong = wrongChoices.has(i)
+                                const isPicked = selected === i
+                                const locked = result === true
+                                return (
+                                    <button
+                                        key={i}
+                                        role="radio"
+                                        aria-checked={isPicked}
+                                        disabled={isWrong || locked}
+                                        onClick={() => setSelected(i)}
+                                        className={`w-full flex items-start gap-3 text-left border px-4 py-3 transition-colors ${
+                                            isPicked ? 'border-primary bg-primary/10'
+                                            : isWrong ? 'border-error/40 bg-error/5 opacity-60'
+                                            : 'border-outline-variant bg-surface-container hover:border-primary/60 hover:bg-surface-container-high'
+                                        } disabled:cursor-default`}
+                                    >
+                                        <span className={`shrink-0 w-6 h-6 flex items-center justify-center font-sans text-label-caps border ${isPicked ? 'border-primary text-primary' : isWrong ? 'border-error/50 text-error' : 'border-outline-variant text-on-surface-variant'}`}>
+                                            {'ABCDEFGH'[i]}
+                                        </span>
+                                        <span className={`flex-1 font-sans text-body-md leading-6 break-words whitespace-pre-wrap ${isWrong ? 'line-through text-on-surface-variant' : 'text-on-surface'}`}>
+                                            <RichText text={resolve(choice)} />
+                                        </span>
+                                        {isWrong && <span className="material-symbols-outlined text-[18px] text-error shrink-0">close</span>}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    )}
 
                     <div className="border border-outline-variant">
                         <button onClick={toggleHint} aria-expanded={hintOpen} className="w-full flex items-center justify-between px-4 py-3 font-sans text-label-caps text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
@@ -170,17 +226,19 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, comple
                         )}
                     </div>
 
-                    <div className="border border-outline-variant">
-                        <button onClick={toggleSolution} aria-expanded={solutionOpen} className="w-full flex items-center justify-between px-4 py-3 font-sans text-label-caps text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
-                            <span className="flex items-center gap-2"><span className="material-symbols-outlined text-[18px]">task_alt</span>풀이 {solutionOpen ? '접기' : '보기'}<span className="font-normal text-on-surface-variant/70">(열면 풀이 사용으로 기록됩니다)</span></span>
-                            <span className="material-symbols-outlined text-[18px]">{solutionOpen ? 'expand_less' : 'expand_more'}</span>
-                        </button>
-                        {solutionOpen && (
-                            <div className="border-t border-outline-variant bg-surface-container p-4">
-                                <pre className="font-mono text-code-sm text-on-surface-variant break-words whitespace-pre-wrap">{resolve(quest.solution ?? '')}</pre>
-                            </div>
-                        )}
-                    </div>
+                    {!isChoice && (
+                        <div className="border border-outline-variant">
+                            <button onClick={toggleSolution} aria-expanded={solutionOpen} className="w-full flex items-center justify-between px-4 py-3 font-sans text-label-caps text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+                                <span className="flex items-center gap-2"><span className="material-symbols-outlined text-[18px]">task_alt</span>풀이 {solutionOpen ? '접기' : '보기'}<span className="font-normal text-on-surface-variant/70">(열면 풀이 사용으로 기록됩니다)</span></span>
+                                <span className="material-symbols-outlined text-[18px]">{solutionOpen ? 'expand_less' : 'expand_more'}</span>
+                            </button>
+                            {solutionOpen && (
+                                <div className="border-t border-outline-variant bg-surface-container p-4">
+                                    <pre className="font-mono text-code-sm text-on-surface-variant break-words whitespace-pre-wrap">{resolve(quest.solution ?? '')}</pre>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {allDone && result !== true && (
                         <button onClick={onFinish} className="w-full border border-success/50 bg-success/10 text-success py-3 font-sans font-bold hover:bg-success/20 transition-colors flex items-center justify-center gap-2">
@@ -191,11 +249,11 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, comple
                     {/* Grade Button */}
                     <button
                         onClick={grade}
-                        disabled={loading || result === true}
+                        disabled={loading || result === true || (isChoice && selected === null)}
                         className="w-full py-3 bg-info text-white font-sans text-label-caps hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                        {loading ? '채점 중...' : '채점하기'}
+                        {loading ? '채점 중...' : isChoice ? '정답 확인' : '채점하기'}
                     </button>
 
                     {/* Result */}
@@ -211,7 +269,7 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, comple
                             <div>
                                 <p className="font-sans text-body-lg font-bold text-error">틀렸어요</p>
                                 <p className="font-sans text-body-md text-on-surface-variant">
-                                    완료 조건을 다시 확인하고 한 번 더 시도해 보세요.
+                                    {isChoice ? '틀린 선택지는 지워졌어요. 다른 선택지를 골라 보세요.' : '완료 조건을 다시 확인하고 한 번 더 시도해 보세요.'}
                                     {failedAttempts >= 2 && !hintUsed && ' 막히면 힌트를 열어 볼 수 있어요.'}
                                 </p>
                             </div>
@@ -229,6 +287,12 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, comple
                                     </p>
                                 </div>
                             </div>
+                            {explanation && (
+                                <div className="relative mb-4 border border-success/30 bg-surface-container p-4">
+                                    <div className="font-sans text-label-caps text-success mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px]">menu_book</span>해설</div>
+                                    <p className="font-sans text-body-md text-on-surface leading-7 break-words whitespace-pre-wrap"><RichText text={resolve(explanation)} /></p>
+                                </div>
+                            )}
                             {index < total - 1 && !allDone
                                 ? <button onClick={handleNext} className="w-full bg-success text-on-primary py-3 font-sans font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2">
                                     다음 퀘스트 <span className="material-symbols-outlined">arrow_forward</span>

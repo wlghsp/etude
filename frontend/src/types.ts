@@ -5,6 +5,9 @@ export interface Quest {
   hint: string
   solution: string
   setup_cmd: string[] | null
+  // 객관식이면 'choice' 와 선택지 (정답과 해설은 서버만 안다)
+  kind: 'terminal' | 'choice'
+  choices: string[] | null
 }
 
 export interface QuestSet {
