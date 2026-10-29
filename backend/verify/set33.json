@@ -1,0 +1,13 @@
+{
+  "setId": 33,
+  "answers": {
+    "1": "kubectl set image deployment/web nginx=nginx:latest -n $NS",
+    "2": "kubectl set image deployment/api nginx=nginx -n $NS",
+    "3": "kubectl rollout restart deployment/web -n $NS && kubectl rollout status deployment/web -n $NS --timeout=90s",
+    "4": "kubectl scale deployment/web --replicas=3 -n $NS",
+    "5": "kubectl delete pvc data -n $NS && printf '%s\\n' 'apiVersion: v1' 'kind: PersistentVolumeClaim' 'metadata:' '  name: data' 'spec:' '  accessModes:' '  - ReadWriteOnce' '  resources:' '    requests:' '      storage: 1Gi' | kubectl apply -n $NS -f -",
+    "6": "kubectl rollout undo deployment/web -n $NS && kubectl rollout status deployment/web -n $NS --timeout=90s",
+    "7": "printf '%s\\n' 'apiVersion: v1' 'kind: Pod' 'metadata:' '  name: duo' 'spec:' '  containers:' '  - name: web' '    image: nginx' '  - name: helper' '    image: busybox' '    command: [\"sleep\", \"3600\"]' | kubectl apply -n $NS -f -",
+    "8": "kubectl get pods -n $NS --sort-by=.metadata.creationTimestamp > /tmp/pods_by_age.txt"
+  }
+}
