@@ -1,6 +1,6 @@
 # Privileged 샌드박스 격리 명세 — 학습자 컨테이너가 호스트 root가 되지 못하게 한다
 
-> 상태: **A(Sysbox) 로컬 검증 완료 — 서버 적용은 별도 승인 대기** (아래 "조각 A: 로컬 검증 결과"). 자원 상한(조각 R)은 이 명세와 별개로 먼저 구현했다.
+> 상태: **A(Sysbox) 로컬 검증 완료, 앱은 `SANDBOX_RUNTIME`으로 전환 가능(기본 꺼짐) — 서버 설치·적용은 별도 승인 대기** ([운영 가이드](../ops/guide_sysbox_runtime.md)) (아래 "조각 A: 로컬 검증 결과"). 자원 상한(조각 R)은 이 명세와 별개로 먼저 구현했다.
 
 ## 목표
 
@@ -38,14 +38,17 @@
 
 ## 조각 A: 로컬 검증 결과 (2026-10-29, Colima)
 
-환경: Colima VM(aarch64 Ubuntu 24.04, 커널 6.8, cgroup v2)에 Sysbox 0.7.1 ARM64 deb 설치. 러너는 `VERIFY_RUNTIME=sysbox-runc`일 때 특권 프로필을 `Runtime: sysbox-runc`로, `Privileged`·`CgroupnsMode: host`·`/sys/fs/cgroup` 바인드 없이 만든다 ([docker-sandbox.ts](../../backend/src/verify/docker-sandbox.ts)).
+환경: Colima VM(aarch64 Ubuntu 24.04, 커널 6.8, cgroup v2)에 Sysbox 0.7.1 ARM64 deb 설치. `SANDBOX_RUNTIME=sysbox-runc`이면 앱([terminal.ts](../../backend/src/services/terminal.ts))과 검증 러너([docker-sandbox.ts](../../backend/src/verify/docker-sandbox.ts))가 `docker`·`docker-persistent`·`linux-systemd` 컨테이너를 `Runtime: sysbox-runc`로, `Privileged`·`CgroupnsMode: host`·`/sys/fs/cgroup` 바인드 없이 만든다. 둘은 같은 헬퍼([sandbox-runtime.ts](../../backend/src/services/sandbox-runtime.ts))를 쓴다. **값이 없으면 지금처럼 `Privileged`다**(기본값). 그래서 서버에 Sysbox를 설치하기 전에 배포해도 동작이 바뀌지 않는다.
 
-- **검증됨 — 퀘스트:** 세트 10(12), 5(13), 8(7), 11(6) = **38개 전부 통과** (`VERIFY_RUNTIME=sysbox-runc npm run verify:quests -- --set 10` 등). 세트 5의 1번이 첫 실행에서 setup 타임아웃(-1)으로 실패했으나, 첫 이미지 pull 지연이었고 재실행에서 통과했다 (Privileged 런타임도 동일).
+- **검증됨 — 퀘스트:** 세트 10(12), 5(13), 8(7), 11(6) = **38개 전부 통과** (`SANDBOX_RUNTIME=sysbox-runc npm run verify:quests -- --set 10` 등). 세트 5의 1번이 첫 실행에서 setup 타임아웃(-1)으로 실패했으나, 첫 이미지 pull 지연이었고 재실행에서 통과했다 (Privileged 런타임도 동일).
 - **검증됨 — 격리 프로브(읽기 전용):** 같은 프로브를 `--privileged`와 Sysbox 컨테이너에서 실행. 특권은 `uid_map 0 0 4294967295`, `/dev` 189개(호스트 디스크 `vda*`, `loop*` 보임). Sysbox는 `uid_map 0 100000 65536`, `/dev` 16개(블록 장치 없음), 호스트 디스크 마운트 거부(`permission denied`). 컨테이너 탈출 PoC는 실행하지 않았다.
 - **의미 있는 발견 — `linux-systemd`:** 앞서 `Privileged` 제거(안 C)는 로컬에서 모두 실패했으나, Sysbox에서는 특권 없이 부팅·통과했다. 안 C가 막혔던 systemd 문제를 Sysbox가 해결한다.
 - **설치 주의(Ubuntu 24.04):** deb의 의존성은 `fuse`(fusermount)인데 sysbox-fs는 `fusermount3`를 실행한다. `fuse3`이 없으면 컨테이너 생성이 `failed to pre-register with sysbox-fs`로 실패한다. 서버(22.04)에서는 `fuse3` 필요 여부를 설치 전에 확인한다.
 - **설치 부작용:** 설치 시 Docker 데몬이 재시작돼 실행 중이던 컨테이너가 모두 내려갔다 (`restart: no`인 etude-db는 수동 기동 필요). 서버 점검 시간이 필요하다는 가정이 확인됐다.
-- **미검증:** 서버(Ubuntu 22.04, Docker 29.6.1 rootful)에서의 설치·동작, 앱 코드(`terminal.ts`) 전환, `userns` 공존, 학습자 동시 다수 세션의 자원 사용, 운영 설치·롤백 문서(수용 조건 4번).
+- **발견 — Docker Hub 요청 한도:** 같은 세트를 반복 실행하자 `429 Too Many Requests`로 `nginx`·`hello-world`를 받지 못해 퀘스트가 실패했다(`setup_cmd` 종료 코드 125, 로그로 확인). DinD는 컨테이너마다 이미지 캐시가 없는 새 데몬이라 퀘스트마다 Hub에서 받는다. Sysbox와 무관하고 `Privileged`도 같다. 서버 IP를 학습자가 공유하므로 동시 사용이 늘면 실제 운영 위험이다 (별도 대책 필요: 레지스트리 미러, 인증 pull 등. 이 명세의 범위 밖).
+- **미해결:** DinD 컨테이너가 퀘스트 도중 스스로 종료된 경우가 두 번 있었다(`409 is not running`, 종료 코드 2 한 번). OOM 이벤트는 없었고 단순 반복 부하(pull·run·stop 12회)에서는 재현되지 않았다. 당시 VM 메모리가 부족했고(5.9GB 중 5.2GB 사용) 요청 한도도 겹쳐 있어 원인을 가르지 못했다. 메모리를 비운 뒤의 실행(세트 10·8 합쳐 19개, 세트 5 13개)은 통과했다. 서버에서 켠 뒤 `docker events --filter event=die`로 관찰한다.
+- **검증됨 — 기본 동작 유지:** `SANDBOX_RUNTIME`이 없으면 `Privileged`로 만든다(단위 테스트, 세트 8의 `Privileged` 실행 7개 통과). `src` 전체 테스트 163개 통과.
+- **미검증:** 서버(Ubuntu 22.04, Docker 29.6.1 rootful)에서의 설치·동작, `userns` 공존, 학습자 동시 다수 세션의 자원 사용.
 
 ## 선택지
 
@@ -69,10 +72,10 @@ A는 퀘스트를 바꾸지 않고 위험을 가장 크게 줄인다. 다만 미
 
 ## 수용 조건 (A 기준 초안)
 
-- [ ] `docker`, `docker-persistent`, `linux-systemd` 컨테이너가 `Privileged` 없이 만들어진다
-- [ ] 검증 러너로 세트 5, 8, 10, 11의 퀘스트 38개가 새 런타임에서 통과한다
-- [ ] 컨테이너 안에서 호스트 장치·파일(`/dev` 블록 장치, 호스트 루트)에 접근할 수 없다 (프로브로 확인, 파괴적 동작 없이)
-- [ ] 런타임 설치·롤백 절차가 `docs/ops/`에 있다
+- [x] `docker`, `docker-persistent`, `linux-systemd` 컨테이너가 `Privileged` 없이 만들어진다 (`SANDBOX_RUNTIME` 설정 시. 서버에서는 켜기 전)
+- [x] 검증 러너로 세트 5, 8, 10, 11의 퀘스트 38개가 새 런타임에서 통과한다 (로컬. 위 "미해결" 참고)
+- [x] 컨테이너 안에서 호스트 장치·파일(`/dev` 블록 장치, 호스트 루트)에 접근할 수 없다 (프로브로 확인, 파괴적 동작 없이)
+- [x] 런타임 설치·롤백 절차가 `docs/ops/`에 있다 ([guide_sysbox_runtime.md](../ops/guide_sysbox_runtime.md)). 서버에서 실제로 수행하는 것은 별도
 
 ## 범위 밖
 
