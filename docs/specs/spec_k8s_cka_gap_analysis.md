@@ -39,7 +39,7 @@ CKA 시험 비중은 제 기억 기준이며 **최신 CNCF 커리큘럼으로 �
 | 후보 | 내용 | 추정 규모 | 비고 |
 |---|---|---|---|
 | **A. k8s 트러블슈팅 실전** | 깨진 워크로드를 고치는 시나리오 10~12개 | 퀘스트 10~12 | 현장·CKA 가치 최고. 사전 장애 주입(setup_cmd)이 필요하고 채점은 상태 기반 |
-| **B. kubectl 속도·실전** | dry-run YAML, jsonpath, explain, 명령형 생성, 컨텍스트 | 퀘스트 8~10 | 구현 쉬움. A보다 먼저 만들어도 됨 |
+| **B. kubectl 속도·실전** | dry-run YAML, jsonpath, explain, 명령형 생성, 컨텍스트 | 퀘스트 8~10 | **구현됨: 세트 19 (10개), 로컬 검증 10/10** (2026-10-29). 채점은 리소스 상태 기준, 이미지 pull에 의존하지 않음 |
 | **C. 워크로드 확장** | 프로브, requests/limits, Job/CronJob, DaemonSet, HPA | 퀘스트 8~10 | 노드 변경이 필요한 스케줄링(taint)은 제외 |
 | **D. 서비스·네트워킹** | Service 유형, DNS, Ingress, NetworkPolicy | 퀘스트 6~8 | 클러스터 Ingress/CNI 확인이 선행 조건 |
 | **E. 네임스페이스 RBAC** | ServiceAccount, Role/RoleBinding, `auth can-i` | 퀘스트 4~6 | 현재 `edit`로는 Role 생성이 안 될 가능성 → 권한 설계 변경 필요, 보안 검토 대상 |
@@ -56,3 +56,13 @@ CKA 시험 비중은 제 기억 기준이며 **최신 CNCF 커리큘럼으로 �
 ## 범위 밖
 
 - etcd 백업·복구, kubeadm, 노드·컨트롤 플레인 장애, 클러스터 범위 RBAC: 별도 VM 환경이 필요해 이 플랫폼 구조 밖이다. 필요하면 실습 환경을 따로 두는 별도 프로젝트로 본다.
+
+## 기본기 점검 (2026-10-29, 세트 6·12·13·14·19 정답 텍스트 검색)
+
+방법: 로컬 DB의 `quest.solution` 키워드 검색 (`검증됨`). 오탐 1건: 세트 13의 `requests:`는 PVC 용량이라 Pod 리소스 requests/limits는 사실상 0건이다.
+
+- **0건 → 세트 20에서 채움(네임스페이스 생성은 권한상 제외):** 네임스페이스 생성, `exec -it`(세트 6.12는 `-it` 없이 `exec`만), `logs -f`, `get -o wide`, `get events`, `rollout status`/`history`, `kubectl cp`, `kubectl edit`, 라벨 셀렉터(`-l`), `config use-context`/`get-contexts`, Job, CronJob, DaemonSet, StatefulSet, 프로브(liveness/readiness), Pod 리소스 requests/limits, nodeSelector·taint, initContainers, Ingress, NetworkPolicy, ServiceAccount/RBAC, HPA
+- **1건:** `describe`, `logs --previous`, `delete`
+- **충분함:** ConfigMap, Secret, PVC, Helm
+
+→ 가장 기본인 "일상 운영 명령"(네임스페이스, exec -it, logs -f, -o wide, events, rollout status/history, edit, 라벨 셀렉터, delete, context)이 비어 있다. 이것이 갭 분석의 A(트러블슈팅)·C(워크로드) 앞에 와야 한다.
