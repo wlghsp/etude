@@ -341,6 +341,14 @@ describe('샌드박스 자원 상한', () => {
         return docker
     }
 
+    it('모든 샌드박스 컨테이너에 UTF-8 로캘(LANG)을 준다 (없으면 한글 입력이 readline 에서 깨진다)', async () => {
+        for (const type of ['linux', 'linux-ssh', 'docker', 'docker-persistent', 'linux-systemd', 'k8s', 'k8s-isolated']) {
+            const docker = await connect(type)
+
+            expect(docker.createContainer.mock.calls[0][0].Env, type).toContain('LANG=C.UTF-8')
+        }
+    })
+
     it('기본 샌드박스(linux)에 메모리·CPU·프로세스 상한을 건다', async () => {
         const host = limitsOf(await connect('linux'))
 

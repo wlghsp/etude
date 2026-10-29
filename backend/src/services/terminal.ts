@@ -188,6 +188,7 @@ export async function handleTerminal(
 
 async function handleDefaultTerminal(docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null, ctx: TerminalCtx): Promise<PreparedTerminal> {
   const container = await docker.createContainer({
+    Env: SANDBOX_ENV,
     Image: config.image,
     Labels: { etude: 'sandbox'},
     HostConfig: { Binds: config.binds ?? [], ...sandboxLimits('default') },
@@ -222,6 +223,7 @@ async function handleDockerTerminal(
 ): Promise<PreparedTerminal> {
   const { binds: isoBinds, ...isoHost } = privilegedSandboxHost('dind')
   const container = await docker.createContainer({
+    Env: SANDBOX_ENV,
     Image: config.image,
     Labels: { etude: 'sandbox'},
     OpenStdin: false, Tty: false,
@@ -246,6 +248,7 @@ async function handleDockerTerminal(
 async function handleSystemdTerminal(docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null, ctx: TerminalCtx): Promise<PreparedTerminal> {
   const { binds: isoBinds, ...isoHost } = privilegedSandboxHost('systemd')
   const container = await docker.createContainer({
+    Env: SANDBOX_ENV,
     Image: config.image,
     Labels: { etude: 'sandbox' },
     OpenStdin: false, Tty: false,
@@ -273,6 +276,10 @@ async function handleSystemdTerminal(docker: Docker, config: { image: string, bi
 
 // k8s 샌드박스. 학습자에게 관리자 kubeconfig를 주지 않는다: DB의 binds(관리자 kubeconfig 마운트)는 무시하고,
 // 세션마다 자기 네임스페이스 안에서만 쓸 수 있는 제한 kubeconfig를 만들어 주입한다 (k8s-session.ts).
+// 컨테이너에 LANG 이 없으면 로캘이 ASCII 라서, bash(readline)가 한글의 UTF-8 바이트를 Meta 키 입력으로 해석해
+// "(arg: 1)" 같은 숫자 인자 모드로 빠지고 입력이 깨진다. 모든 샌드박스 컨테이너에 UTF-8 로캘을 준다.
+export const SANDBOX_ENV = ['LANG=C.UTF-8']
+
 // kubectl 별칭 k 와 자동완성을 기본으로 준다 (CKA 시험 환경과 같은 기본값). 셸이 시작되기 전에 ~/.bashrc 를 만들고 그 셸을 exec 해야 첫 셸에 적용된다.
 export const K8S_SHELL_CMD = [
   '/bin/bash',
@@ -282,6 +289,7 @@ export const K8S_SHELL_CMD = [
 
 async function handleK8sTerminal(docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null, ctx: TerminalCtx): Promise<PreparedTerminal> {
   const container = await docker.createContainer({
+    Env: SANDBOX_ENV,
     Image: config.image,
     Labels: { etude: 'sandbox'},
     HostConfig: {
@@ -324,6 +332,7 @@ async function handleK8sIsolatedTerminal(docker: Docker, questId: number | null,
   ctx.track(() => releaseVcluster(vcluster))
 
   const container = await docker.createContainer({
+    Env: SANDBOX_ENV,
     Image: 'etude-k8s',
     Labels: { etude: 'sandbox' },
     HostConfig: {
