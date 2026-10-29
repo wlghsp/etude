@@ -18,4 +18,8 @@ INSERT INTO quest_set (id, title, description, sandbox_type, category) VALUES
   (17, '리눅스 쉘 스크립트 기초', '변수와 인자, 조건문, 반복문, 종료 코드로 현장에서 쓰는 작은 쉘 스크립트를 직접 작성합니다.', 'linux', '리눅스'),
   (18, '리눅스 네트워크 진단', 'curl, nc, ss, /etc/hosts 로 서비스가 응답하는지, 포트가 열려 있는지, 이름이 풀리는지 확인하는 현장 패턴을 실습합니다.', 'linux', '리눅스'),
   (19, 'kubectl 속도와 실전', 'dry-run으로 YAML 뼈대 만들기, 명령형 수정, jsonpath, custom-columns, explain, patch 등 시간 제한 실기(CKA 등)에서 점수를 가르는 kubectl 손기술을 실습합니다.', 'k8s', 'k8s'),
-  (20, 'k8s 일상 운영 기본기', '노드·IP 확인, exec, 로그, 이벤트, 라벨 셀렉터, 롤아웃 이력·재시작, YAML 백업 등 매일 쓰는 kubectl 기본 명령을 실습합니다.', 'k8s', 'k8s');
+  (20, 'k8s 일상 운영 기본기', '노드·IP 확인, exec, 로그, 이벤트, 라벨 셀렉터, 롤아웃 이력·재시작, YAML 백업 등 매일 쓰는 kubectl 기본 명령을 실습합니다.', 'k8s', 'k8s'),
+  (21, '리눅스 쉘 기본기와 사용자·권한', '와일드카드, 인용부호, xargs, tee, diff, alias, 사용자·그룹, su, umask, 하드링크 등 매일 쓰는 쉘 기본기를 실습합니다.', 'linux', '리눅스'),
+  (22, 'k8s 워크로드 기본', 'Job·CronJob, DaemonSet, requests/limits, 프로브, nodeSelector, initContainers, HPA 등 워크로드의 기본 구성 요소를 실습합니다.', 'k8s', 'k8s'),
+  (23, 'k8s 트러블슈팅 실전', '깨진 워크로드의 원인을 describe·logs·events 로 찾아 직접 고칩니다. 이미지 오타, 셀렉터·포트 불일치, CrashLoopBackOff, Pending, 설정 참조 오류 등.', 'k8s', 'k8s'),
+  (24, '리눅스 패키지와 systemd 로그', 'rpm 으로 패키지를 조회·검증하고, journalctl·logger 로 로그를 찾고, systemd 유닛을 만들어 시작하고 실패 원인을 찾는 현장 패턴을 실습합니다.', 'linux-systemd', '리눅스');

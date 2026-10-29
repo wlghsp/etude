@@ -1,0 +1,16 @@
+{
+  "setId": 22,
+  "answers": {
+    "1": "kubectl create job hello-job --image=busybox -n $NS -- echo hi",
+    "2": "kubectl apply -n $NS -f - <<EOF\napiVersion: batch/v1\nkind: Job\nmetadata:\n  name: batch-job\nspec:\n  completions: 3\n  template:\n    spec:\n      restartPolicy: Never\n      containers:\n      - name: work\n        image: busybox\n        command: [\"echo\", \"work\"]\nEOF",
+    "3": "kubectl create cronjob backup --image=busybox --schedule='*/5 * * * *' -n $NS -- echo backup",
+    "4": "kubectl patch cronjob backup -n $NS -p '{\"spec\":{\"suspend\":true}}'",
+    "5": "kubectl apply -n $NS -f - <<EOF\napiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  name: node-agent\nspec:\n  selector:\n    matchLabels:\n      app: node-agent\n  template:\n    metadata:\n      labels:\n        app: node-agent\n    spec:\n      containers:\n      - name: agent\n        image: nginx\nEOF",
+    "6": "kubectl set resources deployment/app -n $NS --requests=cpu=50m,memory=32Mi --limits=cpu=100m,memory=64Mi",
+    "7": "kubectl apply -n $NS -f - <<EOF\napiVersion: v1\nkind: Pod\nmetadata:\n  name: probe-pod\nspec:\n  containers:\n  - name: nginx\n    image: nginx\n    livenessProbe:\n      httpGet:\n        path: /\n        port: 80\n      initialDelaySeconds: 5\nEOF",
+    "8": "kubectl apply -n $NS -f - <<EOF\napiVersion: v1\nkind: Pod\nmetadata:\n  name: ssd-pod\nspec:\n  nodeSelector:\n    disktype: ssd\n  containers:\n  - name: nginx\n    image: nginx\nEOF",
+    "9": "kubectl apply -n $NS -f - <<EOF\napiVersion: v1\nkind: Pod\nmetadata:\n  name: init-pod\nspec:\n  volumes:\n  - name: work\n    emptyDir: {}\n  initContainers:\n  - name: prep\n    image: busybox\n    command: [\"sh\", \"-c\", \"echo ready > /work/ready\"]\n    volumeMounts:\n    - name: work\n      mountPath: /work\n  containers:\n  - name: main\n    image: nginx\n    volumeMounts:\n    - name: work\n      mountPath: /work\nEOF",
+    "10": "kubectl apply -n $NS -f - <<EOF\napiVersion: v1\nkind: Pod\nmetadata:\n  name: env-pod\nspec:\n  containers:\n  - name: nginx\n    image: nginx\n    env:\n    - name: MY_POD\n      valueFrom:\n        fieldRef:\n          fieldPath: metadata.name\nEOF",
+    "11": "kubectl autoscale deployment app -n $NS --min=1 --max=3 --cpu-percent=80"
+  }
+}

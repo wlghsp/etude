@@ -1,0 +1,13 @@
+{
+  "setId": 23,
+  "answers": {
+    "1": "kubectl set image deployment/web ngnix=nginx -n $NS",
+    "2": "kubectl patch service api-svc -n $NS -p '{\"spec\":{\"selector\":{\"app\":\"api\"}}}'",
+    "3": "kubectl patch deployment crash -n $NS --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/template/spec/containers/0/command\",\"value\":[\"sleep\",\"3600\"]}]'",
+    "4": "kubectl set resources deployment/bigmem -n $NS --requests=memory=32Mi",
+    "5": "kubectl patch deployment cfg-app -n $NS --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/template/spec/containers/0/env/0/valueFrom/configMapKeyRef/key\",\"value\":\"APP_MODE\"}]'",
+    "6": "kubectl patch deployment health-app -n $NS --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/template/spec/containers/0/readinessProbe/httpGet/path\",\"value\":\"/\"}]'",
+    "7": "kubectl patch service api2-svc -n $NS --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/ports/0/targetPort\",\"value\":80}]'",
+    "8": "kubectl create secret generic db-pass --from-literal=PASS=s3cret -n $NS"
+  }
+}

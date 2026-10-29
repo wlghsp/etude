@@ -1,0 +1,20 @@
+{
+  "setId": 21,
+  "answers": {
+    "1": "ls /tmp/g/*.txt | wc -l > /tmp/g_count.txt",
+    "2": "ls /tmp/g/a[0-9].txt | xargs -n1 basename > /tmp/a_files.txt",
+    "3": "GREETING=hi\necho '$GREETING' > /tmp/single.txt\necho \"$GREETING\" > /tmp/double.txt",
+    "4": "count=$(ls /etc | wc -l)\necho \"count=$count\" > /tmp/count.txt",
+    "5": "find /tmp/x -name '*.tmp' | xargs rm",
+    "6": "echo hello | tee /tmp/tee1.txt /tmp/tee2.txt",
+    "7": "diff /tmp/v1.conf /tmp/v2.conf > /tmp/diff.txt",
+    "8": "which ls > /tmp/ls_path.txt",
+    "9": "echo \"alias ll='ls -la'\" >> ~/.bashrc",
+    "10": "id -u deploy > /tmp/deploy_uid.txt",
+    "11": "usermod -aG devs deploy",
+    "12": "su deploy -c whoami > /tmp/who.txt",
+    "13": "umask 077\ntouch /tmp/private.txt",
+    "14": "ln /tmp/orig.txt /tmp/hard.txt",
+    "15": "stat -c %s /tmp/data.bin > /tmp/size.txt"
+  }
+}

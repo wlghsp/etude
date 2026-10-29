@@ -1,0 +1,18 @@
+{
+  "setId": 24,
+  "answers": {
+    "1": "rpm -qa | wc -l > /tmp/pkg_count.txt",
+    "2": "rpm -q bash > /tmp/bash_ver.txt",
+    "3": "rpm -qf /bin/ls > /tmp/owner.txt",
+    "4": "rpm -ql which | grep 'bin/' > /tmp/which_bin.txt",
+    "5": "rpm -qi bash | grep License > /tmp/license.txt",
+    "6": "rpm -Vf /etc/profile > /tmp/verify.txt",
+    "7": "logger -t myapp 'disk almost full'\nsleep 1\njournalctl -t myapp --no-pager > /tmp/myapp.log",
+    "8": "journalctl -p err -t svc --no-pager -o cat > /tmp/err.log",
+    "9": "systemctl start hello\nsleep 1\njournalctl -u hello --no-pager -o cat > /tmp/unit.log",
+    "10": "cat > /etc/systemd/system/app.service <<EOF\n[Service]\nExecStart=/bin/sleep 3600\n\n[Install]\nWantedBy=multi-user.target\nEOF\nsystemctl daemon-reload\nsystemctl enable --now app",
+    "11": "systemctl list-units --state=failed --no-legend --plain | awk '{print $1}' > /tmp/failed.txt",
+    "12": "systemctl disable hello",
+    "13": "timedatectl set-timezone Asia/Seoul"
+  }
+}
