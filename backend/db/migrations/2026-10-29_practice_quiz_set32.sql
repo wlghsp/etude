@@ -1,0 +1,211 @@
+-- 실습 연계 객관식 세트 32(리눅스 증상의 원인을 원리로 풀기) 추가. 여러 번 실행해도 안전하도록 NOT EXISTS 가드를 둔다 (원본: 02_quest_set.sql, 03_quest_set32.sql).
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 32, '리눅스 증상의 원인을 원리로 풀기', '"안에서는 되는데 밖에서만 안 된다", "지웠는데 용량이 그대로다" 같은 현장 증상을 터미널에서 직접 재현하고, 그 **원리**(루프백 바인딩, 종료 코드와 시그널, UID 권한, 열린 파일, 이름 해석 순서, inode, 좀비 프로세스)를 객관식으로 확인합니다. 해설에서 왜 그런지와 오답이 틀린 이유를 함께 봅니다.', 'linux', '리눅스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 32);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation)
+SELECT 32,  1, '같은 서버인데 다른 곳에서 접속이 거부되는 이유 찾기',
+   '8080 포트로 서비스가 떠 있어서, 이 컨테이너 안에서는 접속이 됩니다. 그런데 **다른 컨테이너(다른 네트워크)에서 이 서버의 IP:8080 으로 접속하면 `Connection refused`** 가 나온다는 제보가 왔습니다. 프로세스는 `Running` 이고 포트도 열려 있습니다.
+
+터미널에서 8080 포트가 **어떤 주소에** 열려 있는지 확인하고, 접속이 거부되는 **원인**을 고르세요.',
+   '`ss -tlnp` 는 대기 중인 TCP 포트를 보여 줍니다. (`-t` TCP, `-l` 대기 중인 것만, `-n` 숫자로, `-p` 프로세스와 함께) `Local Address:Port` 열에서 8080 앞의 **주소**를 읽으세요. `0.0.0.0` 은 모든 주소, `127.0.0.1` 은 자기 자신(루프백)입니다.',
+   NULL,
+   '["sh", "-c", "nohup perl -MIO::Socket::INET -e ''$s = IO::Socket::INET->new(LocalAddr => \\"127.0.0.1\\", LocalPort => 8080, Listen => 5, ReuseAddr => 1) or die; sleep 3600'' >/dev/null 2>&1 & sleep 1"]',
+   '[]',
+   'choice',
+   '["방화벽이 8080 포트를 막고 있다", "DNS 설정이 잘못되어 이름을 찾지 못한다", "포트 번호가 1024 보다 커서 외부 접속이 안 된다", "서버가 127.0.0.1(루프백)에만 열려 있어 같은 네트워크 공간 안에서만 접속된다"]',
+   3,
+   '정답은 **D 서버가 127.0.0.1(루프백)에만 열려 있어 같은 네트워크 공간 안에서만 접속된다** 입니다. `ss -tlnp` 에 `127.0.0.1:8080` 으로 나옵니다.
+
+**원리:** `127.0.0.1`(루프백)은 **자기 자신의 네트워크 공간(네임스페이스) 안**에서만 통하는 주소입니다. 컨테이너와 Pod 는 각자 네트워크 공간을 가지므로, 밖에서 들어오는 패킷은 `127.0.0.1` 에 열린 포트에 닿지 못해 `Connection refused` 가 됩니다. 밖에서도 받으려면 서버가 `0.0.0.0`(모든 주소)에 열려야 합니다. 이 증상은 "안에서는 되는데 밖에서만 안 된다" 일 때 가장 먼저 확인합니다.
+
+- A 방화벽 : 방화벽이 막으면 보통 `Connection refused` 가 아니라 응답 없이 시간이 초과(timeout)됩니다.
+- B DNS : 이름이 아니라 IP 로 접속해도 거부됩니다. 이름 해석과 무관합니다.
+- C 1024 보다 큰 포트 : 큰 포트도 외부에서 접속됩니다. 제한 없습니다.
+
+확인 명령: `ss -tlnp`'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 32 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation)
+SELECT 32,  2, '종료 코드 137 이 뜻하는 원인 찾기',
+   '운영 중이던 워커 프로세스가 어느 날 갑자기 종료되었고, 로그에는 **에러 메시지가 하나도 없습니다.** 장애 기록 `/tmp/incident.txt` 에는 종료 코드만 남아 있습니다.
+
+1. 터미널에서 `cat /tmp/incident.txt` 로 기록을 읽습니다.
+2. 프로세스를 시그널로 직접 종료해 보고 종료 코드를 확인합니다. (힌트 참고)
+
+종료 코드 **137** 은 어떤 상황을 뜻하는지 고르세요.',
+   '프로세스가 **시그널로 죽으면 종료 코드는 `128 + 시그널 번호`** 입니다. 직접 만들어 보려면 `bash -c ''sleep 100 & kill -9 $!; wait $!; echo $?''` 를 실행하세요. (`$!` 는 방금 띄운 프로세스의 PID, `kill -9` 는 즉시 강제 종료 시그널, `wait` 은 끝나길 기다려 종료 코드를 얻고, `$?` 가 그 코드입니다) 시그널 번호는 `kill -l 9` 처럼 확인합니다.',
+   NULL,
+   '["sh", "-c", "printf ''%s\\\\n'' ''worker 컨테이너 종료 코드: 137'' ''애플리케이션 로그: 에러 없음'' ''마지막 로그 시각 이후 아무 기록 없이 사라짐'' > /tmp/incident.txt"]',
+   '[]',
+   'choice',
+   '["정상적으로 작업을 마치고 종료했다 (exit 0)", "SIGKILL(9) 로 강제 종료되었다 (128+9)", "실행할 명령어를 찾지 못했다", "SIGTERM(15) 으로 정상 종료를 요청받았다"]',
+   1,
+   '정답은 **B SIGKILL(9) 로 강제 종료되었다 (128+9)** 입니다. 시그널로 죽으면 종료 코드가 `128 + 시그널 번호` 라서 `128 + 9 = 137` 입니다.
+
+**원리:** 프로세스가 스스로 에러를 남기고 끝나면 로그가 남지만, `SIGKILL` 은 프로세스가 **받을 수도, 처리할 수도 없는** 즉시 종료 시그널이라 로그를 남길 기회가 없습니다. 로그 없이 137 로 사라지는 가장 흔한 원인은 컨테이너·Pod 의 메모리 한도를 넘어 커널의 OOM Killer 가 `SIGKILL` 을 보낸 경우입니다. (Kubernetes 에서는 `OOMKilled`) 그래서 137 을 보면 "메모리 한도"부터 확인합니다.
+
+- A 정상 종료 : 종료 코드는 0 입니다.
+- C 명령어를 찾지 못함 : 종료 코드 127 입니다.
+- D SIGTERM : 종료 코드 143(128+15)입니다. 정상 종료 요청은 처리할 기회가 있어 보통 로그가 남습니다.
+
+확인 명령: `bash -c ''sleep 100 & kill -9 $!; wait $!; echo $?''`'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 32 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation)
+SELECT 32,  3, '부모 프로세스를 종료하면 자식은 어떻게 되는지 확인하기',
+   '컨테이너를 중지할 때 시그널(`SIGTERM`)을 받은 프로세스가 **자식 프로세스에게 알려 주지 않으면**, 자식은 정리 작업 없이 남거나 강제 종료됩니다. 지금 서버에는 `sh -c` 로 실행한 작업이 있습니다. 쉘(`sh`)이 부모이고, 실제 작업(`sleep 600`)이 자식입니다. 쉘의 PID 는 `/tmp/parent.pid` 에 있습니다.
+
+1. `ps -ef` 로 `sh` 와 `sleep 600` 의 부모-자식 관계(PPID)를 확인합니다.
+2. 부모 쉘에 `kill -TERM $(cat /tmp/parent.pid)` 를 보냅니다.
+3. `ps -ef` 로 다시 확인합니다.
+
+부모 쉘에 `SIGTERM` 을 보내면 **자식 `sleep` 은 어떻게 되는지** 고르세요.',
+   '`ps -ef` 의 `PID` 는 프로세스 번호, `PPID` 는 부모 프로세스 번호입니다. `sleep 600` 줄의 `PPID` 가 쉘의 `PID` 와 같으면 부모-자식입니다. `kill -TERM <PID>` 는 그 프로세스 **하나**에 종료 요청 시그널을 보냅니다. 보낸 뒤 `ps -ef | grep sleep` 로 자식이 남아 있는지 보세요.',
+   NULL,
+   '["sh", "-c", "nohup sh -c ''sleep 600; echo done'' >/dev/null 2>&1 & echo $! > /tmp/parent.pid; sleep 1"]',
+   '[]',
+   'choice',
+   '["부모 쉘만 종료되고, 자식 sleep 은 그대로 계속 실행된다", "자식 sleep 도 함께 즉시 종료된다", "쉘이 종료를 거부하고 계속 실행된다", "컨테이너 전체가 재시작된다"]',
+   0,
+   '정답은 **A 부모 쉘만 종료되고, 자식 sleep 은 그대로 계속 실행된다** 입니다. `ps -ef` 에서 `sleep 600` 이 계속 남아 있고, 부모가 사라졌으므로 `PPID` 가 1(최상위 프로세스)로 바뀝니다.
+
+**원리:** 시그널은 **보낸 대상 프로세스 하나**에만 전달됩니다. 부모가 받아도 자식에게 자동으로 전달되지 않습니다. 쉘은 보통 받은 `SIGTERM` 을 자식에게 넘겨 주지 않고 자기만 종료합니다. 그래서 컨테이너의 시작 명령을 `sh -c "앱"` 처럼 쉘로 감싸면, 종료 요청이 쉘에서 멈춰 앱이 정상 종료 절차를 못 밟고 마지막에 `SIGKILL` 로 강제 종료됩니다. (앱을 `exec` 로 쉘과 바꿔 실행하는 이유입니다)
+
+- B 자식도 함께 종료 : 그렇지 않습니다. 시그널은 자동으로 전파되지 않습니다.
+- C 종료를 거부 : 일반 쉘은 `SIGTERM` 을 받으면 종료합니다.
+- D 컨테이너 재시작 : 이 환경에서는 일어나지 않습니다. 재시작은 별도 정책이 결정합니다.
+
+확인 명령: `ps -ef`, `kill -TERM $(cat /tmp/parent.pid)`'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 32 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation)
+SELECT 32,  4, '권한이 있는데도 파일을 쓰지 못하는 이유 해결하기',
+   '컨테이너에서 애플리케이션을 보안상 root 가 아닌 사용자 `appuser`(UID 1001)로 실행하고 있습니다. 이 앱이 업로드 디렉터리 `/data/uploads` 에 파일을 만들려다 `Permission denied` 로 실패합니다.
+
+1. `id appuser` 로 사용자의 UID 를 확인합니다.
+2. `ls -ld /data/uploads` 로 디렉터리의 소유자와 권한을 확인합니다.
+3. `su appuser -s /bin/sh -c ''touch /data/uploads/test''` 로 직접 재현해 봅니다.
+
+**root 로 실행하지 않고** 가장 안전하게 해결하는 방법을 고르세요.',
+   '`ls -ld` 의 결과 `drwxr-xr-x root root` 는 "소유자 root 만 쓰기, 그룹과 그 외는 읽기·실행만" 이라는 뜻입니다. 쓰려면 **쓰기 권한이 있는 사용자**여야 합니다. 리눅스는 사용자 이름이 아니라 **UID 숫자**로 비교합니다. `chown 1001 /data/uploads` 는 디렉터리의 소유자를 UID 1001 로 바꿉니다.',
+   NULL,
+   '["sh", "-c", "useradd -u 1001 -M -s /bin/sh appuser 2>/dev/null; mkdir -p /data/uploads && chown root:root /data/uploads && chmod 755 /data/uploads"]',
+   '[]',
+   'choice',
+   '["앱을 root(UID 0)로 실행한다", "디렉터리를 `chmod 777` 로 모두에게 연다", "디렉터리의 소유자를 UID 1001(appuser)로 바꾼다", "appuser 라는 이름의 사용자를 root 로 바꾼다"]',
+   2,
+   '정답은 **C 디렉터리의 소유자를 UID 1001(appuser)로 바꾼다** 입니다. `chown 1001 /data/uploads` 후에는 `appuser` 가 쓸 수 있습니다.
+
+**원리:** 리눅스는 사용자 **이름**이 아니라 **UID/GID 숫자**로 권한을 판단합니다. 디렉터리의 소유자가 root(UID 0)이고 권한이 `755` 이면 UID 1001 은 "그 외 사용자"라서 읽기만 가능합니다. 필요한 권한만 정확히 주는 것(최소 권한)이 안전합니다. 컨테이너에서는 같은 숫자 UID 가 호스트 볼륨의 소유자와 맞아야 쓸 수 있고, 쿠버네티스는 `securityContext.fsGroup` 같은 설정으로 같은 문제를 풉니다.
+
+- A root 로 실행 : 쓰기는 되지만 보안 위험이 커서 피해야 합니다.
+- B `chmod 777` : 쓰기는 되지만 **누구나** 쓰고 지울 수 있게 되어 안전하지 않습니다.
+- D 이름 바꾸기 : 권한은 이름이 아니라 UID 숫자로 판단하므로 소용없습니다.
+
+확인 명령: `ls -ld /data/uploads`, `id appuser`'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 32 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation)
+SELECT 32,  5, '파일을 지웠는데 디스크가 비워지지 않는 이유 찾기',
+   '디스크가 부족해서 큰 로그 파일 `/var/log/big.log`(20MB)를 `rm` 으로 지웠습니다. 그런데 **디스크 사용량이 그대로** 입니다. 이 파일을 쓰던 프로세스가 아직 떠 있습니다. 그 프로세스의 PID 는 `/tmp/holder.pid` 에 있습니다.
+
+1. `ls /var/log/big.log` 로 파일이 지워졌는지 확인합니다.
+2. `ls -l /proc/$(cat /tmp/holder.pid)/fd` 로 그 프로세스가 열고 있는 파일을 확인합니다.
+
+용량이 돌아오지 않는 **원인**을 고르세요.',
+   '`/proc/<PID>/fd` 는 그 프로세스가 열고 있는 파일(파일 디스크립터) 목록입니다. 링크 끝에 `(deleted)` 가 붙은 파일은 이름은 지워졌지만 아직 **열려 있는** 파일입니다.',
+   NULL,
+   '["sh", "-c", "dd if=/dev/zero of=/var/log/big.log bs=1M count=20 2>/dev/null; nohup sh -c ''exec 3</var/log/big.log; sleep 3600'' >/dev/null 2>&1 & echo $! > /tmp/holder.pid; sleep 1; rm /var/log/big.log"]',
+   '[]',
+   'choice',
+   '["파일이 휴지통으로 옮겨졌다", "파일은 지워졌지만 프로세스가 아직 열고 있어 디스크 공간이 반환되지 않았다", "디스크 사용량 표시가 몇 분 뒤에 갱신된다", "inode 가 부족해서 공간을 반환하지 못한다"]',
+   1,
+   '정답은 **B 파일은 지워졌지만 프로세스가 아직 열고 있어 디스크 공간이 반환되지 않았다** 입니다. `/proc/<PID>/fd` 에 `big.log (deleted)` 가 보입니다.
+
+**원리:** `rm` 은 파일의 **이름(디렉터리 항목)** 을 지울 뿐이고, 실제 데이터 블록은 **그 파일을 여는 프로세스가 하나도 없을 때** 비로소 반환됩니다. 열고 있는 프로세스가 살아 있는 한 공간은 그대로입니다. 해결은 그 프로세스를 재시작하거나 닫게 하는 것이고, 지우기 전에 `: > 파일` 처럼 내용을 비우는(truncate) 방법도 있습니다. 로그 파일을 지웠는데도 용량이 안 줄면 열린 파일을 의심합니다.
+
+- A 휴지통 : 리눅스 `rm` 에는 휴지통이 없습니다.
+- C 갱신 지연 : 사용량은 실시간으로 계산되므로 시간이 지나도 달라지지 않습니다.
+- D inode 부족 : inode 가 부족하면 새 파일을 만들 수 없는 증상이지, 지운 공간이 안 돌아오는 증상이 아닙니다.
+
+확인 명령: `ls -l /proc/$(cat /tmp/holder.pid)/fd`'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 32 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation)
+SELECT 32,  6, 'DNS 에 없는 이름이 왜 접속되는지 해석 순서로 이해하기',
+   '`api.internal` 이라는 이름은 사내 DNS 서버에 등록돼 있지 않은데, 이 서버에서는 접속이 **엉뚱한 주소**로 갑니다. 누군가 DNS 설정을 바꾼 것도 아닙니다.
+
+1. `getent hosts api.internal` 로 이 이름이 어떤 주소로 해석되는지 확인합니다.
+2. `cat /etc/hosts` 에서 이 이름이 있는지 봅니다.
+3. `grep ^hosts /etc/nsswitch.conf` 로 이름을 해석하는 **순서**를 확인합니다.
+
+이름이 이 주소로 해석되는 **이유**를 고르세요.',
+   '`getent hosts 이름` 은 시스템이 이름을 해석하는 방식 그대로 주소를 알려 줍니다. `/etc/nsswitch.conf` 의 `hosts:` 줄에 적힌 단어들이 **조회 순서**입니다. `files` 는 `/etc/hosts` 파일, `dns` 는 DNS 서버 조회입니다. 왼쪽이 먼저입니다.',
+   NULL,
+   '["sh", "-c", "echo ''10.99.99.99 api.internal'' >> /etc/hosts"]',
+   '[]',
+   'choice',
+   '["DNS 서버가 이전 값을 캐시로 기억하고 있다", "이름을 해석할 때 DNS 를 먼저 보고 /etc/hosts 는 나중에 본다", "방화벽이 목적지 주소를 바꿔 버린다", "/etc/nsswitch.conf 의 순서상 /etc/hosts(files)를 DNS 보다 먼저 보기 때문이다"]',
+   3,
+   '정답은 **D /etc/nsswitch.conf 의 순서상 /etc/hosts(files)를 DNS 보다 먼저 보기 때문이다** 입니다. `/etc/hosts` 에 `10.99.99.99 api.internal` 줄이 있고, `hosts: files dns` 순서라 DNS 를 조회하기 전에 이 파일에서 답이 나옵니다.
+
+**원리:** 이름 → IP 변환은 `/etc/nsswitch.conf` 가 정한 순서(`files` → `dns`)로 이뤄집니다. `/etc/hosts` 는 **DNS 보다 먼저** 보는 고정 매핑이라, 여기에 적힌 이름은 DNS 서버 설정과 상관없이 그 주소로 갑니다. "DNS 는 맞는데 엉뚱한 곳으로 간다" 면 `/etc/hosts` 를 가장 먼저 의심합니다. (컨테이너와 쿠버네티스 Pod 에서도 `/etc/hosts` 가 자동으로 채워집니다)
+
+- A DNS 캐시 : 이 서버는 DNS 서버를 조회하기 전에 답을 얻습니다. DNS 의 값은 영향이 없습니다.
+- B 반대 순서 : 순서는 `files`(hosts 파일) 다음이 `dns` 입니다.
+- C 방화벽 : 방화벽은 이름 해석을 바꾸지 않습니다.
+
+확인 명령: `getent hosts api.internal`, `grep ^hosts /etc/nsswitch.conf`'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 32 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation)
+SELECT 32,  7, '용량은 남았는데 파일을 만들 수 없는 원인을 df 출력으로 읽기',
+   '`/data` 에 새 파일을 만들려 하면 `No space left on device` 가 나옵니다. 그런데 디스크는 넉넉해 보입니다. 이 서버의 `df` 출력을 저장해 둔 샘플이 있습니다. (컨테이너에서 실제로 inode 를 소진시킬 수 없어 샘플로 다룹니다)
+
+- `/tmp/df_h.txt` : `df -h` 결과 (용량 기준)
+- `/tmp/df_i.txt` : `df -i` 결과 (inode 기준)
+
+터미널에서 두 파일을 `cat` 으로 읽고, `/data` 에서 파일이 만들어지지 않는 **원인**을 고르세요.',
+   '`df -h` 는 **용량**(Size, Used, Avail)을, `df -i` 는 **inode**(파일 하나당 하나씩 쓰는 정보 칸)의 개수(`Inodes`, `IUsed`, `IFree`, `IUse%`)를 보여 줍니다. 두 출력에서 `/data` 줄의 `Use%` 와 `IUse%` 를 비교하세요.',
+   NULL,
+   '["sh", "-c", "printf ''%s\\\\n'' ''Filesystem      Size  Used Avail Use% Mounted on'' ''/dev/sdb1       100G   38G   62G  38% /data'' > /tmp/df_h.txt && printf ''%s\\\\n'' ''Filesystem       Inodes    IUsed   IFree IUse% Mounted on'' ''/dev/sdb1       6553600  6553600       0  100% /data'' > /tmp/df_i.txt"]',
+   '[]',
+   'choice',
+   '["디스크 용량이 부족하다", "inode 가 모두 소진되었다 (작은 파일이 매우 많다)", "파일 이름이 너무 길다", "메모리가 부족하다"]',
+   1,
+   '정답은 **B inode 가 모두 소진되었다 (작은 파일이 매우 많다)** 입니다. `df -h` 는 38% 만 쓰고 62G 가 남았지만, `df -i` 는 `IUse%` 가 100% 이고 `IFree` 가 0 입니다.
+
+**원리:** 파일 시스템은 **저장 공간(블록)** 과 파일마다 하나씩 필요한 **inode(파일 정보 칸)** 두 가지를 따로 관리합니다. 작은 파일이 수백만 개 쌓이면 블록은 남아 있어도 inode 가 먼저 바닥나서 새 파일을 만들 수 없습니다. 증상은 똑같이 `No space left on device` 라서, 용량이 남았는데 이 오류가 나면 **`df -i`** 를 확인해야 합니다. 해결은 불필요한 작은 파일(로그 조각, 세션 파일 등)을 정리하는 것입니다.
+
+- A 용량 부족 : `df -h` 에서 62G 가 남아 있습니다.
+- C 파일 이름 길이 : 다른 오류(`File name too long`)가 납니다.
+- D 메모리 부족 : 디스크 공간 오류와 무관합니다.
+
+확인 명령: `cat /tmp/df_h.txt /tmp/df_i.txt`'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 32 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation)
+SELECT 32,  8, 'kill -9 해도 사라지지 않는 좀비 프로세스 이해하기',
+   '`ps` 에 이름 뒤에 `<defunct>` 가 붙고 상태(`STAT`)가 `Z` 인 프로세스가 있습니다. `kill -9` 로 지우려 해도 **사라지지 않습니다.** 이 프로세스를 만든 부모 프로세스의 PID 는 `/tmp/parent.pid` 에 있습니다.
+
+1. `ps -eo pid,ppid,stat,cmd` 로 `STAT` 이 `Z` 인 프로세스를 찾습니다.
+2. 그 `PID` 에 `kill -9` 를 보내고 다시 확인합니다.
+
+좀비(`Z`) 프로세스가 사라지지 않는 **이유**와 올바른 해결을 고르세요.',
+   '`ps -eo pid,ppid,stat,cmd` 의 `STAT` 열에서 `Z` 는 좀비입니다. `PPID` 는 부모 프로세스 번호입니다. 좀비는 **이미 끝난** 프로세스라서 더 죽일 수 없습니다.',
+   NULL,
+   '["sh", "-c", "nohup perl -e ''if (fork() == 0) { exit 0 } sleep 3600'' >/dev/null 2>&1 & echo $! > /tmp/parent.pid; sleep 1"]',
+   '[]',
+   'choice',
+   '["`kill -9` 보다 강한 시그널이 있어서 그것을 보내야 한다", "부모가 자식의 종료 상태를 수거(wait)하지 않아 남은 것이므로, 부모가 수거하게 하거나 부모를 종료해야 한다", "메모리가 부족해서 프로세스를 정리하지 못하는 것이다", "디스크 오류로 프로세스 정보를 지우지 못하는 것이다"]',
+   1,
+   '정답은 **B 부모가 자식의 종료 상태를 수거(wait)하지 않아 남은 것이므로, 부모가 수거하게 하거나 부모를 종료해야 한다** 입니다. 부모(`/tmp/parent.pid`)가 `sleep` 중이라 자식의 종료를 확인하지 않아, 자식은 `Z`(`<defunct>`)로 남습니다.
+
+**원리:** 프로세스는 끝나도 **종료 상태를 부모가 읽어 가기 전까지** 프로세스 표에 기록이 남습니다. 이 상태가 좀비이고, 이미 실행이 끝난 상태라 어떤 시그널로도 "죽일" 수 없습니다. 부모가 `wait` 으로 수거하면 사라지고, 부모가 종료되면 최상위 프로세스(PID 1)가 대신 수거합니다. 그래서 컨테이너의 PID 1 프로세스가 자식을 수거하지 않으면 좀비가 쌓이고, 이를 막으려고 `tini` 같은 작은 init 프로세스를 PID 1 로 둡니다.
+
+- A 더 강한 시그널 : `SIGKILL` 이 가장 강하고, 이미 끝난 프로세스에는 의미가 없습니다.
+- C 메모리 부족, D 디스크 오류 : 원인이 아닙니다. 좀비는 프로세스 표의 기록만 차지합니다.
+
+확인 명령: `ps -eo pid,ppid,stat,cmd | grep -w Z`'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 32 AND order_index = 8);

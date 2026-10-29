@@ -1,6 +1,6 @@
 # 명세 — 실습 연계 객관식 세트
 
-> 상태: **명세 승인, 세트 30 작성 완료(로컬), 화면 확인 대기** (2026-10-29). 시범: 세트 30 (리눅스) 8문제.
+> 상태: **명세 승인, 세트 30 작성 완료(로컬), 화면 확인 대기** (2026-10-29). 시범: 세트 30 (리눅스) 8문제, 세트 31 (k8s) 8문제.
 
 ## 배경과 목적
 
@@ -28,6 +28,22 @@
 | 8 | `/opt/releases/` 아래 수정 시각이 다른 파일 (`touch -d` 로 고정) | `ls -lt` 로 가장 최근 파일 | 파일 이름 |
 
 (주제는 초안이다. 실제 문제는 문구 기준에 맞춰 작성하고 `setup_cmd` 로 만든 값과 정답을 컨테이너에서 대조한다.)
+
+## 세트 31 (k8s, 8문제)
+
+세트 `sandbox_type='k8s'`. `setup_cmd` 가 `$NS` 에 고정된 상태를 만들고 학습자는 `kubectl` 로 확인한다. 이미지 태그 오타(Events 의 `not found`), `Pending`(requests 500Gi → `Insufficient memory`), 리비전 번호(이미지 2번 변경 → 3), Service selector 불일치(Endpoints 비어 있음), ConfigMap 값, Secret(base64 해독), 라벨로 Pod 개수, `exec` 로 환경변수 확인.
+
+- 검증됨: 로컬 k3d 에서 문제마다 임시 네임스페이스에 setup 을 만들고 증명 명령을 실행해 정답 값 확인 (`npm run verify:quiz`, 증명 39개 통과). 저장된 `setup_cmd` JSON 을 임시 DB 에서 다시 읽어 구조 확인, `check-migrations.sh` 통과.
+- `미검증`: 운영 서버(vcluster)에서 같은 결과가 나오는지. 특히 `Pending` 이유(노드 크기), 이벤트 문구, 이미지 pull 시간. `kubectl describe` 의 `Endpoints:` 는 이 클러스터 버전에서 `<none>` 이 아니라 빈 값으로 나온다 (해설은 "비어 있다"로 썼다).
+
+## 세트 33 (k8s 쉬운 장애 고치기, 직접 채점형 8문제)
+
+객관식이 아니라 기존 k8s 세트와 같은 **직접 고치고 채점하는 실습형**이다. 이미지 태그·주소 오류 고치기, ConfigMap 변경 후 `rollout restart`, `replicas` 늘리기, 없는 StorageClass 를 지정한 PVC 를 기본값으로 고치기, `rollout undo`, 컨테이너 2개짜리 Pod, `kubectl --sort-by` 로 정렬해 저장하기.
+
+- 참고 자료: 받은 CKA 기출 형태 PDF(5문제 샘플)는 **문제를 옮기지 않고 주제만** 참고했다. 로그 필터링·DaemonSet·initContainer 는 세트 6/15/22 에 이미 있어 넣지 않았고, 없던 멀티 컨테이너 Pod(7번)와 `--sort-by`(8번)를 새 시나리오로 만들었다.
+- 제외: PV 를 직접 만들어 PVC 와 연결하기(정적 프로비저닝)는 인프라 의존이 커서 뺐다. 학습자 권한이 네임스페이스 `edit` + 노드·네임스페이스 읽기뿐이라 **StorageClass 목록은 읽지 못한다** (`kubectl get storageclass` 금지). 그래서 PVC 문제는 "이름 없이 기본값 쓰기"로 설계했다. 운영에도 기본 StorageClass 가 있어야 한다 (세트 13 과 같은 전제).
+- 검증됨: `npm run verify:quests -- --set 33` 8문제 모두 통과 (정답은 통과, setup 만으로는 통과하지 않음). 처음 설계(StorageClass 를 조회해 고르는 방식)는 이 권한 때문에 정답이 거부되어 바꿨다.
+- `미검증`: 운영(vcluster)에서의 동작, 화면.
 
 ## 확인이 필요한 것 (구현 첫 단계)
 

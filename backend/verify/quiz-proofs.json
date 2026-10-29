@@ -105,6 +105,90 @@
     "expect": "unknown flag"
   },
   {
+    "set": 32,
+    "order": 1,
+    "image": "etude-linux",
+    "cmd": "nohup perl -MIO::Socket::INET -e '$s = IO::Socket::INET->new(LocalAddr => \"127.0.0.1\", LocalPort => 8080, Listen => 5, ReuseAddr => 1) or die; sleep 3600' >/dev/null 2>&1 & sleep 1; ss -tln | grep 8080",
+    "expect": "127.0.0.1:8080"
+  },
+  {
+    "set": 32,
+    "order": 2,
+    "image": "etude-linux",
+    "cmd": "printf '%s\\n' 'worker 컨테이너 종료 코드: 137' '애플리케이션 로그: 에러 없음' '마지막 로그 시각 이후 아무 기록 없이 사라짐' > /tmp/incident.txt; bash -c 'sleep 100 & kill -9 $!; wait $!; echo rc=$?'",
+    "expect": "rc=137"
+  },
+  {
+    "set": 32,
+    "order": 2,
+    "image": "etude-linux",
+    "cmd": "printf '%s\\n' 'worker 컨테이너 종료 코드: 137' '애플리케이션 로그: 에러 없음' '마지막 로그 시각 이후 아무 기록 없이 사라짐' > /tmp/incident.txt; bash -c 'sleep 100 & kill -15 $!; wait $!; echo rc=$?'",
+    "expect": "rc=143"
+  },
+  {
+    "set": 32,
+    "order": 3,
+    "image": "etude-linux",
+    "cmd": "nohup sh -c 'sleep 600; echo done' >/dev/null 2>&1 & echo $! > /tmp/parent.pid; sleep 1; kill -TERM $(cat /tmp/parent.pid); sleep 1; echo sleeps=$(ps -eo comm | grep -c '^sleep$')",
+    "expect": "sleeps=1"
+  },
+  {
+    "set": 32,
+    "order": 4,
+    "image": "etude-linux",
+    "cmd": "useradd -u 1001 -M -s /bin/sh appuser 2>/dev/null; mkdir -p /data/uploads && chown root:root /data/uploads && chmod 755 /data/uploads; su appuser -s /bin/sh -c 'touch /data/uploads/x' 2>&1",
+    "expect": "Permission denied"
+  },
+  {
+    "set": 32,
+    "order": 4,
+    "image": "etude-linux",
+    "cmd": "useradd -u 1001 -M -s /bin/sh appuser 2>/dev/null; mkdir -p /data/uploads && chown root:root /data/uploads && chmod 755 /data/uploads; chown 1001 /data/uploads && su appuser -s /bin/sh -c 'touch /data/uploads/x && echo ok'",
+    "expect": "ok"
+  },
+  {
+    "set": 32,
+    "order": 5,
+    "image": "etude-linux",
+    "cmd": "dd if=/dev/zero of=/var/log/big.log bs=1M count=20 2>/dev/null; nohup sh -c 'exec 3</var/log/big.log; sleep 3600' >/dev/null 2>&1 & echo $! > /tmp/holder.pid; sleep 1; rm /var/log/big.log; ls -l /proc/$(cat /tmp/holder.pid)/fd | grep deleted",
+    "expect": "(deleted)"
+  },
+  {
+    "set": 32,
+    "order": 6,
+    "image": "etude-linux",
+    "cmd": "echo '10.99.99.99 api.internal' >> /etc/hosts; getent hosts api.internal",
+    "expect": "10.99.99.99"
+  },
+  {
+    "set": 32,
+    "order": 6,
+    "image": "etude-linux",
+    "cmd": "echo '10.99.99.99 api.internal' >> /etc/hosts; grep '^hosts' /etc/nsswitch.conf",
+    "expect": "files"
+  },
+  {
+    "set": 32,
+    "order": 7,
+    "image": "etude-linux",
+    "cmd": "printf '%s\\n' 'Filesystem      Size  Used Avail Use% Mounted on' '/dev/sdb1       100G   38G   62G  38% /data' > /tmp/df_h.txt && printf '%s\\n' 'Filesystem       Inodes    IUsed   IFree IUse% Mounted on' '/dev/sdb1       6553600  6553600       0  100% /data' > /tmp/df_i.txt; grep '/data' /tmp/df_i.txt",
+    "expect": "100%"
+  },
+  {
+    "set": 32,
+    "order": 7,
+    "image": "etude-linux",
+    "cmd": "printf '%s\\n' 'Filesystem      Size  Used Avail Use% Mounted on' '/dev/sdb1       100G   38G   62G  38% /data' > /tmp/df_h.txt && printf '%s\\n' 'Filesystem       Inodes    IUsed   IFree IUse% Mounted on' '/dev/sdb1       6553600  6553600       0  100% /data' > /tmp/df_i.txt; grep '/data' /tmp/df_h.txt",
+    "expect": "38%"
+  },
+  {
+    "set": 32,
+    "order": 8,
+    "image": "etude-linux",
+    "cmd": "nohup perl -e 'if (fork() == 0) { exit 0 } sleep 3600' >/dev/null 2>&1 & echo $! > /tmp/parent.pid; sleep 1; echo z=$(ps -eo stat | grep -c '^Z')",
+    "expect": "z=1"
+  },
+  {
     "set": 30,
     "order": 1,
     "image": "etude-linux",
@@ -194,5 +278,82 @@
     "image": "etude-linux",
     "cmd": "mkdir -p /opt/releases && cd /opt/releases && touch -d '2025-12-01 09:00' v0.9.tar && touch -d '2026-01-10 09:00' v1.0.tar && touch -d '2026-05-20 09:00' v1.1.tar && touch -d '2026-03-05 09:00' v1.2.tar && ls -t /opt/releases | head -n 1",
     "expect": "v1.1.tar"
+  },
+  {
+    "set": 31,
+    "order": 1,
+    "image": "host",
+    "cmd": "NS=qv31-1-1; trap 'kubectl delete ns $NS --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NS --ignore-not-found >/dev/null 2>&1; kubectl create ns $NS >/dev/null && kubectl run web --image=nginx:9.99.99 -n $NS >/dev/null 2>&1; true ; sleep 25; kubectl describe pod web -n $NS | grep -E 'Failed to pull|not found'",
+    "expect": "not found"
+  },
+  {
+    "set": 31,
+    "order": 2,
+    "image": "host",
+    "cmd": "NS=qv31-2-1; trap 'kubectl delete ns $NS --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NS --ignore-not-found >/dev/null 2>&1; kubectl create ns $NS >/dev/null && printf '%s\\n' 'apiVersion: v1' 'kind: Pod' 'metadata:' '  name: big' 'spec:' '  containers:' '  - name: app' '    image: nginx' '    resources:' '      requests:' '        memory: 500Gi' > /tmp/big.yaml && kubectl apply -n $NS -f /tmp/big.yaml >/dev/null 2>&1; true ; sleep 8; kubectl describe pod big -n $NS | grep -i 'insufficient'",
+    "expect": "Insufficient memory"
+  },
+  {
+    "set": 31,
+    "order": 3,
+    "image": "host",
+    "cmd": "NS=qv31-3-1; trap 'kubectl delete ns $NS --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NS --ignore-not-found >/dev/null 2>&1; kubectl create ns $NS >/dev/null && kubectl create deployment web --image=nginx -n $NS >/dev/null 2>&1; sleep 3; kubectl set image deployment/web nginx=nginx:1.25 -n $NS >/dev/null 2>&1; sleep 3; kubectl set image deployment/web nginx=nginx:1.26 -n $NS >/dev/null 2>&1; sleep 3; true ; sleep 4; kubectl rollout history deployment/web -n $NS | awk 'NR>2 && NF {r=$1} END {print \"rev=\" r}'",
+    "expect": "rev=3"
+  },
+  {
+    "set": 31,
+    "order": 4,
+    "image": "host",
+    "cmd": "NS=qv31-4-1; trap 'kubectl delete ns $NS --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NS --ignore-not-found >/dev/null 2>&1; kubectl create ns $NS >/dev/null && kubectl create deployment api --image=nginx -n $NS >/dev/null 2>&1; kubectl create service clusterip api-svc --tcp=80:80 -n $NS >/dev/null 2>&1; true ; sleep 4; echo ep=[$(kubectl describe svc api-svc -n $NS | awk '/^Endpoints:/ {print $2}')]",
+    "expect": "ep=[]"
+  },
+  {
+    "set": 31,
+    "order": 4,
+    "image": "host",
+    "cmd": "NS=qv31-4-2; trap 'kubectl delete ns $NS --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NS --ignore-not-found >/dev/null 2>&1; kubectl create ns $NS >/dev/null && kubectl create deployment api --image=nginx -n $NS >/dev/null 2>&1; kubectl create service clusterip api-svc --tcp=80:80 -n $NS >/dev/null 2>&1; true ; kubectl describe svc api-svc -n $NS | grep -E '^Selector'",
+    "expect": "app=api-svc"
+  },
+  {
+    "set": 31,
+    "order": 4,
+    "image": "host",
+    "cmd": "NS=qv31-4-3; trap 'kubectl delete ns $NS --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NS --ignore-not-found >/dev/null 2>&1; kubectl create ns $NS >/dev/null && kubectl create deployment api --image=nginx -n $NS >/dev/null 2>&1; kubectl create service clusterip api-svc --tcp=80:80 -n $NS >/dev/null 2>&1; true ; sleep 4; kubectl get pods -n $NS --show-labels",
+    "expect": "app=api"
+  },
+  {
+    "set": 31,
+    "order": 5,
+    "image": "host",
+    "cmd": "NS=qv31-5-1; trap 'kubectl delete ns $NS --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NS --ignore-not-found >/dev/null 2>&1; kubectl create ns $NS >/dev/null && kubectl create configmap app-config --from-literal=LOG_LEVEL=debug --from-literal=MAX_CONN=250 --from-literal=REGION=ap-northeast-2 -n $NS >/dev/null 2>&1; true ; kubectl get configmap app-config -n $NS -o jsonpath='{.data.MAX_CONN}'",
+    "expect": "250"
+  },
+  {
+    "set": 31,
+    "order": 6,
+    "image": "host",
+    "cmd": "NS=qv31-6-1; trap 'kubectl delete ns $NS --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NS --ignore-not-found >/dev/null 2>&1; kubectl create ns $NS >/dev/null && kubectl create secret generic db-secret --from-literal=password=S3cret-Pw -n $NS >/dev/null 2>&1; true ; kubectl get secret db-secret -n $NS -o jsonpath='{.data.password}' | base64 --decode",
+    "expect": "S3cret-Pw"
+  },
+  {
+    "set": 31,
+    "order": 7,
+    "image": "host",
+    "cmd": "NS=qv31-7-1; trap 'kubectl delete ns $NS --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NS --ignore-not-found >/dev/null 2>&1; kubectl create ns $NS >/dev/null && kubectl create deployment frontend --image=nginx --replicas=3 -n $NS >/dev/null 2>&1; kubectl create deployment backend --image=nginx --replicas=2 -n $NS >/dev/null 2>&1; sleep 3; true ; sleep 4; echo n=$(kubectl get pods -n $NS -l app=frontend --no-headers | wc -l | tr -d ' ')",
+    "expect": "n=3"
+  },
+  {
+    "set": 31,
+    "order": 7,
+    "image": "host",
+    "cmd": "NS=qv31-7-2; trap 'kubectl delete ns $NS --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NS --ignore-not-found >/dev/null 2>&1; kubectl create ns $NS >/dev/null && kubectl create deployment frontend --image=nginx --replicas=3 -n $NS >/dev/null 2>&1; kubectl create deployment backend --image=nginx --replicas=2 -n $NS >/dev/null 2>&1; sleep 3; true ; echo n=$(kubectl get pods -n $NS --no-headers | wc -l | tr -d ' ')",
+    "expect": "n=5"
+  },
+  {
+    "set": 31,
+    "order": 8,
+    "image": "host",
+    "cmd": "NS=qv31-8-1; trap 'kubectl delete ns $NS --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NS --ignore-not-found >/dev/null 2>&1; kubectl create ns $NS >/dev/null && kubectl run shop --image=nginx --env=DB_HOST=mysql.prod.svc --env=DB_PORT=3306 -n $NS >/dev/null 2>&1; kubectl wait --for=condition=Ready pod/shop -n $NS --timeout=90s >/dev/null 2>&1; true ; kubectl exec shop -n $NS -- env | grep '^DB_HOST'",
+    "expect": "DB_HOST=mysql.prod.svc"
   }
 ]
