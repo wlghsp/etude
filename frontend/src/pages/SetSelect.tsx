@@ -71,8 +71,8 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
                                         className="w-full flex items-center gap-3 pb-3 border-b border-outline-variant hover:text-primary transition-colors"
                                     >
                                         <span className="text-2xl">{meta.icon}</span>
-                                        <h2 className="font-mono text-headline-md">{category}</h2>
-                                        <span className="ml-auto font-mono text-code-sm text-on-surface-variant">{items.length}개 세트</span>
+                                        <h2 className="font-sans text-headline-md">{category}</h2>
+                                        <span className="ml-auto font-sans text-code-sm text-on-surface-variant">{items.length}개 세트</span>
                                         <span className="material-symbols-outlined text-on-surface-variant transition-transform" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                                             expand_more
                                         </span>
@@ -95,10 +95,10 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
                                                     >
                                                         <div className="flex justify-between items-start mb-6">
                                                             <div className="flex flex-col gap-1">
-                                                                <h3 className="font-mono text-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">
-                                                                    {s.title}
+                                                                <h3 className="font-sans text-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">
+                                                                    <span className="text-on-surface-variant font-normal mr-2">#{s.id}</span>{s.title}
                                                                 </h3>
-                                                                <p className="font-mono text-code-sm text-on-surface-variant">{s.description}</p>
+                                                                <p className="font-sans text-code-sm text-on-surface-variant">{s.description}</p>
                                                             </div>
                                                             {isComplete && (
                                                                 <span className="material-symbols-outlined text-success text-[24px] shrink-0 ml-2" style={{ fontVariationSettings: "'FILL' 1" }}>
@@ -107,10 +107,10 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
                                                             )}
                                                         </div>
                                                         <div className="flex justify-between items-center mb-1">
-                                                            <span className="font-mono text-code-sm text-on-surface-variant">
+                                                            <span className="font-sans text-code-sm text-on-surface-variant">
                                                                 {p ? `${p.completed}/${p.total} 완료` : '미시작'}
                                                             </span>
-                                                            <span className={`font-mono text-code-sm font-bold ${isComplete ? 'text-success' : p && p.completed > 0 ? 'text-primary' : 'text-on-surface-variant'}`}>
+                                                            <span className={`font-sans text-code-sm font-bold ${isComplete ? 'text-success' : p && p.completed > 0 ? 'text-primary' : 'text-on-surface-variant'}`}>
                                                                 {pct}%
                                                             </span>
                                                         </div>

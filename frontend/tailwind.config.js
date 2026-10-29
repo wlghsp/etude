@@ -30,7 +30,8 @@ export default {
         'info': '#3b82f6',
       },
       fontFamily: {
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['Pretendard Variable', 'Pretendard', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       fontSize: {
         'headline-lg': ['24px', { lineHeight: '32px', letterSpacing: '-0.02em', fontWeight: '700' }],

@@ -168,19 +168,19 @@ export function Terminal({ questId, onConnected, onStatus }: Props) {
                     onClick={() => setFontSize((n) => Math.max(FONT_SIZE_MIN, n - 1))}
                     disabled={fontSize <= FONT_SIZE_MIN}
                     title="글꼴 작게"
-                    className="border border-outline-variant bg-surface px-2 py-0.5 font-mono text-label-caps text-on-surface hover:bg-surface-container-high disabled:opacity-30"
+                    className="border border-outline-variant bg-surface px-2 py-0.5 font-sans text-label-caps text-on-surface hover:bg-surface-container-high disabled:opacity-30"
                 >A−</button>
                 <button
                     onClick={() => setFontSize((n) => Math.min(FONT_SIZE_MAX, n + 1))}
                     disabled={fontSize >= FONT_SIZE_MAX}
                     title="글꼴 크게"
-                    className="border border-outline-variant bg-surface px-2 py-0.5 font-mono text-label-caps text-on-surface hover:bg-surface-container-high disabled:opacity-30"
+                    className="border border-outline-variant bg-surface px-2 py-0.5 font-sans text-label-caps text-on-surface hover:bg-surface-container-high disabled:opacity-30"
                 >A+</button>
             </div>
             {loading && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 gap-3">
                     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    <span className="font-mono text-label-caps text-on-surface-variant">환경 준비 중...</span>
+                    <span className="font-sans text-label-caps text-on-surface-variant">환경 준비 중...</span>
                 </div>
             )}
         </div>

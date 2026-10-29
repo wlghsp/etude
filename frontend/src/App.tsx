@@ -128,7 +128,7 @@ function App() {
       <FeedbackButton page="quest" questId={quest?.id} questSetId={selectedSetId} />
       {/* TopNav */}
       <header className="flex items-center w-full px-gutter h-14 bg-surface border-b border-outline-variant shrink-0">
-        <button onClick={() => setSelectedSetId(null)} className="font-mono text-body-lg font-bold tracking-tighter text-on-surface hover:text-primary transition-colors">
+        <button onClick={() => setSelectedSetId(null)} className="font-sans text-body-lg font-bold tracking-tighter text-on-surface hover:text-primary transition-colors">
           OKESTRO TRAINING | Etude
         </button>
       </header>
@@ -158,13 +158,13 @@ function App() {
         <section className="w-[60%] flex flex-col bg-surface-container-lowest">
           <div className="h-9 border-b border-outline-variant flex items-center px-4 bg-surface justify-between shrink-0">
             <div className="flex items-center gap-4">
-              <span className="font-mono text-label-caps text-on-surface flex items-center gap-2">
+              <span className="font-sans text-label-caps text-on-surface flex items-center gap-2">
                 <span className="material-symbols-outlined text-[16px]">terminal</span> 터미널
               </span>
             </div>
             <div className="flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${TERMINAL_STATUS_VIEW[terminalStatus].dot}`}></span>
-              <span className="font-mono text-label-caps text-on-surface-variant">{TERMINAL_STATUS_VIEW[terminalStatus].label}</span>
+              <span className="font-sans text-label-caps text-on-surface-variant">{TERMINAL_STATUS_VIEW[terminalStatus].label}</span>
             </div>
           </div>
           {quest
@@ -182,7 +182,7 @@ function App() {
           {preparing && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface/80 z-50">
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <span className="font-mono text-label-caps text-on-surface-variant">환경 준비 중...</span>
+              <span className="font-sans text-label-caps text-on-surface-variant">환경 준비 중...</span>
             </div>
           )}
         </section>
