@@ -1,6 +1,6 @@
 # Privileged 샌드박스 격리 명세 — 학습자 컨테이너가 호스트 root가 되지 못하게 한다
 
-> 상태: **초안 — 설계 결정 대기** (아래 "결정 필요"). 자원 상한(조각 R)은 이 명세와 별개로 먼저 구현했다.
+> 상태: **A(Sysbox) 로컬 검증 완료 — 서버 적용은 별도 승인 대기** (아래 "조각 A: 로컬 검증 결과"). 자원 상한(조각 R)은 이 명세와 별개로 먼저 구현했다.
 
 ## 목표
 
@@ -35,6 +35,17 @@
 **검증 러너가 잡은 설계 오류:** 처음에는 `k8s` 학습자 컨테이너에도 512MiB를 줬는데, 전체 러너를 돌리자 세트 14(Helm) 8개가 모두 실패했다. 원인은 `helm repo add bitnami`가 큰 차트 인덱스를 파싱하다 512MiB에서 메모리 부족으로 `Killed`되는 것이었다(1GiB에서는 성공). 그래서 `k8s`만 1GiB로 올렸다. 상한을 도입할 때 러너로 퀘스트가 여전히 풀리는지 확인하는 것이 이 때문에 필요하다. 최종 상한에서 퀘스트 132개 전부 통과를 확인했다.
 
 **한계(중요):** 이 상한은 컨테이너 탈출을 막지 못한다. `Privileged`이고 cgroup이 쓰기 가능하면 컨테이너 안에서 자기 cgroup의 상한을 올릴 수 있을 가능성이 있다. 실수나 폭주 같은 사고를 막는 안전망이지 보안 경계가 아니다.
+
+## 조각 A: 로컬 검증 결과 (2026-10-29, Colima)
+
+환경: Colima VM(aarch64 Ubuntu 24.04, 커널 6.8, cgroup v2)에 Sysbox 0.7.1 ARM64 deb 설치. 러너는 `VERIFY_RUNTIME=sysbox-runc`일 때 특권 프로필을 `Runtime: sysbox-runc`로, `Privileged`·`CgroupnsMode: host`·`/sys/fs/cgroup` 바인드 없이 만든다 ([docker-sandbox.ts](../../backend/src/verify/docker-sandbox.ts)).
+
+- **검증됨 — 퀘스트:** 세트 10(12), 5(13), 8(7), 11(6) = **38개 전부 통과** (`VERIFY_RUNTIME=sysbox-runc npm run verify:quests -- --set 10` 등). 세트 5의 1번이 첫 실행에서 setup 타임아웃(-1)으로 실패했으나, 첫 이미지 pull 지연이었고 재실행에서 통과했다 (Privileged 런타임도 동일).
+- **검증됨 — 격리 프로브(읽기 전용):** 같은 프로브를 `--privileged`와 Sysbox 컨테이너에서 실행. 특권은 `uid_map 0 0 4294967295`, `/dev` 189개(호스트 디스크 `vda*`, `loop*` 보임). Sysbox는 `uid_map 0 100000 65536`, `/dev` 16개(블록 장치 없음), 호스트 디스크 마운트 거부(`permission denied`). 컨테이너 탈출 PoC는 실행하지 않았다.
+- **의미 있는 발견 — `linux-systemd`:** 앞서 `Privileged` 제거(안 C)는 로컬에서 모두 실패했으나, Sysbox에서는 특권 없이 부팅·통과했다. 안 C가 막혔던 systemd 문제를 Sysbox가 해결한다.
+- **설치 주의(Ubuntu 24.04):** deb의 의존성은 `fuse`(fusermount)인데 sysbox-fs는 `fusermount3`를 실행한다. `fuse3`이 없으면 컨테이너 생성이 `failed to pre-register with sysbox-fs`로 실패한다. 서버(22.04)에서는 `fuse3` 필요 여부를 설치 전에 확인한다.
+- **설치 부작용:** 설치 시 Docker 데몬이 재시작돼 실행 중이던 컨테이너가 모두 내려갔다 (`restart: no`인 etude-db는 수동 기동 필요). 서버 점검 시간이 필요하다는 가정이 확인됐다.
+- **미검증:** 서버(Ubuntu 22.04, Docker 29.6.1 rootful)에서의 설치·동작, 앱 코드(`terminal.ts`) 전환, `userns` 공존, 학습자 동시 다수 세션의 자원 사용, 운영 설치·롤백 문서(수용 조건 4번).
 
 ## 선택지
 
