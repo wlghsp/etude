@@ -41,7 +41,7 @@ CKA 시험 비중은 제 기억 기준이며 **최신 CNCF 커리큘럼으로 �
 | **A. k8s 트러블슈팅 실전** | 깨진 워크로드를 고치는 시나리오 10~12개 | 퀘스트 10~12 | **8개 구현됨: 세트 23, 로컬 검증 8/8을 연속 2회 통과** (2026-10-29, 세트당 약 2분). 설계 규칙: 장애는 Deployment로 주입(고칠 수 있게), 노드에 캐시된 nginx/busybox만 사용(429 회피), 채점은 spec 확인 + 상한 있는 `kubectl wait`. 서버 동작은 `미검증` |
 | **B. kubectl 속도·실전** | dry-run YAML, jsonpath, explain, 명령형 생성, 컨텍스트 | 퀘스트 8~10 | **구현됨: 세트 19 (10개), 로컬 검증 10/10** (2026-10-29). 채점은 리소스 상태 기준, 이미지 pull에 의존하지 않음 |
 | **C. 워크로드 확장** | 프로브, requests/limits, Job/CronJob, DaemonSet, HPA | 퀘스트 8~10 | **구현됨: 세트 22 (11개), 로컬 검증 11/11** (2026-10-29). Job/CronJob, DaemonSet, requests/limits, livenessProbe, nodeSelector(Pending이 정상), initContainers, downward API, HPA. 채점은 API 객체 상태 기준으로 Pod 실행에 의존하지 않는다. taint는 노드 변경 권한이 없어 제외 |
-| **D. 서비스·네트워킹** | Service 유형, DNS, Ingress, NetworkPolicy | 퀘스트 6~8 | 클러스터 Ingress/CNI 확인이 선행 조건 |
+| **D. 서비스·네트워킹** | Service 유형, DNS, Ingress, NetworkPolicy | 퀘스트 6~8 | **구현됨: 세트 25 (10개), 로컬 검증 10/10** (2026-10-29). Ingress 컨트롤러·NetworkPolicy 적용 여부는 `미검증`이라 채점은 리소스 설정(API 객체) 기준, 실제 통신은 DNS 접근 1개만 확인 |
 | **E. 네임스페이스 RBAC** | ServiceAccount, Role/RoleBinding, `auth can-i` | 퀘스트 4~6 | 현재 `edit`로는 Role 생성이 안 될 가능성 → 권한 설계 변경 필요, 보안 검토 대상 |
 
 추천 순서: **B → A → C → D**, E는 권한 모델을 건드리므로 마지막에 별도 명세로 다룬다.

@@ -1,0 +1,15 @@
+{
+  "setId": 25,
+  "answers": {
+    "1": "kubectl expose deployment web --port=80 --type=NodePort --name=web-np -n $NS",
+    "2": "kubectl get svc web-svc -n $NS -o jsonpath='{.spec.clusterIP}' > /tmp/cluster_ip.txt",
+    "3": "kubectl get endpoints web-svc -n $NS -o jsonpath='{.subsets[0].addresses[0].ip}' > /tmp/ep.txt",
+    "4": "kubectl exec client -n $NS -- wget -qO- http://web-svc > /tmp/svc_resp.txt",
+    "5": "echo web-svc.$NS.svc.cluster.local > /tmp/fqdn.txt",
+    "6": "kubectl create ingress web-ing -n $NS --rule='web.example.com/*=web-svc:80'",
+    "7": "kubectl apply -n $NS -f - <<EOF\napiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata:\n  name: deny-all\nspec:\n  podSelector: {}\n  policyTypes:\n  - Ingress\nEOF",
+    "8": "kubectl apply -n $NS -f - <<EOF\napiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata:\n  name: allow-front\nspec:\n  podSelector:\n    matchLabels:\n      app: backend\n  policyTypes:\n  - Ingress\n  ingress:\n  - from:\n    - podSelector:\n        matchLabels:\n          app: frontend\n    ports:\n    - protocol: TCP\n      port: 80\nEOF",
+    "9": "kubectl apply -n $NS -f - <<EOF\napiVersion: v1\nkind: Service\nmetadata:\n  name: db-headless\nspec:\n  clusterIP: None\n  selector:\n    app: db\n  ports:\n  - port: 3306\nEOF",
+    "10": "kubectl set selector service/web-svc app=api -n $NS"
+  }
+}

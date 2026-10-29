@@ -22,4 +22,5 @@ INSERT INTO quest_set (id, title, description, sandbox_type, category) VALUES
   (21, '리눅스 쉘 기본기와 사용자·권한', '와일드카드, 인용부호, xargs, tee, diff, alias, 사용자·그룹, su, umask, 하드링크 등 매일 쓰는 쉘 기본기를 실습합니다.', 'linux', '리눅스'),
   (22, 'k8s 워크로드 기본', 'Job·CronJob, DaemonSet, requests/limits, 프로브, nodeSelector, initContainers, HPA 등 워크로드의 기본 구성 요소를 실습합니다.', 'k8s', 'k8s'),
   (23, 'k8s 트러블슈팅 실전', '깨진 워크로드의 원인을 describe·logs·events 로 찾아 직접 고칩니다. 이미지 오타, 셀렉터·포트 불일치, CrashLoopBackOff, Pending, 설정 참조 오류 등.', 'k8s', 'k8s'),
-  (24, '리눅스 패키지와 systemd 로그', 'rpm 으로 패키지를 조회·검증하고, journalctl·logger 로 로그를 찾고, systemd 유닛을 만들어 시작하고 실패 원인을 찾는 현장 패턴을 실습합니다.', 'linux-systemd', '리눅스');
+  (24, '리눅스 패키지와 systemd 로그', 'rpm 으로 패키지를 조회·검증하고, journalctl·logger 로 로그를 찾고, systemd 유닛을 만들어 시작하고 실패 원인을 찾는 현장 패턴을 실습합니다.', 'linux-systemd', '리눅스'),
+  (25, 'k8s 서비스와 네트워킹', 'Service 유형, 엔드포인트, 클러스터 DNS, Ingress, NetworkPolicy, Headless Service 등 k8s 네트워킹의 기본 구성을 실습합니다.', 'k8s', 'k8s');

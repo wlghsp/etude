@@ -2,9 +2,14 @@
 -- $NS 는 런타임에 quest-{containerId 앞 8자리} 로 치환됨
 -- 13.1~13.4는 학습자가 PersistentVolume(클러스터 범위)을 만들 수 없는 제한 권한에서 풀 수 있게 PVC 중심으로 구성한다 (동적 프로비저닝)
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
-  (13, 1, 'PersistentVolumeClaim 생성하기',
-   '$NS 네임스페이스에 pvc-local 이름의 PVC를 생성하세요. 용량 1Gi, 접근 모드 ReadWriteOnce 로 요청하세요. (PV는 직접 만들지 않아도 됩니다. 클러스터의 기본 StorageClass가 PVC에 맞춰 자동으로 만들어 줍니다.)',
-   'kind: PersistentVolumeClaim 으로 작성하고 resources.requests.storage 로 용량을 지정합니다. storageClassName 을 생략하면 기본 StorageClass 를 씁니다.',
+  (13,  1, 'PVC 로 저장 공간 요청하기',
+   'Pod 가 사라져도 데이터를 남기려면 **영구 볼륨**이 필요합니다. 사용자는 PV(실제 저장소)를 직접 만들지 않고 **PVC(저장 공간 요청서)** 만 제출하면, 클러스터가 알맞은 저장소를 자동으로 연결해 줍니다.
+
+`$NS` 네임스페이스에 `pvc-local` 이름의 PVC 를 만드세요.
+- 용량: `1Gi`
+- 접근 모드: `ReadWriteOnce` (한 노드에서 읽고 쓰기)
+(PV 는 직접 만들지 않아도 됩니다. 기본 StorageClass 가 자동으로 만들어 줍니다)',
+   'YAML 의 `kind: PersistentVolumeClaim` 에서 `spec.accessModes` 에 접근 모드를, `spec.resources.requests.storage` 에 용량을 씁니다. `storageClassName` 을 생략하면 클러스터 기본 StorageClass 가 쓰입니다.',
    'kubectl apply -f - <<EOF
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -13,17 +18,22 @@ metadata:
   namespace: $NS
 spec:
   accessModes:
-  - ReadWriteOnce
+  - ReadWriteOnce        # 한 노드에서 읽기/쓰기
   resources:
     requests:
-      storage: 1Gi
+      storage: 1Gi       # 요청 용량
 EOF',
    NULL,
    '["sh", "-c", "kubectl get pvc pvc-local -n $NS | grep -q pvc-local"]'),
 
-  (13, 2, 'PVC를 Pod에 마운트하기',
-   'pvc-local PVC를 /data 경로에 마운트한 Pod를 $NS 네임스페이스에 생성하세요. Pod 이름은 pvc-pod, 이미지는 nginx 로 하세요.',
-   'volumes.persistentVolumeClaim.claimName 으로 PVC를 참조하고 volumeMounts 로 마운트 경로를 지정합니다.',
+  (13,  2, 'PVC 를 Pod 에 마운트하기',
+   'PVC 는 Pod 가 볼륨으로 연결해야 실제로 쓸 수 있습니다.
+
+`pvc-local` PVC 를 컨테이너의 `/data` 경로에 마운트한 Pod 를 `$NS` 네임스페이스에 만드세요. Pod 이름은 `pvc-pod`, 이미지는 `nginx` 입니다.',
+   '두 곳을 함께 씁니다.
+- `spec.volumes` : `persistentVolumeClaim.claimName` 으로 어느 PVC 인지 지정
+- `containers[].volumeMounts` : 그 볼륨을 컨테이너의 어느 경로(`mountPath`)에 붙일지 지정
+두 곳의 볼륨 `name` 이 같아야 연결됩니다.',
    'kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Pod
@@ -40,49 +50,74 @@ spec:
   volumes:
   - name: data-vol
     persistentVolumeClaim:
-      claimName: pvc-local
+      claimName: pvc-local   # 어느 PVC 를 쓸지
 EOF',
    '["sh", "-c", "kubectl apply -f - <<EOF\\napiVersion: v1\\nkind: PersistentVolumeClaim\\nmetadata:\\n  name: pvc-local\\n  namespace: $NS\\nspec:\\n  accessModes:\\n  - ReadWriteOnce\\n  resources:\\n    requests:\\n      storage: 1Gi\\nEOF"]',
    '["sh", "-c", "kubectl get pod pvc-pod -n $NS | grep -q pvc-pod"]'),
 
-  (13, 3, 'PVC 상태 확인하기',
-   'pvc-local PVC가 Bound 상태인지 확인하고 결과를 /tmp/pvc_status.txt 에 저장하세요. (이 PVC는 Pod가 사용하기 전까지는 Pending 상태일 수 있습니다.)',
-   'kubectl get pvc -n <namespace> 로 상태를 확인합니다. STATUS 컬럼이 Bound 여야 합니다.',
+  (13,  3, 'PVC 상태 확인하기',
+   'PVC 가 저장소와 연결(`Bound`)되었는지 확인하는 것은 스토리지 문제의 첫 점검입니다.
+
+`pvc-local` PVC 의 상태를 `/tmp/pvc_status.txt` 에 저장하세요. (Pod 가 사용하기 전에는 `Pending` 일 수 있고, 사용하면 `Bound` 가 됩니다)',
+   '`kubectl get pvc <이름> -n <네임스페이스>` 의 `STATUS` 열이 상태입니다. `Bound` 는 저장소와 연결됨, `Pending` 은 연결 대기 중입니다. 결과를 `>` 로 저장하세요.',
    'kubectl get pvc pvc-local -n $NS > /tmp/pvc_status.txt',
    '["sh", "-c", "kubectl apply -f - <<EOF\\napiVersion: v1\\nkind: PersistentVolumeClaim\\nmetadata:\\n  name: pvc-local\\n  namespace: $NS\\nspec:\\n  accessModes:\\n  - ReadWriteOnce\\n  resources:\\n    requests:\\n      storage: 1Gi\\n---\\napiVersion: v1\\nkind: Pod\\nmetadata:\\n  name: pvc-pod\\n  namespace: $NS\\nspec:\\n  containers:\\n  - name: nginx\\n    image: nginx\\n    volumeMounts:\\n    - name: data-vol\\n      mountPath: /data\\n  volumes:\\n  - name: data-vol\\n    persistentVolumeClaim:\\n      claimName: pvc-local\\nEOF\\nkubectl wait --for=condition=ready pod/pvc-pod -n $NS --timeout=90s"]',
    '["sh", "-c", "grep -q Bound /tmp/pvc_status.txt"]'),
 
-  (13, 4, '마운트한 볼륨에 데이터 저장하기',
-   'pvc-pod 의 /data 에 hello.txt 파일을 만들고, 내용으로 persisted 를 저장하세요.',
-   'kubectl exec <pod> -n <namespace> -- sh -c "명령" 으로 Pod 안에서 명령을 실행할 수 있습니다.',
-   'kubectl exec pvc-pod -n $NS -- sh -c ''echo persisted > /data/hello.txt''',
+  (13,  4, '마운트한 볼륨에 데이터 저장하기',
+   '볼륨에 쓴 파일은 Pod 가 다시 만들어져도 남습니다. 직접 파일을 만들어 확인합니다.
+
+`pvc-pod` 의 `/data` 디렉토리에 `hello.txt` 파일을 만들고, 내용으로 `persisted` 를 쓰세요.',
+   '`kubectl exec <Pod> -n <네임스페이스> -- sh -c "<명령>"` 으로 Pod 안에서 쉘 명령을 실행합니다. `sh -c` 는 따옴표 안의 문자열 전체를 하나의 명령으로 실행하며, 그 안에서 `>` 로 파일에 쓸 수 있습니다.',
+   'kubectl exec pvc-pod -n $NS -- sh -c ''echo persisted > /data/hello.txt''
+
+# -- 뒤가 Pod 안에서 실행할 명령
+# sh -c ''...'' : 따옴표 안의 명령(리다이렉션 포함)을 Pod 안의 쉘이 실행',
    '["sh", "-c", "kubectl apply -f - <<EOF\\napiVersion: v1\\nkind: PersistentVolumeClaim\\nmetadata:\\n  name: pvc-local\\n  namespace: $NS\\nspec:\\n  accessModes:\\n  - ReadWriteOnce\\n  resources:\\n    requests:\\n      storage: 1Gi\\n---\\napiVersion: v1\\nkind: Pod\\nmetadata:\\n  name: pvc-pod\\n  namespace: $NS\\nspec:\\n  containers:\\n  - name: nginx\\n    image: nginx\\n    volumeMounts:\\n    - name: data-vol\\n      mountPath: /data\\n  volumes:\\n  - name: data-vol\\n    persistentVolumeClaim:\\n      claimName: pvc-local\\nEOF\\nkubectl wait --for=condition=ready pod/pvc-pod -n $NS --timeout=90s"]',
    '["sh", "-c", "kubectl exec pvc-pod -n $NS -- cat /data/hello.txt | grep -q persisted"]'),
 
-  (13, 5, 'Service 생성하고 port-forward로 접근하기',
-   '$NS 네임스페이스에 nginx Pod와 Service를 생성한 뒤, kubectl port-forward 로 로컬 9090 포트를 Service 80 포트에 연결하고 curl로 응답을 확인해서 /tmp/pf_result.txt 에 저장하세요.',
-   'kubectl port-forward svc/<서비스명> <로컬포트>:<서비스포트> -n <namespace> & 로 백그라운드 실행 후 curl localhost:<로컬포트> 로 확인합니다.',
-   'kubectl run pf-nginx --image=nginx -n $NS && kubectl expose pod pf-nginx --port=80 -n $NS && kubectl wait --for=condition=ready pod/pf-nginx -n $NS --timeout=60s && (kubectl port-forward svc/pf-nginx 9090:80 -n $NS > /dev/null 2>&1 &) && sleep 3 && curl -s localhost:9090 > /tmp/pf_result.txt',
-   NULL,
-   '["sh", "-c", "grep -qiE \\\"nginx|html\\\" /tmp/pf_result.txt"]'),
+  (13,  5, 'Service 를 만들고 port-forward 로 접근하기',
+   '클러스터 안의 Service 에는 밖에서 바로 접속할 수 없습니다. 개발·디버깅 때는 `port-forward` 로 내 터미널의 포트를 Service 에 임시로 연결해 접속합니다.
 
-  (13, 6, 'Pod 로그로 문제 진단하기',
-   '$NS 네임스페이스에 잘못된 명령어로 CrashLoopBackOff 상태가 된 Pod가 있습니다. 로그를 확인하고 에러 메시지를 /tmp/crash_log.txt 에 저장하세요.',
-   'kubectl logs <pod명> -n <namespace> 로 로그를 확인합니다. 이전 컨테이너 로그는 --previous 옵션을 사용합니다.',
-   'kubectl logs crash-pod -n $NS > /tmp/crash_log.txt 2>&1 || kubectl logs crash-pod -n $NS --previous > /tmp/crash_log.txt 2>&1',
-   '["sh", "-c", "kubectl run crash-pod --image=ubuntu --restart=Always -n $NS -- sh -c \\\"echo ERROR: invalid config && exit 1\\\" 2>/dev/null; true"]',
+1. `$NS` 에 `nginx` Pod 와 그 Service(포트 80)를 만듭니다.
+2. `port-forward` 로 로컬 `9090` 포트를 Service 의 `80` 포트에 연결합니다.
+3. `curl` 로 응답을 확인해 `/tmp/pf_result.txt` 에 저장합니다.',
+   '`kubectl port-forward svc/<서비스이름> <로컬포트>:<서비스포트> -n <네임스페이스>` 는 실행하는 동안 계속 떠 있어야 해서 끝에 `&` 를 붙여 **백그라운드**로 실행합니다. 연결이 되는 데 몇 초 걸리니 `sleep 3` 뒤에 `curl -s localhost:9090`(`-s` 는 진행 표시 끄기)으로 확인하세요.',
+   'kubectl run pf-nginx --image=nginx -n $NS && kubectl expose pod pf-nginx --port=80 -n $NS && kubectl wait --for=condition=ready pod/pf-nginx -n $NS --timeout=60s && (kubectl port-forward svc/pf-nginx 9090:80 -n $NS > /dev/null 2>&1 &) && sleep 3 && curl -s localhost:9090 > /tmp/pf_result.txt
+
+# expose : Pod 를 Service 로 노출, wait : Pod 가 Ready 가 될 때까지 대기
+# port-forward 로컬:서비스 : 로컬 9090 → Service 80',
+   NULL,
+   '["sh", "-c", "grep -qiE \\"nginx|html\\" /tmp/pf_result.txt"]'),
+
+  (13,  6, 'Pod 로그로 장애 원인 찾기',
+   'Pod 가 계속 죽었다 살아나는 상태(`CrashLoopBackOff`)일 때는 **로그**에 원인이 남습니다.
+
+`$NS` 네임스페이스에 잘못된 명령 때문에 `CrashLoopBackOff` 가 된 Pod `crash-pod` 가 있습니다. 로그를 확인해 에러 메시지를 `/tmp/crash_log.txt` 에 저장하세요.',
+   '`kubectl logs <Pod이름> -n <네임스페이스>` 로 로그를 봅니다. 재시작한 직후에는 현재 컨테이너 로그가 비어 있을 수 있어, 이때는 `--previous`(직전에 죽은 컨테이너의 로그)를 씁니다. 에러 출력까지 담으려면 `2>&1` 을 붙이세요.',
+   'kubectl logs crash-pod -n $NS > /tmp/crash_log.txt 2>&1 || kubectl logs crash-pod -n $NS --previous > /tmp/crash_log.txt 2>&1
+
+# --previous : 직전에 죽은 컨테이너의 로그
+# || : 앞 명령이 실패하면 뒤 명령 실행',
+   '["sh", "-c", "kubectl run crash-pod --image=ubuntu --restart=Always -n $NS -- sh -c \\"echo ERROR: invalid config && exit 1\\" 2>/dev/null; true"]',
    '["sh", "-c", "test -s /tmp/crash_log.txt"]'),
 
-  (13, 7, 'kubectl describe로 Pod 상태 진단하기',
-   '$NS 네임스페이스의 crash-pod Pod 상세 정보를 확인하고 /tmp/describe_result.txt 에 저장하세요. Events 섹션에서 문제 원인을 찾아보세요.',
-   'kubectl describe pod <pod명> -n <namespace> 로 이벤트와 상태를 상세히 확인합니다.',
-   'kubectl describe pod crash-pod -n $NS > /tmp/describe_result.txt',
-   '["sh", "-c", "kubectl run crash-pod --image=ubuntu --restart=Always -n $NS -- sh -c \\\"echo ERROR && exit 1\\\" 2>/dev/null; true"]',
-   '["sh", "-c", "grep -qE \\\"Events|State\\\" /tmp/describe_result.txt"]'),
+  (13,  7, 'describe 로 Pod 상태와 이벤트 확인하기',
+   '`describe` 는 Pod 의 상태, 재시작 횟수, 그리고 **이벤트**(무슨 일이 있었는지)를 보여 줍니다. 로그에 안 남는 원인(이미지 못 받음, 스케줄 실패 등)을 찾을 수 있습니다.
 
-  (13, 8, 'EmptyDir 볼륨으로 컨테이너 간 파일 공유하기',
-   'emptyDir 볼륨을 사용해서 두 컨테이너가 /shared 디렉토리를 공유하는 Pod를 $NS 네임스페이스에 생성하세요. Pod 이름은 shared-pod, 컨테이너는 writer(busybox)와 reader(busybox)로 구성하세요.',
-   'emptyDir 볼륨은 Pod 생명주기와 함께하는 임시 볼륨입니다. 두 컨테이너 모두 volumeMounts 에 같은 볼륨을 마운트합니다.',
+`$NS` 네임스페이스의 `crash-pod` Pod 의 상세 정보를 `/tmp/describe_result.txt` 에 저장하세요. 저장한 뒤 `Events` 부분에서 문제 원인을 읽어 보세요.',
+   '`kubectl describe pod <Pod이름> -n <네임스페이스>` 입니다. 출력 아래쪽의 `State`(현재 상태), `Last State`(직전 상태와 종료 코드), `Events`(시간순 사건)를 주목하세요.',
+   'kubectl describe pod crash-pod -n $NS > /tmp/describe_result.txt
+
+# 확인할 곳: State / Last State(Exit Code) / Events',
+   '["sh", "-c", "kubectl run crash-pod --image=ubuntu --restart=Always -n $NS -- sh -c \\"echo ERROR && exit 1\\" 2>/dev/null; true"]',
+   '["sh", "-c", "grep -qE \\"Events|State\\" /tmp/describe_result.txt"]'),
+
+  (13,  8, 'emptyDir 로 컨테이너끼리 파일 공유하기',
+   '한 Pod 안의 여러 컨테이너는 **emptyDir** 볼륨으로 파일을 주고받을 수 있습니다. emptyDir 는 Pod 가 사는 동안만 유지되는 임시 공간입니다(로그 수집 사이드카 패턴 등).
+
+`$NS` 에 Pod `shared-pod` 를 만드세요. `writer`, `reader` 두 컨테이너(둘 다 `busybox`)가 `/shared` 디렉토리를 공유해야 합니다.',
+   '`spec.volumes` 에 `emptyDir: {}` 볼륨을 정의하고, **두 컨테이너 모두** `volumeMounts` 에 같은 볼륨 이름과 `mountPath: /shared` 를 넣습니다. busybox 는 바로 종료되므로 `command` 에 `sleep 3600` 을 넣어 계속 실행되게 하세요.',
    'kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Pod
@@ -99,13 +134,13 @@ spec:
       mountPath: /shared
   - name: reader
     image: busybox
-    command: ["sh", "-c", "sleep 3600"]
+    command: ["sh", "-c", "sleep 3600"]   # 계속 떠 있도록 대기
     volumeMounts:
     - name: shared-vol
       mountPath: /shared
   volumes:
   - name: shared-vol
-    emptyDir: {}
+    emptyDir: {}          # Pod 와 수명이 같은 임시 볼륨
 EOF',
    NULL,
    '["sh", "-c", "kubectl get pod shared-pod -n $NS | grep -q shared-pod"]');
