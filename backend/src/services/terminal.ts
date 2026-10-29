@@ -5,6 +5,7 @@ import { getSetupCmd } from './quest.js'
 import { assignFromPool, releaseVcluster } from './vcluster-pool.js'
 import { registerSession, removeSession } from './session-registry.js'
 import { createSessionAccess, destroySessionAccess } from './k8s-session.js'
+import { sandboxLimits } from './sandbox-limits.js'
 import { installKubeconfig } from './container-kubeconfig.js'
 import type { TerminalTicketInfo } from './terminal-ticket.js'
 
@@ -188,7 +189,7 @@ async function handleDefaultTerminal(docker: Docker, config: { image: string, bi
   const container = await docker.createContainer({
     Image: config.image,
     Labels: { etude: 'sandbox'},
-    HostConfig: { Binds: config.binds ?? [] },
+    HostConfig: { Binds: config.binds ?? [], ...sandboxLimits('default') },
     Cmd: ['/bin/bash'],
     AttachStdin: true,
     AttachStdout: true,
@@ -223,7 +224,7 @@ async function handleDockerTerminal(
     Labels: { etude: 'sandbox'},
     OpenStdin: false, Tty: false,
     AttachStdin: false, AttachStdout: false, AttachStderr: false,
-    HostConfig: { Binds: config.binds ?? [], Privileged: true },
+    HostConfig: { Binds: config.binds ?? [], Privileged: true, ...sandboxLimits('dind') },
   })
   ctx.track(() => removeContainer(container))
   await container.start()
@@ -250,6 +251,7 @@ async function handleSystemdTerminal(docker: Docker, config: { image: string, bi
       Binds: [...(config.binds ?? []), '/sys/fs/cgroup:/sys/fs/cgroup:rw'],
       Privileged: true,
       CgroupnsMode: 'host',
+      ...sandboxLimits('systemd'),
     } as Docker.ContainerCreateOptions['HostConfig'],
   })
   ctx.track(() => removeContainer(container))
@@ -275,6 +277,7 @@ async function handleK8sTerminal(docker: Docker, config: { image: string, binds:
     Labels: { etude: 'sandbox'},
     HostConfig: {
       NetworkMode: process.env.K3D_NETWORK ?? 'k3d-etude',
+      ...sandboxLimits('k8s'),
     },
     Cmd: ['/bin/bash'],
     AttachStdin: true,
@@ -317,6 +320,7 @@ async function handleK8sIsolatedTerminal(docker: Docker, questId: number | null,
     HostConfig: {
       Binds: [`${vcluster.kubeconfigPath}:/root/.kube/config:ro`],
       NetworkMode: process.env.K3D_NETWORK ?? 'k3d-etude',
+      ...sandboxLimits('k8s'),
     },
     Cmd: ['/bin/bash'],
     AttachStdin: true, AttachStdout: true, AttachStderr: true,

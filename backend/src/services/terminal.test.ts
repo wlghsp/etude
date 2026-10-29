@@ -18,6 +18,7 @@ vi.mock('./vcluster-pool.js', () => ({
 import { handleTerminal } from './terminal.js'
 import { getSession } from './session-registry.js'
 import { getSandboxConfig } from './sandbox.js'
+import { sandboxLimits } from './sandbox-limits.js'
 import { createSessionAccess, destroySessionAccess } from './k8s-session.js'
 import { assignFromPool, releaseVcluster } from './vcluster-pool.js'
 
@@ -306,5 +307,57 @@ describe('k8s 세션 (제한 권한)', () => {
 
         expect(socket.send).not.toHaveBeenCalled()
         expect(socket.close).toHaveBeenCalled()
+    })
+})
+
+describe('샌드박스 자원 상한', () => {
+    const limitsOf = (docker: any) => docker.createContainer.mock.calls[0][0].HostConfig
+    const sockets: Array<ReturnType<typeof fakeSocket>> = []
+    afterEach(() => { sockets.splice(0).forEach((s) => s.emit('close')) })
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        vi.mocked(getSandboxConfig).mockResolvedValue({ image: 'ubuntu', binds: null, persistent: false })
+    })
+
+    async function connect(sandboxType: string) {
+        const socket = fakeSocket()
+        sockets.push(socket)
+        const { docker } = fakeDocker(`limit-${sandboxType}`)
+        await handleTerminal(socket as any, docker, { ...info, sandboxType })
+        return docker
+    }
+
+    it('기본 샌드박스(linux)에 메모리·CPU·프로세스 상한을 건다', async () => {
+        const host = limitsOf(await connect('linux'))
+
+        expect(host.Memory).toBeGreaterThan(0)
+        expect(host.NanoCpus).toBeGreaterThan(0)
+        expect(host.PidsLimit).toBeGreaterThan(0)
+        expect(host.MemorySwap).toBe(host.Memory)
+    })
+
+    it('docker, docker-persistent는 dind 상한을 건다 (Privileged여도 자원은 제한한다)', async () => {
+        for (const type of ['docker', 'docker-persistent']) {
+            vi.clearAllMocks()
+            const host = limitsOf(await connect(type))
+
+            expect(host.Privileged).toBe(true)
+            expect(host.Memory).toBe(sandboxLimits('dind').Memory)
+            expect(host.PidsLimit).toBe(sandboxLimits('dind').PidsLimit)
+        }
+    })
+
+    it('linux-systemd는 systemd 상한을 건다', async () => {
+        const host = limitsOf(await connect('linux-systemd'))
+
+        expect(host.Memory).toBe(sandboxLimits('systemd').Memory)
+        expect(host.PidsLimit).toBe(sandboxLimits('systemd').PidsLimit)
+    })
+
+    it('k8s 학습자 컨테이너에는 k8s 상한을 건다 (helm이 기본 상한에서는 메모리 부족으로 죽는다)', async () => {
+        const host = limitsOf(await connect('k8s'))
+
+        expect(host.Memory).toBe(sandboxLimits('k8s').Memory)
     })
 })

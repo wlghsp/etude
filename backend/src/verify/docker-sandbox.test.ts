@@ -4,7 +4,8 @@ vi.mock('../services/k8s-session.js', () => ({
     destroySessionAccess: vi.fn(async () => {}),
 }))
 
-import { dockerSandboxFactory } from './docker-sandbox.js'
+import { dockerSandboxFactory, DIND_PROFILE, SYSTEMD_PROFILE } from './docker-sandbox.js'
+import { sandboxLimits } from '../services/sandbox-limits.js'
 import { createSessionAccess, destroySessionAccess } from '../services/k8s-session.js'
 
 function fakeDocker(inspectResults: Array<{ Running: boolean; ExitCode: number }>) {
@@ -129,6 +130,25 @@ describe('dockerSandboxFactory', () => {
         expect(opts.HostConfig.CgroupnsMode).toBe('host')
         expect(opts.HostConfig.Binds).toEqual(['/a:/b', '/sys/fs/cgroup:/sys/fs/cgroup:rw'])
         expect(opts.Cmd).toBeUndefined()
+    })
+
+    describe('자원 상한 (앱과 같은 값)', () => {
+        const hostOf = async (profile: Parameters<typeof dockerSandboxFactory>[2]) => {
+            const { docker } = fakeDocker([{ Running: false, ExitCode: 0 }])
+            await dockerSandboxFactory(docker, { image: 'x', binds: null }, profile)()
+            return docker.createContainer.mock.calls[0][0].HostConfig
+        }
+
+        it('프로필을 주지 않으면 기본 상한을 건다', async () => {
+            const host = await hostOf(undefined)
+            expect(host.Memory).toBe(sandboxLimits('default').Memory)
+            expect(host.PidsLimit).toBe(sandboxLimits('default').PidsLimit)
+        })
+
+        it('dind, systemd 프로필은 각자의 상한을 건다', async () => {
+            expect((await hostOf({ ...DIND_PROFILE, readyIntervalMs: 1 })).Memory).toBe(sandboxLimits('dind').Memory)
+            expect((await hostOf({ ...SYSTEMD_PROFILE, readyIntervalMs: 1 })).Memory).toBe(sandboxLimits('systemd').Memory)
+        })
     })
 
     describe('k8s 프로필 (앱과 같은 제한 권한)', () => {

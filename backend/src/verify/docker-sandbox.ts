@@ -2,12 +2,15 @@ import type Docker from 'dockerode'
 import type { SandboxFactory, VerifySandbox } from './verify-quest.js'
 import { createSessionAccess, destroySessionAccess } from '../services/k8s-session.js'
 import { installKubeconfig } from '../services/container-kubeconfig.js'
+import { sandboxLimits, type SandboxClass } from '../services/sandbox-limits.js'
 
 const DEFAULT_EXEC_TIMEOUT_MS = 120_000
 
 // 샌드박스 타입별 차이. 기본(plain)은 bash를 띄워 두고, dind 계열은 이미지의 기본 entrypoint(dockerd)를
 // 그대로 쓰되 Privileged로 만들고 데몬이 응답할 때까지 기다린다 (실제 앱의 handleDockerTerminal과 같은 구성).
 export interface SandboxProfile {
+    // 자원 상한 종류. 앱(terminal.ts)과 같은 값을 쓴다. 기본은 'default'.
+    limitClass?: SandboxClass
     privileged?: boolean
     extraBinds?: string[]
     cgroupnsHost?: boolean
@@ -23,6 +26,7 @@ export interface SandboxProfile {
 
 // 실제 앱의 handleSystemdTerminal과 같은 구성. systemd가 부팅을 마칠 때까지(running/degraded) 기다린다.
 export const SYSTEMD_PROFILE: SandboxProfile = {
+    limitClass: 'systemd',
     privileged: true,
     extraBinds: ['/sys/fs/cgroup:/sys/fs/cgroup:rw'],
     cgroupnsHost: true,
@@ -32,10 +36,10 @@ export const SYSTEMD_PROFILE: SandboxProfile = {
 }
 
 export function k8sProfile(networkMode: string): SandboxProfile {
-    return { networkMode, namespacePrefix: 'verify' }
+    return { limitClass: 'k8s', networkMode, namespacePrefix: 'verify' }
 }
 
-export const DIND_PROFILE: SandboxProfile = { privileged: true, readyCmd: ['docker', 'info'], readyTimeoutMs: 90_000, readyIntervalMs: 500 }
+export const DIND_PROFILE: SandboxProfile = { limitClass: 'dind', privileged: true, readyCmd: ['docker', 'info'], readyTimeoutMs: 90_000, readyIntervalMs: 500 }
 const TIMEOUT_EXIT_CODE = -1
 
 // 검증용 컨테이너를 만든다. 이미지·binds는 서비스의 샌드박스 설정을 그대로 받는다.
@@ -48,6 +52,7 @@ export function dockerSandboxFactory(docker: Docker, config: { image: string; bi
             HostConfig: {
                 // k8s는 DB의 binds(관리자 kubeconfig 마운트)를 무시한다. 앱과 같다.
                 Binds: profile.namespacePrefix ? [] : [...(config.binds ?? []), ...(profile.extraBinds ?? [])],
+                ...sandboxLimits(profile.limitClass ?? 'default'),
                 ...(profile.privileged ? { Privileged: true } : {}),
                 ...(profile.cgroupnsHost ? { CgroupnsMode: 'host' } : {}),
                 ...(profile.networkMode ? { NetworkMode: profile.networkMode } : {}),
