@@ -17,6 +17,8 @@ jobs:
             set -e
             cd ~/etude
             git pull
+            docker build -q -f backend/docker/Dockerfile.linux -t etude-linux:latest backend
+            scripts/migrate.sh
             cd frontend
             npm ci
             npm run build
