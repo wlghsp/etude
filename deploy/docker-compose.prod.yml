@@ -15,6 +15,12 @@ services:
     volumes:
       - etude-db-data:/var/lib/mysql
       - ./backend/db:/docker-entrypoint-initdb.d
+    healthcheck:
+      # 접속이 실제로 되는지 본다 (컨테이너 시작과 DB 준비는 다르다)
+      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     networks:
       - etude
 
@@ -32,7 +38,15 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOME}/.kube/config-etude:/root/.kube/config-etude:ro
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      # /health 는 DB까지 확인한다. 시작 직후 고아 정리와 vcluster 풀 생성 시간을 start_period 로 기다린다.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/health >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 180s
     networks:
       - etude
       - k3d-etude
@@ -50,7 +64,8 @@ services:
       - ./frontend/dist:/usr/share/nginx/html:ro
       - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - etude
 
