@@ -51,3 +51,10 @@
 
 - 방화벽(`firewall-cmd`)은 Rocky 이미지에 `firewalld`가 없고, 설치는 외부 저장소와 컨테이너 네트워크 제약에 의존해 채점이 불안정하다. 필요하면 이미지를 따로 빌드하는 별도 작업으로 다룬다.
 - 이 세트는 서버에서 가장 무거운 샌드박스(systemd, 1GiB/세션)를 쓰므로 동시 접속이 많아지면 먼저 점검한다.
+
+## 세트 27 메모 (성능과 스토리지(NFS) 점검)
+
+- 14개, 로컬 검증 14/14를 연속 3회 통과. 이미지 변경 없음.
+- 성능: 메모리를 많이 쓰는 프로세스(`ps --sort=-rss`), `free`의 `available` 읽기, `/proc/meminfo`, `nproc`, `top -b -n 1`, `uptime`의 로드 평균 읽기, `vmstat`.
+- 스토리지: 샘플 `df -h`(사용률 80% 이상), `df -i`(inode 가득), `df -hT`(NFS 유형 구분) 출력 읽기.
+- NFS: 샌드박스 컨테이너에서는 마운트 권한과 NFS 서버가 없어 실제 마운트는 불가 → `/etc/fstab`(`_netdev` 등), `/etc/exports`(`rw`, `sync`, `no_root_squash`) 설정 파일 작성, `/proc/mounts`(`hard`/`soft`)와 `showmount -e` 샘플 출력 읽기로 다룬다. `Stale file handle` 같은 장애 해석은 객관식(퀴즈 세트)에서 다룬다.
