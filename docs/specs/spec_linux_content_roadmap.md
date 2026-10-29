@@ -12,7 +12,8 @@
 | 2 | 장애 진단 실전 (디스크, CPU, 포트, 권한, 종료 코드, 깨진 링크) | 16 (11개) | 로컬 검증 완료 (11/11) |
 | 3 | 쉘 스크립트 기초 (변수, 인자, 조건, 반복, 종료 코드) | 17 (10개) | 로컬 검증 완료 (10/10) |
 | 4 | 네트워크 진단 (`curl`, `nc`, `ss`, `/etc/hosts`, 종료 코드) | 18 (10개) | 로컬 검증 완료 (10/10). `etude-linux`에 `curl`, `netcat-openbsd`와 퀘스트용 HTTP 서버 `etude-httpd`(perl) 추가 → 이미지 재빌드 필요(배포가 자동 수행) |
-| 5 | systemd 서비스와 로그 (`journalctl`, unit 파일) | 10 확장 | 미착수. Rocky systemd 샌드박스(자원 큼) 필요 |
+| 3.5 | 쉘 기본기와 사용자·권한 (기본기 점검에서 빠진 것) | 21 (15개) | 로컬 검증 완료 (15/15). 이미지 변경 없음. `history`는 대화형이라 제외 |
+| 5 | 패키지(rpm)와 systemd 로그 | 24 (13개) | 로컬 검증 완료 (13/13, 연속 2회). Rocky systemd 샌드박스(세션당 1GiB). 제외: `firewall-cmd`/`crontab`/`ss`(이미지에 없음), `hostnamectl set-hostname`(컨테이너에서 막힘), `dnf install`(외부 저장소 의존) |
 
 ## 세트 16 구성
 
@@ -45,3 +46,8 @@
 - **충분함:** `chmod`, `export`, `head`/`tail`(15~16에서 추가), `grep`/`sed`/`awk`/`sort`/`uniq`(15에서 추가)
 
 → 부족한 기본기를 묶은 세트 후보: "쉘 기본기와 사용자·권한"(glob, 인용부호, alias, history, which, wc, diff, xargs, tee, id, su, umask, stat, 하드링크) / "패키지·방화벽·로그"(rpm, dnf, firewall-cmd, journalctl; Rocky systemd 샌드박스 필요).
+
+## 세트 24 메모
+
+- 방화벽(`firewall-cmd`)은 Rocky 이미지에 `firewalld`가 없고, 설치는 외부 저장소와 컨테이너 네트워크 제약에 의존해 채점이 불안정하다. 필요하면 이미지를 따로 빌드하는 별도 작업으로 다룬다.
+- 이 세트는 서버에서 가장 무거운 샌드박스(systemd, 1GiB/세션)를 쓰므로 동시 접속이 많아지면 먼저 점검한다.

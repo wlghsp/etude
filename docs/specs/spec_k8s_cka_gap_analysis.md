@@ -38,9 +38,9 @@ CKA 시험 비중은 제 기억 기준이며 **최신 CNCF 커리큘럼으로 �
 
 | 후보 | 내용 | 추정 규모 | 비고 |
 |---|---|---|---|
-| **A. k8s 트러블슈팅 실전** | 깨진 워크로드를 고치는 시나리오 10~12개 | 퀘스트 10~12 | 현장·CKA 가치 최고. 사전 장애 주입(setup_cmd)이 필요하고 채점은 상태 기반 |
+| **A. k8s 트러블슈팅 실전** | 깨진 워크로드를 고치는 시나리오 10~12개 | 퀘스트 10~12 | **8개 구현됨: 세트 23, 로컬 검증 8/8을 연속 2회 통과** (2026-10-29, 세트당 약 2분). 설계 규칙: 장애는 Deployment로 주입(고칠 수 있게), 노드에 캐시된 nginx/busybox만 사용(429 회피), 채점은 spec 확인 + 상한 있는 `kubectl wait`. 서버 동작은 `미검증` |
 | **B. kubectl 속도·실전** | dry-run YAML, jsonpath, explain, 명령형 생성, 컨텍스트 | 퀘스트 8~10 | **구현됨: 세트 19 (10개), 로컬 검증 10/10** (2026-10-29). 채점은 리소스 상태 기준, 이미지 pull에 의존하지 않음 |
-| **C. 워크로드 확장** | 프로브, requests/limits, Job/CronJob, DaemonSet, HPA | 퀘스트 8~10 | 노드 변경이 필요한 스케줄링(taint)은 제외 |
+| **C. 워크로드 확장** | 프로브, requests/limits, Job/CronJob, DaemonSet, HPA | 퀘스트 8~10 | **구현됨: 세트 22 (11개), 로컬 검증 11/11** (2026-10-29). Job/CronJob, DaemonSet, requests/limits, livenessProbe, nodeSelector(Pending이 정상), initContainers, downward API, HPA. 채점은 API 객체 상태 기준으로 Pod 실행에 의존하지 않는다. taint는 노드 변경 권한이 없어 제외 |
 | **D. 서비스·네트워킹** | Service 유형, DNS, Ingress, NetworkPolicy | 퀘스트 6~8 | 클러스터 Ingress/CNI 확인이 선행 조건 |
 | **E. 네임스페이스 RBAC** | ServiceAccount, Role/RoleBinding, `auth can-i` | 퀘스트 4~6 | 현재 `edit`로는 Role 생성이 안 될 가능성 → 권한 설계 변경 필요, 보안 검토 대상 |
 
@@ -66,3 +66,7 @@ CKA 시험 비중은 제 기억 기준이며 **최신 CNCF 커리큘럼으로 �
 - **충분함:** ConfigMap, Secret, PVC, Helm
 
 → 가장 기본인 "일상 운영 명령"(네임스페이스, exec -it, logs -f, -o wide, events, rollout status/history, edit, 라벨 셀렉터, delete, context)이 비어 있다. 이것이 갭 분석의 A(트러블슈팅)·C(워크로드) 앞에 와야 한다.
+
+## 세트 23 시나리오 (트러블슈팅)
+
+이미지 오타(ImagePullBackOff), Service 셀렉터 불일치, CrashLoopBackOff(잘못된 command), Pending(과도한 requests), ConfigMap 키 오타(CreateContainerConfigError), 프로브 경로 오류(Ready 안 됨), Service targetPort 오류, 없는 Secret 참조. 후속 후보: OOMKilled(메모리 limit), 라벨 오타로 ReplicaSet 불일치, PVC Pending(StorageClass 오타), liveness 실패 재시작.
