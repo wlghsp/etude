@@ -239,6 +239,19 @@ describe('k8s 세션 (제한 권한)', () => {
         expect(JSON.stringify(opts)).not.toContain('.kube')
     })
 
+    it('k8s 셸은 시작 전에 ~/.bashrc 에 kubectl 별칭 k 와 자동완성을 만들고 그 셸을 exec 한다', async () => {
+        const { docker } = k8sDocker()
+
+        await handleTerminal(openSocket() as any, docker, { ...info, sandboxType: 'k8s' })
+
+        const cmd: string[] = docker.createContainer.mock.calls[0][0].Cmd
+        expect(cmd.slice(0, 2)).toEqual(['/bin/bash', '-c'])
+        expect(cmd[2]).toContain('alias k=kubectl')
+        expect(cmd[2]).toContain('kubectl completion bash')
+        expect(cmd[2]).toContain('-F __start_kubectl k')
+        expect(cmd[2].endsWith('exec /bin/bash')).toBe(true)
+    })
+
     it('컨테이너 ID로 정한 네임스페이스의 제한 권한을 만들고 kubeconfig를 컨테이너에 주입한 뒤에 connected를 보낸다', async () => {
         const { docker, execs } = k8sDocker()
         const socket = openSocket()

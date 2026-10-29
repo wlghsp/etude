@@ -273,6 +273,13 @@ async function handleSystemdTerminal(docker: Docker, config: { image: string, bi
 
 // k8s 샌드박스. 학습자에게 관리자 kubeconfig를 주지 않는다: DB의 binds(관리자 kubeconfig 마운트)는 무시하고,
 // 세션마다 자기 네임스페이스 안에서만 쓸 수 있는 제한 kubeconfig를 만들어 주입한다 (k8s-session.ts).
+// kubectl 별칭 k 와 자동완성을 기본으로 준다 (CKA 시험 환경과 같은 기본값). 셸이 시작되기 전에 ~/.bashrc 를 만들고 그 셸을 exec 해야 첫 셸에 적용된다.
+export const K8S_SHELL_CMD = [
+  '/bin/bash',
+  '-c',
+  'echo "alias k=kubectl" > /root/.bashrc; echo "source <(kubectl completion bash)" >> /root/.bashrc; echo "complete -o default -F __start_kubectl k" >> /root/.bashrc; exec /bin/bash',
+]
+
 async function handleK8sTerminal(docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null, ctx: TerminalCtx): Promise<PreparedTerminal> {
   const container = await docker.createContainer({
     Image: config.image,
@@ -281,7 +288,7 @@ async function handleK8sTerminal(docker: Docker, config: { image: string, binds:
       NetworkMode: process.env.K3D_NETWORK ?? 'k3d-etude',
       ...sandboxLimits('k8s'),
     },
-    Cmd: ['/bin/bash'],
+    Cmd: K8S_SHELL_CMD,
     AttachStdin: true,
     AttachStdout: true,
     AttachStderr: true,
@@ -324,7 +331,7 @@ async function handleK8sIsolatedTerminal(docker: Docker, questId: number | null,
       NetworkMode: process.env.K3D_NETWORK ?? 'k3d-etude',
       ...sandboxLimits('k8s'),
     },
-    Cmd: ['/bin/bash'],
+    Cmd: K8S_SHELL_CMD,
     AttachStdin: true, AttachStdout: true, AttachStderr: true,
     OpenStdin: true, Tty: true,
   })
