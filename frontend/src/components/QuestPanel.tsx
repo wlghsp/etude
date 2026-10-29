@@ -2,15 +2,17 @@ import { useState, useRef, useEffect } from 'react'
 import type { Quest } from '../types'
 import { gradeQuest, GradeRequestError } from '../api/quest'
 
-// `백틱`으로 감싼 부분을 코드 모양으로 보여 준다 (명령어·파일 경로·값을 본문과 구분하기 위해).
+// `백틱`은 코드 모양으로, **별표 두 개**는 굵게 보여 준다 (명령어·파일 경로·값과 강조를 본문과 구분하기 위해).
 function RichText({ text }: { text: string }) {
     return (
         <>
-            {text.split(/(`[^`]+`)/g).map((part, i) =>
-                part.startsWith('`') && part.endsWith('`') && part.length > 2
-                    ? <code key={i} className="font-mono text-[0.92em] bg-surface-container-highest text-primary px-1.5 py-0.5 rounded-sm break-all">{part.slice(1, -1)}</code>
-                    : <span key={i}>{part}</span>,
-            )}
+            {text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g).map((part, i) => {
+                if (part.length > 2 && part.startsWith('`') && part.endsWith('`'))
+                    return <code key={i} className="font-mono text-[0.92em] bg-surface-container-highest text-primary px-1.5 py-0.5 rounded-sm break-all">{part.slice(1, -1)}</code>
+                if (part.length > 4 && part.startsWith('**') && part.endsWith('**'))
+                    return <strong key={i} className="font-semibold text-on-surface">{part.slice(2, -2)}</strong>
+                return <span key={i}>{part}</span>
+            })}
         </>
     )
 }
@@ -42,12 +44,16 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, onPrev
     useEffect(() => { startTimeRef.current = Date.now() }, [])
     const [hintUsed, setHintUsed] = useState(false)
     const [solutionUsed, setSolutionUsed] = useState(false)
-    const [activeTab, setActiveTab] = useState<'description' | 'hint' | 'solution'>('description')
+    const [hintOpen, setHintOpen] = useState(false)
+    const [solutionOpen, setSolutionOpen] = useState(false)
 
-    const selectTab = (tab: 'description' | 'hint' | 'solution') => {
-        setActiveTab(tab)
-        if (tab === 'hint') setHintUsed(true)
-        if (tab === 'solution') setSolutionUsed(true)
+    const toggleHint = () => {
+        setHintOpen(open => !open)
+        setHintUsed(true)
+    }
+    const toggleSolution = () => {
+        setSolutionOpen(open => !open)
+        setSolutionUsed(true)
     }
 
     const [result, setResult] = useState<boolean | null>(null)
@@ -115,38 +121,33 @@ export function QuestPanel({ quest, containerId, sessionId, total, index, onPrev
             {/* Scrollable Content */}
             <div className="p-6 flex-1 overflow-y-auto">
                 <div className="space-y-4">
-                    {/* Tabs: 설명 / 힌트 / 풀이 */}
-                    <div>
-                        <div className="flex border-b border-outline-variant">
-                            {([
-                                ['description', '설명'],
-                                ['hint', '힌트'],
-                                ['solution', '풀이'],
-                            ] as const).map(([tab, label]) => (
-                                <button
-                                    key={tab}
-                                    onClick={() => selectTab(tab)}
-                                    className={`px-4 py-2 font-sans text-label-caps transition-colors border-b-2 -mb-px ${
-                                        activeTab === tab
-                                            ? 'border-primary text-primary'
-                                            : 'border-transparent text-on-surface-variant hover:text-on-surface'
-                                    }`}
-                                >
-                                    {label}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="border border-t-0 border-outline-variant bg-surface-container p-4">
-                            {activeTab === 'description' && (
-                                <p className="font-sans text-body-lg text-on-surface leading-7 break-words whitespace-pre-wrap"><RichText text={resolve(quest.description)} /></p>
-                            )}
-                            {activeTab === 'hint' && (
+                    {/* 설명은 항상 보이고, 힌트·풀이는 설명 아래에서 접고 펼친다 (읽으면서 함께 볼 수 있게) */}
+                    <div className="border border-outline-variant bg-surface-container p-4">
+                        <p className="font-sans text-body-lg text-on-surface leading-7 break-words whitespace-pre-wrap"><RichText text={resolve(quest.description)} /></p>
+                    </div>
+
+                    <div className="border border-outline-variant">
+                        <button onClick={toggleHint} aria-expanded={hintOpen} className="w-full flex items-center justify-between px-4 py-3 font-sans text-label-caps text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+                            <span className="flex items-center gap-2"><span className="material-symbols-outlined text-[18px]">lightbulb</span>힌트 {hintOpen ? '접기' : '보기'}</span>
+                            <span className="material-symbols-outlined text-[18px]">{hintOpen ? 'expand_less' : 'expand_more'}</span>
+                        </button>
+                        {hintOpen && (
+                            <div className="border-t border-outline-variant bg-surface-container p-4">
                                 <p className="font-sans text-body-md text-on-surface-variant leading-7 break-words whitespace-pre-wrap"><RichText text={resolve(quest.hint ?? '')} /></p>
-                            )}
-                            {activeTab === 'solution' && (
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="border border-outline-variant">
+                        <button onClick={toggleSolution} aria-expanded={solutionOpen} className="w-full flex items-center justify-between px-4 py-3 font-sans text-label-caps text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+                            <span className="flex items-center gap-2"><span className="material-symbols-outlined text-[18px]">task_alt</span>풀이 {solutionOpen ? '접기' : '보기'}<span className="font-normal text-on-surface-variant/70">(열면 풀이 사용으로 기록됩니다)</span></span>
+                            <span className="material-symbols-outlined text-[18px]">{solutionOpen ? 'expand_less' : 'expand_more'}</span>
+                        </button>
+                        {solutionOpen && (
+                            <div className="border-t border-outline-variant bg-surface-container p-4">
                                 <pre className="font-mono text-code-sm text-on-surface-variant break-words whitespace-pre-wrap">{resolve(quest.solution ?? '')}</pre>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Grade Button */}
