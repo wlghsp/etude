@@ -215,9 +215,12 @@ function App() {
         <button onClick={() => navigate('home')} className="font-sans text-body-lg font-bold tracking-tighter text-on-surface hover:text-primary transition-colors">
           OKESTRO TRAINING | Etude
         </button>
+        {isQuiz && (
+          <span className="ml-4 font-sans text-label-caps text-on-surface-variant border border-outline-variant px-2 py-0.5">개념 퀴즈 · 터미널 없이 푸는 문제예요</span>
+        )}
       </header>
       <main className="flex flex-1 overflow-hidden">
-        <section className={isQuiz ? 'w-full max-w-3xl mx-auto flex flex-col' : 'w-[40%] flex flex-col'}>
+        <section className={isQuiz ? 'w-full max-w-5xl mx-auto flex flex-col' : 'w-[40%] flex flex-col'}>
           {summaryOpen
             ? <SetComplete
                 setId={selectedSetId}
