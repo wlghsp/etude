@@ -3,6 +3,7 @@ import type { SandboxFactory, VerifySandbox } from './verify-quest.js'
 import { createSessionAccess, destroySessionAccess } from '../services/k8s-session.js'
 import { installKubeconfig } from '../services/container-kubeconfig.js'
 import { sandboxLimits, type SandboxClass } from '../services/sandbox-limits.js'
+import { privilegedSandboxHost } from '../services/sandbox-runtime.js'
 
 const DEFAULT_EXEC_TIMEOUT_MS = 120_000
 
@@ -12,8 +13,6 @@ export interface SandboxProfile {
     // 자원 상한 종류. 앱(terminal.ts)과 같은 값을 쓴다. 기본은 'default'.
     limitClass?: SandboxClass
     privileged?: boolean
-    extraBinds?: string[]
-    cgroupnsHost?: boolean
     // k8s: 컨테이너가 붙을 네트워크와, 컨테이너마다 만들 네임스페이스의 접두어.
     // 앱(handleK8sTerminal)과 같이 관리자 kubeconfig는 주지 않고 세션 전용 제한 권한(k8s-session.ts)으로 실행한다.
     // 앱은 quest-<컨테이너ID 앞 8자>를 쓰지만, 앱 기동 시 quest-* 정리와 겹치지 않게 접두어를 따로 둔다.
@@ -28,8 +27,6 @@ export interface SandboxProfile {
 export const SYSTEMD_PROFILE: SandboxProfile = {
     limitClass: 'systemd',
     privileged: true,
-    extraBinds: ['/sys/fs/cgroup:/sys/fs/cgroup:rw'],
-    cgroupnsHost: true,
     readyCmd: ['sh', '-c', 'systemctl is-system-running 2>/dev/null | grep -qE "running|degraded"'],
     readyTimeoutMs: 90_000,
     readyIntervalMs: 500,
@@ -45,18 +42,17 @@ const TIMEOUT_EXIT_CODE = -1
 // 검증용 컨테이너를 만든다. 이미지·binds는 서비스의 샌드박스 설정을 그대로 받는다.
 // 라벨은 etude=verify: 실행 중인 backend의 기동·종료 정리(etude=sandbox)가 검증 컨테이너를 지우지 않게 한다.
 export function dockerSandboxFactory(docker: Docker, config: { image: string; binds: string[] | null }, profile: SandboxProfile = {}): SandboxFactory {
-    // VERIFY_RUNTIME(예: sysbox-runc)을 주면 특권 프로필을 Privileged 없이 그 런타임으로 만든다 (privileged 샌드박스 격리 명세 조각 A 검증용).
-    const runtime = profile.privileged ? process.env.VERIFY_RUNTIME : undefined
     return async () => {
+        // 특권 프로필의 격리 방식은 앱과 같은 헬퍼(SANDBOX_RUNTIME)가 정한다
+        const { binds: isoBinds, ...isoHost } = profile.privileged ? privilegedSandboxHost(profile.limitClass === 'systemd' ? 'systemd' : 'dind') : { binds: [] as string[] }
         const container = await docker.createContainer({
             Image: config.image,
             Labels: { etude: 'verify' },
             HostConfig: {
                 // k8s는 DB의 binds(관리자 kubeconfig 마운트)를 무시한다. 앱과 같다.
-                Binds: profile.namespacePrefix ? [] : [...(config.binds ?? []), ...(runtime ? [] : profile.extraBinds ?? [])],
+                Binds: profile.namespacePrefix ? [] : [...(config.binds ?? []), ...isoBinds],
                 ...sandboxLimits(profile.limitClass ?? 'default'),
-                ...(runtime ? { Runtime: runtime } : profile.privileged ? { Privileged: true } : {}),
-                ...(profile.cgroupnsHost && !runtime ? { CgroupnsMode: 'host' } : {}),
+                ...isoHost,
                 ...(profile.networkMode ? { NetworkMode: profile.networkMode } : {}),
             } as Docker.ContainerCreateOptions['HostConfig'],
             // dind 같은 서비스형 이미지는 기본 entrypoint가 본체라 Cmd를 덮어쓰지 않는다

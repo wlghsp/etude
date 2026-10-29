@@ -87,8 +87,8 @@ describe('dockerSandboxFactory', () => {
         expect(container.exec.mock.calls[0][0]).toEqual({ Cmd: ['docker', 'info'] })
     })
 
-    it('VERIFY_RUNTIME이 있으면 특권 프로필을 Privileged·cgroup 바인드 없이 그 런타임으로 만든다', async () => {
-        vi.stubEnv('VERIFY_RUNTIME', 'sysbox-runc')
+    it('SANDBOX_RUNTIME이 있으면 특권 프로필을 Privileged·cgroup 바인드 없이 그 런타임으로 만든다', async () => {
+        vi.stubEnv('SANDBOX_RUNTIME', 'sysbox-runc')
         try {
             const { docker } = fakeDocker([{ Running: false, ExitCode: 0 }])
             await dockerSandboxFactory(docker, { image: 'x', binds: ['/a:/b'] }, SYSTEMD_PROFILE)()
@@ -134,9 +134,8 @@ describe('dockerSandboxFactory', () => {
         const docker = { createContainer: vi.fn(async () => container) } as any
 
         await dockerSandboxFactory(docker, { image: 'rockylinux/rockylinux:9-ubi-init', binds: ['/a:/b'] }, {
+            limitClass: 'systemd',
             privileged: true,
-            extraBinds: ['/sys/fs/cgroup:/sys/fs/cgroup:rw'],
-            cgroupnsHost: true,
             readyCmd: ['sh', '-c', 'systemctl is-system-running'],
             readyIntervalMs: 10,
         })()

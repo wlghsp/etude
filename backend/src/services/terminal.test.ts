@@ -355,6 +355,23 @@ describe('샌드박스 자원 상한', () => {
         expect(host.PidsLimit).toBe(sandboxLimits('systemd').PidsLimit)
     })
 
+    it('SANDBOX_RUNTIME이 있으면 docker·systemd 컨테이너를 Privileged 없이 그 런타임으로 만든다', async () => {
+        vi.stubEnv('SANDBOX_RUNTIME', 'sysbox-runc')
+        try {
+            for (const type of ['docker', 'docker-persistent', 'linux-systemd']) {
+                vi.clearAllMocks()
+                const host = limitsOf(await connect(type))
+
+                expect(host.Runtime).toBe('sysbox-runc')
+                expect(host.Privileged).toBeUndefined()
+                expect(host.CgroupnsMode).toBeUndefined()
+                expect(host.Binds).not.toContain('/sys/fs/cgroup:/sys/fs/cgroup:rw')
+            }
+        } finally {
+            vi.unstubAllEnvs()
+        }
+    })
+
     it('k8s 학습자 컨테이너에는 k8s 상한을 건다 (helm이 기본 상한에서는 메모리 부족으로 죽는다)', async () => {
         const host = limitsOf(await connect('k8s'))
 
