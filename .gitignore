@@ -61,3 +61,6 @@ backend/db/04_users.sql
 # 팀원 계정 일괄 생성용 명단/결과 (실제 이메일 + 평문 비밀번호 포함)
 users.txt
 created_users.csv
+
+# Feedback exports (개인 정보가 있을 수 있어 커밋하지 않는다)
+feedback*.json
