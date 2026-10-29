@@ -1,0 +1,16 @@
+{
+  "setId": 16,
+  "answers": {
+    "1": "find /var/data -type f -exec du -b {} + | sort -rn | head -n 1 | awk '{print $2}' > /tmp/biggest.txt",
+    "2": "du -s /srv/data/* | sort -rn | head -n 1 | awk '{print $2}' > /tmp/biggest_dir.txt",
+    "3": "find /var/log/old-app -name '*.log' -mtime +7 -delete",
+    "4": "ps -eo pid,pcpu --sort=-pcpu | sed -n 2p | awk '{print $1}' > /tmp/hog_pid.txt",
+    "5": "kill $(ps -eo pid,pcpu --sort=-pcpu | sed -n 2p | awk '{print $1}')",
+    "6": "ss -ltnp | grep ':8080 ' | grep -o 'pid=[0-9]*' | cut -d= -f2 > /tmp/port_pid.txt",
+    "7": "kill $(ss -ltnp | grep ':8080 ' | grep -o 'pid=[0-9]*' | cut -d= -f2)",
+    "8": "chmod 755 /opt/app/run.sh",
+    "9": "chown deploy /srv/app/logs",
+    "10": "grep -q FATAL /var/log/app/app.log; echo $? > /tmp/exit_code.txt",
+    "11": "find /etc/app-links -xtype l | sort > /tmp/broken.txt"
+  }
+}

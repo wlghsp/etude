@@ -1,0 +1,17 @@
+{
+  "setId": 15,
+  "answers": {
+    "1": "tail -n 5 /var/log/app/app.log > /tmp/last5.txt",
+    "2": "grep ERROR /var/log/app/app.log > /tmp/errors.txt",
+    "3": "grep -c ERROR /var/log/app/app.log > /tmp/error_count.txt",
+    "4": "grep -E 'ERROR|WARN' /var/log/app/app.log > /tmp/err_warn.txt",
+    "5": "grep -v DEBUG /var/log/app/app.log > /tmp/no_debug.txt",
+    "6": "ls /etc/hostname /nonexistent > /tmp/both.txt 2>&1",
+    "7": "echo 'second line' >> /tmp/notes.txt",
+    "8": "cut -d' ' -f1 /var/log/app/access.log > /tmp/ips.txt",
+    "9": "awk '{print $1}' /var/log/app/access.log | sort | uniq > /tmp/unique_ips.txt",
+    "10": "awk '{print $1}' /var/log/app/access.log | sort | uniq -c | sort -rn | head -n 3 > /tmp/top3.txt",
+    "11": "awk '$9==500 {print $7}' /var/log/app/access.log > /tmp/err_urls.txt",
+    "12": "sed -i 's/port=8080/port=9090/' /etc/app/app.conf"
+  }
+}

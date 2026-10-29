@@ -12,4 +12,6 @@ INSERT INTO quest_set (id, title, description, sandbox_type, category) VALUES
   (11, 'Docker 이미지 빌드',               'Dockerfile 작성부터 이미지 빌드, 태깅까지 이미지를 직접 만드는 과정을 실습합니다.', 'docker', '도커'),
   (12, 'k8s ConfigMap과 Secret',           'ConfigMap과 Secret을 생성하고 Pod에 환경변수와 볼륨으로 주입하는 패턴을 실습합니다.', 'k8s', 'k8s'),
   (13, 'k8s 스토리지와 네트워크',          'PersistentVolume/PVC로 데이터를 영속 저장하고 port-forward로 클러스터 내부 서비스에 접근하는 패턴을 실습합니다.', 'k8s', 'k8s'),
-  (14, 'Helm 기초',                         'Helm으로 차트를 설치하고 값을 커스터마이징하는 현장 패턴을 실습합니다. repo 추가부터 업그레이드·롤백까지.', 'k8s', 'k8s');
+  (14, 'Helm 기초',                         'Helm으로 차트를 설치하고 값을 커스터마이징하는 현장 패턴을 실습합니다. repo 추가부터 업그레이드·롤백까지.', 'k8s', 'k8s'),
+  (15, '리눅스 로그와 텍스트 처리',       '로그에서 필요한 줄과 숫자를 뽑아내는 현장 패턴을 실습합니다. grep, 리다이렉션, sort/uniq, awk, sed.', 'linux', '리눅스'),
+  (16, '리눅스 장애 진단 실전',          '디스크 부족, 과다 CPU, 포트 충돌, 권한 오류 등 장애 상황에서 원인을 찾고 해결하는 패턴을 실습합니다.', 'linux', '리눅스');
