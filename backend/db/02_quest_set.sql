@@ -25,4 +25,6 @@ INSERT INTO quest_set (id, title, description, sandbox_type, category) VALUES
   (24, '리눅스 패키지와 systemd 로그', 'rpm 으로 패키지를 조회·검증하고, journalctl·logger 로 로그를 찾고, systemd 유닛을 만들어 시작하고 실패 원인을 찾는 현장 패턴을 실습합니다.', 'linux-systemd', '리눅스'),
   (25, 'k8s 서비스와 네트워킹', 'Service 유형, 엔드포인트, 클러스터 DNS, Ingress, NetworkPolicy, Headless Service 등 k8s 네트워킹의 기본 구성을 실습합니다.', 'k8s', 'k8s'),
   (26, 'k8s 스케줄링과 배포 전략', 'taint·toleration, nodeAffinity, podAntiAffinity, 롤링 업데이트 전략, StatefulSet, PodDisruptionBudget, graceful shutdown, kubectl diff 등 Pod 배치와 배포 방식을 다루는 기본기를 실습합니다.', 'k8s', 'k8s'),
-  (27, '리눅스 성능과 스토리지(NFS) 점검', '메모리·CPU·로드를 점검하고 df 계열 출력을 읽으며, NFS 마운트 설정(fstab, exports)과 출력을 해석하는 현장 점검 패턴을 실습합니다.', 'linux', '리눅스');
+  (27, '리눅스 성능과 스토리지(NFS) 점검', '메모리·CPU·로드를 점검하고 df 계열 출력을 읽으며, NFS 마운트 설정(fstab, exports)과 출력을 해석하는 현장 점검 패턴을 실습합니다.', 'linux', '리눅스'),
+  (28, '리눅스 명령어 확인 퀴즈', '명령어의 옵션 의미, 권한과 출력 읽기, 용량·메모리 해석, 종료 코드, NFS 장애 해석까지 객관식으로 확인합니다. 정답과 함께 오답이 왜 틀렸는지 해설을 봅니다.', 'quiz', '리눅스'),
+  (29, 'k8s CKA 개념·명령 퀴즈', 'Pod/Deployment/Service, 장애 상태(CrashLoopBackOff, Pending, OOMKilled), 프로브, 롤백, Secret, kubectl 사용법을 CKA 연습처럼 객관식으로 확인합니다.', 'quiz', 'k8s');

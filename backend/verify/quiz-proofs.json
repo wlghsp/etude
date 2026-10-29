@@ -1,0 +1,107 @@
+[
+  {
+    "set": 28,
+    "order": 1,
+    "image": "etude-linux",
+    "cmd": "ss -s | head -n 1",
+    "expect": "Total"
+  },
+  {
+    "set": 28,
+    "order": 2,
+    "image": "etude-linux",
+    "cmd": "cd /tmp && touch f && chmod 640 f && stat -c %A f",
+    "expect": "-rw-r-----"
+  },
+  {
+    "set": 28,
+    "order": 6,
+    "image": "etude-linux",
+    "cmd": "cd /tmp && ls /etc/hostname /nonexistent > o1 2>&1; echo count=$(grep -c 'No such file' o1)",
+    "expect": "count=1"
+  },
+  {
+    "set": 28,
+    "order": 6,
+    "image": "etude-linux",
+    "cmd": "cd /tmp && ( ls /etc/hostname /nonexistent 2>&1 > o2 ) 2>/dev/null; echo count=$(grep -c 'No such file' o2)",
+    "expect": "count=0"
+  },
+  {
+    "set": 28,
+    "order": 7,
+    "image": "etude-linux",
+    "cmd": "echo 'ps aux | grep ngi''nx | wc -l' > /tmp/t.sh; sh /tmp/t.sh",
+    "expect": "1"
+  },
+  {
+    "set": 28,
+    "order": 8,
+    "image": "etude-linux",
+    "cmd": "cd /tmp && rm -rf ft && mkdir ft && cd ft && touch new.log && touch -d '10 days ago' old.log && find . -name '*.log' -mtime +7",
+    "expect": "./old.log"
+  },
+  {
+    "set": 28,
+    "order": 9,
+    "image": "etude-linux",
+    "cmd": "bash -c 'kill -l 15; kill -l 9'",
+    "expect": "TERM"
+  },
+  {
+    "set": 28,
+    "order": 9,
+    "image": "etude-linux",
+    "cmd": "bash -c 'kill -l 15; kill -l 9'",
+    "expect": "KILL"
+  },
+  {
+    "set": 28,
+    "order": 10,
+    "image": "etude-linux",
+    "cmd": "cd /tmp && echo hi > app.log; grep -q ERROR app.log; echo rc=$?",
+    "expect": "rc=1"
+  },
+  {
+    "set": 28,
+    "order": 10,
+    "image": "etude-linux",
+    "cmd": "grep -q ERROR /nonexistent 2>/dev/null; echo rc=$?",
+    "expect": "rc=2"
+  },
+  {
+    "set": 28,
+    "order": 11,
+    "image": "etude-linux",
+    "cmd": "tar --help | grep -E '^ +-z'",
+    "expect": "gzip"
+  },
+  {
+    "set": 28,
+    "order": 13,
+    "image": "etude-linux",
+    "cmd": "df --help | grep -E -- '-l, --local'",
+    "expect": "local"
+  },
+  {
+    "set": 29,
+    "order": 2,
+    "image": "host",
+    "cmd": "kubectl run web --image=nginx --dry-run=client -o yaml",
+    "expect": "kind: Pod"
+  },
+  {
+    "set": 29,
+    "order": 8,
+    "image": "etude-k8s",
+    "cmd": "kubectl rollout undo --help | head -n 1",
+    "expect": "Roll back"
+  },
+  {
+    "set": 29,
+    "order": 11,
+    "image": "etude-k8s",
+    "cmd": "kubectl get pods --all 2>&1 | head -n 1",
+    "expect": "unknown flag"
+  }
+]
