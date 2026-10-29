@@ -64,3 +64,6 @@ created_users.csv
 
 # Feedback exports (개인 정보가 있을 수 있어 커밋하지 않는다)
 feedback*.json
+
+# 퀘스트 세트 15용 샘플 로그는 이미지에 넣는 고정 데이터라 추적한다
+!backend/docker/samples/var-log-app/*.log

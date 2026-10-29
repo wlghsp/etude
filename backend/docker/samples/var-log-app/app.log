@@ -1,0 +1,24 @@
+2026-10-29 09:00:01 INFO Service started on port 8080
+2026-10-29 09:00:02 DEBUG Loading configuration from /etc/app/app.conf
+2026-10-29 09:00:03 INFO Connected to database db01
+2026-10-29 09:01:15 INFO Request received: GET /api/users
+2026-10-29 09:01:16 DEBUG Cache miss for key users:all
+2026-10-29 09:02:40 WARN Slow query detected (1520ms)
+2026-10-29 09:03:05 INFO Request received: POST /api/orders
+2026-10-29 09:03:06 ERROR Failed to connect to payment gateway
+2026-10-29 09:03:20 INFO Retrying payment gateway connection
+2026-10-29 09:03:21 ERROR Payment gateway timeout after 30s
+2026-10-29 09:04:00 INFO Request received: GET /api/health
+2026-10-29 09:05:12 WARN Disk usage at 85%
+2026-10-29 09:06:30 INFO Request received: GET /api/users
+2026-10-29 09:07:44 ERROR Database connection lost: db01
+2026-10-29 09:07:45 DEBUG Reconnect attempt 1
+2026-10-29 09:07:50 INFO Database connection restored
+2026-10-29 09:08:10 WARN Memory usage at 78%
+2026-10-29 09:09:02 INFO Request received: GET /api/products
+2026-10-29 09:10:15 ERROR Unhandled exception in OrderService
+2026-10-29 09:10:16 INFO Request received: GET /api/health
+2026-10-29 09:11:00 WARN Certificate expires in 14 days
+2026-10-29 09:12:33 INFO Request received: POST /api/login
+2026-10-29 09:13:47 ERROR Invalid token for user admin
+2026-10-29 09:15:00 INFO Scheduled backup completed
