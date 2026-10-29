@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Terminal, type TerminalStatus } from './components/Terminal'
 import { FeedbackButton } from './components/FeedbackButton'
 import { QuestPanel } from './components/QuestPanel'
@@ -21,6 +21,8 @@ const TERMINAL_STATUS_VIEW: Record<TerminalStatus, { dot: string; label: string 
   ended: { dot: 'bg-error', label: '연결 끊김' },
 }
 
+type Page = 'home' | 'progress' | 'leaderboard' | 'admin'
+
 function App() {
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null)
   const [quests, setQuests] = useState<Quest[]>([])
@@ -29,7 +31,7 @@ function App() {
   const [sandboxType, setSandboxType] = useState<string>('linux')
   const [user, setUser] = useState<{id: number; name: string; email: string; role: string} | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
-  const [page, setPage] = useState<'home' | 'progress' | 'leaderboard' | 'admin'>('home')
+  const [page, setPage] = useState<Page>('home')
   const [completedIndices, setCompletedIndices] = useState<Set<number>>(new Set())
   // 이번에 세트에 들어와서 푼 기록 (세트 완료 화면에서 보여 준다). 세트가 바뀌면 비운다.
   const [records, setRecords] = useState<Record<number, QuestRecord>>({})
@@ -42,6 +44,59 @@ function App() {
   const [terminalStatus, setTerminalStatus] = useState<TerminalStatus>('connecting')
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const openChangePassword = () => setChangePasswordOpen(true)
+
+  // 화면 이동을 브라우저 기록에 남긴다 (뒤로가기가 앱을 떠나지 않고 앱 안의 이전 화면으로 가게).
+  // 이 앱은 URL 대신 상태로 화면을 바꾸므로, 이동할 때마다 pushState 하고 popstate 에서 상태를 맞춘다.
+  const navigate = (nextPage: Page, setId: number | null = null) => {
+    // 문제 화면에서 홈으로 나올 때는 새 기록을 쌓지 않고 문제 화면 기록을 되돌린다 (뒤로가기를 눌렀을 때와 같은 흐름).
+    // 되돌린 뒤 popstate 에서 상태가 맞춰지고, 일부만 푼 세트라면 거기서 확인을 받는다.
+    if (nextPage === 'home' && setId === null && selectedSetId !== null && history.state?.setId != null) {
+      history.back()
+      return
+    }
+    history.pushState({ page: nextPage, setId }, '')
+    setPage(nextPage)
+    setSelectedSetId(setId)
+  }
+  // 세트 화면에서 나갈 때 확인이 필요한지 (일부만 풀었고 아직 완료 기록이 없는 경우)와 안내 문구
+  const leaveGuardRef = useRef<{ inSet: number | null; message: string | null }>({ inSet: null, message: null })
+  useEffect(() => {
+    const partial = selectedSetId !== null && quests.length > 0 && completedIndices.size > 0 && completedIndices.size < quests.length
+    leaveGuardRef.current = {
+      inSet: selectedSetId,
+      message: partial ? `이 세트에서 나가면 지금까지 푼 ${completedIndices.size}/${quests.length}개가 기록되지 않아요. (세트를 한 번에 끝까지 풀어야 완료로 기록돼요) 나갈까요?` : null,
+    }
+  }, [selectedSetId, quests.length, completedIndices])
+  useEffect(() => {
+    history.replaceState({ page: 'home', setId: null }, '')
+    const onPop = (e: PopStateEvent) => {
+      const guard = leaveGuardRef.current
+      if (guard.inSet !== null && guard.message && !window.confirm(guard.message)) {
+        history.pushState({ page: 'home', setId: guard.inSet }, '') // 나가지 않기로 했으니 문제 화면 기록을 다시 쌓는다
+        return
+      }
+      const st = e.state as { page?: Page; setId?: number | null } | null
+      if (st?.setId != null) {
+        // 앞으로가기로 문제 화면에 돌아오려는 경우: 터미널 환경은 복원할 수 없으므로 홈으로 보낸다
+        history.replaceState({ page: 'home', setId: null }, '')
+        setPage('home')
+        setSelectedSetId(null)
+        return
+      }
+      setPage(st?.page ?? 'home')
+      setSelectedSetId(null)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+  // 새로고침·탭 닫기도 같은 경우에 한 번 물어본다
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (leaveGuardRef.current.message) { e.preventDefault(); e.returnValue = '' }
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [])
 
   useEffect(() => {
     fetchMe()
@@ -68,6 +123,7 @@ function App() {
   }, [selectedSetId])
 
   function handleSetSelect(id: number, sandboxType: string) {
+    history.pushState({ page: 'home', setId: id }, '')
     setSelectedSetId(id)
     // 이전 세트의 퀘스트로 터미널이 마운트되면 서버가 잘못된 세트로 세션을 만든다. 새 목록이 올 때까지 비운다.
     setQuests([])
@@ -95,12 +151,12 @@ function App() {
   const handleLogout = () => { token.clear(); setUser(null) }
 
   if (page === 'progress') return <>
-    <Progress onBack={() => setPage('home')} onLeaderboard={() => setPage('leaderboard')} onAdmin={() => setPage('admin')} onLogout={handleLogout} onChangePassword={openChangePassword} userName={user.name} userEmail={user.email} userRole={user.role} />
+    <Progress onBack={() => navigate('home')} onLeaderboard={() => navigate('leaderboard')} onAdmin={() => navigate('admin')} onLogout={handleLogout} onChangePassword={openChangePassword} userName={user.name} userEmail={user.email} userRole={user.role} />
     <FeedbackButton page="progress" />
     <ChangePasswordModal open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
   </>
   if (page === 'leaderboard') return <>
-    <Leaderboard onBack={() => setPage('home')} onProgress={() => setPage('progress')} onAdmin={() => setPage('admin')} onLogout={handleLogout} onChangePassword={openChangePassword} userName={user.name} userEmail={user.email} userRole={user.role} />
+    <Leaderboard onBack={() => navigate('home')} onProgress={() => navigate('progress')} onAdmin={() => navigate('admin')} onLogout={handleLogout} onChangePassword={openChangePassword} userName={user.name} userEmail={user.email} userRole={user.role} />
     <FeedbackButton page="leaderboard" />
     <ChangePasswordModal open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
   </>
@@ -108,9 +164,9 @@ function App() {
     if (user.role !== 'admin') { setPage('home'); return null }
     return <>
       <Admin
-        onHome={() => setPage('home')}
-        onProgress={() => setPage('progress')}
-        onLeaderboard={() => setPage('leaderboard')}
+        onHome={() => navigate('home')}
+        onProgress={() => navigate('progress')}
+        onLeaderboard={() => navigate('leaderboard')}
         onLogout={handleLogout}
         onChangePassword={openChangePassword}
         userName={user.name}
@@ -126,9 +182,9 @@ function App() {
     return <>
       <SetSelect
           onSelect={handleSetSelect}
-          onProgress={() => setPage('progress')}
-          onLeaderboard={() => setPage('leaderboard')}
-          onAdmin={() => setPage('admin')}
+          onProgress={() => navigate('progress')}
+          onLeaderboard={() => navigate('leaderboard')}
+          onAdmin={() => navigate('admin')}
           onLogout={handleLogout}
           onChangePassword={openChangePassword}
           userName={user.name}
@@ -148,7 +204,7 @@ function App() {
       <FeedbackButton page="quest" questId={quest?.id} questSetId={selectedSetId} />
       {/* TopNav */}
       <header className="flex items-center w-full px-gutter h-14 bg-surface border-b border-outline-variant shrink-0">
-        <button onClick={() => setSelectedSetId(null)} className="font-sans text-body-lg font-bold tracking-tighter text-on-surface hover:text-primary transition-colors">
+        <button onClick={() => navigate('home')} className="font-sans text-body-lg font-bold tracking-tighter text-on-surface hover:text-primary transition-colors">
           OKESTRO TRAINING | Etude
         </button>
       </header>
@@ -161,7 +217,7 @@ function App() {
                 records={records}
                 saveState={saveState}
                 onRetrySave={() => setSaveState('idle')}
-                onHome={() => setSelectedSetId(null)}
+                onHome={() => navigate('home')}
                 onReview={(i) => { setQuestIndex(i); setSummaryOpen(false) }}
               />
             : quest && (
