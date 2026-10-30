@@ -43,7 +43,7 @@ export async function getQuestContext(questId: number): Promise<{ questSetId: nu
 
 export async function getQuestSets(userId: number, role: string): Promise<QuestSet[]> {
   const [rows] = await db.query(`
-    SELECT qs.id, qs.title, qs.description, qs.sandbox_type, qs.category, qs.is_review, qs.unit_id, u.title AS unit_title, u.display_order AS unit_order
+    SELECT qs.id, qs.title, qs.description, qs.sandbox_type, qs.category, qs.is_review, qs.time_limit_sec, qs.unit_id, u.title AS unit_title, u.display_order AS unit_order
     FROM quest_set qs
     LEFT JOIN unit u ON u.id = qs.unit_id
     WHERE qs.is_public = TRUE

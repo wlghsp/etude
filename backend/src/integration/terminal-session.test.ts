@@ -45,6 +45,7 @@ vi.mock('../services/quest.js', async (importOriginal) => ({
     getSetupCmd: vi.fn(async () => null),
     gradeQuest: vi.fn(async () => ({ passed: true, checks: null })),
 }))
+vi.mock('../services/set-run.js', () => ({ checkRun: vi.fn(async () => ({ ok: true })), startRun: vi.fn() }))
 vi.mock('../services/progress.js', () => ({ recordAttempt: vi.fn(async () => {}) }))
 
 import { buildApp } from '../app.js'

@@ -3,8 +3,13 @@ import { canAccessQuestSet, getChoiceQuest, getQuestContext, getQuests, getQuest
 import { getSession } from "../services/session-registry.js";
 import { recordAttempt } from "../services/progress.js";
 import { recordSetCompletion } from "../services/set-completion.js";
+import { checkRun, startRun, type RunCheck } from "../services/set-run.js";
 import { docker } from '../plugins/docker.js'
 import { authMiddleware } from "../plugins/auth-guard.js";
+
+// 시간 제한 세트에서 마감 뒤(또는 시작 기록 없이) 온 요청을 거부하는 응답
+const runRejection = (check: Extract<RunCheck, { ok: false }>) =>
+    ({ error: check.reason === 'expired' ? '시간이 끝났어요.' : '시험이 시작되지 않았어요.', expired: check.reason === 'expired' })
 
 export const questRoutes: FastifyPluginAsync = async (app) => {
     app.get('/quest-sets', { preHandler: authMiddleware }, async (req: any) => {
@@ -18,6 +23,18 @@ export const questRoutes: FastifyPluginAsync = async (app) => {
         return getQuests(questSetId)
     })
 
+    // 시간 제한 세트(시험형)의 시작. 시작 시각을 서버가 기록하고 남은 시간을 돌려준다 (제한이 없는 세트는 null).
+    app.post<{ Params: { id: string }, Body: { sessionId?: string } }>('/quest-sets/:id/start', { preHandler: authMiddleware }, async (req: any, reply) => {
+        const questSetId = Number(req.params.id)
+        const sessionId = req.body?.sessionId
+        if (!Number.isInteger(questSetId) || typeof sessionId !== 'string' || sessionId.length === 0 || sessionId.length > 36) {
+            return reply.code(400).send({ error: '요청이 올바르지 않습니다.' })
+        }
+        const allowed = await canAccessQuestSet(req.user.userId, req.user.role, questSetId)
+        if (!allowed) return reply.code(403).send({ error: '이 세트에 접근할 권한이 없습니다.' })
+        return startRun(req.user.userId, questSetId, sessionId)
+    })
+
     // 객관식 답 제출 (docs/specs/spec_quiz_sets.md). 컨테이너 없이 서버가 정답을 판정하고 채점 기록을 남긴다.
     // 정답일 때만 해설을 돌려준다 (오답일 때 정답이 드러나지 않게).
     app.post<{ Params: { id: string }, Body: { questId?: number; sessionId?: string; choiceIndex?: number; elapsedSec?: number; hintUsed?: boolean } }>(
@@ -29,6 +46,9 @@ export const questRoutes: FastifyPluginAsync = async (app) => {
         }
         const allowed = await canAccessQuestSet(req.user.userId, req.user.role, questSetId)
         if (!allowed) return reply.code(403).send({ error: '이 세트에 접근할 권한이 없습니다.' })
+
+        const run = await checkRun(req.user.userId, questSetId, sessionId)
+        if (!run.ok) return reply.code(403).send(runRejection(run))
 
         const quest = await getChoiceQuest(questId as number)
         if (!quest || quest.questSetId !== questSetId || quest.kind !== 'choice') {
@@ -53,6 +73,8 @@ export const questRoutes: FastifyPluginAsync = async (app) => {
         }
         const allowed = await canAccessQuestSet(req.user.userId, req.user.role, questSetId)
         if (!allowed) return reply.code(403).send({ error: '이 세트에 접근할 권한이 없습니다.' })
+        const run = await checkRun(req.user.userId, questSetId, sessionId)
+        if (!run.ok) return reply.code(403).send(runRejection(run))
         const result = await recordSetCompletion(req.user.userId, questSetId, sessionId)
         if (!result.recorded) return reply.code(409).send({ error: '이 세션에서 세트의 모든 퀘스트를 통과하지 않았습니다.' })
         return { recorded: true }
@@ -81,6 +103,9 @@ export const questRoutes: FastifyPluginAsync = async (app) => {
         if (quest.questSetId !== session.questSetId) {
             return reply.code(403).send({ error: '이 세션의 세트에 속한 퀘스트가 아닙니다.' })
         }
+
+        const run = await checkRun(req.user.userId, session.questSetId, sessionId)
+        if (!run.ok) return reply.code(403).send(runRejection(run))
 
         const { passed, checks } = await gradeQuest(containerId, questId, docker)
 

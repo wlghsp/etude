@@ -14,6 +14,7 @@ vi.mock('../services/quest.js', async () => {
         judgeChoice: actual.judgeChoice, // 판정 로직은 진짜를 쓴다
     }
 })
+vi.mock('../services/set-run.js', () => ({ checkRun: vi.fn(async () => ({ ok: true })), startRun: vi.fn() }))
 vi.mock('../services/progress.js', () => ({ recordAttempt: vi.fn(async () => {}) }))
 vi.mock('../services/set-completion.js', () => ({ recordSetCompletion: vi.fn() }))
 vi.mock('../services/session-registry.js', () => ({ getSession: vi.fn() }))

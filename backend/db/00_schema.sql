@@ -22,6 +22,7 @@ CREATE TABLE quest_set (
   display_order INT NOT NULL DEFAULT 0,
   unit_id      INT NULL,
   is_review    BOOLEAN NOT NULL DEFAULT FALSE,
+  time_limit_sec INT NULL, -- 시험형 세트의 제한 시간(초). NULL 이면 제한 없음
   FOREIGN KEY (sandbox_type) REFERENCES sandbox(type),
   FOREIGN KEY (unit_id) REFERENCES unit(id)
 );
@@ -130,4 +131,13 @@ CREATE TABLE IF NOT EXISTS feed_comment (
 CREATE TABLE IF NOT EXISTS feed_seen (
   user_id INT PRIMARY KEY,
   seen_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 시간 제한 세트(시험형)의 시작 시각: 서버가 기록하고 마감을 판단한다. 외래 키는 두지 않는다 (set_completion 과 같은 이유). docs/specs/spec_units.md
+CREATE TABLE IF NOT EXISTS set_run (
+  user_id      INT NOT NULL,
+  quest_set_id INT NOT NULL,
+  session_id   VARCHAR(36) NOT NULL,
+  started_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, quest_set_id, session_id)
 );
