@@ -280,11 +280,11 @@ async function handleSystemdTerminal(docker: Docker, config: { image: string, bi
 // "(arg: 1)" 같은 숫자 인자 모드로 빠지고 입력이 깨진다. 모든 샌드박스 컨테이너에 UTF-8 로캘을 준다.
 export const SANDBOX_ENV = ['LANG=C.UTF-8']
 
-// kubectl 별칭 k 와 자동완성을 기본으로 준다 (CKA 시험 환경과 같은 기본값). 셸이 시작되기 전에 ~/.bashrc 를 만들고 그 셸을 exec 해야 첫 셸에 적용된다.
+// kubectl 별칭 k 와 자동완성을 기본으로 준다 (CKA 시험 환경과 같은 기본값). 자동완성 스크립트는 bash-completion 의 함수를 쓰므로 먼저 불러온다. 셸이 시작되기 전에 ~/.bashrc 를 만들고 그 셸을 exec 해야 첫 셸에 적용된다.
 export const K8S_SHELL_CMD = [
   '/bin/bash',
   '-c',
-  'echo "alias k=kubectl" > /root/.bashrc; echo "source <(kubectl completion bash)" >> /root/.bashrc; echo "complete -o default -F __start_kubectl k" >> /root/.bashrc; exec /bin/bash',
+  'echo "alias k=kubectl" > /root/.bashrc; echo "source /usr/share/bash-completion/bash_completion" >> /root/.bashrc; echo "source <(kubectl completion bash)" >> /root/.bashrc; echo "complete -o default -F __start_kubectl k" >> /root/.bashrc; exec /bin/bash',
 ]
 
 async function handleK8sTerminal(docker: Docker, config: { image: string, binds: string[] | null }, questId: number | null, ctx: TerminalCtx): Promise<PreparedTerminal> {

@@ -252,6 +252,17 @@ describe('k8s 세션 (제한 권한)', () => {
         expect(cmd[2].endsWith('exec /bin/bash')).toBe(true)
     })
 
+    it('k8s 셸은 kubectl 자동완성보다 먼저 bash-completion 을 불러온다 (자동완성 스크립트가 _get_comp_words_by_ref 를 쓴다)', async () => {
+        const { docker } = k8sDocker()
+
+        await handleTerminal(openSocket() as any, docker, { ...info, sandboxType: 'k8s' })
+
+        const script: string = docker.createContainer.mock.calls[0][0].Cmd[2]
+        const bashCompletion = script.indexOf('/usr/share/bash-completion/bash_completion')
+        expect(bashCompletion).toBeGreaterThanOrEqual(0)
+        expect(bashCompletion).toBeLessThan(script.indexOf('kubectl completion bash'))
+    })
+
     it('컨테이너 ID로 정한 네임스페이스의 제한 권한을 만들고 kubeconfig를 컨테이너에 주입한 뒤에 connected를 보낸다', async () => {
         const { docker, execs } = k8sDocker()
         const socket = openSocket()
