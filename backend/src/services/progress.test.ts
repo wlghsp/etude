@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('../db.js', () => ({ db: { query: vi.fn() } }))
 import { db } from '../db.js'
-import { getSetProgress, getLeaderboard } from './progress.js'
+import { getSetProgress, getLeaderboard, retryHint } from './progress.js'
 
 describe('getSetProgress', () => {
     beforeEach(() => vi.clearAllMocks())
@@ -26,6 +26,8 @@ describe('getSetProgress', () => {
         expect(r[0]!.completions[0]!.detail![0]).toMatchObject({ questId: 1, seconds: 40 })
         expect(r[0]!.completions[1]!.detail).toBeNull()
         expect(r[1]!.completions).toEqual([])
+        expect(r[0]!.retry).toBeNull() // 최근 완료가 힌트 2문제(<40%) 라서
+        expect(r[1]!.retry).toBeNull()
     })
 
     it('세트가 속한 단원과 복습 여부를 함께 돌려주고, 단원이 없으면 null 이다', async () => {
@@ -48,6 +50,27 @@ describe('getSetProgress', () => {
         const r = await getSetProgress(7, 'member')
 
         expect(r[0]!.completions[0]!.detail).toBeNull()
+    })
+})
+
+describe('retryHint (다시 풀기 추천)', () => {
+    const c = (questCount: number, hintFree: number, solutionFree: number) => ({ questCount, hintFreeCount: hintFree, solutionFreeCount: solutionFree })
+
+    it('가장 최근 완료에서 힌트·풀이를 쓴 문제가 40% 이상이면 도움을 쓴 비율(%)을 돌려준다', () => {
+        expect(retryHint([c(10, 5, 10)])).toEqual({ assistedPct: 50 })  // 힌트 5문제
+        expect(retryHint([c(10, 10, 6)])).toEqual({ assistedPct: 40 })  // 풀이 4문제
+        expect(retryHint([c(10, 7, 5)])).toEqual({ assistedPct: 50 })   // 둘 중 많이 쓴 쪽 (겹칠 수 있어 최소치)
+    })
+
+    it('40% 미만이거나 완료 기록이 없으면 추천하지 않는다 (null)', () => {
+        expect(retryHint([c(10, 7, 10)])).toBeNull()
+        expect(retryHint([])).toBeNull()
+        expect(retryHint([c(0, 0, 0)])).toBeNull()
+    })
+
+    it('가장 최근 완료만 본다: 다시 풀어 퍼펙트가 되면 더 추천하지 않는다', () => {
+        expect(retryHint([c(10, 10, 10), c(10, 0, 0)])).toBeNull()
+        expect(retryHint([c(10, 2, 2), c(10, 10, 10)])).toEqual({ assistedPct: 80 })
     })
 })
 

@@ -145,11 +145,14 @@ describe('getFeed', () => {
                 { id: 1, completion_id: 10, user_id: 7, user_name: '나', body: '굿', created_at: new Date('2026-10-30T02:00:00Z') },
                 { id: 2, completion_id: 10, user_id: 8, user_name: '다', body: '고마워요', created_at: new Date('2026-10-30T03:00:00Z') },
             ]] as any)
+            .mockResolvedValueOnce([[{ id: 10, user_id: 8, quest_set_id: 3, day: '2026-10-30', quest_count: 4, hint_free_count: 4, solution_free_count: 4 }]] as any) // 완료 기록
+            .mockResolvedValueOnce([[{ id: 3, category: '리눅스', unit_id: 1 }, { id: 4, category: '리눅스', unit_id: 1 }]] as any) // 세트
 
         const feed = await getFeed(7, 'member', {})
 
         expect(feed[0]).toMatchObject({ id: 10, userName: '다', perfect: true, isFirst: true, isReview: false, likes: 2, likedByMe: true })
         expect(feed[0]!.comments.map((c) => [c.userName, c.canDelete])).toEqual([['나', true], ['다', false]]) // 내 댓글만 지울 수 있다
+        expect(feed[0]!.cheers.map((c) => c.text)).toContain("'첫 걸음' 배지를 얻었어요") // 첫 세트 완료 축하
         expect(feed[1]).toMatchObject({ id: 9, perfect: false, isFirst: false, isReview: true, likes: 0, likedByMe: false, comments: [] })
     })
 
@@ -157,6 +160,8 @@ describe('getFeed', () => {
         q.mockResolvedValueOnce([[ev({})]] as any)
             .mockResolvedValueOnce([[]] as any)
             .mockResolvedValueOnce([[{ id: 2, completion_id: 10, user_id: 8, user_name: '다', body: 'x', created_at: new Date() }]] as any)
+            .mockResolvedValueOnce([[{ id: 10, user_id: 8, quest_set_id: 3, day: '2026-10-30', quest_count: 4, hint_free_count: 4, solution_free_count: 4 }]] as any) // 완료 기록
+            .mockResolvedValueOnce([[{ id: 3, category: '리눅스', unit_id: 1 }, { id: 4, category: '리눅스', unit_id: 1 }]] as any) // 세트
 
         const feed = await getFeed(1, 'admin', {})
 

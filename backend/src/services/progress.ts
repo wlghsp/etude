@@ -76,6 +76,19 @@ export interface SetProgress {
     unitOrder: number | null
     isReview: boolean
     completions: CompletionRecord[] // 최근 완료가 먼저
+    retry: { assistedPct: number } | null // 다시 풀기 추천: 가장 최근 완료에서 힌트·풀이를 쓴 문제 비율 (추천이 아니면 null)
+}
+
+const RETRY_MIN_PCT = 40
+
+/** 세트 단위 다시 풀기 추천. 가장 최근 완료에서 힌트나 풀이를 쓴 문제가 40% 이상이면 추천한다 (문제 단위 기록은 내보내지 않는다). */
+export function retryHint(completions: Array<Pick<CompletionRecord, 'questCount' | 'hintFreeCount' | 'solutionFreeCount'>>): { assistedPct: number } | null {
+    const latest = completions[0]
+    if (!latest || latest.questCount <= 0) return null
+    // 한 문제에 힌트와 풀이를 둘 다 썼을 수 있어 많이 쓴 쪽을 도움을 받은 문제 수의 최소치로 본다
+    const assisted = Math.max(latest.questCount - latest.hintFreeCount, latest.questCount - latest.solutionFreeCount)
+    const pct = Math.round((assisted / latest.questCount) * 100)
+    return pct >= RETRY_MIN_PCT ? { assistedPct: pct } : null
 }
 
 function parseDetail(raw: unknown): CompletionRecord['detail'] {
@@ -99,15 +112,8 @@ export async function getSetProgress(userId: number, role: string): Promise<SetP
         FROM set_completion WHERE user_id = ? ORDER BY completed_at DESC, id DESC
     `, [userId]) as any[]
 
-    return (setRows as any[]).map((s) => ({
-        questSetId: s.id,
-        title: s.title,
-        category: s.category,
-        unitId: s.unit_id ?? null,
-        unitTitle: s.unit_title ?? null,
-        unitOrder: s.unit_order ?? null,
-        isReview: Boolean(s.is_review),
-        completions: (doneRows as any[])
+    return (setRows as any[]).map((s) => {
+        const completions: CompletionRecord[] = (doneRows as any[])
             .filter((d) => d.quest_set_id === s.id)
             .map((d) => ({
                 id: d.id,
@@ -117,6 +123,17 @@ export async function getSetProgress(userId: number, role: string): Promise<SetP
                 hintFreeCount: Number(d.hint_free_count),
                 solutionFreeCount: Number(d.solution_free_count),
                 detail: parseDetail(d.detail),
-            })),
-    }))
+            }))
+        return {
+            questSetId: s.id,
+            title: s.title,
+            category: s.category,
+            unitId: s.unit_id ?? null,
+            unitTitle: s.unit_title ?? null,
+            unitOrder: s.unit_order ?? null,
+            isReview: Boolean(s.is_review),
+            completions,
+            retry: retryHint(completions),
+        }
+    })
 }

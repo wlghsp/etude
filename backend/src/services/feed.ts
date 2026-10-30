@@ -1,4 +1,5 @@
 import { db } from '../db.js'
+import { cheersFor, type Cheer, type CompletionRec, type SetInfo } from './feed-cheers.js'
 
 // 활동 피드: 세트 완료 한 건이 소식 한 건이다. 좋아요·댓글·새 반응 알림. docs/specs/spec_activity_feed.md
 
@@ -34,6 +35,7 @@ export interface FeedEvent {
     perfect: boolean // 힌트·풀이 없이 모두
     isFirst: boolean // 그 세트를 처음 끝냄
     isReview: boolean // 이미 끝낸 세트를 다시 끝냄
+    cheers: Cheer[] // 이 완료로 처음 이룬 일 (좋은 소식만, 우선순위 순)
     likes: number
     likedByMe: boolean
     comments: FeedComment[]
@@ -75,6 +77,20 @@ export async function getFeed(userId: number, role: string, opts: { before?: num
         WHERE cm.completion_id IN (?) AND cm.deleted_at IS NULL
         ORDER BY cm.id`, [ids]) as any[]
 
+    // 축하: 소식 주인들의 전체 완료 기록으로 그 완료 시점에 처음 이룬 일을 계산한다
+    const userIds = [...new Set(rows.map((r) => r.user_id))]
+    const [historyRows] = await db.query(`
+        SELECT id, user_id, quest_set_id, DATE_FORMAT(completed_at, '%Y-%m-%d') AS day, quest_count, hint_free_count, solution_free_count
+        FROM set_completion WHERE user_id IN (?) ORDER BY id`, [userIds]) as any[]
+    const [setRows] = await db.query('SELECT id, category, unit_id FROM quest_set WHERE is_public = TRUE') as any[]
+    const sets: SetInfo[] = (setRows as any[]).map((s) => ({ id: s.id, category: s.category, unitId: s.unit_id ?? null }))
+    const history = new Map<number, CompletionRec[]>()
+    for (const h of historyRows as any[]) {
+        const list = history.get(h.user_id) ?? []
+        list.push({ id: h.id, questSetId: h.quest_set_id, day: h.day, questCount: Number(h.quest_count), hintFree: Number(h.hint_free_count), solutionFree: Number(h.solution_free_count) })
+        history.set(h.user_id, list)
+    }
+
     const likes = new Map((likeRows as any[]).map((l) => [l.completion_id, l]))
     const comments = new Map<number, FeedComment[]>()
     for (const c of commentRows as any[]) {
@@ -101,6 +117,7 @@ export async function getFeed(userId: number, role: string, opts: { before?: num
             likes: like ? Number(like.n) : 0,
             likedByMe: like ? Number(like.mine) > 0 : false,
             comments: comments.get(r.id) ?? [],
+            cheers: cheersFor(history.get(r.user_id) ?? [], sets, r.id),
         }
     })
 }
