@@ -5,9 +5,18 @@ interface Props {
   onLogin: (user: { id: number; name: string; email: string; role: string }) => void
 }
 
+// 아이디(이메일) 저장은 이 브라우저에만 남기는 편의 기능이다. 비밀번호는 저장하지 않는다.
+const readStorage = (key: string) => { try { return localStorage.getItem(key) } catch { return null } }
+const writeStorage = (key: string, value: string | null) => {
+  try { if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value) } catch { /* 저장 실패는 무시 */ }
+}
+
 export function Login({ onLogin }: Props) {
-  const [email, setEmail] = useState(() => localStorage.getItem('lastEmail') ?? '')
+  // 예전에는 항상 저장했으므로, 끄겠다고 고른 적이 없으면 켜 둔다
+  const [remember, setRemember] = useState(() => readStorage('rememberEmail') !== 'off')
+  const [email, setEmail] = useState(() => (readStorage('rememberEmail') !== 'off' ? readStorage('lastEmail') ?? '' : ''))
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -17,7 +26,8 @@ export function Login({ onLogin }: Props) {
     setLoading(true)
     try {
       const data = await loginApi(email, password)
-      localStorage.setItem('lastEmail', email)
+      writeStorage('rememberEmail', remember ? 'on' : 'off')
+      writeStorage('lastEmail', remember ? email : null)
       token.set(data.token)
       onLogin(data.user)
     } catch (e) {
@@ -34,7 +44,7 @@ export function Login({ onLogin }: Props) {
           <h2 className="text-label-caps font-sans uppercase tracking-[0.3em] text-on-surface-variant opacity-60">
             okestro training
           </h2>
-          <h1 className="font-sans text-[32px] font-bold text-on-surface tracking-tighter">
+          <h1 className="font-sans text-[40px] font-extrabold tracking-tighter fx-shine-text">
             Etude
           </h1>
         </header>
@@ -50,6 +60,7 @@ export function Login({ onLogin }: Props) {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="name@okestro.com"
+                autoComplete="username"
                 required
                 className="w-full px-4 py-3 bg-surface border border-outline-variant text-on-surface font-sans text-body-md placeholder:text-on-surface-variant/30 focus:outline-none focus:border-info rounded-none"
               />
@@ -59,14 +70,37 @@ export function Login({ onLogin }: Props) {
               <label className="text-label-caps font-sans text-on-surface-variant block uppercase tracking-widest">
                 비밀번호
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-surface border border-outline-variant text-on-surface font-sans text-body-md focus:outline-none focus:border-info rounded-none"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  autoFocus={email !== ''}
+                  required
+                  className="w-full pl-4 pr-12 py-3 bg-surface border border-outline-variant text-on-surface font-sans text-body-md focus:outline-none focus:border-info rounded-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
+                  aria-pressed={showPassword}
+                  className="absolute inset-y-0 right-0 px-3 flex items-center text-on-surface-variant hover:text-on-surface transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[20px]">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                </button>
+              </div>
             </div>
+
+            <label className="flex items-center gap-2 cursor-pointer select-none font-sans text-body-md text-on-surface-variant hover:text-on-surface transition-colors">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={e => setRemember(e.target.checked)}
+                className="w-4 h-4 accent-info"
+              />
+              아이디 저장
+            </label>
 
             <button
               type="submit"
