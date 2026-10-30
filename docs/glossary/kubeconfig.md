@@ -94,7 +94,7 @@ export async function getSandboxConfig(sandboxType: string) {
 
 ## 서버에서는 왜 `config-etude`라는 별도 파일을 쓰는가
 
-[guide_phase8_deploy.md](../guides/completed/guide_phase8_deploy.md) Step 4를 보면, k3d 클러스터를 만든 뒤 표준 kubeconfig(`~/.kube/config`)를 그대로 쓰지 않고 별도 파일을 하나 더 만든다.
+Phase 8 배포(`spec_phase8_deploy.md`)를 보면, k3d 클러스터를 만든 뒤 표준 kubeconfig(`~/.kube/config`)를 그대로 쓰지 않고 별도 파일을 하나 더 만든다.
 
 ```bash
 k3d cluster create etude --api-port 127.0.0.1:6443
@@ -108,7 +108,7 @@ kubectl config view --raw | \
 
 그래서 주소를 `k3d-etude-server-0`(k3d가 만든 클러스터 노드 컨테이너의 이름)으로 바꾼 별도 파일을 만든다. 같은 Docker 네트워크(`k3d-etude`) 안에 있는 컨테이너끼리는 컨테이너 이름으로 서로를 찾을 수 있기 때문에, 이 이름으로 바꾸면 `etude-k8s` 컨테이너 안에서도 정상적으로 클러스터에 닿는다.
 
-이 원리는 Phase 10(vcluster)에서 `k3d-etude-server-0` 노드 이름을 그대로 재사용하는 이유이기도 하다 — [k8s_cluster_isolation.md](../research/k8s_cluster_isolation.md), [guide_phase10_klid_cmp.md](../guides/guide_phase10_klid_cmp.md) Step 2 참고.
+이 원리는 Phase 10(vcluster)에서 `k3d-etude-server-0` 노드 이름을 그대로 재사용하는 이유이기도 하다 — [k8s_cluster_isolation.md](../research/k8s_cluster_isolation.md) 참고.
 
 ---
 
@@ -122,13 +122,10 @@ Etude에는 kubeconfig를 다루는 방식이 다른 두 sandbox 타입이 있�
 | DB `binds` 값 | `{KUBECONFIG_HOST_PATH}` 플레이스홀더 → `sandbox.ts`가 치환 | `NULL` — DB에 값 자체가 없음 |
 | 실제 마운트 처리 | `sandbox.ts`의 `getSandboxConfig()` | `terminal.ts`의 `handleK8sIsolatedTerminal()`에서 개별 처리 |
 
-`k8s-isolated`가 `binds`를 DB에 안 두는 이유는, 세션마다 완전히 다른 vcluster(다른 kubeconfig 파일)를 써야 해서 "고정된 하나의 경로"라는 전제 자체가 성립하지 않기 때문이다. 자세한 내용은 [guide_phase10_klid_cmp.md](../guides/guide_phase10_klid_cmp.md) Step 3, Step 6 참고.
+`k8s-isolated`가 `binds`를 DB에 안 두는 이유는, 세션마다 완전히 다른 vcluster(다른 kubeconfig 파일)를 써야 해서 "고정된 하나의 경로"라는 전제 자체가 성립하지 않기 때문이다.
 
 ---
 
 ## 관련 문서
 
 - [sandbox_table.md](sandbox_table.md) — `sandbox` 테이블 전체 구조
-- [guide_phase6.md](../guides/completed/guide_phase6.md) — `k8s` 타입 최초 구현
-- [guide_phase8_deploy.md](../guides/completed/guide_phase8_deploy.md) Step 4 — 서버에서 `config-etude` 만드는 절차
-- [guide_phase10_klid_cmp.md](../guides/guide_phase10_klid_cmp.md) — vcluster별 kubeconfig를 세션마다 만드는 방식

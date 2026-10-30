@@ -99,6 +99,5 @@ SELECT id, title, sandbox_type FROM quest_set;
 ## 관련 문서
 
 - [kubeconfig.md](kubeconfig.md) — vcluster도 접속하려면 kubeconfig가 필요하고, 이걸 세션마다 새로 만들어야 하는 이유
-- [guide_phase10_klid_cmp.md](../guides/guide_phase10_klid_cmp.md) — vcluster pool 구현 가이드, 실제로 겪은 트러블슈팅(TLS SAN, Secret 폴링, NodePort 충돌 등)
 - [spec_phase10_klid_cmp.md](../specs/spec_phase10_klid_cmp.md) — 왜 namespace 격리로 안 되는지에 대한 상세 근거
 - [k8s_cluster_isolation.md](../research/k8s_cluster_isolation.md) — namespace 격리 vs k3d per-user vs vcluster 세 가지 방식 비교 검토

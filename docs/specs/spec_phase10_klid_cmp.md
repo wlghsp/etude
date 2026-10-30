@@ -2,7 +2,7 @@
 
 ## 목표
 
-[KLID_CMP_deploy_guide.md](../sources/KLID_CMP_deploy_guide.md)(오케스트로 CMP 배포 절차)를 현장실습형 퀘스트 세트로 만든다.
+오케스트로 CMP 배포 절차(KLID_CMP_deploy_guide, 원문은 git 이력)를 현장실습형 퀘스트 세트로 만든다.
 이 실습은 여러 namespace, Helm 배포, ClusterRole/CRD 같은 클러스터 레벨 리소스를 다루므로, 기존 [Phase 6](spec_phase6_k8s.md)의 "클러스터 1개 + namespace 격리" 방식으로는 동시 실습이 불가능하다.
 따라서 실습자마다 완전히 격리된 k8s 환경(vcluster)을 제공하는 것이 이 Phase의 선행 조건이다.
 

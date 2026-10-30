@@ -28,7 +28,7 @@ terminal error: Error: (HTTP code 404) no such container - No such image: ubuntu
 
 Docker는 컨테이너를 처음 만들 때 이미지가 로컬에 없으면 자동으로 pull을 시도하는 게 보통인데, 이번엔 그 자동 pull조차 실패한 것으로 보아 — 정확한 원인(네트워크, Docker 데몬 설정 등)까지는 추적하지 않고, 애초에 사전 pull 목록에 없었다는 근본 원인만 해결.
 
-**해결**: `setup.sh`와 `guide_phase8_deploy.md`에 `docker pull ubuntu:latest`, `docker pull docker:dind` 추가.
+**해결**: `setup.sh`와 배포 문서에 `docker pull ubuntu:latest`, `docker pull docker:dind` 추가.
 
 ```bash
 docker pull ubuntu:latest

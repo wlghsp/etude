@@ -163,4 +163,3 @@ command만 바꾸는** 첫 번째 방법을 골랐다.
 
 - [docker_stream.md](docker_stream.md) — 컨테이너 생성/스트리밍
 - [terminal_flow.md](terminal_flow.md) — 컨테이너 생명주기 전체 흐름
-- [../guides/completed/guide_phase5c_container_cleanup.md](../guides/completed/guide_phase5c_container_cleanup.md) — 고아 컨테이너 정리

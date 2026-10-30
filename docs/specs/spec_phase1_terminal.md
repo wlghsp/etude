@@ -47,5 +47,4 @@
 
 ## 참고
 
-- 구현 코드: `docs/etude_dev_guide.md` Phase 1 섹션
 - 아키텍처: `docs/etude_dev_plan.md`

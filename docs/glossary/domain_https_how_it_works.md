@@ -223,7 +223,6 @@ volumes:
 | DNS 레코드 | DNS 관리처(Cloudflare) 대시보드 — 코드로 관리하지 않는다 |
 | 인증서 파일 (서버) | `/etc/letsencrypt/live/etudequest.com/` |
 | 갱신 설정 (서버) | `/etc/letsencrypt/renewal/etudequest.com.conf` |
-| 단계별 실습 가이드 | [guides/guide_phase8c_https.md](../guides/guide_phase8c_https.md) |
 
 ## 9. 직접 확인해 보는 명령
 

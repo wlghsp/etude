@@ -152,7 +152,7 @@ backend를 여러 인스턴스로 늘리거나 재시작 후 세션 복구가 �
 ## 테스트 전략
 
 - ticket 발급/소비/만료, 세션 레지스트리: 단위 테스트
-- 인증·권한(401/403): Fastify `inject()` 기반 API 테스트 ([Node 테스트 가이드](../guides/completed/guide_node_testing_01_first_test.md)의 `buildApp()` 구조 전제)
+- 인증·권한(401/403): Fastify `inject()` 기반 API 테스트 (`buildApp()` 구조 전제)
 - 실제 WebSocket 연결은 `inject()`로 검증할 수 없으므로 통합 테스트를 별도로 둔다. 최소 케이스:
   - 정상 ticket으로 연결
   - ticket 재사용 거부

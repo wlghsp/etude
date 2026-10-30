@@ -1,6 +1,6 @@
 # 도메인 + HTTPS 적용 기록 — 서버에 무슨 일을 했나
 
-> 2026-10-28 작성. Phase 8c([가이드](../guides/guide_phase8c_https.md) / [명세](../specs/spec_phase8c_https.md))를 실제로 진행하면서 겪은 일을, 서버 운영이 처음인 사람도 따라올 수 있게 풀어 쓴 문서다.
+> 2026-10-28 작성. Phase 8c([명세](../specs/spec_phase8c_https.md))를 실제로 진행하면서 겪은 일을, 서버 운영이 처음인 사람도 따라올 수 있게 풀어 쓴 문서다.
 
 > 도메인·DNS·인증서가 원리상 어떻게 동작하는지는 [glossary/domain_https_how_it_works.md](../glossary/domain_https_how_it_works.md)에 따로 정리했다. 이 문서는 실제로 적용하면서 겪은 문제 기록이다.
 

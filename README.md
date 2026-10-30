@@ -100,6 +100,5 @@ K3D_NETWORK=k3d-etude   # k8s 세트 사용 시
 ## 문서
 
 - [`docs/etude_dev_plan.md`](docs/etude_dev_plan.md) — 아키텍처 및 개발 계획
-- [`docs/guides/`](docs/guides/) — Phase별 구현 가이드
 - [`docs/specs/`](docs/specs/) — Phase별 명세
 - [`docs/ops/`](docs/ops/) — 운영 가이드 (배포 후 반복 운영 절차)

@@ -18,12 +18,10 @@
 
 - `docs/product/okestro_training_platform.md` — 제품 기획/요구사항
 - `docs/etude_dev_plan.md` — 개발 계획 및 아키텍처
-- `docs/etude_dev_guide.md` — Phase별 가이드 인덱스
-- `docs/guides/` — Phase별 구현 가이드
 - `docs/ops/` — 운영 가이드 (배포 후 반복 운영 절차), 트러블슈팅 기록 (`troubleshooting_{날짜}_{주제}.md`)
 - `docs/specs/` — Phase별 명세
 - `docs/glossary/` — 개념 설명
-- `docs/research/` — 개발 방법론/AI 연구
+- `docs/research/` — 설계 검토 (k8s 격리 등)
 
 ---
 
@@ -125,8 +123,8 @@ AI 구현 + 독립 AI 리뷰 + 사용자 승인으로 진행한다. 구현 가�
 ### 컨텍스트 제공 방식
 
 구현 질문 시 관련 문서를 함께 제공한다:
-- 터미널/WebSocket 관련 → `@docs/etude_dev_guide.md`
-- 퀘스트/채점 관련 → `@docs/etude_dev_guide.md` + `@docs/etude_dev_plan.md`
+- 터미널/WebSocket 관련 → `@docs/specs/spec_phase1_terminal.md`
+- 퀘스트/채점 관련 → `@docs/specs/spec_phase2_quest.md` + `@docs/etude_dev_plan.md`
 - 제품 방향/기능 범위 관련 → `@docs/okestro_training_platform.md`
 
 ---

@@ -32,7 +32,7 @@ CMD ["/bin/bash"]
 - `backend/docker/Dockerfile.linux` 신규 (기존 `Dockerfile.k8s`, `Dockerfile.ssh`와 같은 패턴)
 - `sandbox` 테이블의 `linux` 타입 image를 `ubuntu` → `etude-linux`로 변경
 - 세트 9(Vim 기초)의 `setup_cmd`에서 `apt-get install vim-tiny` 제거 (이미지에 이미 포함되므로 불필요), 힌트/풀이/setup_cmd를 다시 `vim`으로 되돌림 (`vi`가 아니라)
-- Phase 8 배포 가이드(`guide_phase8_deploy.md`)의 Step 5(커스텀 이미지 빌드)에 `etude-linux` 빌드 단계 추가
+- Phase 8 배포 절차(`spec_phase8_deploy.md`)의 커스텀 이미지 빌드 단계(커스텀 이미지 빌드)에 `etude-linux` 빌드 단계 추가
 
 **제외 (범위 밖)**:
 - `linux-ssh`(`etude-ssh`), `linux-systemd`(Phase 6c, Rocky) 등 다른 sandbox 타입에는 영향 없음 — 이 Phase는 순수 `linux` 타입 이미지 교체에 한정.

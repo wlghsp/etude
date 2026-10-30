@@ -74,7 +74,7 @@ HTTPS는 도메인 확보 후 Let's Encrypt로 추가한다.
 Vite로 정적 빌드 후 nginx가 서빙한다.
 `frontend/dist/`를 nginx 컨테이너에 볼륨 마운트한다.
 
-API/WebSocket URL은 `VITE_API_BASE`/`VITE_WS_BASE` 환경변수로 분리되어 있다 ([guide_phase7e_deploy_api_url.md](../guides/completed/guide_phase7e_deploy_api_url.md)). `frontend/.env.production`은 빈 값 — 같은 origin의 nginx가 `/api/`, `/ws/`로 프록시하므로 호스트를 생략한다.
+API/WebSocket URL은 `VITE_API_BASE`/`VITE_WS_BASE` 환경변수로 분리되어 있다. `frontend/.env.production`은 빈 값 — 같은 origin의 nginx가 `/api/`, `/ws/`로 프록시하므로 호스트를 생략한다.
 
 ---
 
