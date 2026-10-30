@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { fetchLeaderboard, type MemberProgress } from "../api/user"
+import { fetchLeaderboard, fetchReport, type MemberProgress, type Report } from "../api/user"
 import { TopNav } from "../components/TopNav"
 import { SideNav } from "../components/SideNav"
 
@@ -17,6 +17,15 @@ interface Props {
 export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
     const [rows, setRows] = useState<MemberProgress[]>([])
     const [openUsers, setOpenUsers] = useState<Set<number>>(new Set())
+    const [tab, setTab] = useState<'ranking' | 'report'>('ranking')
+    const [report, setReport] = useState<Report | null>(null)
+    const [reportError, setReportError] = useState(false)
+
+    // 명예의 전당은 탭을 처음 열 때 불러온다
+    useEffect(() => {
+        if (tab !== 'report' || report) return
+        fetchReport().then(setReport).catch(() => setReportError(true))
+    }, [tab, report])
 
     useEffect(() => {
         fetchLeaderboard().then((data) =>
@@ -63,6 +72,22 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
                         <h1 className="font-sans text-headline-lg text-on-surface">랭킹</h1>
                     </div>
 
+                    <div role="tablist" className="flex gap-1 border-b border-outline-variant mb-6">
+                        {([['ranking', '랭킹', 'leaderboard'], ['report', '명예의 전당', 'workspace_premium']] as const).map(([id, label, icon]) => (
+                            <button
+                                key={id}
+                                role="tab"
+                                aria-selected={tab === id}
+                                onClick={() => setTab(id)}
+                                className={`flex items-center gap-1.5 px-5 py-2.5 -mb-px border-b-2 font-sans text-label-caps transition-colors ${tab === id ? 'border-gold text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+                            >
+                                <span className={`material-symbols-outlined text-[18px] ${tab === id ? 'text-gold' : ''}`} style={tab === id ? { fontVariationSettings: "'FILL' 1" } : undefined}>{icon}</span>{label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {tab === 'ranking' && (
+                        <>
                     {meIndex >= 0 && (
                         <div className="mb-6 flex items-center gap-4 rounded-xl border border-info/40 bg-gradient-to-r from-info/15 via-accent/10 to-transparent px-6 py-4">
                             <span className="text-[34px] leading-none">{MEDALS[meIndex] ?? '🏃'}</span>
@@ -152,6 +177,61 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
                             )
                         })}
                     </div>
+                        </>
+                    )}
+                    {tab === 'report' && (
+                        <div className="space-y-6">
+                            {reportError && <p className="font-sans text-body-md text-error">명예의 전당을 불러오지 못했어요. 잠시 후 다시 열어 주세요.</p>}
+                            {!report && !reportError && <div className="h-28 rounded-xl bg-surface-container animate-pulse" aria-label="불러오는 중" />}
+                            {report && (
+                                <>
+                                    <div className="relative overflow-hidden rounded-xl border border-gold/40 bg-gradient-to-r from-gold/20 via-rose/10 to-accent/10 px-6 py-5">
+                                        <span className="fx-sparkle pointer-events-none absolute top-3 right-5 material-symbols-outlined text-[26px] text-gold" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
+                                        {report.mvp ? (
+                                            <div className="flex items-center gap-4">
+                                                <span className="fx-bounce text-[44px] leading-none">🏅</span>
+                                                <div className="min-w-0">
+                                                    <p className="font-sans text-label-caps text-on-surface-variant">이번 주 MVP</p>
+                                                    <p className="font-sans text-headline-lg"><span className="fx-shine-text font-extrabold">{report.mvp.userName}</span> 님{report.mvp.userName === userName && ' (나!)'}</p>
+                                                    <p className="font-sans text-body-md text-on-surface-variant">최근 7일 동안 세트 {report.mvp.weekCount}개를 끝냈어요{report.mvp.streak > 0 && ` · 🔥 ${report.mvp.streak}일 연속`}</p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="font-sans text-body-lg text-on-surface">🌟 이번 주 첫 MVP 의 주인공이 되어 보세요! 세트 하나를 끝내면 이름이 올라가요.</p>
+                                        )}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                        {report.awards.map((a) => (
+                                            <section key={a.key} className="rounded-xl border border-outline-variant bg-surface-container-low p-5">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <span className="text-[30px] leading-none">{a.icon}</span>
+                                                    <div className="min-w-0">
+                                                        <h2 className="font-sans text-headline-md text-on-surface">{a.title}</h2>
+                                                        <p className="font-sans text-code-sm text-on-surface-variant">{a.desc}</p>
+                                                    </div>
+                                                </div>
+                                                {a.entries.length === 0 ? (
+                                                    <p className="rounded-lg border border-dashed border-outline-variant px-4 py-3 font-sans text-body-md text-on-surface-variant">아직 수상자가 없어요. 첫 번째 주인공이 되어 보세요!</p>
+                                                ) : (
+                                                    <ol className="space-y-2">
+                                                        {a.entries.map((e, i) => (
+                                                            <li key={e.userId} className={`flex items-center gap-3 rounded-lg px-3 py-2 ${e.userName === userName ? 'bg-info/15 ring-1 ring-info/40' : 'bg-surface-container'}`}>
+                                                                <span className="text-[22px] leading-none w-7 text-center">{MEDALS[i]}</span>
+                                                                <span className="flex-1 min-w-0 truncate font-sans text-body-md font-semibold text-on-surface">{e.userName}{e.userName === userName && <span className="ml-2 px-1.5 py-0.5 rounded-full bg-info/20 text-info font-sans text-[11px]">나</span>}</span>
+                                                                <span className="font-sans text-body-md font-bold text-gold tabular-nums">{e.display}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ol>
+                                                )}
+                                            </section>
+                                        ))}
+                                    </div>
+                                    <p className="font-sans text-code-sm text-on-surface-variant text-center">칭찬하는 화면이에요. 기록이 있는 분만 높은 순서로 보여 드려요. 오늘 한 세트가 내일의 이름이 될 수 있어요 ✨</p>
+                                </>
+                            )}
+                        </div>
+                    )}
                 </main>
             </div>
         </div>
