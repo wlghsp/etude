@@ -38,8 +38,12 @@ export function Login({ onLogin }: Props) {
   }
 
   return (
-    <div className="dark min-h-screen bg-surface flex items-center justify-center p-gutter">
-      <main className="w-full max-w-[400px]">
+    <div className="dark relative overflow-hidden min-h-screen bg-surface flex items-center justify-center p-gutter">
+      {/* 배경의 은은한 색 빛 */}
+      <div className="pointer-events-none absolute -top-40 -left-32 w-[460px] h-[460px] rounded-full bg-accent/20 blur-[110px]" aria-hidden="true" />
+      <div className="pointer-events-none absolute -bottom-44 -right-32 w-[480px] h-[480px] rounded-full bg-info/20 blur-[120px]" aria-hidden="true" />
+      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[360px] h-[360px] rounded-full bg-rose/10 blur-[110px]" aria-hidden="true" />
+      <main className="fx-page relative w-full max-w-[400px]">
         <header className="text-center mb-10 space-y-2">
           <h2 className="text-label-caps font-sans uppercase tracking-[0.3em] text-on-surface-variant opacity-60">
             okestro training
@@ -47,6 +51,7 @@ export function Login({ onLogin }: Props) {
           <h1 className="font-sans text-[40px] font-extrabold tracking-tighter fx-shine-text">
             Etude
           </h1>
+          <p className="font-mono text-code-sm text-success" aria-hidden="true">$ etude start<span className="fx-blink ml-0.5">▍</span></p>
         </header>
 
         <div className="bg-surface-container-low border border-outline-variant p-8">

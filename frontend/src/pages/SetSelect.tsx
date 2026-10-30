@@ -7,7 +7,8 @@ import { TopNav } from "../components/TopNav";
 import { groupByUnit } from "../units";
 import { ProgressRing } from "../components/ProgressRing";
 import { WeekStrip } from "../components/WeekStrip";
-import { weekActivity, type DayActivity } from "../activity";
+import { weekActivity, currentStreak, type DayActivity } from "../activity";
+import { computeXp, levelInfo, type LevelInfo } from "../gamification";
 
 interface Props {
     onSelect: (setId: number, sandboxType: string) => void
@@ -36,6 +37,7 @@ interface Stats {
     streak: number // 연속 학습일 (오늘 또는 어제까지 이어진 날 수)
     lastCategory: string | null // 가장 최근에 세트를 끝낸 분야
     week: DayActivity[] // 최근 7일 하루별 완료 횟수
+    level: LevelInfo // 경험치와 레벨
 }
 
 export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
@@ -54,14 +56,9 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
             setCompletedCount(map)
 
             // 연속 학습일·이번 주 완료·마지막 분야는 완료 기록에서 계산한다 (세트 완료만 센다)
-            const day = (d: Date) => d.toLocaleDateString('sv-SE') // YYYY-MM-DD (내 시간대)
             const all = rows.flatMap((r) => r.completions.map((c) => ({ at: new Date(c.completedAt), category: r.category })))
-            const days = new Set(all.map((c) => day(c.at)))
             const now = new Date()
-            const cursor = new Date(now)
-            if (!days.has(day(cursor))) cursor.setDate(cursor.getDate() - 1) // 오늘 아직 안 했어도 어제까지 이어졌으면 유지
-            let streak = 0
-            while (days.has(day(cursor))) { streak++; cursor.setDate(cursor.getDate() - 1) }
+            const streak = currentStreak(rows, now)
             const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000
             const latest = all.reduce<{ at: Date; category: string } | null>((best, c) => (!best || c.at > best.at ? c : best), null)
             setStats({
@@ -71,6 +68,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
                 streak,
                 lastCategory: latest?.category ?? null,
                 week: weekActivity(rows, now),
+                level: levelInfo(computeXp(rows)),
             })
         }).catch(() => { /* 완료 표시가 없어도 세트는 고를 수 있다 */ })
     }, [])
@@ -101,7 +99,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
             <div className="flex flex-1 pt-14">
                 <SideNav activePage="home" userName={userName} userEmail={userEmail} userRole={userRole} onHome={() => {}} onProgress={onProgress} onLeaderboard={onLeaderboard} onAdmin={onAdmin} onLogout={onLogout} onChangePassword={onChangePassword} />
 
-                <main className="fx-page flex-1 md:ml-60 p-8 bg-surface">
+                <main className="fx-page flex-1 md:ml-60 p-8 bg-surface bg-[radial-gradient(ellipse_at_top_right,rgba(167,139,250,0.14),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(56,189,248,0.08),transparent_50%)]">
                     <div className="max-w-[1000px] mx-auto space-y-8">
                         {stats && (
                             <section className="relative overflow-hidden rounded-xl border border-outline-variant bg-gradient-to-br from-accent/20 via-info/10 to-warning/10 p-6 md:p-8">
@@ -116,6 +114,15 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
                                     <div className="flex-1 min-w-0">
                                         <p className="font-sans text-label-caps text-on-surface-variant">{stats.completed === 0 ? '첫 세트를 시작해 볼까요?' : '오늘도 한 걸음 더'}</p>
                                         <h1 className="font-sans text-headline-lg text-on-surface truncate">안녕하세요, {userName}님 👋</h1>
+                                        <div className="mt-3 max-w-[460px]">
+                                            <div className="flex items-baseline justify-between font-sans text-label-caps">
+                                                <span className="text-gold">Lv.{stats.level.level} {stats.level.title}</span>
+                                                <span className="text-on-surface-variant tabular-nums">{stats.level.into} / {stats.level.need} XP</span>
+                                            </div>
+                                            <div className="mt-1 h-2.5 rounded-full bg-surface-container-highest overflow-hidden" role="progressbar" aria-valuenow={stats.level.pct} aria-valuemin={0} aria-valuemax={100} aria-label="레벨 진행">
+                                                <div className="h-full rounded-full bg-gradient-to-r from-gold via-rose to-accent transition-all duration-700" style={{ width: `${Math.max(3, stats.level.pct)}%` }} />
+                                            </div>
+                                        </div>
                                         <div className="mt-3 flex flex-wrap gap-2">
                                             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-sans text-label-caps ${stats.streak > 0 ? 'border-gold/50 bg-gold/10 text-gold' : 'border-outline-variant text-on-surface-variant'}`}>
                                                 🔥 {stats.streak > 0 ? `연속 ${stats.streak}일 학습 중` : '오늘 첫 세트를 끝내면 연속 기록이 시작돼요'}
@@ -182,17 +189,17 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
                                                             </div>
                                                         )}
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            {g.items.map((s) => {
+                                                            {g.items.map((s, cardIndex) => {
                                                                 const doneCount = completedCount[s.id] ?? 0
                                                                 const isComplete = doneCount > 0
                                                                 return (
                                                                     <button
                                                                         key={s.id}
                                                                         onClick={() => onSelect(s.id, s.sandbox_type)}
-                                                                        className={`relative overflow-hidden text-left p-5 border border-outline-variant bg-surface-container-low hover:border-primary hover:bg-surface-container hover:shadow-[0_6px_24px_rgba(0,0,0,0.35)] transition-all group ${isComplete ? 'border-success/40' : ''}`}
+                                                                        className={`fx-page relative overflow-hidden text-left p-5 border border-outline-variant bg-surface-container-low hover:border-primary hover:bg-surface-container hover:shadow-[0_6px_24px_rgba(0,0,0,0.35)] transition-all group ${isComplete ? 'border-success/40' : ''}`}
                                                                         onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
                                                                         onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
-                                                                        style={{ transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                                                                        style={{ transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', animationDelay: `${Math.min(cardIndex, 8) * 45}ms` }}
                                                                     >
                                                                         <span className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${isComplete ? 'from-success to-gold' : `${meta.bar} to-transparent`}`} aria-hidden="true" />
                                                                         <div className="flex justify-between items-start mb-6">

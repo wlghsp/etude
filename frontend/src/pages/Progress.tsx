@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { groupByUnit } from "../units"
-import { weekActivity, type DayActivity } from "../activity"
+import { weekActivity, currentStreak, type DayActivity } from "../activity"
+import { computeBadges, computeXp, levelInfo, type Badge, type LevelInfo } from "../gamification"
 import { WeekStrip } from "../components/WeekStrip"
 import { fetchProgress, type CompletionRecord, type SetProgress } from "../api/user"
 import { TopNav } from "../components/TopNav"
@@ -31,12 +32,14 @@ export function Progress({ onBack, onLeaderboard, onAdmin, onLogout, onChangePas
     const [sets, setSets] = useState<SetProgress[] | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [activity, setActivity] = useState<DayActivity[] | null>(null)
+    const [badges, setBadges] = useState<Badge[] | null>(null)
+    const [level, setLevel] = useState<LevelInfo | null>(null)
     const [filter, setFilter] = useState<Filter>({ kind: 'all' })
     const [openSets, setOpenSets] = useState<Set<number>>(new Set())
     const [openRecords, setOpenRecords] = useState<Set<number>>(new Set())
 
     useEffect(() => {
-        fetchProgress().then((rows) => { setSets(rows); setActivity(weekActivity(rows, new Date())) }).catch((e) => setError(e instanceof Error ? e.message : '진행현황을 불러오지 못했습니다.'))
+        fetchProgress().then((rows) => { const now = new Date(); setSets(rows); setActivity(weekActivity(rows, now)); setBadges(computeBadges(rows, currentStreak(rows, now))); setLevel(levelInfo(computeXp(rows))) }).catch((e) => setError(e instanceof Error ? e.message : '진행현황을 불러오지 못했습니다.'))
     }, [])
 
     const list = sets ?? []
@@ -147,6 +150,29 @@ export function Progress({ onBack, onLeaderboard, onAdmin, onLogout, onChangePas
                                         <p className="font-sans text-body-md text-on-surface-variant">세트를 끝낸 날은 불이 켜져요. 숫자는 그날 끝낸 세트 수예요.</p>
                                     </div>
                                     <div className="md:ml-auto"><WeekStrip days={activity} /></div>
+                                </section>
+                            )}
+
+                            {badges && (
+                                <section className="flex flex-col gap-4">
+                                    <div className="flex items-baseline justify-between gap-3">
+                                        <h2 className="font-sans text-headline-md text-on-surface">배지 <span className="text-body-md text-on-surface-variant">{badges.filter((b) => b.unlocked).length}/{badges.length}</span></h2>
+                                        {level && <span className="font-sans text-label-caps text-gold">Lv.{level.level} {level.title} · {level.xp} XP</span>}
+                                    </div>
+                                    <ul className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                        {badges.map((b) => (
+                                            <li
+                                                key={b.id}
+                                                title={b.desc}
+                                                className={`relative rounded-xl border p-4 text-center transition-all ${b.unlocked ? 'border-gold/50 bg-gradient-to-b from-gold/15 to-transparent hover:-translate-y-0.5' : 'border-outline-variant bg-surface-container-low'}`}
+                                            >
+                                                <div className={`text-[34px] leading-none ${b.unlocked ? 'fx-pop' : 'grayscale opacity-35'}`}>{b.icon}</div>
+                                                <div className={`mt-2 font-sans text-body-md font-bold ${b.unlocked ? 'text-on-surface' : 'text-on-surface-variant'}`}>{b.title}</div>
+                                                <div className="mt-0.5 font-sans text-[12px] leading-4 text-on-surface-variant">{b.desc}</div>
+                                                {!b.unlocked && <span className="material-symbols-outlined absolute top-2 right-2 text-[16px] text-on-surface-variant/60">lock</span>}
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </section>
                             )}
 

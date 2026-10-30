@@ -39,6 +39,8 @@ function App() {
   const [completedIndices, setCompletedIndices] = useState<Set<number>>(new Set())
   // 이번에 세트에 들어와서 푼 기록 (세트 완료 화면에서 보여 준다). 세트가 바뀌면 비운다.
   const [records, setRecords] = useState<Record<number, QuestRecord>>({})
+  // 문제를 연속으로 한 번에 맞힌 횟수 (틀렸다가 맞히면 끊긴다)
+  const [combo, setCombo] = useState(0)
   const [summaryOpen, setSummaryOpen] = useState(false)
   // 세트 완료 기록 저장 상태 (모든 퀘스트를 통과하면 서버에 한 번 저장한다)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
@@ -133,6 +135,7 @@ function App() {
   }, [selectedSetId])
 
   function handleSetSelect(id: number, sandboxType: string) {
+    setCombo(0)
     history.pushState({ page: 'home', setId: id }, '')
     setSelectedSetId(id)
     // 이전 세트의 퀘스트로 터미널이 마운트되면 서버가 잘못된 세트로 세션을 만든다. 새 목록이 올 때까지 비운다.
@@ -220,10 +223,17 @@ function App() {
         {isQuiz && (
           <span className="ml-4 font-sans text-label-caps text-on-surface-variant border border-outline-variant px-2 py-0.5">개념 퀴즈 · 터미널 없이 푸는 문제예요</span>
         )}
-        <div className="ml-auto"><SoundToggle /></div>
+        <div className="ml-auto flex items-center gap-3">
+          {combo >= 2 && (
+            <span key={combo} className="fx-pop inline-flex items-center gap-1.5 rounded-full border border-gold/50 bg-gradient-to-r from-gold/20 to-warning/10 px-3 py-1 font-sans text-label-caps text-gold" title="문제를 연속으로 한 번에 맞혔어요">
+              🔥 {combo}콤보
+            </span>
+          )}
+          <SoundToggle />
+        </div>
       </header>
       <main className="flex flex-1 overflow-hidden">
-        <section className={isQuiz ? 'w-full max-w-5xl mx-auto flex flex-col' : 'w-[40%] flex flex-col'}>
+        <section className={isQuiz ? 'w-full max-w-5xl mx-auto flex flex-col bg-gradient-to-b from-accent/10 via-transparent to-transparent' : 'w-[40%] flex flex-col'}>
           {summaryOpen
             ? <SetComplete
                 setId={selectedSetId}
@@ -255,6 +265,7 @@ function App() {
               onComplete={(i, record) => {
                 setCompletedIndices(prev => new Set(prev).add(i))
                 setRecords(prev => ({ ...prev, [i]: record }))
+                setCombo(c => (record.attempts === 1 ? c + 1 : 0))
               }}
             />
           )}

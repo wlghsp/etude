@@ -60,10 +60,13 @@ body {
 .fx-tip { animation: fx-tip 5s ease-in-out both }
 .fx-seg-pop { transform-origin: left; animation: fx-seg 0.35s ease-out both }
 .fx-sparkle { animation: fx-sparkle 1.6s ease-in-out infinite }
+@keyframes fx-blink { 50% { opacity: 0 } }
+.fx-blink { animation: fx-blink 1s step-end infinite }
 @keyframes fx-page { 0% { opacity: 0; transform: translateY(10px) } 100% { opacity: 1; transform: none } }
-.fx-page { animation: fx-page 0.4s ease-out both }
+.fx-page { animation: fx-page 0.4s ease-out backwards }
 @media (prefers-reduced-motion: reduce) {
   .fx-page { animation: none }
+  .fx-blink { animation: none }
   .fx-pop, .fx-shake, .fx-glow-success, .fx-glow-error { animation: none }
   .fx-confetti-piece, .fx-fall-piece { display: none }
   .fx-bounce, .fx-shine-text, .fx-seg-pop, .fx-sparkle { animation: none }
