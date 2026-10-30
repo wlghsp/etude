@@ -1,3 +1,5 @@
+import { Logo } from './Logo'
+
 type Page = 'home' | 'progress' | 'leaderboard' | 'admin'
 
 interface Props {
@@ -43,7 +45,7 @@ export function SideNav({ activePage, userName, userEmail, userRole, onHome, onP
         <aside className="hidden md:flex flex-col w-60 bg-surface-container border-r border-outline-variant fixed h-[calc(100vh-3.5rem)] py-4">
             <div className="px-4 mb-6">
                 <div className="flex items-center gap-2.5">
-                    <span className="w-9 h-9 rounded-lg bg-gradient-to-br from-info to-accent flex items-center justify-center font-sans text-[18px] font-extrabold text-white shadow-[0_0_16px_rgba(167,139,250,0.35)]">E</span>
+                    <Logo size={36} className="drop-shadow-[0_0_10px_rgba(129,140,248,0.45)]" />
                     <div className="font-sans text-headline-md text-on-surface">Etude Workspace</div>
                 </div>
             </div>

@@ -16,6 +16,7 @@ import { ChangePasswordModal } from './components/ChangePasswordModal'
 import { ConfirmModal } from './components/ConfirmModal'
 import { LoadingScreen } from './components/LoadingScreen'
 import { SoundToggle } from './components/SoundToggle'
+import { Logo } from './components/Logo'
 
 
 
@@ -217,7 +218,8 @@ function App() {
       <FeedbackButton page="quest" questId={quest?.id} questSetId={selectedSetId} />
       {/* TopNav */}
       <header className="flex items-center w-full px-gutter h-14 bg-surface border-b border-outline-variant shrink-0">
-        <button onClick={() => navigate('home')} className="font-sans text-body-lg font-bold tracking-tighter text-on-surface hover:text-primary transition-colors">
+        <button onClick={() => navigate('home')} className="flex items-center gap-2 font-sans text-body-lg font-bold tracking-tighter text-on-surface hover:text-primary transition-colors">
+          <Logo size={26} />
           OKESTRO TRAINING | Etude
         </button>
         {isQuiz && (

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { loginApi, token } from '../api/auth'
+import { Logo } from '../components/Logo'
 
 interface Props {
   onLogin: (user: { id: number; name: string; email: string; role: string }) => void
@@ -45,6 +46,7 @@ export function Login({ onLogin }: Props) {
       <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[360px] h-[360px] rounded-full bg-rose/10 blur-[110px]" aria-hidden="true" />
       <main className="fx-page relative w-full max-w-[400px]">
         <header className="text-center mb-10 space-y-2">
+          <div className="flex justify-center mb-3"><Logo size={56} className="drop-shadow-[0_0_18px_rgba(129,140,248,0.5)]" /></div>
           <h2 className="text-label-caps font-sans uppercase tracking-[0.3em] text-on-surface-variant opacity-60">
             okestro training
           </h2>
