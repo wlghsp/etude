@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useModalLock } from "./useModalLock";
 
 interface Props {
     open: boolean
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function ConfirmModal({ open, title, message, confirmLabel, cancelLabel, onConfirm, onCancel }: Props) {
+    useModalLock(open)
     useEffect(() => {
         if (!open) return
         const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel() }
@@ -21,8 +23,8 @@ export function ConfirmModal({ open, title, message, confirmLabel, cancelLabel, 
     if (!open) return null
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" onClick={onCancel}>
-            <div className="fx-modal rounded-2xl border border-outline-variant bg-surface-container-low shadow-[0_0_40px_rgba(129,140,248,0.15)] w-full max-w-[420px] p-6 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70" role="dialog" aria-modal="true" onClick={onCancel}>
+            <div className="fx-modal rounded-2xl border border-outline-variant bg-surface-container-low shadow-2xl w-full max-w-[420px] p-6 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
                 <h2 className="font-sans text-body-lg font-bold text-on-surface">{title}</h2>
                 <p className="font-sans text-body-md text-on-surface-variant leading-6">{message}</p>
                 <div className="flex justify-end gap-2">

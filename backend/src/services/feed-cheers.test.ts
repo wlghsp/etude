@@ -90,6 +90,20 @@ describe('cheersFor', () => {
         expect(cheersFor(recs, sets, recs[10]!.id).some((c) => c.kind === 'challenge')).toBe(false) // 11월 첫 완료
     })
 
+    it('축하마다 고유 키를 내려 준다 (화면이 종류 안에서도 색을 달리 쓰게): 배지는 badge:<id>, 연속은 streak<일수>', () => {
+        nextId = 1
+        const first = [rec(1, '2026-10-30', { hintFree: 4, solutionFree: 4 })]
+        expect(cheersFor(first, sets, first[0]!.id).map((c) => c.key).sort()).toEqual(['badge:first', 'badge:perfect'])
+
+        nextId = 1
+        const streak = Array.from({ length: 14 }, (_, i) => rec(1, `2026-10-${String(i + 1).padStart(2, '0')}`))
+        expect(cheersFor(streak, sets, streak[13]!.id).find((c) => c.kind === 'streak')!.key).toBe('streak14')
+
+        nextId = 1
+        const unit = [rec(1, '2026-10-30'), rec(2, '2026-10-30')]
+        expect(cheersFor(unit, sets, unit[1]!.id).map((c) => c.key)).toContain('unit')
+    })
+
     it('축하할 일이 없으면 빈 목록이다', () => {
         nextId = 1
         const recs = [rec(1, '2026-10-20'), rec(4, '2026-10-22')]

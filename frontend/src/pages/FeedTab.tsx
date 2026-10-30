@@ -1,11 +1,35 @@
 import { useEffect, useState } from 'react'
 import { REACTIONS, fetchFeed, postComment, removeComment, toggleLike, type FeedEvent, type Reaction } from '../api/feed'
 import { timeAgo } from '../activity'
+import { avatarTone } from '../avatar'
 import { fetchReport, type Report } from '../api/user'
 import { ConfirmModal } from '../components/ConfirmModal'
 
 const CATEGORY_TEXT: Record<string, string> = { '리눅스': 'text-warning', '도커': 'text-sky', 'k8s': 'text-accent' }
 const COMMENT_MAX = 300
+
+// 축하마다 다른 색. 키(서버가 내려 준 cheer.key)별로 고르고, 없으면 종류별 색을 쓴다.
+// Tailwind 는 클래스를 문자열 그대로 찾아서 만들므로 모두 완성된 문자열로 적는다.
+type Tone = { band: string; chip: string }
+const tone = (c: string, t: string): Tone => ({ band: c, chip: t })
+const GOLD = tone('border-gold/50 from-gold/25', 'border-gold/40 bg-gold/10 text-gold')
+const VIOLET = tone('border-accent/50 from-accent/25', 'border-accent/40 bg-accent/10 text-accent')
+const ROSE = tone('border-rose/50 from-rose/25', 'border-rose/40 bg-rose/10 text-rose')
+const SKY = tone('border-sky/50 from-sky/25', 'border-sky/40 bg-sky/10 text-sky')
+const BLUE = tone('border-info/50 from-info/25', 'border-info/40 bg-info/10 text-info')
+const GREEN = tone('border-success/50 from-success/25', 'border-success/40 bg-success/10 text-success')
+const LIME = tone('border-lime/50 from-lime/25', 'border-lime/40 bg-lime/10 text-lime')
+const TEAL = tone('border-teal/50 from-teal/25', 'border-teal/40 bg-teal/10 text-teal')
+const AMBER = tone('border-warning/50 from-warning/25', 'border-warning/40 bg-warning/10 text-warning')
+const CORAL = tone('border-coral/50 from-coral/25', 'border-coral/40 bg-coral/10 text-coral')
+const RED = tone('border-error/50 from-error/25', 'border-error/40 bg-error/10 text-error')
+const TONE_BY_KEY: Record<string, Tone> = {
+    category: GOLD, unit: VIOLET, challenge: ROSE, level: SKY, streak14: CORAL, streak30: RED,
+    'badge:first': LIME, 'badge:five': AMBER, 'badge:ten': BLUE, 'badge:twenty': TEAL,
+    'badge:streak3': CORAL, 'badge:streak7': RED, 'badge:perfect': GOLD, 'badge:review': GREEN,
+}
+const TONE_BY_KIND: Record<FeedEvent['cheers'][number]['kind'], Tone> = { category: GOLD, unit: VIOLET, challenge: ROSE, level: SKY, streak: CORAL, badge: GREEN }
+const cheerTone = (c: FeedEvent['cheers'][number]): Tone => TONE_BY_KEY[c.key] ?? TONE_BY_KIND[c.kind]
 
 interface Props {
     userName: string
@@ -103,7 +127,7 @@ export function FeedTab({ userName }: Props) {
                 <div className="flex items-center gap-3 rounded-xl border border-gold/50 bg-gradient-to-r from-gold/20 via-rose/10 to-transparent px-5 py-4">
                     <span className="text-[32px] leading-none">🏅</span>
                     <p className="font-sans text-body-md text-on-surface">
-                        이번 주 MVP는 <strong className="text-gold">{mvp.userName}</strong> 님이에요{mvp.userName === userName && ' (나!)'} 🎉
+                        이번 주 MVP는 <strong className="text-gold">{mvp.userName}</strong> 님이에요{mvp.userName === userName && ' (나!)'}
                         <span className="block font-sans text-code-sm text-on-surface-variant">최근 7일 동안 세트 {mvp.weekCount}개를 끝냈어요{mvp.streak > 0 && ` · 🔥 ${mvp.streak}일 연속`}</span>
                     </p>
                 </div>
@@ -114,22 +138,22 @@ export function FeedTab({ userName }: Props) {
                 return (
                     <article key={ev.id} className="fx-page rounded-xl border border-outline-variant bg-surface-container-low p-5" style={{ animationDelay: `${Math.min(idx, 6) * 40}ms` }}>
                         <div className="flex items-start gap-3">
-                            <span className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-rose to-accent flex items-center justify-center font-sans text-body-md font-bold text-white">{ev.userName.slice(0, 1)}</span>
+                            <span className={`w-10 h-10 shrink-0 rounded-full ${avatarTone(ev.userName)} flex items-center justify-center font-sans text-body-md font-bold text-white`}>{ev.userName.slice(0, 1)}</span>
                             <div className="flex-1 min-w-0">
                                 <p className="font-sans text-body-md text-on-surface leading-6">
                                     <strong>{ev.userName}</strong>{mine && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-info/20 text-info font-sans text-[11px]">나</span>} 님이{' '}
                                     <span className={`font-semibold ${CATEGORY_TEXT[ev.category] ?? 'text-info'}`}>{ev.category}</span>{' '}
-                                    <strong>#{ev.questSetId} {ev.setTitle}</strong> 을(를) 완료했어요 🎉
+                                    <strong>#{ev.questSetId} {ev.setTitle}</strong> 을(를) 완료했어요
                                 </p>
                                 <p className="mt-1 font-sans text-code-sm text-on-surface-variant">{timeAgo(ev.completedAt, now)} · 문제 {ev.questCount}개</p>
                                 {ev.cheers[0] && (
-                                    <div className="fx-shine-border mt-3 flex items-center gap-3 rounded-lg border border-gold/50 bg-gradient-to-r from-gold/20 via-rose/10 to-transparent px-4 py-3">
+                                    <div className={`mt-3 flex items-center gap-3 rounded-lg border bg-gradient-to-r to-transparent px-4 py-3 ${cheerTone(ev.cheers[0]).band}`}>
                                         <span className="text-[28px] leading-none">{ev.cheers[0].icon}</span>
-                                        <p className="font-sans text-body-md font-semibold text-on-surface">{mine ? '축하해요! ' : '축하해 주세요! '}{ev.cheers[0].text} 🎉</p>
+                                        <p className="font-sans text-body-md font-semibold text-on-surface">{mine ? '축하해요! ' : '축하해 주세요! '}{ev.cheers[0].text}</p>
                                     </div>
                                 )}
                                 <div className="mt-2 flex flex-wrap gap-1.5">
-                                    {ev.cheers.slice(1).map((c) => <span key={c.text} className="rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 font-sans text-[12px] text-gold">{c.icon} {c.text}</span>)}
+                                    {ev.cheers.slice(1).map((c) => <span key={c.text} className={`rounded-full border px-2.5 py-0.5 font-sans text-[12px] ${cheerTone(c).chip}`}>{c.icon} {c.text}</span>)}
                                     {ev.perfect && <span className="rounded-full border border-gold/50 bg-gold/10 px-2.5 py-0.5 font-sans text-[12px] text-gold">💯 퍼펙트</span>}
                                     {ev.isFirst && <span className="rounded-full border border-success/40 bg-success/10 px-2.5 py-0.5 font-sans text-[12px] text-success">🌱 첫 완료</span>}
                                     {ev.isReview && <span className="rounded-full border border-sky/40 bg-sky/10 px-2.5 py-0.5 font-sans text-[12px] text-sky">🔁 복습</span>}

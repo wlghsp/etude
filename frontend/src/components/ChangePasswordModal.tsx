@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { changePassword } from "../api/auth";
+import { useModalLock } from "./useModalLock";
 
 interface Props {
     open: boolean
@@ -13,6 +14,7 @@ export function ChangePasswordModal({ open, onClose }: Props) {
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const [toast, setToast] = useState(false)
+    useModalLock(open)
 
     function reset() {
         setCurrentPassword('')
@@ -63,8 +65,8 @@ export function ChangePasswordModal({ open, onClose }: Props) {
 
     return (
         <>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" onClick={handleClose}>
-                <form className="fx-modal rounded-2xl border border-outline-variant bg-surface-container-low shadow-[0_0_40px_rgba(129,140,248,0.15)] w-full max-w-[400px] p-6 flex flex-col gap-4" onClick={(e) => e.stopPropagation()} onSubmit={(e) => { e.preventDefault(); handleSubmit() }}>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" role="dialog" aria-modal="true" onClick={handleClose}>
+                <form className="fx-modal rounded-2xl border border-outline-variant bg-surface-container-low shadow-2xl w-full max-w-[400px] p-6 flex flex-col gap-4" onClick={(e) => e.stopPropagation()} onSubmit={(e) => { e.preventDefault(); handleSubmit() }}>
                     <div className="flex items-center justify-between">
                         <h2 className="flex items-center gap-2.5 font-sans text-body-lg font-bold text-on-surface"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/15"><span className="material-symbols-outlined text-[20px] text-accent">lock_reset</span></span>비밀번호 변경</h2>
                         <button type="button" onClick={handleClose} className="rounded-lg p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" aria-label="닫기">

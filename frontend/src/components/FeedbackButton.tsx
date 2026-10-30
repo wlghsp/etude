@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { submitFeedback } from '../api/feedback'
+import { useModalLock } from './useModalLock'
 
 interface Props {
     page: string
     questId?: number | null
     questSetId?: number | null
-    inline?: boolean // true 면 화면에 고정하지 않고 놓은 자리에 그대로 둔다 (문제 풀이 화면 헤더처럼 다른 버튼과 겹칠 때)
+    inline?: boolean // true 면 화면에 고정하지 않고 놓은 자리에 그대로 둔다 (문제 풀이 화면 헤더처럼). 아니면 상단 바의 소리 버튼(오른쪽 끝, 폭 42px) 왼쪽에 고정한다
 }
 
 export function FeedbackButton({ page, questId, questSetId, inline = false }: Props) {
@@ -13,10 +14,14 @@ export function FeedbackButton({ page, questId, questSetId, inline = false }: Pr
     const [body, setBody] = useState('')
     const [loading, setLoading] = useState(false)
     const [toast, setToast] = useState(false)
+    useModalLock(open)
+
+    // 닫으면 쓰던 내용도 비운다. 긴 글을 실수로 날리지 않도록 바깥을 눌러서는 글이 없을 때만 닫는다.
+    function close() { setOpen(false); setBody('') }
 
     useEffect(() => {
         if (!open) return
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
         window.addEventListener('keydown', onKey)
         return () => window.removeEventListener('keydown', onKey)
     }, [open])
@@ -41,7 +46,7 @@ export function FeedbackButton({ page, questId, questSetId, inline = false }: Pr
             <button
                 onClick={() => setOpen(true)}
                 title="피드백 보내기"
-                className={`${inline ? '' : 'fixed top-4 right-4 z-50'} flex items-center gap-1.5 rounded-lg px-3 py-1.5 border border-outline-variant bg-surface hover:border-rose/60 hover:bg-rose/10 hover:text-rose font-sans text-label-caps text-on-surface-variant transition-colors`}
+                className={`${inline ? '' : 'fixed top-[11px] right-[72px] z-50'} flex items-center gap-1.5 rounded-lg px-3 py-1.5 border border-outline-variant bg-surface hover:border-rose/60 hover:bg-rose/10 hover:text-rose font-sans text-label-caps text-on-surface-variant transition-colors`}
             >
                 <span className="material-symbols-outlined text-[16px]">feedback</span>
                 피드백
@@ -49,11 +54,11 @@ export function FeedbackButton({ page, questId, questSetId, inline = false }: Pr
 
             {/* 모달 */}
             {open && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" onClick={() => setOpen(false)}>
-                    <div className="fx-modal rounded-2xl border border-outline-variant bg-surface-container-low shadow-[0_0_40px_rgba(129,140,248,0.15)] w-full max-w-[480px] p-6 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" role="dialog" aria-modal="true" onClick={() => { if (!body.trim()) close() }}>
+                    <div className="fx-modal rounded-2xl border border-outline-variant bg-surface-container-low shadow-2xl w-full max-w-[480px] p-6 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="flex items-center gap-2.5 font-sans text-body-lg font-bold text-on-surface"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose/15"><span className="material-symbols-outlined text-[20px] text-rose">rate_review</span></span>피드백 보내기</h2>
-                            <button onClick={() => setOpen(false)} className="rounded-lg p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" aria-label="닫기">
+                            <button onClick={close} className="rounded-lg p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" aria-label="닫기">
                                 <span className="material-symbols-outlined text-[20px]">close</span>
                             </button>
                         </div>
@@ -74,7 +79,7 @@ export function FeedbackButton({ page, questId, questSetId, inline = false }: Pr
                         </div>
                         <div className="flex justify-end gap-2">
                             <button
-                                onClick={() => setOpen(false)}
+                                onClick={close}
                                 className="rounded-lg px-4 py-2 border border-outline-variant font-sans text-label-caps text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
                             >
                                 취소

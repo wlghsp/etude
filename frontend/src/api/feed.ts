@@ -30,7 +30,7 @@ export interface FeedEvent {
   perfect: boolean
   isFirst: boolean
   isReview: boolean
-  cheers: Array<{ kind: 'category' | 'unit' | 'challenge' | 'level' | 'streak' | 'badge'; icon: string; text: string }> // 이 완료로 처음 이룬 일 (우선순위 순)
+  cheers: Array<{ kind: 'category' | 'unit' | 'challenge' | 'level' | 'streak' | 'badge'; key: string; icon: string; text: string }> // 이 완료로 처음 이룬 일 (우선순위 순)
   reactions: Record<Reaction, number> // 반응 종류별 수
   myReaction: Reaction | null // 내가 남긴 반응 (한 사람 한 반응)
   comments: FeedComment[]
