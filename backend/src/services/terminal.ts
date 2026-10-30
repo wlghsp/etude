@@ -58,19 +58,27 @@ async function waitForSystemd(container: Docker.Container): Promise<void> {
     })
 }
 
+/**
+ * DB 의 setup_cmd 를 실행할 수 있는 형태로 다듬는다. 문자열 배열이 아니거나(예: ["sh","-c",null]) 비어 있으면 null (setup 없음).
+ * 잘못된 데이터 한 줄 때문에 터미널이 시작되지 않는 일을 막는다. $NS 는 세션 네임스페이스로 바꾼다.
+ */
+export function normalizeSetupCmd(cmd: unknown, containerId?: string): string[] | null {
+    if (!Array.isArray(cmd) || cmd.length === 0 || !cmd.every((s) => typeof s === 'string')) return null
+    if (!containerId) return cmd as string[]
+    const ns = `quest-${containerId.slice(0, 8)}`
+    return (cmd as string[]).map((s) => s.replace(/\$NS/g, ns))
+}
+
 async function runSetupCmd(
   container: Docker.Container, 
   questId: number | null,
   containerId?: string
 ): Promise<void> {
     if (questId === null) return
-    let setupCmd = await getSetupCmd(questId)
-    if (!setupCmd) return
-
-    if (containerId) {
-      const ns = `quest-${containerId.slice(0, 8)}`
-      setupCmd = setupCmd.map((s: string) => s.replace(/\$NS/g, ns))
-    }
+    const raw = await getSetupCmd(questId)
+    if (!raw) return
+    const setupCmd = normalizeSetupCmd(raw, containerId)
+    if (!setupCmd) { console.error(`[terminal] 문제 ${questId} 의 setup_cmd 가 올바르지 않아 건너뜁니다`, JSON.stringify(raw)); return }
 
     const exec = await container.exec({ Cmd: setupCmd, AttachStdout: true, AttachStderr: true })
     await new Promise<void>((resolve, reject) => {

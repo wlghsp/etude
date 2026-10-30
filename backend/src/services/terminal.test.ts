@@ -15,7 +15,7 @@ vi.mock('./vcluster-pool.js', () => ({
     releaseVcluster: vi.fn(async () => {}),
 }))
 
-import { handleTerminal } from './terminal.js'
+import { handleTerminal, normalizeSetupCmd } from './terminal.js'
 import { getSession } from './session-registry.js'
 import { getSandboxConfig } from './sandbox.js'
 import { sandboxLimits } from './sandbox-limits.js'
@@ -408,5 +408,21 @@ describe('샌드박스 자원 상한', () => {
         const host = limitsOf(await connect('k8s'))
 
         expect(host.Memory).toBe(sandboxLimits('k8s').Memory)
+    })
+})
+
+
+describe('normalizeSetupCmd — 잘못된 setup_cmd 로 터미널이 죽지 않게', () => {
+    it('문자열 배열이면 그대로 돌려주고, $NS 는 세션 네임스페이스로 바꾼다', () => {
+        expect(normalizeSetupCmd(['sh', '-c', 'kubectl get pods -n $NS'], 'abcd1234ffff')).toEqual(['sh', '-c', 'kubectl get pods -n quest-abcd1234'])
+        expect(normalizeSetupCmd(['sh', '-c', 'echo hi'])).toEqual(['sh', '-c', 'echo hi'])
+    })
+
+    it('null 요소가 든 배열(["sh","-c",null])이나 배열이 아닌 값, 빈 배열은 null (setup 없음으로 본다)', () => {
+        expect(normalizeSetupCmd(['sh', '-c', null])).toBeNull()
+        expect(normalizeSetupCmd(['sh', 1 as any])).toBeNull()
+        expect(normalizeSetupCmd('echo hi')).toBeNull()
+        expect(normalizeSetupCmd([])).toBeNull()
+        expect(normalizeSetupCmd(null)).toBeNull()
     })
 })

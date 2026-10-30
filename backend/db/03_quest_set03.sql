@@ -143,5 +143,5 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
 # nohup : 터미널이 닫혀도(SIGHUP) 계속 실행
 # > /dev/null 2>&1 : 출력을 버려 nohup.out 이 생기지 않게 함, & : 백그라운드
 pgrep -a sleep',
-   '["sh", "-c", null]',
+   NULL,
    '["sh", "-c", "pgrep -f ''[s]leep 300'' >/dev/null"]');

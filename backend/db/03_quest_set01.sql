@@ -135,7 +135,7 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
 # $? : 직전 명령의 종료 코드 (성공 0, 실패는 0 이 아닌 값)
 # ls 는 대상이 없으면 2 를 돌려준다
 cat /tmp/rc.txt',
-   '["sh", "-c", null]',
+   NULL,
    '["sh", "-c", "[ \\"$(tr -d ''[:space:]'' < /tmp/rc.txt)\\" = 2 ]"]');
 
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
@@ -161,7 +161,7 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
 `../../notes.txt` 가 가리키는 파일을 고르세요.',
    '`..` 는 **한 단계 위** 디렉터리입니다. `src` 에서 `..` 는 `project`, `../..` 는 그 위입니다. 각 파일에 어느 디렉터리의 것인지 적혀 있으니 `cat` 으로 읽어 보세요.',
    NULL,
-   NULL,
+   '["sh", "-c", "mkdir -p /tmp/h/user/project/src && echo src > /tmp/h/user/project/src/notes.txt && echo project > /tmp/h/user/project/notes.txt && echo user > /tmp/h/user/notes.txt && echo h > /tmp/h/notes.txt"]',
    '[]',
    'choice',
    '["`/tmp/h/user/project/src/notes.txt` (지금 위치의 파일)", "`/tmp/h/user/project/notes.txt`", "`/tmp/h/user/notes.txt`", "`/tmp/h/notes.txt`"]',

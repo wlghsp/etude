@@ -176,6 +176,7 @@ function App() {
   function handleSetSelect(id: number, sandboxType: string) {
     setCombo(0)
     history.pushState({ page: 'home', setId: id }, '')
+    setPage('home') // 복습 같은 다른 화면에서 세트를 고를 때도 문제 화면으로 넘어가도록 (page 가 남아 있으면 그 화면이 계속 그려진다)
     setSelectedSetId(id)
     // 이전 세트의 퀘스트로 터미널이 마운트되면 서버가 잘못된 세트로 세션을 만든다. 새 목록이 올 때까지 비운다.
     setQuests([])
