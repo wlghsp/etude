@@ -181,3 +181,19 @@ ls -li /tmp/orig.txt /tmp/hard.txt',
 # %s : 크기(size, 바이트)',
    '["sh", "-c", "head -c 1234 /dev/zero > /tmp/data.bin"]',
    '["sh", "-c", "[ \\"$(tr -d ''[:space:]'' < /tmp/size.txt)\\" = 1234 ]"]');
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
+  (21, 16, '사용자를 삭제하고 홈 디렉터리까지 정리하기',
+   '퇴사나 계정 정리로 사용자를 지울 때 `userdel 이름` 만 쓰면 **계정만** 지워지고 **홈 디렉터리(`/home/이름`)와 파일은 남습니다.** 남은 파일은 나중에 같은 번호(UID)를 받은 다른 사용자가 열 수 있어 보안상 정리해야 합니다.
+
+사용자 `olduser` 를 삭제하고 **홈 디렉터리도 함께** 지우세요.
+
+완료 조건: 사용자 `olduser` 가 없고 `/home/olduser` 도 없어야 합니다.',
+   '`userdel -r 이름` 입니다. (`-r` 은 remove 로 홈 디렉터리와 메일 보관함까지 함께 삭제) 먼저 `id olduser` 와 `ls -ld /home/olduser` 로 계정과 홈이 있는지 확인하고, 삭제한 뒤 다시 확인해 보세요.',
+   'userdel -r olduser
+
+# -r : 홈 디렉터리와 메일 보관함까지 삭제
+id olduser          # 오류: no such user
+ls -ld /home/olduser # 오류: 없음',
+   '["sh", "-c", "useradd -m olduser >/dev/null 2>&1; echo data > /home/olduser/file.txt"]',
+   '["sh", "-c", "! id olduser >/dev/null 2>&1 && [ ! -d /home/olduser ]"]');

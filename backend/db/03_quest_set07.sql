@@ -109,3 +109,33 @@ INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution
 # ls -lh : 크기를 읽기 쉬운 단위로',
    '["sh", "-c", "mkdir -p /tmp/files && for i in $(seq 1 10); do echo content$i > /tmp/files/file$i.txt; done"]',
    '["sh", "-c", "grep -q compare /tmp/size_compare.txt"]');
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
+  (7, 10, 'gzip 으로 파일 하나 압축하기',
+   '`tar` 는 여러 파일을 **묶는** 도구이고, 파일 **하나**를 압축할 때는 `gzip` 을 씁니다. 로그 파일처럼 큰 텍스트를 줄일 때 많이 씁니다.
+
+`/tmp/gz/notes.txt` 를 `gzip` 으로 압축하세요.
+
+완료 조건: `/tmp/gz/notes.txt.gz` 가 있어야 합니다. (`gzip` 은 기본적으로 **원본을 지우고** `.gz` 파일만 남깁니다)',
+   '`gzip 파일이름` 입니다. 압축하면 `파일이름.gz` 가 만들어지고 원본 `파일이름` 은 사라집니다. 원본을 남기려면 `-k`(keep) 옵션을 붙입니다. 결과는 `ls -l /tmp/gz` 로 확인하세요.',
+   'gzip /tmp/gz/notes.txt
+
+# 원본(notes.txt)은 사라지고 notes.txt.gz 만 남는다 (원본을 남기려면 gzip -k)
+ls -l /tmp/gz',
+   '["sh", "-c", "mkdir -p /tmp/gz && for i in $(seq 1 200); do echo \\"line $i of the notes file\\"; done > /tmp/gz/notes.txt"]',
+   '["sh", "-c", "[ -f /tmp/gz/notes.txt.gz ] && [ ! -f /tmp/gz/notes.txt ]"]');
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
+  (7, 11, 'gunzip 으로 .gz 파일 풀기',
+   '`.gz` 로 압축된 파일은 `gunzip` 으로 풉니다. (`gzip -d` 와 같습니다) `tar.gz` 가 아니라 **파일 하나**를 `gzip` 으로만 압축한 파일입니다.
+
+`/tmp/gz2/data.txt.gz` 를 풀어서 원래 파일 `data.txt` 를 만드세요.
+
+완료 조건: `/tmp/gz2/data.txt` 가 있고 내용에 `hello` 가 있어야 합니다.',
+   '`gunzip 파일.gz` 입니다. 풀면 `.gz` 를 뗀 이름의 파일이 만들어지고 `.gz` 파일은 사라집니다. `.gz` 를 남기려면 `-k` 를 붙입니다. 풀린 내용은 `cat` 으로 확인하세요.',
+   'gunzip /tmp/gz2/data.txt.gz
+
+# data.txt.gz 가 data.txt 로 풀린다 (gzip -d 와 같다, .gz 를 남기려면 -k)
+cat /tmp/gz2/data.txt',
+   '["sh", "-c", "mkdir -p /tmp/gz2 && echo hello gzip > /tmp/gz2/data.txt && gzip /tmp/gz2/data.txt"]',
+   '["sh", "-c", "[ -f /tmp/gz2/data.txt ] && grep -q hello /tmp/gz2/data.txt"]');

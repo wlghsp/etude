@@ -9,6 +9,8 @@
     "6": "mkdir -p /tmp/extract && tar -xzvf /tmp/archive.tar.gz -C /tmp/extract",
     "7": "zip -r /tmp/files.zip /tmp/files",
     "8": "unzip /tmp/files.zip -d /tmp/unzipped",
-    "9": "tar -czvf /tmp/compare.tar.gz /tmp/files && zip -r /tmp/compare.zip /tmp/files && ls -lh /tmp/compare.tar.gz /tmp/compare.zip > /tmp/size_compare.txt"
+    "9": "tar -czvf /tmp/compare.tar.gz /tmp/files && zip -r /tmp/compare.zip /tmp/files && ls -lh /tmp/compare.tar.gz /tmp/compare.zip > /tmp/size_compare.txt",
+    "10": "gzip /tmp/gz/notes.txt",
+    "11": "gunzip /tmp/gz2/data.txt.gz"
   }
 }

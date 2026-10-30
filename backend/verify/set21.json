@@ -15,6 +15,7 @@
     "12": "su deploy -c whoami > /tmp/who.txt",
     "13": "umask 077\ntouch /tmp/private.txt",
     "14": "ln /tmp/orig.txt /tmp/hard.txt",
-    "15": "stat -c %s /tmp/data.bin > /tmp/size.txt"
+    "15": "stat -c %s /tmp/data.bin > /tmp/size.txt",
+    "16": "userdel -r olduser"
   }
 }
