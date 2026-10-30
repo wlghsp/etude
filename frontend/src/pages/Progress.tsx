@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { groupByUnit } from "../units"
-import { weekActivity, currentStreak, type DayActivity } from "../activity"
-import { computeBadges, computeXp, levelInfo, type Badge, type LevelInfo } from "../gamification"
-import { WeekStrip } from "../components/WeekStrip"
-import { fetchProgress, type CompletionRecord, type SetProgress } from "../api/user"
+import { fetchGamification, fetchProgress, type CompletionRecord, type Gamification, type SetProgress } from "../api/user"
 import { TopNav } from "../components/TopNav"
 import { SideNav } from "../components/SideNav"
 import { formatDuration } from "../components/useQuestTimer"
@@ -11,6 +8,9 @@ import { formatDuration } from "../components/useQuestTimer"
 interface Props {
     onBack: () => void
     onLeaderboard: () => void
+    onHall: () => void
+    onReview: () => void
+    onFeed: () => void
     onAdmin?: () => void
     onLogout: () => void
     onChangePassword: () => void
@@ -28,18 +28,19 @@ const formatDate = (iso: string) => {
 }
 
 // 세트 완료가 기록의 단위다. 문제별 체크나 진행률은 보여 주지 않고, 완료 기록 안에 문제별 내역을 읽기 전용으로 둔다.
-export function Progress({ onBack, onLeaderboard, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
+export function Progress({ onBack, onLeaderboard, onHall, onReview, onFeed, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
     const [sets, setSets] = useState<SetProgress[] | null>(null)
     const [error, setError] = useState<string | null>(null)
-    const [activity, setActivity] = useState<DayActivity[] | null>(null)
-    const [badges, setBadges] = useState<Badge[] | null>(null)
-    const [level, setLevel] = useState<LevelInfo | null>(null)
+    const [gami, setGami] = useState<Gamification | null>(null)
+    const badges = gami?.badges ?? null
+    const level = gami?.level ?? null
     const [filter, setFilter] = useState<Filter>({ kind: 'all' })
     const [openSets, setOpenSets] = useState<Set<number>>(new Set())
     const [openRecords, setOpenRecords] = useState<Set<number>>(new Set())
 
     useEffect(() => {
-        fetchProgress().then((rows) => { const now = new Date(); setSets(rows); setActivity(weekActivity(rows, now)); setBadges(computeBadges(rows, currentStreak(rows, now))); setLevel(levelInfo(computeXp(rows))) }).catch((e) => setError(e instanceof Error ? e.message : '진행현황을 불러오지 못했습니다.'))
+        fetchGamification().then(setGami).catch(() => { /* 배지가 없어도 진행현황은 보인다 */ })
+        fetchProgress().then((rows) => { setSets(rows) }).catch((e) => setError(e instanceof Error ? e.message : '진행현황을 불러오지 못했습니다.'))
     }, [])
 
     const list = sets ?? []
@@ -115,7 +116,7 @@ export function Progress({ onBack, onLeaderboard, onAdmin, onLogout, onChangePas
         <div className="dark min-h-screen bg-surface flex flex-col">
             <TopNav onHome={onBack} />
             <div className="flex flex-1 pt-14">
-                <SideNav activePage="progress" userName={userName} userEmail={userEmail} userRole={userRole} onHome={onBack} onProgress={() => {}} onLeaderboard={onLeaderboard} onAdmin={onAdmin} onLogout={onLogout} onChangePassword={onChangePassword} />
+                <SideNav activePage="progress" userName={userName} userEmail={userEmail} userRole={userRole} onHome={onBack} onProgress={() => {}} onLeaderboard={onLeaderboard} onHall={onHall} onReview={onReview} onFeed={onFeed} onAdmin={onAdmin} onLogout={onLogout} onChangePassword={onChangePassword} />
 
                 <main className="fx-page flex-1 md:ml-60 flex flex-col items-center px-gutter py-8 bg-surface">
                     <div className="w-full max-w-[900px] flex flex-col gap-8">
@@ -142,16 +143,6 @@ export function Progress({ onBack, onLeaderboard, onAdmin, onLogout, onChangePas
                                 {card('timer', 'text-primary', '총 학습 시간', totalSeconds > 0 ? formatDuration(totalSeconds) : '-')}
                                 {card('calendar_month', 'text-primary', '이번 주 완료', `${weekCount}`, '회')}
                             </section>
-
-                            {activity && (
-                                <section className="rounded-xl border border-outline-variant bg-gradient-to-r from-gold/10 via-transparent to-transparent p-5 flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
-                                    <div className="min-w-0">
-                                        <h2 className="font-sans text-headline-md text-on-surface">최근 7일</h2>
-                                        <p className="font-sans text-body-md text-on-surface-variant">세트를 끝낸 날은 불이 켜져요. 숫자는 그날 끝낸 세트 수예요.</p>
-                                    </div>
-                                    <div className="md:ml-auto"><WeekStrip days={activity} /></div>
-                                </section>
-                            )}
 
                             {badges && (
                                 <section className="flex flex-col gap-4">

@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
 import type { QuestSet } from "../types";
 import { fetchQuestSets } from "../api/quest";
-import { fetchProgress } from "../api/user";
+import { fetchGamification, fetchGoals, fetchProgress, type Gamification, type Goals, type LevelInfo } from "../api/user";
 import { SideNav } from "../components/SideNav";
 import { TopNav } from "../components/TopNav";
 import { groupByUnit } from "../units";
 import { ProgressRing } from "../components/ProgressRing";
+import { GoalsPanel } from "../components/GoalsPanel";
 import { WeekStrip } from "../components/WeekStrip";
-import { weekActivity, currentStreak, type DayActivity } from "../activity";
-import { computeXp, levelInfo, type LevelInfo } from "../gamification";
+import { weekActivity, type DayActivity } from "../activity";
 
 interface Props {
     onSelect: (setId: number, sandboxType: string) => void
     onProgress: () => void
     onLeaderboard: () => void
+    onHall: () => void
+    onReview: () => void
+    onFeed: () => void
     onAdmin?: () => void
     onLogout: () => void
     onChangePassword: () => void
@@ -40,35 +43,40 @@ interface Stats {
     level: LevelInfo // 경험치와 레벨
 }
 
-export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
+export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onReview, onFeed, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
     const [sets, setSets] = useState<QuestSet[]>([])
     // 세트별 완료 횟수. 세트 완료만 기록으로 보여 주고, 문제별 진행은 보여 주지 않는다.
     const [completedCount, setCompletedCount] = useState<Record<number, number>>({})
     // 사용자가 직접 펼치거나 접은 분야만 기억하고, 그 밖에는 "이어서 학습할 분야"를 펼쳐 둔다
-    const [toggled, setToggled] = useState<Record<string, boolean>>({})
+    const [chosen, setChosen] = useState<string | null>(() => { try { return localStorage.getItem('etude.category') } catch { return null } })
     const [stats, setStats] = useState<Stats | null>(null)
+    const [goals, setGoals] = useState<Goals | null>(null)
+    // 다시 풀기 추천: 힌트·풀이를 많이 쓰고 끝낸 세트 (본인에게만 보인다)
+    const [retry, setRetry] = useState<Array<{ id: number; title: string; category: string; assistedPct: number }>>([])
 
     useEffect(() => {
         fetchQuestSets().then(setSets)
-        fetchProgress().then((rows) => {
+        fetchGoals().then(setGoals).catch(() => { /* 목표가 없어도 세트는 고를 수 있다 */ })
+        const noLevel: Gamification = { xp: 0, level: { level: 1, title: '새싹', xp: 0, into: 0, need: 100, pct: 0 }, streak: 0, badges: [] }
+        Promise.all([fetchProgress(), fetchGamification().catch(() => noLevel)]).then(([rows, gami]) => {
             const map: Record<number, number> = {}
             rows.forEach(r => { map[r.questSetId] = r.completions.length })
             setCompletedCount(map)
+            setRetry(rows.filter((r) => r.retry).map((r) => ({ id: r.questSetId, title: r.title, category: r.category, assistedPct: r.retry!.assistedPct })).sort((a, b) => b.assistedPct - a.assistedPct).slice(0, 3))
 
-            // 연속 학습일·이번 주 완료·마지막 분야는 완료 기록에서 계산한다 (세트 완료만 센다)
+            // 이번 주 완료·마지막 분야는 완료 기록에서 계산하고, 연속 학습일·레벨은 서버 값을 쓴다 (세트 완료만 센다)
             const all = rows.flatMap((r) => r.completions.map((c) => ({ at: new Date(c.completedAt), category: r.category })))
             const now = new Date()
-            const streak = currentStreak(rows, now)
             const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000
             const latest = all.reduce<{ at: Date; category: string } | null>((best, c) => (!best || c.at > best.at ? c : best), null)
             setStats({
                 completed: rows.filter((r) => r.completions.length > 0).length,
                 total: rows.length,
                 weekCount: all.filter((c) => c.at.getTime() >= weekAgo).length,
-                streak,
+                streak: gami.streak,
                 lastCategory: latest?.category ?? null,
                 week: weekActivity(rows, now),
-                level: levelInfo(computeXp(rows)),
+                level: gami.level,
             })
         }).catch(() => { /* 완료 표시가 없어도 세트는 고를 수 있다 */ })
     }, [])
@@ -85,11 +93,13 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
     const nextIn = (category: string) => grouped[category]?.find((s) => (completedCount[s.id] ?? 0) === 0)
     const recommendedCategory = startCategory && nextIn(startCategory) ? startCategory : categoryOrder.find((c) => nextIn(c))
     const nextSet = recommendedCategory ? nextIn(recommendedCategory) : undefined
-    const isOpenCategory = (category: string) => toggled[category] ?? category === recommendedCategory
+    // 분야 카드로 고른 분야 (고른 적이 없으면 이어서 학습할 분야). 마지막으로 고른 분야는 기억해 둔다.
+    const selectedCategory = chosen && grouped[chosen] ? chosen : (recommendedCategory ?? categoryOrder[0])
     const totalPct = stats && stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0
 
-    function toggleCategory(category: string) {
-        setToggled((prev) => ({ ...prev, [category]: !isOpenCategory(category) }))
+    function chooseCategory(category: string) {
+        setChosen(category)
+        try { localStorage.setItem('etude.category', category) } catch { /* 기억하지 못해도 화면은 그대로다 */ }
     }
 
     return (
@@ -97,7 +107,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
             <TopNav onHome={() => {}} />
 
             <div className="flex flex-1 pt-14">
-                <SideNav activePage="home" userName={userName} userEmail={userEmail} userRole={userRole} onHome={() => {}} onProgress={onProgress} onLeaderboard={onLeaderboard} onAdmin={onAdmin} onLogout={onLogout} onChangePassword={onChangePassword} />
+                <SideNav activePage="home" userName={userName} userEmail={userEmail} userRole={userRole} onHome={() => {}} onProgress={onProgress} onLeaderboard={onLeaderboard} onHall={onHall} onReview={onReview} onFeed={onFeed} onAdmin={onAdmin} onLogout={onLogout} onChangePassword={onChangePassword} />
 
                 <main className="fx-page flex-1 md:ml-60 p-8 bg-surface bg-[radial-gradient(ellipse_at_top_right,rgba(167,139,250,0.14),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(56,189,248,0.08),transparent_50%)]">
                     <div className="max-w-[1000px] mx-auto space-y-8">
@@ -127,8 +137,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
                                             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-sans text-label-caps ${stats.streak > 0 ? 'border-gold/50 bg-gold/10 text-gold' : 'border-outline-variant text-on-surface-variant'}`}>
                                                 🔥 {stats.streak > 0 ? `연속 ${stats.streak}일 학습 중` : '오늘 첫 세트를 끝내면 연속 기록이 시작돼요'}
                                             </span>
-                                            <span className="inline-flex items-center gap-1.5 rounded-full border border-success/40 bg-success/10 px-3 py-1 font-sans text-label-caps text-success">✅ 완료 {stats.completed}/{stats.total} 세트</span>
-                                            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky/40 bg-sky/10 px-3 py-1 font-sans text-label-caps text-sky">📅 최근 7일 {stats.weekCount}회 완료</span>
+                                            <span className="lg:hidden inline-flex items-center gap-1.5 rounded-full border border-sky/40 bg-sky/10 px-3 py-1 font-sans text-label-caps text-sky">📅 최근 7일 {stats.weekCount}회 완료</span>
                                         </div>
                                     </div>
                                     <div className="hidden lg:block shrink-0"><WeekStrip days={stats.week} /></div>
@@ -144,35 +153,70 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
                                 </div>
                             </section>
                         )}
-                        {Object.entries(grouped).map(([category, items]) => {
-                            const meta = CATEGORY_META[category] ?? DEFAULT_META
-                            const catDone = items.filter((s) => (completedCount[s.id] ?? 0) > 0).length
-                            const catPct = items.length > 0 ? Math.round((catDone / items.length) * 100) : 0
-                            const isOpen = isOpenCategory(category)
-                            const nextHere = nextIn(category)
-                            return (
-                                <section key={category}>
+                        {goals && <GoalsPanel goals={goals} />}
+
+                        {retry.length > 0 && (
+                            <section aria-label="다시 풀기 추천" className="rounded-xl border border-gold/40 bg-gradient-to-r from-gold/10 via-transparent to-transparent p-5">
+                                <div className="flex items-baseline justify-between gap-3">
+                                    <h2 className="font-sans text-headline-md text-on-surface">💪 퍼펙트에 도전해 볼까요?</h2>
+                                    <button onClick={onReview} className="font-sans text-label-caps text-info hover:underline">복습 모두 보기 →</button>
+                                </div>
+                                <p className="mt-1 font-sans text-body-md text-on-surface-variant">힌트나 풀이의 도움을 받고 끝낸 세트예요. 한 번 더 풀면 더 단단해져요.</p>
+                                <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                                    {retry.map((r) => {
+                                        const meta = CATEGORY_META[r.category] ?? DEFAULT_META
+                                        const setInfo = sets.find((s) => s.id === r.id)
+                                        return (
+                                            <button
+                                                key={r.id}
+                                                onClick={() => setInfo && onSelect(r.id, setInfo.sandbox_type)}
+                                                disabled={!setInfo}
+                                                className={`flex-1 min-w-0 rounded-lg border ${meta.border} bg-surface-container px-4 py-3 text-left hover:bg-surface-container-high transition-colors disabled:opacity-50`}
+                                            >
+                                                <span className={`font-sans text-label-caps ${meta.text}`}>{meta.icon} {r.category}</span>
+                                                <span className="mt-0.5 block truncate font-sans text-body-md font-semibold text-on-surface">#{r.id} {r.title}</span>
+                                                <span className="mt-0.5 block font-sans text-code-sm text-on-surface-variant">다시 풀기 →</span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </section>
+                        )}
+                        <div role="tablist" aria-label="분야" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {Object.entries(grouped).map(([category, items]) => {
+                                const meta = CATEGORY_META[category] ?? DEFAULT_META
+                                const catDone = items.filter((s) => (completedCount[s.id] ?? 0) > 0).length
+                                const catPct = items.length > 0 ? Math.round((catDone / items.length) * 100) : 0
+                                const nextHere = nextIn(category)
+                                const selected = category === selectedCategory
+                                return (
                                     <button
-                                        onClick={() => toggleCategory(category)}
-                                        aria-expanded={isOpen}
-                                        className={`w-full flex items-center gap-4 rounded-lg border border-outline-variant bg-gradient-to-r ${meta.grad} to-transparent px-5 py-4 text-left hover:border-primary/50 transition-colors`}
+                                        key={category}
+                                        role="tab"
+                                        aria-selected={selected}
+                                        onClick={() => chooseCategory(category)}
+                                        className={`flex items-center gap-3 rounded-xl border-2 bg-gradient-to-br ${meta.grad} to-transparent px-4 py-3 text-left transition-all ${selected ? `${meta.border} shadow-[0_0_24px_rgba(129,140,248,0.15)]` : 'border-outline-variant opacity-80 hover:opacity-100 hover:border-outline'}`}
                                     >
-                                        <span className="text-[34px] leading-none">{meta.icon}</span>
-                                        <div className="min-w-0">
+                                        <span className="text-[30px] leading-none">{meta.icon}</span>
+                                        <div className="min-w-0 flex-1">
                                             <h2 className={`font-sans text-headline-md ${meta.text}`}>{category}</h2>
-                                            <p className="font-sans text-code-sm text-on-surface-variant truncate">{nextHere ? `다음: #${nextHere.id} ${nextHere.title}` : '모든 세트를 끝냈어요! 🎉'}</p>
+                                            <p className="font-sans text-code-sm text-on-surface-variant truncate">{nextHere ? `다음: #${nextHere.id} ${nextHere.title}` : '모두 끝냈어요! 🎉'}</p>
+                                            <p className="font-sans text-code-sm text-on-surface-variant tabular-nums">완료 {catDone}/{items.length} 세트</p>
                                         </div>
-                                        <span className="ml-auto font-sans text-code-sm text-on-surface-variant shrink-0">완료 {catDone}/{items.length} 세트</span>
-                                        <ProgressRing value={catPct} size={48} stroke={5} className={meta.ring}>
+                                        <ProgressRing value={catPct} size={44} stroke={5} className={meta.ring}>
                                             <span className="font-sans text-[11px] font-bold text-on-surface tabular-nums">{catPct}%</span>
                                         </ProgressRing>
-                                        <span className="material-symbols-outlined text-on-surface-variant transition-transform" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                                            expand_more
-                                        </span>
                                     </button>
+                                )
+                            })}
+                        </div>
+                        {Object.entries(grouped).filter(([category]) => category === selectedCategory).map(([category, items]) => {
+                            const meta = CATEGORY_META[category] ?? DEFAULT_META
+                            return (
+                                <section key={category} role="tabpanel">
 
-                                    {isOpen && (
-                                        <div className="mt-6 space-y-8">
+                                    {(
+                                        <div className="space-y-8">
                                             {groupByUnit(items, (s) => ({ unitId: s.unit_id, unitTitle: s.unit_title, unitOrder: s.unit_order })).map((g) => {
                                                 const done = g.items.filter((s) => (completedCount[s.id] ?? 0) > 0).length
                                                 return (
@@ -207,7 +251,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
                                                                                 <h3 className="font-sans text-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">
                                                                                     <span className="text-on-surface-variant font-normal mr-2">#{s.id}</span>{s.title}
                                                                                     {s.sandbox_type === 'quiz' && <span className="ml-2 px-1.5 py-0.5 align-middle border border-primary/50 text-primary font-sans text-label-caps font-normal">퀴즈</span>}
-                                                                                    {s.is_review && <span className="ml-2 px-1.5 py-0.5 align-middle border border-primary/50 text-primary font-sans text-label-caps font-normal">복습</span>}
+                                                                                    {s.is_review && <span className="ml-2 px-1.5 py-0.5 align-middle border border-primary/50 text-primary font-sans text-label-caps font-normal">복습</span>}{s.time_limit_sec && <span className="ml-2 px-1.5 py-0.5 align-middle rounded border border-warning/50 text-warning font-sans text-label-caps font-normal">⏱ {Math.round(s.time_limit_sec / 60)}분</span>}
                                                                                 </h3>
                                                                                 <p className="font-sans text-code-sm text-on-surface-variant">{s.description}</p>
                                                                             </div>

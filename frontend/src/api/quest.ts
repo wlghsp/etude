@@ -11,10 +11,17 @@ export async function fetchQuests(setId: number) {
 // 채점 요청이 HTTP 오류로 끝났을 때. 화면이 상태 코드별로 안내 문구를 고른다.
 export class GradeRequestError extends Error {
   status: number
-  constructor(status: number) {
+  expired: boolean // 시간 제한 세트에서 마감이 지나 거부됐을 때
+  constructor(status: number, expired = false) {
     super(`grade failed: ${status}`)
     this.status = status
+    this.expired = expired
   }
+}
+
+async function requestError(r: Response) {
+  const body = await r.json().catch(() => null)
+  return new GradeRequestError(r.status, Boolean(body?.expired))
 }
 
 export async function gradeQuest(
@@ -29,8 +36,8 @@ export async function gradeQuest(
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ containerId, questId, sessionId, elapsedSec, hintUsed, solutionUsed }),
-  }).then((r) => {
-    if (!r.ok) throw new GradeRequestError(r.status)
+  }).then(async (r) => {
+    if (!r.ok) throw await requestError(r)
     return r.json()
   })
 }
@@ -42,7 +49,7 @@ export async function completeSet(setId: number, sessionId: string): Promise<voi
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ sessionId }),
   })
-  if (!r.ok) throw new GradeRequestError(r.status)
+  if (!r.ok) throw await requestError(r)
 }
 
 // 객관식 답 제출. 서버가 정답을 판정하고, 정답일 때만 해설을 돌려준다.
@@ -55,6 +62,17 @@ export async function answerChoice(
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(body),
   })
-  if (!r.ok) throw new GradeRequestError(r.status)
+  if (!r.ok) throw await requestError(r)
+  return r.json()
+}
+
+// 시간 제한 세트(시험형)를 시작한다. 시작 시각은 서버가 기록하고, 제한이 없는 세트는 null 을 돌려준다.
+export async function startSet(setId: number, sessionId: string): Promise<{ limitSec: number | null; remainingSec: number | null }> {
+  const r = await fetch(`${BASE}/quest-sets/${setId}/start`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ sessionId }),
+  })
+  if (!r.ok) throw await requestError(r)
   return r.json()
 }

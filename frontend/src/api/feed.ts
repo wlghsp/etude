@@ -22,6 +22,7 @@ export interface FeedEvent {
   perfect: boolean
   isFirst: boolean
   isReview: boolean
+  cheers: Array<{ kind: 'category' | 'unit' | 'challenge' | 'level' | 'streak' | 'badge'; icon: string; text: string }> // 이 완료로 처음 이룬 일 (우선순위 순)
   likes: number
   likedByMe: boolean
   comments: FeedComment[]
@@ -35,9 +36,10 @@ async function parse<T>(res: Response): Promise<T> {
   return res.json()
 }
 
+// 본문이 없는 요청(좋아요, 본 시각 기록)에 JSON 헤더를 붙이면 서버가 "빈 JSON 본문"으로 400 을 돌려주므로, 본문이 있을 때만 붙인다.
 const post = (url: string, body?: unknown) => fetch(`${BASE}${url}`, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json', ...authHeaders() },
+  headers: body === undefined ? authHeaders() : { 'Content-Type': 'application/json', ...authHeaders() },
   body: body === undefined ? undefined : JSON.stringify(body),
 })
 

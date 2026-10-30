@@ -19,6 +19,7 @@ export interface QuestSet {
   sandbox_type: string
   category: string
   is_review: boolean
+  time_limit_sec: number | null
   unit_id: number | null
   unit_title: string | null
   unit_order: number | null

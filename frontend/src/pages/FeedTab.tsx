@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchFeed, postComment, removeComment, toggleLike, type FeedEvent } from '../api/feed'
 import { timeAgo } from '../activity'
+import { fetchReport, type Report } from '../api/user'
 import { ConfirmModal } from '../components/ConfirmModal'
 
 const CATEGORY_TEXT: Record<string, string> = { '리눅스': 'text-warning', '도커': 'text-sky', 'k8s': 'text-accent' }
@@ -15,6 +16,7 @@ export function FeedTab({ userName }: Props) {
     const [events, setEvents] = useState<FeedEvent[] | null>(null)
     const [now, setNow] = useState<Date>(() => new Date(0))
     const [error, setError] = useState('')
+    const [mvp, setMvp] = useState<Report['mvp']>(null) // 이번 주 MVP (명예의 전당과 같은 계산)
     const [hasMore, setHasMore] = useState(false)
     const [moreLoading, setMoreLoading] = useState(false)
     const [openComments, setOpenComments] = useState<Set<number>>(new Set())
@@ -25,6 +27,8 @@ export function FeedTab({ userName }: Props) {
     useEffect(() => {
         fetchFeed().then((list) => { setEvents(list); setHasMore(list.length >= 20); setNow(new Date()) }).catch((e) => setError(e instanceof Error ? e.message : '소식을 불러오지 못했어요.'))
     }, [])
+
+    useEffect(() => { fetchReport().then((r) => setMvp(r.mvp)).catch(() => { /* MVP 배너가 없어도 소식은 보인다 */ }) }, [])
 
     const patch = (id: number, fn: (e: FeedEvent) => FeedEvent) => setEvents((list) => list && list.map((e) => (e.id === id ? fn(e) : e)))
     const say = (id: number, text: string) => setNotice((n) => ({ ...n, [id]: text }))
@@ -89,6 +93,15 @@ export function FeedTab({ userName }: Props) {
     return (
         <div className="space-y-4 max-w-[760px]">
             {error && <p className="font-sans text-body-md text-error">{error}</p>}
+            {mvp && (
+                <div className="flex items-center gap-3 rounded-xl border border-gold/50 bg-gradient-to-r from-gold/20 via-rose/10 to-transparent px-5 py-4">
+                    <span className="text-[32px] leading-none">🏅</span>
+                    <p className="font-sans text-body-md text-on-surface">
+                        이번 주 MVP는 <strong className="text-gold">{mvp.userName}</strong> 님이에요{mvp.userName === userName && ' (나!)'} 🎉
+                        <span className="block font-sans text-code-sm text-on-surface-variant">최근 7일 동안 세트 {mvp.weekCount}개를 끝냈어요{mvp.streak > 0 && ` · 🔥 ${mvp.streak}일 연속`}</span>
+                    </p>
+                </div>
+            )}
             {events.map((ev, idx) => {
                 const mine = ev.userName === userName
                 const open = openComments.has(ev.id)
@@ -103,7 +116,14 @@ export function FeedTab({ userName }: Props) {
                                     <strong>#{ev.questSetId} {ev.setTitle}</strong> 을(를) 완료했어요 🎉
                                 </p>
                                 <p className="mt-1 font-sans text-code-sm text-on-surface-variant">{timeAgo(ev.completedAt, now)} · 문제 {ev.questCount}개</p>
+                                {ev.cheers[0] && (
+                                    <div className="fx-shine-border mt-3 flex items-center gap-3 rounded-lg border border-gold/50 bg-gradient-to-r from-gold/20 via-rose/10 to-transparent px-4 py-3">
+                                        <span className="text-[28px] leading-none">{ev.cheers[0].icon}</span>
+                                        <p className="font-sans text-body-md font-semibold text-on-surface">{mine ? '축하해요! ' : '축하해 주세요! '}{ev.cheers[0].text} 🎉</p>
+                                    </div>
+                                )}
                                 <div className="mt-2 flex flex-wrap gap-1.5">
+                                    {ev.cheers.slice(1).map((c) => <span key={c.text} className="rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 font-sans text-[12px] text-gold">{c.icon} {c.text}</span>)}
                                     {ev.perfect && <span className="rounded-full border border-gold/50 bg-gold/10 px-2.5 py-0.5 font-sans text-[12px] text-gold">💯 퍼펙트</span>}
                                     {ev.isFirst && <span className="rounded-full border border-success/40 bg-success/10 px-2.5 py-0.5 font-sans text-[12px] text-success">🌱 첫 완료</span>}
                                     {ev.isReview && <span className="rounded-full border border-sky/40 bg-sky/10 px-2.5 py-0.5 font-sans text-[12px] text-sky">🔁 복습</span>}

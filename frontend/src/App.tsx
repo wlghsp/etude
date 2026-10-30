@@ -7,9 +7,12 @@ import { SetComplete, type QuestRecord } from './components/SetComplete'
 import { SetSelect } from './pages/SetSelect'
 import { Progress } from './pages/Progress'
 import { Leaderboard } from './pages/Leaderboard'
+import { Feed } from './pages/Feed'
+import { Hall } from './pages/Hall'
+import { Review } from './pages/Review'
 import { Admin } from './pages/Admin'
 import type { Quest } from './types'
-import { fetchQuests, completeSet } from './api/quest'
+import { fetchQuests, completeSet, startSet } from './api/quest'
 import { fetchMe, token } from './api/auth'
 import { Login } from './pages/Login'
 import { ChangePasswordModal } from './components/ChangePasswordModal'
@@ -26,7 +29,7 @@ const TERMINAL_STATUS_VIEW: Record<TerminalStatus, { dot: string; label: string 
   ended: { dot: 'bg-error', label: '연결 끊김' },
 }
 
-type Page = 'home' | 'progress' | 'leaderboard' | 'admin'
+type Page = 'home' | 'progress' | 'leaderboard' | 'hall' | 'review' | 'feed' | 'admin'
 
 function App() {
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null)
@@ -43,6 +46,9 @@ function App() {
   // 문제를 연속으로 한 번에 맞힌 횟수 (틀렸다가 맞히면 끊긴다)
   const [combo, setCombo] = useState(0)
   const [summaryOpen, setSummaryOpen] = useState(false)
+  // 시간 제한 세트(시험형): 서버가 기록한 시작 시각 기준의 마감. 없으면 일반 세트. 마감되면 결과 화면으로 넘어간다.
+  const [run, setRun] = useState<{ limitSec: number; deadlineMs: number } | null>(null)
+  const [expired, setExpired] = useState(false)
   // 세트 완료 기록 저장 상태 (모든 퀘스트를 통과하면 서버에 한 번 저장한다)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
   const [sessionId, setSessionId] = useState('')
@@ -130,10 +136,18 @@ function App() {
         setRecords({})
         setSummaryOpen(false)
         setSaveState('idle')
-        setSessionId(`${Date.now()}-${Math.random().toString(36).slice(2)}`)
+        const sid = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+        setSessionId(sid)
+        setRun(null)
+        setExpired(false)
+        startSet(selectedSetId, sid)
+          .then((r) => { if (!cancelled && r.limitSec !== null && r.remainingSec !== null) setRun({ limitSec: r.limitSec, deadlineMs: Date.now() + r.remainingSec * 1000 }) })
+          .catch(() => { /* 시작 기록에 실패하면 일반 세트처럼 둔다 (시험형이면 서버가 제출을 거부한다) */ })
       })
     return () => { cancelled = true }
   }, [selectedSetId])
+
+  function handleExpire() { setExpired(true); setSummaryOpen(true) }
 
   function handleSetSelect(id: number, sandboxType: string) {
     setCombo(0)
@@ -165,13 +179,28 @@ function App() {
   const handleLogout = () => { token.clear(); setUser(null) }
 
   if (page === 'progress') return <>
-    <Progress onBack={() => navigate('home')} onLeaderboard={() => navigate('leaderboard')} onAdmin={() => navigate('admin')} onLogout={handleLogout} onChangePassword={openChangePassword} userName={user.name} userEmail={user.email} userRole={user.role} />
+    <Progress onBack={() => navigate('home')} onLeaderboard={() => navigate('leaderboard')} onHall={() => navigate('hall')} onReview={() => navigate('review')} onFeed={() => navigate('feed')} onAdmin={() => navigate('admin')} onLogout={handleLogout} onChangePassword={openChangePassword} userName={user.name} userEmail={user.email} userRole={user.role} />
     <FeedbackButton page="progress" />
     <ChangePasswordModal open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
   </>
   if (page === 'leaderboard') return <>
-    <Leaderboard onBack={() => navigate('home')} onProgress={() => navigate('progress')} onAdmin={() => navigate('admin')} onLogout={handleLogout} onChangePassword={openChangePassword} userName={user.name} userEmail={user.email} userRole={user.role} />
+    <Leaderboard onBack={() => navigate('home')} onProgress={() => navigate('progress')} onHall={() => navigate('hall')} onReview={() => navigate('review')} onFeed={() => navigate('feed')} onAdmin={() => navigate('admin')} onLogout={handleLogout} onChangePassword={openChangePassword} userName={user.name} userEmail={user.email} userRole={user.role} />
     <FeedbackButton page="leaderboard" />
+    <ChangePasswordModal open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
+  </>
+  if (page === 'review') return <>
+    <Review onHome={() => navigate('home')} onSelect={handleSetSelect} onProgress={() => navigate('progress')} onLeaderboard={() => navigate('leaderboard')} onHall={() => navigate('hall')} onFeed={() => navigate('feed')} onAdmin={() => navigate('admin')} onLogout={handleLogout} onChangePassword={openChangePassword} userName={user.name} userEmail={user.email} userRole={user.role} />
+    <FeedbackButton page="review" />
+    <ChangePasswordModal open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
+  </>
+  if (page === 'hall') return <>
+    <Hall onHome={() => navigate('home')} onProgress={() => navigate('progress')} onLeaderboard={() => navigate('leaderboard')} onReview={() => navigate('review')} onFeed={() => navigate('feed')} onAdmin={() => navigate('admin')} onLogout={handleLogout} onChangePassword={openChangePassword} userName={user.name} userEmail={user.email} userRole={user.role} />
+    <FeedbackButton page="hall" />
+    <ChangePasswordModal open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
+  </>
+  if (page === 'feed') return <>
+    <Feed onHome={() => navigate('home')} onProgress={() => navigate('progress')} onLeaderboard={() => navigate('leaderboard')} onHall={() => navigate('hall')} onReview={() => navigate('review')} onAdmin={() => navigate('admin')} onLogout={handleLogout} onChangePassword={openChangePassword} userName={user.name} userEmail={user.email} userRole={user.role} />
+    <FeedbackButton page="feed" />
     <ChangePasswordModal open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
   </>
   if (page === 'admin') {
@@ -181,6 +210,7 @@ function App() {
         onHome={() => navigate('home')}
         onProgress={() => navigate('progress')}
         onLeaderboard={() => navigate('leaderboard')}
+        onHall={() => navigate('hall')} onReview={() => navigate('review')} onFeed={() => navigate('feed')}
         onLogout={handleLogout}
         onChangePassword={openChangePassword}
         userName={user.name}
@@ -198,6 +228,7 @@ function App() {
           onSelect={handleSetSelect}
           onProgress={() => navigate('progress')}
           onLeaderboard={() => navigate('leaderboard')}
+          onHall={() => navigate('hall')} onReview={() => navigate('review')} onFeed={() => navigate('feed')}
           onAdmin={() => navigate('admin')}
           onLogout={handleLogout}
           onChangePassword={openChangePassword}
@@ -236,6 +267,11 @@ function App() {
       </header>
       <main className="flex flex-1 overflow-hidden">
         <section className={isQuiz ? 'w-full max-w-5xl mx-auto flex flex-col bg-gradient-to-b from-accent/10 via-transparent to-transparent' : 'w-[40%] flex flex-col'}>
+          {summaryOpen && expired && (
+            <div className="mx-6 mt-4 flex items-center gap-2 rounded-lg border border-warning/50 bg-warning/10 px-4 py-3 font-sans text-body-md text-warning" role="status">
+              <span className="material-symbols-outlined text-[20px]">hourglass_bottom</span>시간이 끝났어요. 지금까지 푼 기록이에요.
+            </div>
+          )}
           {summaryOpen
             ? <SetComplete
                 setId={selectedSetId}
@@ -259,6 +295,8 @@ function App() {
               onPrev={() => setQuestIndex((i) => i - 1)}
               onNext={() => setQuestIndex((i) => i + 1)}
               onFinish={() => setSummaryOpen(true)}
+              run={run}
+              onExpire={handleExpire}
               onReset={() => {
                 setPreparing(true)
                 setContainerId('')

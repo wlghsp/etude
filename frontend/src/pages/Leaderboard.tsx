@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react"
-import { FeedTab } from "./FeedTab"
-import { fetchFeedSummary, markFeedSeen } from "../api/feed"
-import { fetchLeaderboard, fetchReport, type MemberProgress, type Report } from "../api/user"
+import { fetchLeaderboard, fetchWeeklyLeaderboard, type MemberProgress, type WeeklyLeaderboard } from "../api/user"
 import { TopNav } from "../components/TopNav"
 import { SideNav } from "../components/SideNav"
 
 interface Props {
     onBack: () => void
     onProgress: () => void
+    onHall: () => void
+    onReview: () => void
+    onFeed: () => void
     onAdmin?: () => void
     onLogout: () => void
     onChangePassword: () => void
@@ -16,22 +17,21 @@ interface Props {
     userRole?: string
 }
 
-export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
+export function Leaderboard({ onBack, onProgress, onHall, onReview, onFeed, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
     const [rows, setRows] = useState<MemberProgress[]>([])
     const [openUsers, setOpenUsers] = useState<Set<number>>(new Set())
-    const [tab, setTab] = useState<'ranking' | 'report' | 'feed'>('ranking')
-    const [newForMe, setNewForMe] = useState(0) // 내 소식에 달린 안 본 좋아요·댓글 수
-    const [report, setReport] = useState<Report | null>(null)
-    const [reportError, setReportError] = useState(false)
+    const [tab, setTab] = useState<'total' | 'weekly'>('total')
+    const [weekly, setWeekly] = useState<WeeklyLeaderboard | null>(null)
+    const [weeklyError, setWeeklyError] = useState(false)
 
-    // 명예의 전당은 탭을 처음 열 때 불러온다
+
+    // 이번 주 XP 는 탭을 처음 열 때 불러온다
     useEffect(() => {
-        if (tab !== 'report' || report) return
-        fetchReport().then(setReport).catch(() => setReportError(true))
-    }, [tab, report])
+        if (tab !== 'weekly' || weekly) return
+        fetchWeeklyLeaderboard().then(setWeekly).catch(() => setWeeklyError(true))
+    }, [tab, weekly])
 
     useEffect(() => {
-        fetchFeedSummary().then((r) => setNewForMe(r.newForMe)).catch(() => { /* 알림이 없어도 화면은 그대로다 */ })
         fetchLeaderboard().then((data) =>
             setRows(data.map(u => ({ ...u, total: Number(u.total), completed: Number(u.completed) })))
         )
@@ -62,7 +62,7 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
         <div className="dark min-h-screen bg-surface flex flex-col">
             <TopNav onHome={onBack} />
             <div className="flex flex-1 pt-14">
-                <SideNav activePage="leaderboard" userName={userName} userEmail={userEmail} userRole={userRole} onHome={onBack} onProgress={onProgress} onLeaderboard={() => {}} onAdmin={onAdmin} onLogout={onLogout} onChangePassword={onChangePassword} />
+                <SideNav activePage="leaderboard" userName={userName} userEmail={userEmail} userRole={userRole} onHome={onBack} onProgress={onProgress} onLeaderboard={() => {}} onHall={onHall} onReview={onReview} onFeed={onFeed} onAdmin={onAdmin} onLogout={onLogout} onChangePassword={onChangePassword} />
 
                 <main className="fx-page flex-1 md:ml-60 p-margin-page bg-surface overflow-y-auto">
                     <div className="flex flex-col gap-2 mb-8">
@@ -77,22 +77,47 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
                     </div>
 
                     <div role="tablist" className="flex gap-1 border-b border-outline-variant mb-6">
-                        {([['ranking', '랭킹', 'leaderboard'], ['report', '명예의 전당', 'workspace_premium'], ['feed', '소식', 'forum']] as const).map(([id, label, icon]) => (
+                        {([['total', '누적 세트', 'leaderboard'], ['weekly', '이번 주 XP', 'bolt']] as const).map(([id, label, icon]) => (
                             <button
                                 key={id}
                                 role="tab"
                                 aria-selected={tab === id}
-                                onClick={() => { setTab(id); if (id === 'feed') markFeedSeen().then(() => setNewForMe(0)).catch(() => {}) }}
+                                onClick={() => setTab(id)}
                                 className={`flex items-center gap-1.5 px-5 py-2.5 -mb-px border-b-2 font-sans text-label-caps transition-colors ${tab === id ? 'border-gold text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
                             >
                                 <span className={`material-symbols-outlined text-[18px] ${tab === id ? 'text-gold' : ''}`} style={tab === id ? { fontVariationSettings: "'FILL' 1" } : undefined}>{icon}</span>{label}
-                                {id === 'feed' && newForMe > 0 && tab !== 'feed' && <span className="fx-pop ml-0.5 rounded-full bg-rose px-1.5 py-0.5 font-sans text-[11px] font-bold text-white tabular-nums" aria-label={`새 반응 ${newForMe}개`}>{newForMe}</span>}
                             </button>
                         ))}
                     </div>
 
-                    {tab === 'ranking' && (
-                        <>
+                    {tab === 'weekly' && (
+                        <div className="max-w-[640px] space-y-4">
+                            <p className="font-sans text-body-md text-on-surface-variant">최근 7일 동안 얻은 XP예요. 이번 주에 열심히 한 사람이 앞서요 ⚡</p>
+                            {weeklyError && <p className="font-sans text-body-md text-error">이번 주 순위를 불러오지 못했어요. 잠시 후 다시 열어 주세요.</p>}
+                            {!weekly && !weeklyError && <div className="h-32 rounded-xl bg-surface-container animate-pulse" aria-label="불러오는 중" />}
+                            {weekly && weekly.entries.length === 0 && (
+                                <p className="rounded-xl border border-dashed border-outline-variant px-5 py-6 font-sans text-body-lg text-on-surface">🌟 이번 주 첫 주인공이 되어 보세요! 세트를 끝내면 XP가 쌓여요.</p>
+                            )}
+                            {weekly && weekly.entries.length > 0 && (
+                                <ol className="space-y-2">
+                                    {weekly.entries.map((e, i) => (
+                                        <li key={e.userId} className={`flex items-center gap-3 rounded-xl px-4 py-3 ${e.userName === userName ? 'bg-info/15 ring-1 ring-info/40' : 'bg-surface-container-low border border-outline-variant'}`}>
+                                            <span className="w-8 text-center text-[22px] leading-none">{MEDALS[i] ?? <span className="font-sans text-body-md text-on-surface-variant tabular-nums">{i + 1}</span>}</span>
+                                            <span className="flex-1 min-w-0 truncate font-sans text-body-md font-semibold text-on-surface">{e.userName}{e.userName === userName && <span className="ml-2 px-1.5 py-0.5 rounded-full bg-info/20 text-info font-sans text-[11px]">나</span>}</span>
+                                            <span className="font-sans text-body-md font-bold text-gold tabular-nums">{e.xp} XP</span>
+                                        </li>
+                                    ))}
+                                </ol>
+                            )}
+                            {weekly && weekly.me.rank === null && (
+                                <p className="rounded-xl bg-info/10 px-4 py-3 font-sans text-body-md text-on-surface">
+                                    {weekly.me.xp > 0 ? `나는 이번 주 ${weekly.me.xp} XP를 얻었어요. 조금만 더 하면 상위권이에요! 💪` : '이번 주에는 아직 XP가 없어요. 세트 하나로 시작해 볼까요?'}
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {tab === 'total' && <>
                     {meIndex >= 0 && (
                         <div className="mb-6 flex items-center gap-4 rounded-xl border border-info/40 bg-gradient-to-r from-info/15 via-accent/10 to-transparent px-6 py-4">
                             <span className="text-[34px] leading-none">{rows[meIndex]!.completed > 0 ? (MEDALS[meIndex] ?? '🏃') : '🌱'}</span>
@@ -182,63 +207,8 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
                             )
                         })}
                     </div>
-                        </>
-                    )}
-                    {tab === 'feed' && <FeedTab userName={userName} />}
 
-                    {tab === 'report' && (
-                        <div className="space-y-6">
-                            {reportError && <p className="font-sans text-body-md text-error">명예의 전당을 불러오지 못했어요. 잠시 후 다시 열어 주세요.</p>}
-                            {!report && !reportError && <div className="h-28 rounded-xl bg-surface-container animate-pulse" aria-label="불러오는 중" />}
-                            {report && (
-                                <>
-                                    <div className="relative overflow-hidden rounded-xl border border-gold/40 bg-gradient-to-r from-gold/20 via-rose/10 to-accent/10 px-6 py-5">
-                                        <span className="fx-sparkle pointer-events-none absolute top-3 right-5 material-symbols-outlined text-[26px] text-gold" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
-                                        {report.mvp ? (
-                                            <div className="flex items-center gap-4">
-                                                <span className="fx-bounce text-[44px] leading-none">🏅</span>
-                                                <div className="min-w-0">
-                                                    <p className="font-sans text-label-caps text-on-surface-variant">이번 주 MVP</p>
-                                                    <p className="font-sans text-headline-lg"><span className="fx-shine-text font-extrabold">{report.mvp.userName}</span> 님{report.mvp.userName === userName && ' (나!)'}</p>
-                                                    <p className="font-sans text-body-md text-on-surface-variant">최근 7일 동안 세트 {report.mvp.weekCount}개를 끝냈어요{report.mvp.streak > 0 && ` · 🔥 ${report.mvp.streak}일 연속`}</p>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <p className="font-sans text-body-lg text-on-surface">🌟 이번 주 첫 MVP 의 주인공이 되어 보세요! 세트 하나를 끝내면 이름이 올라가요.</p>
-                                        )}
-                                    </div>
-
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                        {report.awards.map((a) => (
-                                            <section key={a.key} className="rounded-xl border border-outline-variant bg-surface-container-low p-5">
-                                                <div className="flex items-center gap-3 mb-3">
-                                                    <span className="text-[30px] leading-none">{a.icon}</span>
-                                                    <div className="min-w-0">
-                                                        <h2 className="font-sans text-headline-md text-on-surface">{a.title}</h2>
-                                                        <p className="font-sans text-code-sm text-on-surface-variant">{a.desc}</p>
-                                                    </div>
-                                                </div>
-                                                {a.entries.length === 0 ? (
-                                                    <p className="rounded-lg border border-dashed border-outline-variant px-4 py-3 font-sans text-body-md text-on-surface-variant">아직 수상자가 없어요. 첫 번째 주인공이 되어 보세요!</p>
-                                                ) : (
-                                                    <ol className="space-y-2">
-                                                        {a.entries.map((e, i) => (
-                                                            <li key={e.userId} className={`flex items-center gap-3 rounded-lg px-3 py-2 ${e.userName === userName ? 'bg-info/15 ring-1 ring-info/40' : 'bg-surface-container'}`}>
-                                                                <span className="text-[22px] leading-none w-7 text-center">{MEDALS[i]}</span>
-                                                                <span className="flex-1 min-w-0 truncate font-sans text-body-md font-semibold text-on-surface">{e.userName}{e.userName === userName && <span className="ml-2 px-1.5 py-0.5 rounded-full bg-info/20 text-info font-sans text-[11px]">나</span>}</span>
-                                                                <span className="font-sans text-body-md font-bold text-gold tabular-nums">{e.display}</span>
-                                                            </li>
-                                                        ))}
-                                                    </ol>
-                                                )}
-                                            </section>
-                                        ))}
-                                    </div>
-                                    <p className="font-sans text-code-sm text-on-surface-variant text-center">칭찬하는 화면이에요. 기록이 있는 분만 높은 순서로 보여 드려요. 오늘 한 세트가 내일의 이름이 될 수 있어요 ✨</p>
-                                </>
-                            )}
-                        </div>
-                    )}
+                    </>}
                 </main>
             </div>
         </div>

@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Quest } from '../types'
 import { gradeQuest, answerChoice, GradeRequestError } from '../api/quest'
 import { useQuestTimer, formatClock, formatDuration } from './useQuestTimer'
+import { useCountdown } from './useCountdown'
 import type { QuestRecord } from './SetComplete'
 import { ConfirmModal } from './ConfirmModal'
 import { playFail, playSuccess } from '../sound'
@@ -50,6 +51,9 @@ interface Props {
     onFinish: () => void
     onReset: () => void
     onComplete: (index: number, record: QuestRecord) => void
+    // 시간 제한 세트(시험형): 서버가 알려 준 제한과 마감 시각. 없으면 일반 세트. 마감되면 onExpire 를 부른다.
+    run?: { limitSec: number; deadlineMs: number } | null
+    onExpire?: () => void
 }
 
 function gradeErrorMessage(err: unknown): string {
@@ -60,8 +64,11 @@ function gradeErrorMessage(err: unknown): string {
     return '채점 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.'
 }
 
-export function QuestPanel({ quest, setId, containerId, sessionId, total, index, completedIndices, onPrev, onNext, onFinish, onReset, onComplete }: Props) {
+export function QuestPanel({ quest, setId, containerId, sessionId, total, index, completedIndices, onPrev, onNext, onFinish, onReset, onComplete, run = null, onExpire }: Props) {
     const timer = useQuestTimer(sessionId, quest.id)
+    const left = useCountdown(run ? run.deadlineMs : null)
+    const exam = run !== null
+    useEffect(() => { if (exam && left === 0) onExpire?.() }, [exam, left, onExpire])
     const [finalSeconds, setFinalSeconds] = useState<number | null>(null)
     const [failedAttempts, setFailedAttempts] = useState(0)
     const [hintUsed, setHintUsed] = useState(false)
@@ -132,6 +139,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
             }
         } catch (err) {
             setResult(null)
+            if (err instanceof GradeRequestError && err.expired) { onExpire?.(); return }
             setGradeError(gradeErrorMessage(err))
         } finally {
             setLoading(false)
@@ -164,26 +172,44 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
             <div className="px-6 py-4 border-b border-outline-variant shrink-0">
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <span className="font-sans text-label-caps text-on-surface-variant">문제 {index + 1} / {total} · 푼 문제 {completedIndices.size}개</span>
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="rounded-full border border-sky/40 bg-sky/10 px-2.5 py-0.5 font-sans text-label-caps text-sky tabular-nums">문제 {index + 1} / {total}</span>
+                            {completedIndices.size > 0 && <span className="rounded-full border border-success/40 bg-success/10 px-2.5 py-0.5 font-sans text-label-caps text-success tabular-nums">✅ {completedIndices.size}개 해결</span>}
+                        </div>
                         <h1 className="font-sans text-headline-lg text-on-surface truncate">{quest.title}</h1>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
+                        {run && left !== null ? (() => {
+                            const ratio = left / run.limitSec
+                            const tone = left <= 60 ? 'border-error/60 bg-error/10 text-error' : ratio <= 0.2 ? 'border-warning/60 bg-warning/10 text-warning' : 'border-sky/40 bg-sky/10 text-on-surface'
+                            return (
+                                <div title="시험 남은 시간 (세트 전체 기준)" role="timer" aria-label={`남은 시간 ${formatClock(left)}`} className={`flex flex-col gap-1 rounded-lg border px-3 py-1.5 ${tone}`}>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`material-symbols-outlined text-[20px] ${left <= 60 ? 'animate-pulse' : ''}`}>hourglass_top</span>
+                                        <span className={`font-mono text-body-lg font-semibold tabular-nums ${left <= 60 ? 'animate-pulse' : ''}`}>{formatClock(left)}</span>
+                                    </div>
+                                    <div className="h-1 rounded-full bg-black/30 overflow-hidden"><div className="h-full rounded-full bg-current transition-all duration-300" style={{ width: `${Math.round(ratio * 100)}%` }} /></div>
+                                </div>
+                            )
+                        })() : (
                         <div
                             title="이 문제를 푸는 데 쓴 시간 (탭이 보일 때만 셉니다)"
-                            className={`flex items-center gap-1.5 border px-3 py-1.5 mr-2 ${finalSeconds !== null ? 'border-success/50 bg-success/10 text-success' : 'border-outline-variant bg-surface-container text-on-surface'}`}
+                            className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${finalSeconds !== null ? 'border-success/50 bg-success/10 text-success' : 'border-sky/40 bg-sky/10 text-on-surface'}`}
                         >
-                            <span className={`material-symbols-outlined text-[20px] ${finalSeconds !== null ? 'text-success' : 'text-primary'}`}>timer</span>
+                            {finalSeconds === null && <span className="w-2 h-2 rounded-full bg-sky animate-pulse" aria-hidden="true" />}
+                            <span className={`material-symbols-outlined text-[20px] ${finalSeconds !== null ? 'text-success' : 'text-sky'}`}>{finalSeconds !== null ? 'timer_off' : 'timer'}</span>
                             <span className="font-mono text-body-lg font-semibold tabular-nums">{formatClock(finalSeconds ?? timer.seconds)}</span>
                         </div>
-                        <button onClick={onPrev} disabled={index === 0} title="이전" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center font-sans text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
+                        )}
+                        <button onClick={onPrev} disabled={index === 0} title="이전 문제" className="rounded-lg border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center font-sans text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
                             <span className="material-symbols-outlined text-[18px]">chevron_left</span>이전
                         </button>
-                        <button onClick={handleNext} disabled={index === total - 1} title="다음" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center font-sans text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
+                        <button onClick={handleNext} disabled={index === total - 1} title="다음 문제" className={`rounded-lg border px-3 py-1.5 flex items-center font-sans text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default ${completedIndices.has(index) ? 'border-success bg-success text-on-primary font-bold hover:brightness-110' : 'border-outline-variant hover:bg-surface-container-high'}`}>
                             다음<span className="material-symbols-outlined text-[18px]">chevron_right</span>
                         </button>
                         {!isChoice && (
-                            <button onClick={() => setResetConfirmOpen(true)} title="환경 초기화" className="border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center justify-center transition-colors ml-2">
-                                <span className="material-symbols-outlined text-[18px] text-on-surface-variant">restart_alt</span>
+                            <button onClick={() => setResetConfirmOpen(true)} title="환경 초기화 (터미널을 처음 상태로)" className="rounded-lg border border-outline-variant hover:border-warning/60 hover:bg-warning/10 hover:text-warning text-on-surface-variant px-3 py-1.5 flex items-center gap-1 font-sans text-label-caps transition-colors">
+                                <span className="material-symbols-outlined text-[18px]">restart_alt</span>초기화
                             </button>
                         )}
                     </div>
@@ -194,8 +220,8 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
             <div role="tablist" className="flex gap-1 px-6 border-b border-outline-variant shrink-0">
                 {([
                     { id: 'task', label: '문제', icon: 'assignment', show: true },
-                    { id: 'hint', label: '힌트', icon: 'lightbulb', show: true },
-                    { id: 'solution', label: '풀이', icon: 'task_alt', show: !isChoice },
+                    { id: 'hint', label: '힌트', icon: 'lightbulb', show: !exam },
+                    { id: 'solution', label: '풀이', icon: 'task_alt', show: !isChoice && !exam },
                 ] as const).filter((t) => t.show).map((t) => (
                     <button
                         key={t.id}
@@ -216,7 +242,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
             <div className="p-6 flex-1 overflow-y-auto">
                 <div className="space-y-4">
                     {tab === 'task' && <>
-                    <div className="border border-outline-variant bg-surface-container p-4">
+                    <div className="rounded-xl border border-outline-variant bg-surface-container p-4">
                         <p className="font-sans text-body-lg text-on-surface leading-7 break-words whitespace-pre-wrap"><RichText text={resolve(quest.description)} /></p>
                     </div>
 
@@ -233,7 +259,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                                         aria-checked={isPicked}
                                         disabled={isWrong || locked}
                                         onClick={() => setSelected(i)}
-                                        className={`w-full flex items-start gap-3 text-left border px-4 py-3 transition-colors ${
+                                        className={`w-full flex items-start gap-3 text-left rounded-lg border px-4 py-3 transition-colors ${
                                             isPicked ? 'border-primary bg-primary/10'
                                             : isWrong ? 'border-error/40 bg-error/5 opacity-60'
                                             : 'border-outline-variant bg-surface-container hover:border-primary/60 hover:bg-surface-container-high'
@@ -253,14 +279,14 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                     )}
 
                     {allDone && result !== true && (
-                        <button onClick={onFinish} className="w-full border border-success/50 bg-success/10 text-success py-3 font-sans font-bold hover:bg-success/20 transition-colors flex items-center justify-center gap-2">
+                        <button onClick={onFinish} className="w-full rounded-lg border border-success/50 bg-success/10 text-success py-3 font-sans font-bold hover:bg-success/20 transition-colors flex items-center justify-center gap-2">
                             <span className="material-symbols-outlined text-[20px]">emoji_events</span>모든 퀘스트 완료 · 결과 보기
                         </button>
                     )}
 
                     {/* 완료 조건 체크리스트: 채점하면 조건마다 통과(초록)/미통과(빨강)가 표시된다 */}
                     {checkLabels && (
-                        <div className="border border-outline-variant bg-surface-container p-4">
+                        <div className="rounded-xl border border-outline-variant bg-surface-container p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <span className="font-sans text-label-caps text-on-surface-variant flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px]">fact_check</span>완료 조건</span>
                                 {checkResults && <span className="font-sans text-label-caps tabular-nums text-on-surface-variant">{checkResults.filter(Boolean).length}/{checkLabels.length} 통과</span>}
@@ -287,7 +313,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                     <button
                         onClick={grade}
                         disabled={loading || result === true || (isChoice && selected === null)}
-                        className="w-full py-3 bg-info text-white font-sans text-label-caps hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full py-3 rounded-lg bg-info text-white font-sans text-label-caps hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         <span className="material-symbols-outlined text-[16px]">check_circle</span>
                         {loading ? '채점 중...' : isChoice ? '정답 확인' : '채점하기'}
@@ -301,7 +327,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                         </div>
                     )}
                     {result === false && (
-                        <div key={`fail-${failedAttempts}`} className="fx-shake fx-glow-error border-2 border-error bg-error/10 p-4 flex items-center gap-3">
+                        <div key={`fail-${failedAttempts}`} className="fx-shake fx-glow-error rounded-xl border-2 border-error bg-error/10 p-4 flex items-center gap-3">
                             <span className="material-symbols-outlined text-error text-[34px] shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>cancel</span>
                             <div>
                                 <p className="font-sans text-body-lg font-bold text-error">틀렸어요</p>
@@ -313,7 +339,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                         </div>
                     )}
                     {result === true && (
-                        <div className="fx-glow-success relative overflow-hidden border border-success/40 bg-success/10 p-4 border-l-4 border-l-success">
+                        <div className="fx-glow-success relative overflow-hidden rounded-xl border border-success/40 bg-success/10 p-4 border-l-4 border-l-success">
                             <Confetti />
                             <div className="relative flex items-center gap-3 mb-3">
                                 <span className="fx-pop material-symbols-outlined text-success text-[36px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
@@ -331,10 +357,10 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                                 </div>
                             )}
                             {index < total - 1 && !allDone
-                                ? <button onClick={handleNext} className="w-full bg-success text-on-primary py-3 font-sans font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2">
+                                ? <button onClick={handleNext} className="w-full rounded-lg bg-success text-on-primary py-3 font-sans font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2">
                                     다음 퀘스트 <span className="material-symbols-outlined">arrow_forward</span>
                                   </button>
-                                : <button onClick={onFinish} className="w-full bg-success text-on-primary py-3 font-sans font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2">
+                                : <button onClick={onFinish} className="w-full rounded-lg bg-success text-on-primary py-3 font-sans font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2">
                                     결과 보기 <span className="material-symbols-outlined">emoji_events</span>
                                   </button>
                             }
@@ -343,7 +369,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                     </>}
 
                     {tab === 'hint' && (
-                        <div className="border border-outline-variant bg-surface-container p-4">
+                        <div className="rounded-xl border border-outline-variant bg-surface-container p-4">
                             <div className="font-sans text-label-caps text-gold mb-3 flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px]">lightbulb</span>힌트</div>
                             {hasHint
                                 ? <p className="font-sans text-body-md text-on-surface-variant leading-7 break-words whitespace-pre-wrap"><RichText text={resolve(quest.hint ?? '')} /></p>

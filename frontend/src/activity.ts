@@ -23,17 +23,6 @@ export function weekActivity(rows: Array<{ completions: Array<{ completedAt: str
     })
 }
 
-/** 연속 학습일: 오늘(없으면 어제)부터 거꾸로 하루도 빠지지 않고 세트를 끝낸 날 수 */
-export function currentStreak(rows: Array<{ completions: Array<{ completedAt: string }> }>, now: Date): number {
-    const days = new Set<string>()
-    for (const r of rows) for (const c of r.completions) days.add(dayKey(new Date(c.completedAt)))
-    const cursor = new Date(now)
-    if (!days.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1) // 오늘 아직 안 했어도 어제까지 이어졌으면 유지
-    let streak = 0
-    while (days.has(dayKey(cursor))) { streak++; cursor.setDate(cursor.getDate() - 1) }
-    return streak
-}
-
 /** "방금 전", "3분 전", "2시간 전", "5일 전" (일주일이 넘으면 날짜) */
 export function timeAgo(iso: string, now: Date): string {
     const sec = Math.max(0, Math.floor((now.getTime() - new Date(iso).getTime()) / 1000))
