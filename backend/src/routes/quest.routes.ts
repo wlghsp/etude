@@ -82,12 +82,12 @@ export const questRoutes: FastifyPluginAsync = async (app) => {
             return reply.code(403).send({ error: '이 세션의 세트에 속한 퀘스트가 아닙니다.' })
         }
 
-        const passed = await gradeQuest(containerId, questId, docker)
+        const { passed, checks } = await gradeQuest(containerId, questId, docker)
 
         try {
             await recordAttempt(req.user.userId, questId, session.questSetId, sessionId, passed, elapsedSec, hintUsed, solutionUsed)
         } catch (e) { console.error('[grade] recordAttempt error:', e) }
 
-        return { passed }
+        return checks ? { passed, checks } : { passed }
     })
 }

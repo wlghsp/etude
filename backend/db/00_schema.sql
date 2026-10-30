@@ -41,6 +41,8 @@ CREATE TABLE quest (
   choices      JSON NULL,
   answer_index INT NULL,
   explanation  TEXT NULL,
+  -- 조건별 채점(docs/specs/spec_grade_checks.md): [{label, cmd}]. 없으면 grade_cmd 하나로 채점한다.
+  checks       JSON NULL,
   FOREIGN KEY (quest_set_id) REFERENCES quest_set(id)
 );
 

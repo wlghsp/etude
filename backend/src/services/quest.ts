@@ -91,13 +91,15 @@ export async function revokeQuestSetAccess(questSetId: number, userId: number) {
 export async function getQuests(questSetId: number): Promise<Quest[]> {
   // answer_index, explanation 은 일부러 조회하지 않는다 (정답이 화면으로 나가면 안 된다)
   const [rows] = await db.query(
-    'SELECT id, title, description, hint, solution, setup_cmd, kind, choices FROM quest WHERE quest_set_id = ? ORDER BY order_index',
+    'SELECT id, title, description, hint, solution, setup_cmd, kind, choices, checks FROM quest WHERE quest_set_id = ? ORDER BY order_index',
     [questSetId]
   )
-  return (rows as any[]).map((r) => ({
+  return (rows as any[]).map(({ checks, ...r }) => ({
     ...r,
     setup_cmd: r.setup_cmd ? JSON.parse(r.setup_cmd) : null,
     choices: r.choices ? (typeof r.choices === 'string' ? JSON.parse(r.choices) : r.choices) : null,
+    // 조건의 이름만 내보낸다. 채점 명령(cmd)은 학습자에게 보내지 않는다.
+    check_labels: parseChecks(checks)?.map((c) => c.label) ?? null,
   })) as Quest[]
 }
 
@@ -146,20 +148,47 @@ export async function getSetupCmd(questId: number): Promise<string[] | null> {
   return typeof raw === 'string' ? JSON.parse(raw) : raw
 }
 
+export interface GradeCheck { label: string; passed: boolean }
+export interface GradeResult {
+  passed: boolean
+  checks: GradeCheck[] | null // 조건별 결과. 조건 목록이 없는 문제는 null
+}
+
+interface QuestCheck { label: string; cmd: string[] }
+
+// quest.checks: [{ label, cmd }] 형태의 JSON. 형식이 맞지 않으면 없는 것으로 보고 grade_cmd 로 채점한다.
+function parseChecks(raw: unknown): QuestCheck[] | null {
+  if (raw == null) return null
+  let value: unknown
+  try { value = typeof raw === 'string' ? JSON.parse(raw) : raw } catch { return null }
+  if (!Array.isArray(value) || value.length === 0) return null
+  const ok = value.every((c) => c && typeof c.label === 'string' && Array.isArray(c.cmd) && c.cmd.every((x: unknown) => typeof x === 'string'))
+  return ok ? (value as QuestCheck[]) : null
+}
+
+/** 채점한다. 조건 목록(checks)이 있으면 조건마다 실행해 결과를 함께 돌려주고(모두 통과해야 passed), 없으면 grade_cmd 하나로 채점한다. */
 export async function gradeQuest(
   containerId: string,
   questId: number,
   docker: Docker
-): Promise<boolean> {
+): Promise<GradeResult> {
   const [rows] = await db.query<any[]>(
-    'SELECT grade_cmd FROM quest WHERE id = ?',
+    'SELECT grade_cmd, checks FROM quest WHERE id = ?',
     [questId]
   )
-  if (!rows.length) return false
-  const cmd: string[] = JSON.parse(rows[0].grade_cmd)
+  if (!rows.length) return { passed: false, checks: null }
 
   const ns = `quest-${containerId.slice(0, 8)}`
-  const resolveCmd = cmd.map((s: string) => s.replace(/\$NS/g, ns))
+  const resolveCmd = (cmd: string[]) => cmd.map((s: string) => s.replace(/\$NS/g, ns))
+  const container = docker.getContainer(containerId)
 
-  return execCheck(docker.getContainer(containerId), resolveCmd)
+  const checks = parseChecks(rows[0].checks)
+  if (!checks) {
+    const cmd: string[] = JSON.parse(rows[0].grade_cmd)
+    return { passed: await execCheck(container, resolveCmd(cmd)), checks: null }
+  }
+
+  const results: GradeCheck[] = []
+  for (const c of checks) results.push({ label: c.label, passed: await execCheck(container, resolveCmd(c.cmd)) })
+  return { passed: results.every((r) => r.passed), checks: results }
 }

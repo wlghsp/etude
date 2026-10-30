@@ -40,7 +40,7 @@ describe('POST /grade', () => {
         removeSession('c-mine')
         registerSession('c-mine', { userId: 7, questSetId: 11, sandboxType: 'docker' })
         getQuestContextMock.mockResolvedValue({ questSetId: 11, sandboxType: 'docker' })
-        gradeQuestMock.mockResolvedValue(true)
+        gradeQuestMock.mockResolvedValue({ passed: true, checks: null })
     })
 
     const grade = (body: object, token?: string) =>
@@ -91,6 +91,16 @@ describe('POST /grade', () => {
 
         expect(res.statusCode).toBe(404)
         expect(gradeQuestMock).not.toHaveBeenCalled()
+    })
+
+    it('조건별 결과가 있으면 함께 돌려주고, 하나라도 실패하면 passed 는 false 로 기록한다', async () => {
+        const checks = [{ label: '이름이 해석된다', passed: true }, { label: '파일이 있다', passed: false }]
+        gradeQuestMock.mockResolvedValue({ passed: false, checks })
+
+        const res = await grade(body, tokenFor(7))
+
+        expect(res.json()).toEqual({ passed: false, checks })
+        expect(recordAttempt).toHaveBeenCalledWith(7, 101, 11, 'attempt-1', false, 30, undefined, undefined)
     })
 
     it('채점 결과를 돌려주고, 기록에는 body가 아니라 서버가 조회한 questSetId를 쓴다', async () => {
