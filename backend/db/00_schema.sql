@@ -108,3 +108,26 @@ CREATE TABLE IF NOT EXISTS set_completion (
   KEY idx_set_completion_set (quest_set_id)
   -- 외래 키는 두지 않는다: 기존 테이블의 id 타입(INT/BIGINT)이 환경마다 달라 맞추기 어렵고, 이 값은 서버가 검증한 뒤에만 쓴다.
 );
+
+-- 활동 피드(docs/specs/spec_activity_feed.md): 좋아요, 댓글, 소식 탭을 마지막으로 본 시각. 외래 키는 두지 않는다 (set_completion 과 같은 이유).
+CREATE TABLE IF NOT EXISTS feed_like (
+  completion_id INT NOT NULL,
+  user_id       INT NOT NULL,
+  created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (completion_id, user_id),
+  KEY idx_feed_like_user (user_id, created_at)
+);
+CREATE TABLE IF NOT EXISTS feed_comment (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  completion_id INT NOT NULL,
+  user_id       INT NOT NULL,
+  body          VARCHAR(300) NOT NULL,
+  created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at    DATETIME NULL,
+  KEY idx_feed_comment_completion (completion_id, created_at),
+  KEY idx_feed_comment_user (user_id, created_at)
+);
+CREATE TABLE IF NOT EXISTS feed_seen (
+  user_id INT PRIMARY KEY,
+  seen_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

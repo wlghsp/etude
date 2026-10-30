@@ -8,6 +8,7 @@ import { adminRoutes } from './routes/admin.routes.js'
 import { questRoutes } from './routes/quest.routes.js'
 import { feedbackRoutes } from './routes/feedback.routes.js'
 import { healthRoutes } from './routes/health.routes.js'
+import { feedRoutes } from './routes/feed.routes.js'
 
 // 앱 구성만 한다. 기동 정리·종료 훅·listen 같은 인프라 작업은 index.ts가 맡는다.
 export async function buildApp(options: { logger?: boolean } = {}) {
@@ -23,6 +24,7 @@ export async function buildApp(options: { logger?: boolean } = {}) {
     await app.register(questRoutes)
     await app.register(feedbackRoutes)
     await app.register(healthRoutes)
+    await app.register(feedRoutes)
 
     return app
 }
