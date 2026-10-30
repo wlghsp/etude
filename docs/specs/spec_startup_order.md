@@ -43,3 +43,9 @@
 - 백엔드 시작이 `start_period`+재시도 시간보다 오래 걸리면 `--wait`가 실패한다. 첫 배포는 사용자가 적은 시간에 한다.
 - `--wait`는 compose v2.1.1 이상이 필요하다 (서버의 버전은 확인하지 못함, 배포 로그로 확인).
 - 문제가 생기면 이 변경 커밋을 되돌려 재배포한다 (설정 파일만 바뀐다).
+
+## vcluster 정리 규칙 (2026-10-30)
+
+- 증상: 개발 중 백엔드를 여러 번 재시작하거나 풀 생성이 실패하면 `vcluster-pool-*` 네임스페이스와 5Gi PVC 가 쌓였다. vcluster 본체(Helm 릴리스)는 이미 없는데 네임스페이스만 남아서 `vcluster delete` 가 "couldn't find vcluster" 로 아무것도 지우지 못했고, 오류를 삼켜서 아무도 알아채지 못했다.
+- 규칙: vcluster 를 지우는 모든 경로(기동 시 정리, 사용 후 반납, 생성 도중 실패)는 `vcluster delete` 뒤에 `kubectl delete namespace vcluster-<id> --ignore-not-found --wait=false` 도 실행한다. 네임스페이스 삭제가 실패하면 로그를 남기고 호출한 쪽은 막지 않는다.
+- 남은 항목: 풀 생성이 60초 안에 준비되지 않는 경우(동시 생성 부하)는 환경변수 `VCLUSTER_READY_TIMEOUT_SEC` 로 늘릴 수 있다. 풀 생성을 `listen` 뒤 백그라운드로 옮기는 것은 위 후보로 남아 있다.

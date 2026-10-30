@@ -35,6 +35,53 @@ describe('releaseVcluster', () => {
     })
 })
 
+describe('vcluster 가 이미 없어도 네임스페이스는 지운다', () => {
+    beforeEach(() => {
+        execMock.mockReset()
+        rmMock.mockClear()
+        readdirMock.mockReset()
+        readdirMock.mockResolvedValue([])
+    })
+
+    // vcluster 본체(Helm 릴리스)는 없는데 네임스페이스와 PVC 만 남으면 `vcluster delete` 는 "couldn't find" 로 아무것도 지우지 못한다
+    it('기동 시 정리: vcluster delete 가 실패해도 남은 vcluster-* 네임스페이스를 kubectl 로 지운다', async () => {
+        execMock.mockImplementation((cmd: string, cb: (err: Error | null, out?: unknown) => void) => {
+            if (cmd.startsWith('kubectl get ns')) cb(null, { stdout: 'default vcluster-pool-aaa11111 kube-system', stderr: '' })
+            else if (cmd.startsWith('vcluster delete')) cb(new Error("couldn't find vcluster"))
+            else cb(null, { stdout: '', stderr: '' })
+        })
+
+        await cleanupOrphanVclusters()
+
+        const cmds: string[] = execMock.mock.calls.map((c: any[]) => c[0])
+        expect(cmds.some((c) => c.startsWith('kubectl delete namespace vcluster-pool-aaa11111') && c.includes('--ignore-not-found'))).toBe(true)
+        expect(cmds.some((c) => c.includes('namespace default') || c.includes('namespace kube-system'))).toBe(false)
+    })
+
+    it('사용 후 반납: vcluster delete 뒤에 네임스페이스도 지운다', async () => {
+        execMock.mockImplementation((_cmd: string, cb: (err: Error | null, out?: unknown) => void) => cb(null, { stdout: '', stderr: '' }))
+
+        await releaseVcluster({ id: 'pool-bbb22222', kubeconfigPath: '/k/pool-bbb22222-kubeconfig.yaml' })
+
+        const cmds: string[] = execMock.mock.calls.map((c: any[]) => c[0])
+        expect(cmds.findIndex((c) => c.startsWith('vcluster delete pool-bbb22222'))).toBeGreaterThanOrEqual(0)
+        expect(cmds.some((c) => c.startsWith('kubectl delete namespace vcluster-pool-bbb22222'))).toBe(true)
+    })
+
+    it('네임스페이스 삭제가 실패하면 로그를 남기고 예외는 던지지 않는다', async () => {
+        const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+        execMock.mockImplementation((cmd: string, cb: (err: Error | null, out?: unknown) => void) => {
+            if (cmd.startsWith('kubectl delete namespace')) cb(new Error('forbidden'))
+            else cb(null, { stdout: '', stderr: '' })
+        })
+
+        await expect(releaseVcluster({ id: 'pool-ccc33333', kubeconfigPath: '/k/x.yaml' })).resolves.toBeUndefined()
+
+        expect(err).toHaveBeenCalled()
+        err.mockRestore()
+    })
+})
+
 describe('cleanupOrphanVclusters', () => {
     beforeEach(() => {
         execMock.mockReset()

@@ -37,6 +37,21 @@ describe('createVcluster 실패 처리', () => {
         expect(cmds.some((c) => c.startsWith(`vcluster delete ${created} `))).toBe(true)
     })
 
+    it('vcluster delete 가 실패해도(이미 없음) 남은 네임스페이스는 kubectl 로 지운다', async () => {
+        execMock.mockImplementation((cmd: string, cb: Cb) => {
+            if (cmd.includes('condition=ready')) cb(new Error('ready timeout'))
+            else if (cmd.startsWith('vcluster delete')) cb(new Error("couldn't find vcluster"))
+            else cb(null, { stdout: '', stderr: '' })
+        })
+        const { createVcluster } = await load()
+
+        await expect(createVcluster()).rejects.toThrow('ready timeout')
+
+        const cmds: string[] = execMock.mock.calls.map((c) => c[0])
+        const created = cmds.find((c) => c.startsWith('vcluster create '))!.match(/vcluster create (pool-[0-9a-f]+)/)![1]
+        expect(cmds.some((c) => c.startsWith(`kubectl delete namespace vcluster-${created}`))).toBe(true)
+    })
+
     it('정리 명령이 실패해도 원래 오류를 던진다', async () => {
         execMock.mockImplementation((cmd: string, cb: Cb) => {
             if (cmd.includes('condition=ready')) cb(new Error('ready timeout'))

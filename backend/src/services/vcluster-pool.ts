@@ -23,6 +23,16 @@ interface PooledVCluster {
 
 const pool: PooledVCluster[] = []
 
+// vcluster 를 지운다. vcluster 본체(Helm 릴리스)가 이미 없고 네임스페이스와 PVC 만 남은 경우 `vcluster delete` 는
+// "couldn't find vcluster" 로 아무것도 지우지 못하므로, 그다음 네임스페이스를 kubectl 로 직접 지워 PVC 까지 정리한다.
+// 정리 실패가 호출한 쪽을 막지 않도록 예외는 던지지 않고 로그만 남긴다.
+async function removeVcluster(id: string, ns: string): Promise<void> {
+    await execAsync(`vcluster delete ${id} --namespace ${ns}`).catch(() => {})
+    await execAsync(`kubectl delete namespace ${ns} --ignore-not-found --wait=false`).catch((err) => {
+        console.error(`[vcluster] 네임스페이스 삭제 실패: ${ns}`, err)
+    })
+}
+
 export async function createVcluster(): Promise<PooledVCluster> {
     const id = `pool-${crypto.randomUUID().slice(0, 8)}`
     const ns = `vcluster-${id}`
@@ -33,7 +43,7 @@ export async function createVcluster(): Promise<PooledVCluster> {
     try {
         return await finishVcluster(id, ns)
     } catch (err) {
-        await execAsync(`vcluster delete ${id} --namespace ${ns}`).catch(() => {})
+        await removeVcluster(id, ns)
         throw err
     }
 }
@@ -92,7 +102,7 @@ async function finishVcluster(id: string, ns: string): Promise<PooledVCluster> {
 
 async function deleteVcluster(v: PooledVCluster): Promise<void> {
     const ns = `vcluster-${v.id}`
-    await execAsync(`vcluster delete ${v.id} --namespace ${ns}`).catch(() => {})
+    await removeVcluster(v.id, ns)
     await rm(v.kubeconfigPath, { force: true }).catch(() => {})
 }
 
@@ -125,7 +135,7 @@ export async function cleanupOrphanVclusters(): Promise<void> {
     await Promise.all(
         orphanNamespaces.map((ns) => {
             const id = ns.replace(/^vcluster-/, '')
-            return execAsync(`vcluster delete ${id} --namespace ${ns}`).catch(() => {})
+            return removeVcluster(id, ns)
         })
     )
 
