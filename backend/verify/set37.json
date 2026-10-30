@@ -1,0 +1,11 @@
+{
+  "setId": 37,
+  "answers": {
+    "1": "IP=$(kubectl get pod -l app=web -n $NS -o jsonpath='{.items[0].status.podIP}'); kubectl exec client -n $NS -- wget -qO- http://$IP > /tmp/ip_resp.txt",
+    "2": "kubectl get pod -l app=web -n $NS -o jsonpath='{.items[0].status.podIP}' > /tmp/ip_before.txt; kubectl delete pod -l app=web -n $NS; kubectl rollout status deployment/web -n $NS --timeout=90s; sleep 3; P=$(kubectl get pods -n $NS -l app=web --no-headers | awk '$3==\"Running\" {print $1}' | head -n 1); kubectl get pod $P -n $NS -o jsonpath='{.status.podIP}' > /tmp/ip_after.txt",
+    "3": "kubectl exec duo2 -n $NS -c helper -- wget -qO- http://localhost > /tmp/local_resp.txt",
+    "4": "kubectl run tmp --rm -i --restart=Never --image=busybox -n $NS -- wget -qO- http://web > /tmp/svc_resp.txt",
+    "5": "kubectl exec client -n $NS -- cat /etc/resolv.conf > /tmp/resolv.txt",
+    "7": "kubectl expose deployment web --name=web-svc --port=8080 --target-port=80 -n $NS"
+  }
+}
