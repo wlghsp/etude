@@ -50,14 +50,15 @@ export async function getQuestSets(userId: number, role: string): Promise<QuestS
       OR EXISTS (
         SELECT 1 FROM quest_set_access qsa
         WHERE qsa.quest_set_id = qs.id AND qsa.user_id = ?
-    )`, [role, userId]
+    )
+    ORDER BY qs.display_order, qs.id`, [role, userId]
   )
   return rows as QuestSet[]
 }
 
 export async function getQuestSetsForAdmin() {
   const [sets] = await db.query<any[]>(
-    'SELECT id, title, description, sandbox_type, category, is_public FROM quest_set ORDER BY id'
+    'SELECT id, title, description, sandbox_type, category, is_public FROM quest_set ORDER BY display_order, id'
   )
   const [access] = await db.query<any[]>(`
     SELECT qsa.quest_set_id, u.id AS userId, u.name, u.email

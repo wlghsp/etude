@@ -13,6 +13,7 @@ CREATE TABLE quest_set (
   sandbox_type VARCHAR(20) NOT NULL DEFAULT 'linux',
   category     VARCHAR(50) NOT NULL DEFAULT '기타',
   is_public    BOOLEAN NOT NULL DEFAULT TRUE,
+  display_order INT NOT NULL DEFAULT 0,
   FOREIGN KEY (sandbox_type) REFERENCES sandbox(type)
 );
 

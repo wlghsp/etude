@@ -2,7 +2,7 @@ import { db } from '../db.js'
 
 // 리더보드는 "완료한 세트 수"로 순위를 매긴다 (세트 완료가 기록의 단위). 시간은 넣지 않는다.
 export async function getLeaderboard() {
-    const [sets] = await db.query('SELECT id, title, category FROM quest_set ORDER BY id') as any[]
+    const [sets] = await db.query('SELECT id, title, category FROM quest_set ORDER BY display_order, id') as any[]
     const [members] = await db.query("SELECT id, name FROM user WHERE role = 'member'") as any[]
     const [done] = await db.query(
         'SELECT DISTINCT user_id, quest_set_id FROM set_completion') as any[]
@@ -87,7 +87,7 @@ export async function getSetProgress(userId: number, role: string): Promise<SetP
         WHERE qs.is_public = TRUE
            OR ? = 'admin'
            OR EXISTS (SELECT 1 FROM quest_set_access qsa WHERE qsa.quest_set_id = qs.id AND qsa.user_id = ?)
-        ORDER BY qs.id
+        ORDER BY qs.display_order, qs.id
     `, [role, userId]) as any[]
     const [doneRows] = await db.query(`
         SELECT id, quest_set_id, completed_at, total_seconds, quest_count, hint_free_count, solution_free_count, detail
