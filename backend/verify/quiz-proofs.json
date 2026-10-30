@@ -460,5 +460,12 @@
     "image": "host",
     "cmd": "NS=qv37-c$$; trap 'kubectl delete ns $NS --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NS --ignore-not-found >/dev/null 2>&1; kubectl create ns $NS >/dev/null && kubectl create deployment web --image=nginx -n $NS >/dev/null && kubectl expose deployment web --name=web-svc --port=8080 --target-port=80 --type=NodePort -n $NS >/dev/null; kubectl get svc web-svc -n $NS -o jsonpath='{.spec.ports[0].port}/{.spec.ports[0].targetPort}'",
     "expect": "8080/80"
+  },
+  {
+    "set": 1,
+    "order": 12,
+    "image": "etude-linux",
+    "cmd": "mkdir -p /tmp/h/user/project/src; echo A > /tmp/h/user/notes.txt; echo B > /tmp/h/user/project/notes.txt; echo C > /tmp/h/user/project/src/notes.txt; cd /tmp/h/user/project/src && cat ../../notes.txt",
+    "expect": "A"
   }
 ]

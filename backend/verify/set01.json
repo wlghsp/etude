@@ -10,6 +10,9 @@
     "7": "echo \"done\" > /tmp/answer.txt",
     "8": "touch /tmp/.hidden",
     "9": "cp /tmp/answer.txt /tmp/backup.txt",
-    "10": "mv /tmp/backup.txt /tmp/renamed.txt"
+    "10": "mv /tmp/backup.txt /tmp/renamed.txt",
+    "11": "cd /tmp/a/b/c && touch ../../x.txt",
+    "13": "ls /no/such/dir; echo $? > /tmp/rc.txt",
+    "14": "ls -lS /tmp/sz > /tmp/ls_size.txt"
   }
 }

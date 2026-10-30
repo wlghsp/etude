@@ -188,3 +188,19 @@ kubectl api-resources | grep -w deployments | awk ''{print $2}'' > /tmp/short.tx
 # 먼저 눈으로 확인: kubectl api-resources | head',
    NULL,
    '["sh", "-c", "[ \\"$(tr -d ''[:space:]'' < /tmp/short.txt)\\" = deploy ]"]');
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
+  (19, 11, 'kubectl edit 로 Deployment 를 직접 고치기',
+   '`kubectl edit` 은 리소스의 YAML 을 **편집기(vi)로 열어 직접 고치고**, 저장하면 바로 적용합니다. 명령으로 바꾸기 번거로운 필드를 고칠 때 쓰는, 현장에서 가장 자주 쓰는 방법 중 하나입니다.
+
+`$NS` 의 Deployment `web` 은 Pod 개수(`spec.replicas`)가 **1** 입니다. `kubectl edit` 로 **3** 으로 고치세요.
+
+완료 조건: `web` 의 `replicas` 가 3 이어야 합니다.',
+   '`kubectl edit deployment web -n $NS` 를 실행하면 vi 가 열립니다. `/replicas` + 엔터로 찾고, `i` 로 입력 모드에 들어가 숫자를 3 으로 바꾼 뒤, `Esc` 를 누르고 `:wq` 로 저장합니다. 저장하면 바로 적용됩니다. (저장하지 않고 나가면 `:q!`) 같은 결과를 내는 다른 방법(`kubectl scale`)도 있지만 이 문제는 `edit` 를 연습합니다.',
+   'kubectl edit deployment web -n $NS
+# vi 가 열리면: /replicas 엔터 → i → 1 을 3 으로 → Esc → :wq
+
+# 확인
+kubectl get deployment web -n $NS -o jsonpath=''{.spec.replicas}''',
+   '["sh", "-c", "kubectl create deployment web --image=nginx --replicas=1 -n $NS >/dev/null 2>&1; true"]',
+   '["sh", "-c", "[ \\"$(kubectl get deploy web -n $NS -o jsonpath=''{.spec.replicas}'')\\" = 3 ]"]');

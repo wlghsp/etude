@@ -129,3 +129,19 @@ pkill worker          # 이름이 worker 인 프로세스 모두 종료
 # -l : PID 와 함께 이름을 표시',
    '["sh", "-c", "cp /bin/sleep /tmp/worker; for i in 1 2 3; do nohup /tmp/worker 600 >/dev/null 2>&1 & done; sleep 1"]',
    '["sh", "-c", "! pgrep -x worker >/dev/null"]');
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
+  (3, 12, '터미널을 닫아도 계속 실행되게 하기 (nohup)',
+   '`&` 로 백그라운드에 띄운 프로세스도 **터미널 연결이 끊기면**(창을 닫거나 SSH 가 끊기면) 함께 종료될 수 있습니다. `nohup` 은 연결이 끊길 때 오는 신호(SIGHUP)를 **무시**하게 해서, 터미널이 닫혀도 계속 실행되게 합니다. 서버에서 오래 걸리는 작업을 돌릴 때 씁니다.
+
+`sleep 300` 을 `nohup` 으로 백그라운드에서 실행하세요.
+
+완료 조건: `sleep 300` 프로세스가 실행 중이어야 합니다.',
+   '`nohup sleep 300 > /dev/null 2>&1 &` 형태입니다. (`nohup` : 끊김 신호를 무시, `> /dev/null 2>&1` : 출력과 에러를 버림 — 안 하면 `nohup.out` 파일이 생김, 맨 끝 `&` : 백그라운드 실행) 확인은 `pgrep -a sleep` 또는 `ps aux | grep sleep` 로 합니다.',
+   'nohup sleep 300 > /dev/null 2>&1 &
+
+# nohup : 터미널이 닫혀도(SIGHUP) 계속 실행
+# > /dev/null 2>&1 : 출력을 버려 nohup.out 이 생기지 않게 함, & : 백그라운드
+pgrep -a sleep',
+   '["sh", "-c", null]',
+   '["sh", "-c", "pgrep -f ''[s]leep 300'' >/dev/null"]');
