@@ -28,6 +28,11 @@ export default {
         'error-container': '#93000a',
         'success': '#22c55e',
         'info': '#3b82f6',
+        'warning': '#f59e0b',
+        'accent': '#a78bfa',
+        'gold': '#facc15',
+        'rose': '#f472b6',
+        'sky': '#38bdf8',
       },
       fontFamily: {
         sans: ['Pretendard Variable', 'Pretendard', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],

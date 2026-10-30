@@ -1,5 +1,10 @@
+import { useEffect, useState } from 'react'
 import type { Quest } from '../types'
 import { formatDuration } from './useQuestTimer'
+import { Celebration } from './Celebration'
+import { fetchProgress } from '../api/user'
+import { groupByUnit } from '../units'
+import { playFanfare } from '../sound'
 
 /** 한 문제를 푼 기록 (이번에 세트에 들어와서 푼 동안의 값) */
 export interface QuestRecord {
@@ -33,6 +38,8 @@ function StatCard({ icon, label, value, sub }: { icon: string; label: string; va
 
 export function SetComplete({ setId, quests, records, saveState, onRetrySave, onHome, onReview }: Props) {
     const total = quests.length
+    // 이 세트를 처음 끝냈고 단원의 모든 세트가 완료되면 단원 완료를 축하한다
+    const [unitDone, setUnitDone] = useState<{ number: number | null; title: string; category: string } | null>(null)
     const done = quests.map((_, i) => records[i]).filter(Boolean)
     const allDone = done.length === total
     const totalSeconds = done.reduce((sum, r) => sum + r.seconds, 0)
@@ -40,24 +47,66 @@ export function SetComplete({ setId, quests, records, saveState, onRetrySave, on
     const noSolution = done.filter((r) => !r.solutionUsed).length
     const maxSeconds = Math.max(1, ...done.map((r) => r.seconds))
     // 풀이를 봤거나 3번 이상 시도한 문제는 복습하면 좋다
+    const perfect = allDone && done.every((r) => !r.hintUsed && !r.solutionUsed)
+    const firstTry = allDone && done.every((r) => r.attempts === 1)
+
+    useEffect(() => {
+        if (allDone) playFanfare()
+    }, [allDone])
+
+    useEffect(() => {
+        if (!allDone || saveState !== 'saved' || setId === null) return
+        let cancelled = false
+        fetchProgress().then((rows) => {
+            const me = rows.find((r) => r.questSetId === setId)
+            if (cancelled || !me || me.unitId === null || me.completions.length !== 1) return
+            const unitSets = rows.filter((r) => r.unitId === me.unitId)
+            if (!unitSets.every((r) => r.completions.length > 0)) return
+            const groups = groupByUnit(rows.filter((r) => r.category === me.category), (r) => ({ unitId: r.unitId, unitTitle: r.unitTitle, unitOrder: r.unitOrder }))
+            const g = groups.find((x) => x.unitId === me.unitId)
+            setUnitDone({ number: g?.number ?? null, title: me.unitTitle ?? '', category: me.category })
+            playFanfare()
+        }).catch(() => { /* 단원 축하가 없어도 세트 완료는 그대로다 */ })
+        return () => { cancelled = true }
+    }, [allDone, saveState, setId])
+
     const review = quests
         .map((q, i) => ({ q, i, r: records[i] }))
         .filter(({ r }) => r && (r.solutionUsed || r.attempts >= 3))
 
     return (
         <div className="dark h-full flex flex-col bg-surface border-r border-outline-variant overflow-y-auto">
-            <div className="px-6 py-8 flex flex-col items-center text-center border-b border-outline-variant">
-                <div className="w-16 h-16 rounded-full bg-success/15 flex items-center justify-center mb-4">
-                    <span className="material-symbols-outlined text-success text-[40px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                        {allDone ? 'celebration' : 'task_alt'}
+            {allDone && <Celebration />}
+            {unitDone && <Celebration count={140} seconds={8} />}
+            <div className="px-6 py-8 flex flex-col items-center text-center border-b border-outline-variant bg-gradient-to-b from-accent/10 via-transparent to-transparent">
+                <div className={`relative w-24 h-24 rounded-full flex items-center justify-center mb-4 ${allDone ? 'fx-bounce bg-gradient-to-br from-gold/30 to-rose/20 ring-4 ring-gold/40' : 'bg-success/15'}`}>
+                    <span className={`material-symbols-outlined text-[52px] ${allDone ? 'text-gold fx-pop' : 'text-success'}`} style={{ fontVariationSettings: "'FILL' 1" }}>
+                        {allDone ? 'emoji_events' : 'task_alt'}
                     </span>
+                    {allDone && <>
+                        <span className="fx-sparkle absolute -top-1 -right-2 material-symbols-outlined text-[26px] text-rose" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
+                        <span className="fx-sparkle absolute -bottom-1 -left-3 material-symbols-outlined text-[22px] text-sky" style={{ fontVariationSettings: "'FILL' 1", animationDelay: '0.5s' }}>auto_awesome</span>
+                    </>}
                 </div>
-                <h1 className="font-sans text-headline-lg text-on-surface">{allDone ? '축하합니다!' : '수고하셨어요'}</h1>
+                <h1 className={`font-sans text-[34px] leading-[42px] font-extrabold ${allDone ? 'fx-shine-text' : 'text-on-surface'}`}>{allDone ? '세트 완료!' : '수고하셨어요'}</h1>
                 <p className="font-sans text-body-md text-on-surface-variant mt-2">
                     {allDone
                         ? `세트${setId !== null ? ` #${setId}` : ''}의 모든 퀘스트(${total}개)를 끝냈어요.`
                         : `${total}개 중 ${done.length}개를 완료했어요. 건너뛴 문제는 아래에서 다시 풀어 볼 수 있어요.`}
                 </p>
+                {allDone && (perfect || firstTry) && (
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
+                        {perfect && <span className="fx-pop inline-flex items-center gap-1.5 rounded-full border border-gold/50 bg-gold/10 px-3 py-1 font-sans text-label-caps text-gold"><span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>퍼펙트 · 힌트·풀이 없이 모두</span>}
+                        {firstTry && <span className="fx-pop inline-flex items-center gap-1.5 rounded-full border border-sky/50 bg-sky/10 px-3 py-1 font-sans text-label-caps text-sky" style={{ animationDelay: '0.15s' }}><span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>전부 한 번에 성공</span>}
+                    </div>
+                )}
+                {unitDone && (
+                    <div className="fx-pop mt-5 w-full max-w-[420px] rounded-md border-2 border-accent bg-accent/10 px-5 py-4" style={{ animationDelay: '0.3s' }}>
+                        <p className="font-sans text-label-caps text-accent flex items-center justify-center gap-1.5"><span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>military_tech</span>단원 완료!</p>
+                        <p className="font-sans text-headline-md text-on-surface mt-1">{unitDone.category} {unitDone.number !== null ? `${unitDone.number}단원 · ` : ''}{unitDone.title}</p>
+                        <p className="font-sans text-body-md text-on-surface-variant mt-1">이 단원의 모든 세트를 끝냈어요. 홈에서 다음 단원을 만나 보세요.</p>
+                    </div>
+                )}
                 {allDone && saveState !== 'idle' && (
                     <p className={`font-sans text-label-caps mt-3 flex items-center gap-1.5 ${saveState === 'failed' ? 'text-error' : 'text-success'}`}>
                         <span className="material-symbols-outlined text-[16px]">{saveState === 'failed' ? 'error' : saveState === 'saving' ? 'sync' : 'check'}</span>

@@ -3,6 +3,8 @@ import { Terminal as XTerm } from '@xterm/xterm'
 import { FitAddon } from "@xterm/addon-fit";
 import '@xterm/xterm/css/xterm.css'
 import { issueTerminalTicket, terminalSocketUrl } from '../api/terminal'
+import { ETUDE_BANNER } from '../banner'
+import { LoadingScreen } from './LoadingScreen'
 
 export type TerminalStatus = 'connecting' | 'connected' | 'ended'
 
@@ -34,6 +36,7 @@ export function Terminal({ questId, fontSize, onConnected, onStatus }: Props) {
         term.loadAddon(fitAddon)
         term.open(containerRef.current!)
         fitAddon.fit()
+        term.write(ETUDE_BANNER)
 
         onStatus('connecting')
 
@@ -150,9 +153,8 @@ export function Terminal({ questId, fontSize, onConnected, onStatus }: Props) {
         <div className="relative" style={{ height: '100vh', background: '#000' }}>
             <div ref={containerRef} style={{ height: '100%', padding: '4px' }} />
             {loading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 gap-3">
-                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    <span className="font-sans text-label-caps text-on-surface-variant">환경 준비 중...</span>
+                <div className="absolute inset-0 flex items-center justify-center bg-black/90">
+                    <LoadingScreen message="터미널을 연결하고 있어요" />
                 </div>
             )}
         </div>
