@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { authMiddleware } from "../plugins/auth-guard.js";
-import { FeedError, addComment, deleteComment, getFeed, getFeedSummary, markFeedSeen, toggleLike } from "../services/feed.js";
+import { FeedError, addComment, deleteComment, getFeed, getFeedSummary, markFeedSeen, toggleLike, type Reaction } from "../services/feed.js";
 
 // 활동 피드 (docs/specs/spec_activity_feed.md). 서비스의 FeedError 는 그 상태 코드와 메시지로, 그 밖의 오류는 500 으로 보낸다.
 const parseId = (v: unknown): number | null => {
@@ -31,7 +31,8 @@ export const feedRoutes: FastifyPluginAsync = async (app) => {
     app.post('/feed/:id/like', { preHandler: authMiddleware }, async (req: any, reply) => {
         const id = parseId(req.params.id)
         if (id === null) return reply.code(400).send({ error: '소식 번호가 올바르지 않아요.' })
-        return toggleLike(req.user.userId, id)
+        // 종류를 보내지 않으면 기본 좋아요. 알 수 없는 종류는 서비스가 400 으로 거부한다.
+        return toggleLike(req.user.userId, id, (req.body?.kind ?? 'like') as Reaction)
     })
 
     app.post('/feed/:id/comments', { preHandler: authMiddleware }, async (req: any, reply) => {

@@ -114,6 +114,7 @@ CREATE TABLE IF NOT EXISTS set_completion (
 CREATE TABLE IF NOT EXISTS feed_like (
   completion_id INT NOT NULL,
   user_id       INT NOT NULL,
+  kind          VARCHAR(10) NOT NULL DEFAULT 'like', -- 반응 종류: like, clap, strong, fire (한 사람 한 반응)
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (completion_id, user_id),
   KEY idx_feed_like_user (user_id, created_at)

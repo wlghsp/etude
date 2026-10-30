@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchFeed, postComment, removeComment, toggleLike, type FeedEvent } from '../api/feed'
+import { REACTIONS, fetchFeed, postComment, removeComment, toggleLike, type FeedEvent, type Reaction } from '../api/feed'
 import { timeAgo } from '../activity'
 import { fetchReport, type Report } from '../api/user'
 import { ConfirmModal } from '../components/ConfirmModal'
@@ -44,15 +44,21 @@ export function FeedTab({ userName }: Props) {
         } catch (e) { setError(e instanceof Error ? e.message : '소식을 불러오지 못했어요.') } finally { setMoreLoading(false) }
     }
 
-    async function like(ev: FeedEvent) {
-        // 먼저 화면을 바꾸고, 실패하면 되돌린다
-        patch(ev.id, (e) => ({ ...e, likedByMe: !e.likedByMe, likes: e.likes + (e.likedByMe ? -1 : 1) }))
+    async function react(ev: FeedEvent, kind: Reaction) {
+        // 먼저 화면을 바꾸고, 실패하면 되돌린다 (같은 반응이면 취소, 다른 반응이면 바꿈)
+        patch(ev.id, (e) => {
+            const counts = { ...e.reactions }
+            if (e.myReaction) counts[e.myReaction] = Math.max(0, counts[e.myReaction] - 1)
+            const next = e.myReaction === kind ? null : kind
+            if (next) counts[next] += 1
+            return { ...e, reactions: counts, myReaction: next }
+        })
         try {
-            const r = await toggleLike(ev.id)
-            patch(ev.id, (e) => ({ ...e, likedByMe: r.liked, likes: r.likes }))
+            const r = await toggleLike(ev.id, kind)
+            patch(ev.id, (e) => ({ ...e, reactions: r.counts, myReaction: r.reaction }))
         } catch (e) {
             patch(ev.id, () => ev)
-            say(ev.id, e instanceof Error ? e.message : '좋아요를 누르지 못했어요.')
+            say(ev.id, e instanceof Error ? e.message : '반응을 남기지 못했어요.')
         }
     }
 
@@ -132,15 +138,24 @@ export function FeedTab({ userName }: Props) {
                         </div>
 
                         <div className="mt-4 flex items-center gap-2 border-t border-outline-variant/60 pt-3">
-                            <button
-                                onClick={() => like(ev)}
-                                disabled={mine}
-                                aria-pressed={ev.likedByMe}
-                                title={mine ? '내 소식에는 좋아요를 누를 수 없어요' : ev.likedByMe ? '좋아요 취소' : '응원하기'}
-                                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-sans text-label-caps transition-all ${ev.likedByMe ? 'border-rose/60 bg-rose/15 text-rose' : 'border-outline-variant text-on-surface-variant hover:border-rose/50 hover:text-rose'} disabled:opacity-40 disabled:hover:border-outline-variant disabled:hover:text-on-surface-variant`}
-                            >
-                                <span key={String(ev.likedByMe)} className={ev.likedByMe ? 'fx-pop' : ''}>{ev.likedByMe ? '❤️' : '🤍'}</span>{ev.likes > 0 ? ev.likes : '응원'}
-                            </button>
+                            <div role="group" aria-label="반응" className="flex items-center gap-1.5">
+                                {REACTIONS.map((r) => {
+                                    const picked = ev.myReaction === r.kind
+                                    const count = ev.reactions[r.kind]
+                                    return (
+                                        <button
+                                            key={r.kind}
+                                            onClick={() => react(ev, r.kind)}
+                                            disabled={mine}
+                                            aria-pressed={picked}
+                                            title={mine ? '내 소식에는 반응을 남길 수 없어요' : picked ? `${r.label} 취소` : r.label}
+                                            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 font-sans text-label-caps transition-all ${picked ? 'border-rose/60 bg-rose/15 text-rose' : 'border-outline-variant text-on-surface-variant hover:border-rose/50 hover:text-rose disabled:hover:border-outline-variant disabled:hover:text-on-surface-variant'} ${mine && count === 0 ? 'hidden' : ''} disabled:cursor-default`}
+                                        >
+                                            <span key={String(picked)} className={picked ? 'fx-pop' : ''}>{r.icon}</span>{count > 0 && <span className="tabular-nums">{count}</span>}
+                                        </button>
+                                    )
+                                })}
+                            </div>
                             <button
                                 onClick={() => toggleComments(ev.id)}
                                 aria-expanded={open}

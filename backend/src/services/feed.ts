@@ -4,6 +4,9 @@ import { cheersFor, type Cheer, type CompletionRec, type SetInfo } from './feed-
 // 활동 피드: 세트 완료 한 건이 소식 한 건이다. 좋아요·댓글·새 반응 알림. docs/specs/spec_activity_feed.md
 
 export const COMMENT_MAX = 300
+export const REACTIONS = ['like', 'clap', 'strong', 'fire'] as const // ❤️ 👏 💪 🔥
+export type Reaction = typeof REACTIONS[number]
+const emptyCounts = (): Record<Reaction, number> => ({ like: 0, clap: 0, strong: 0, fire: 0 })
 const COMMENTS_PER_MINUTE = 10
 const COMMENTS_PER_EVENT = 50
 const PAGE_DEFAULT = 20
@@ -36,8 +39,8 @@ export interface FeedEvent {
     isFirst: boolean // 그 세트를 처음 끝냄
     isReview: boolean // 이미 끝낸 세트를 다시 끝냄
     cheers: Cheer[] // 이 완료로 처음 이룬 일 (좋은 소식만, 우선순위 순)
-    likes: number
-    likedByMe: boolean
+    reactions: Record<Reaction, number> // 반응 종류별 수
+    myReaction: Reaction | null // 내가 남긴 반응 (한 사람 한 반응)
     comments: FeedComment[]
 }
 
@@ -69,7 +72,7 @@ export async function getFeed(userId: number, role: string, opts: { before?: num
 
     const ids = rows.map((r) => r.id)
     const [likeRows] = await db.query(
-        'SELECT completion_id, COUNT(*) AS n, SUM(user_id = ?) AS mine FROM feed_like WHERE completion_id IN (?) GROUP BY completion_id',
+        'SELECT completion_id, kind, COUNT(*) AS n, SUM(user_id = ?) AS mine FROM feed_like WHERE completion_id IN (?) GROUP BY completion_id, kind',
         [userId, ids]) as any[]
     const [commentRows] = await db.query(`
         SELECT cm.id, cm.completion_id, cm.user_id, u.name AS user_name, cm.body, cm.created_at
@@ -91,7 +94,16 @@ export async function getFeed(userId: number, role: string, opts: { before?: num
         history.set(h.user_id, list)
     }
 
-    const likes = new Map((likeRows as any[]).map((l) => [l.completion_id, l]))
+    const reactionCounts = new Map<number, Record<Reaction, number>>()
+    const myReactions = new Map<number, Reaction>()
+    for (const l of likeRows as any[]) {
+        const kind = l.kind as Reaction
+        if (!REACTIONS.includes(kind)) continue
+        const counts = reactionCounts.get(l.completion_id) ?? emptyCounts()
+        counts[kind] = Number(l.n)
+        reactionCounts.set(l.completion_id, counts)
+        if (Number(l.mine) > 0) myReactions.set(l.completion_id, kind)
+    }
     const comments = new Map<number, FeedComment[]>()
     for (const c of commentRows as any[]) {
         const list = comments.get(c.completion_id) ?? []
@@ -100,7 +112,6 @@ export async function getFeed(userId: number, role: string, opts: { before?: num
     }
 
     return rows.map((r) => {
-        const like = likes.get(r.id)
         const earlier = Number(r.earlier)
         return {
             id: r.id,
@@ -114,8 +125,8 @@ export async function getFeed(userId: number, role: string, opts: { before?: num
             perfect: Number(r.quest_count) > 0 && Number(r.hint_free_count) === Number(r.quest_count) && Number(r.solution_free_count) === Number(r.quest_count),
             isFirst: earlier === 0,
             isReview: earlier > 0,
-            likes: like ? Number(like.n) : 0,
-            likedByMe: like ? Number(like.mine) > 0 : false,
+            reactions: reactionCounts.get(r.id) ?? emptyCounts(),
+            myReaction: myReactions.get(r.id) ?? null,
             comments: comments.get(r.id) ?? [],
             cheers: cheersFor(history.get(r.user_id) ?? [], sets, r.id),
         }
@@ -128,15 +139,20 @@ async function ownerOf(completionId: number): Promise<number> {
     return (rows as any[])[0].user_id
 }
 
-/** 좋아요를 켜거나 끈다. 내 소식에는 누를 수 없다. */
-export async function toggleLike(userId: number, completionId: number): Promise<{ liked: boolean; likes: number }> {
-    if (await ownerOf(completionId) === userId) throw new FeedError(400, '내 소식에는 좋아요를 누를 수 없어요.')
-    const [existing] = await db.query('SELECT 1 AS x FROM feed_like WHERE completion_id = ? AND user_id = ?', [completionId, userId]) as any[]
-    const liked = (existing as any[]).length === 0
-    if (liked) await db.query('INSERT IGNORE INTO feed_like (completion_id, user_id) VALUES (?, ?)', [completionId, userId])
-    else await db.query('DELETE FROM feed_like WHERE completion_id = ? AND user_id = ?', [completionId, userId])
-    const [count] = await db.query('SELECT COUNT(*) AS n FROM feed_like WHERE completion_id = ?', [completionId]) as any[]
-    return { liked, likes: Number((count as any[])[0].n) }
+/** 반응을 남기거나 바꾸거나 취소한다 (한 사람 한 반응: 같은 걸 다시 누르면 취소, 다른 걸 누르면 바뀐다). 내 소식에는 남길 수 없다. */
+export async function toggleLike(userId: number, completionId: number, kind: Reaction = 'like'): Promise<{ reaction: Reaction | null; counts: Record<Reaction, number> }> {
+    if (!REACTIONS.includes(kind)) throw new FeedError(400, '알 수 없는 반응이에요.')
+    if (await ownerOf(completionId) === userId) throw new FeedError(400, '내 소식에는 반응을 남길 수 없어요.')
+    const [existing] = await db.query('SELECT kind FROM feed_like WHERE completion_id = ? AND user_id = ?', [completionId, userId]) as any[]
+    const mine = (existing as any[])[0]?.kind as string | undefined
+    let reaction: Reaction | null = kind
+    if (mine === undefined) await db.query('INSERT IGNORE INTO feed_like (completion_id, user_id, kind) VALUES (?, ?, ?)', [completionId, userId, kind])
+    else if (mine === kind) { await db.query('DELETE FROM feed_like WHERE completion_id = ? AND user_id = ?', [completionId, userId]); reaction = null }
+    else await db.query('UPDATE feed_like SET kind = ? WHERE completion_id = ? AND user_id = ?', [kind, completionId, userId])
+    const [rows] = await db.query('SELECT kind, COUNT(*) AS n FROM feed_like WHERE completion_id = ? GROUP BY kind', [completionId]) as any[]
+    const counts = emptyCounts()
+    for (const r of rows as any[]) if (REACTIONS.includes(r.kind)) counts[r.kind as Reaction] = Number(r.n)
+    return { reaction, counts }
 }
 
 export async function addComment(userId: number, completionId: number, body: unknown): Promise<FeedComment> {

@@ -40,13 +40,14 @@ describe('피드 라우트', () => {
     })
 
     it('POST /feed/:id/like 는 결과를 돌려주고, 서비스 오류는 그 상태 코드로 보낸다', async () => {
-        vi.mocked(toggleLike).mockResolvedValueOnce({ liked: true, likes: 2 })
-        const ok = await app.inject({ method: 'POST', url: '/feed/5/like', headers: auth() })
-        expect(ok.json()).toEqual({ liked: true, likes: 2 })
-        expect(toggleLike).toHaveBeenCalledWith(7, 5)
+        vi.mocked(toggleLike).mockResolvedValueOnce({ reaction: 'clap', counts: { like: 0, clap: 2, strong: 0, fire: 0 } })
+        const ok = await app.inject({ method: 'POST', url: '/feed/5/like', headers: auth(), payload: { kind: 'clap' } })
+        expect(ok.json()).toEqual({ reaction: 'clap', counts: { like: 0, clap: 2, strong: 0, fire: 0 } })
+        expect(toggleLike).toHaveBeenCalledWith(7, 5, 'clap')
 
         vi.mocked(toggleLike).mockRejectedValueOnce(new FeedError(400, '내 소식에는 좋아요를 누를 수 없어요.'))
         const bad = await app.inject({ method: 'POST', url: '/feed/5/like', headers: auth() })
+        expect(toggleLike).toHaveBeenLastCalledWith(7, 5, 'like') // 종류를 안 보내면 기본 좋아요
         expect(bad.statusCode).toBe(400)
         expect(bad.json()).toEqual({ error: '내 소식에는 좋아요를 누를 수 없어요.' })
     })

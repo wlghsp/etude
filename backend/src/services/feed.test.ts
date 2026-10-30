@@ -8,45 +8,62 @@ const q = vi.mocked(db.query)
 const ok = { affectedRows: 1, insertId: 0 }
 const catchErr = async (p: Promise<unknown>) => { try { await p; return null } catch (e) { return e as FeedError } }
 
-describe('toggleLike', () => {
+describe('toggleLike (반응)', () => {
     beforeEach(() => vi.clearAllMocks())
 
     it('없는 소식이면 404', async () => {
         q.mockResolvedValueOnce([[]] as any)
 
-        const e = await catchErr(toggleLike(7, 99))
+        const e = await catchErr(toggleLike(7, 99, 'like'))
 
         expect(e).toBeInstanceOf(FeedError)
         expect(e!.status).toBe(404)
     })
 
-    it('내 소식에는 좋아요를 누를 수 없다 (400)', async () => {
+    it('내 소식에는 반응을 누를 수 없다 (400)', async () => {
         q.mockResolvedValueOnce([[{ user_id: 7 }]] as any)
 
-        const e = await catchErr(toggleLike(7, 5))
+        const e = await catchErr(toggleLike(7, 5, 'like'))
 
         expect(e!.status).toBe(400)
         expect(q).toHaveBeenCalledTimes(1)
     })
 
-    it('아직 안 눌렀으면 좋아요를 켜고 수를 돌려준다', async () => {
-        q.mockResolvedValueOnce([[{ user_id: 8 }]] as any) // 소식 주인
-            .mockResolvedValueOnce([[]] as any)               // 기존 좋아요 없음
-            .mockResolvedValueOnce([ok] as any)               // INSERT
-            .mockResolvedValueOnce([[{ n: 3 }]] as any)       // 개수
+    it('정해진 반응(like, clap, strong, fire)이 아니면 400 이고 조회하지도 않는다', async () => {
+        const e = await catchErr(toggleLike(7, 5, 'angry' as any))
 
-        expect(await toggleLike(7, 5)).toEqual({ liked: true, likes: 3 })
+        expect(e!.status).toBe(400)
+        expect(q).not.toHaveBeenCalled()
+    })
+
+    it('아직 안 눌렀으면 반응을 남기고 종류별 수를 돌려준다', async () => {
+        q.mockResolvedValueOnce([[{ user_id: 8 }]] as any) // 소식 주인
+            .mockResolvedValueOnce([[]] as any)               // 내 기존 반응 없음
+            .mockResolvedValueOnce([ok] as any)               // INSERT
+            .mockResolvedValueOnce([[{ kind: 'clap', n: 2 }, { kind: 'like', n: 1 }]] as any)
+
+        expect(await toggleLike(7, 5, 'clap')).toEqual({ reaction: 'clap', counts: { like: 1, clap: 2, strong: 0, fire: 0 } })
         expect(String(q.mock.calls[2]![0])).toContain('INSERT')
     })
 
-    it('이미 눌렀으면 취소한다', async () => {
+    it('같은 반응을 다시 누르면 취소한다', async () => {
         q.mockResolvedValueOnce([[{ user_id: 8 }]] as any)
-            .mockResolvedValueOnce([[{ x: 1 }]] as any)
+            .mockResolvedValueOnce([[{ kind: 'clap' }]] as any)
             .mockResolvedValueOnce([ok] as any)
-            .mockResolvedValueOnce([[{ n: 1 }]] as any)
+            .mockResolvedValueOnce([[{ kind: 'like', n: 1 }]] as any)
 
-        expect(await toggleLike(7, 5)).toEqual({ liked: false, likes: 1 })
+        expect(await toggleLike(7, 5, 'clap')).toEqual({ reaction: null, counts: { like: 1, clap: 0, strong: 0, fire: 0 } })
         expect(String(q.mock.calls[2]![0])).toContain('DELETE')
+    })
+
+    it('다른 반응을 누르면 내 반응을 바꾼다 (한 사람 한 반응)', async () => {
+        q.mockResolvedValueOnce([[{ user_id: 8 }]] as any)
+            .mockResolvedValueOnce([[{ kind: 'like' }]] as any)
+            .mockResolvedValueOnce([ok] as any)
+            .mockResolvedValueOnce([[{ kind: 'fire', n: 1 }]] as any)
+
+        expect((await toggleLike(7, 5, 'fire')).reaction).toBe('fire')
+        expect(String(q.mock.calls[2]![0])).toContain('UPDATE')
     })
 })
 
@@ -140,7 +157,7 @@ describe('getFeed', () => {
 
     it('퍼펙트·첫 완료·복습 표시와 좋아요·댓글을 소식에 붙인다', async () => {
         q.mockResolvedValueOnce([[ev({}), ev({ id: 9, user_id: 7, user_name: '나', hint_free_count: 2, earlier: 2 })]] as any)
-            .mockResolvedValueOnce([[{ completion_id: 10, n: 2, mine: 1 }]] as any)
+            .mockResolvedValueOnce([[{ completion_id: 10, kind: 'like', n: 1, mine: 0 }, { completion_id: 10, kind: 'clap', n: 1, mine: 1 }]] as any)
             .mockResolvedValueOnce([[
                 { id: 1, completion_id: 10, user_id: 7, user_name: '나', body: '굿', created_at: new Date('2026-10-30T02:00:00Z') },
                 { id: 2, completion_id: 10, user_id: 8, user_name: '다', body: '고마워요', created_at: new Date('2026-10-30T03:00:00Z') },
@@ -150,10 +167,10 @@ describe('getFeed', () => {
 
         const feed = await getFeed(7, 'member', {})
 
-        expect(feed[0]).toMatchObject({ id: 10, userName: '다', perfect: true, isFirst: true, isReview: false, likes: 2, likedByMe: true })
+        expect(feed[0]).toMatchObject({ id: 10, userName: '다', perfect: true, isFirst: true, isReview: false, reactions: { like: 1, clap: 1, strong: 0, fire: 0 }, myReaction: 'clap' })
         expect(feed[0]!.comments.map((c) => [c.userName, c.canDelete])).toEqual([['나', true], ['다', false]]) // 내 댓글만 지울 수 있다
         expect(feed[0]!.cheers.map((c) => c.text)).toContain("'첫 걸음' 배지를 얻었어요") // 첫 세트 완료 축하
-        expect(feed[1]).toMatchObject({ id: 9, perfect: false, isFirst: false, isReview: true, likes: 0, likedByMe: false, comments: [] })
+        expect(feed[1]).toMatchObject({ id: 9, perfect: false, isFirst: false, isReview: true, reactions: { like: 0, clap: 0, strong: 0, fire: 0 }, myReaction: null, comments: [] })
     })
 
     it('관리자는 모든 댓글을 지울 수 있다', async () => {

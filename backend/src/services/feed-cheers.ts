@@ -25,7 +25,7 @@ export function cheersFor(recs: CompletionRec[], sets: SetInfo[], completionId: 
     for (const u of after.units) if (!before.units.has(u)) out.push({ kind: 'unit', icon: '🎖️', text: '한 단원을 모두 끝냈어요' })
     if (after.monthCount >= MONTHLY_TARGET && before.monthCount < MONTHLY_TARGET) out.push({ kind: 'challenge', icon: '🎁', text: `${Number(at.day.slice(5, 7))}월 도전을 완료했어요` })
     const level = levelOf(after.xp)
-    if (level > levelOf(before.xp)) out.push({ kind: 'level', icon: '⭐', text: `Lv.${level} ${TITLES[Math.min(level - 1, TITLES.length - 1)]}이(가) 됐어요` })
+    if (level > levelOf(before.xp)) out.push({ kind: 'level', icon: '⭐', text: `Lv.${level} ${TITLES[Math.min(level - 1, TITLES.length - 1)]} 레벨이 됐어요` })
     for (const m of STREAK_MILESTONES) if (after.streak >= m && before.streak < m) out.push({ kind: 'streak', icon: '🔥', text: `${m}일 연속 학습!` })
     // 단원·분야 정복 배지는 위의 단원·분야 축하로 따로 알린다
     for (const b of BADGES) if (b.id !== 'unit' && b.id !== 'category' && after.badges.has(b.id) && !before.badges.has(b.id)) out.push({ kind: 'badge', icon: b.icon, text: `'${b.title}' 배지를 얻었어요` })
