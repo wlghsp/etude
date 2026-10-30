@@ -1,0 +1,50 @@
+-- Git 세트 55. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set55.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 16, '인프라', '용어 지도', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 16);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 55, '인프라 용어 지도: RHV·RHOV·OSP·OCP 헷갈리지 않기', '레드햇·VMware 계열의 비슷해 보이는 이름들(RHV, RHOV, RHOSP/OSP, RHOSO, OCP, vSphere/vCenter, KVM, KubeVirt)을 "VM 을 관리하나, 컨테이너를 관리하나" 라는 축으로 구분합니다. 이름이 나왔을 때 어느 층의 이야기인지 바로 떠올리는 것이 목표입니다.', 'quiz', '인프라'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 55);
+UPDATE quest_set SET display_order = 610, unit_id = (SELECT id FROM unit WHERE id = 16), icon = '🗺️' WHERE id = 55;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 55, 1, 'RHV, OCP, OSP 를 가르는 기준 축 알기', 'RHV, OCP, OSP 같은 이름이 헷갈릴 때, 제품을 가르는 **가장 핵심적인 기준**은 무엇일까요?', '이름 앞의 "RH" 가 있느냐 없느냐는 기준이 아닙니다. 이 제품들이 **무엇을 관리하는지**를 보세요.', NULL, NULL, '[]', 'choice', '["이름에 RH 가 붙어 있는지", "**VM(가상머신)** 을 관리하는 제품인지, **컨테이너**를 관리하는 제품인지", "설치에 걸리는 시간", "웹 콘솔이 있는지"]', 1, 'RHV·RHOSP 는 VM 을, OCP 는 컨테이너를 관리합니다. 이름 앞의 `RH` 는 마케팅상 표기 차이일 뿐 구분 기준이 아닙니다. (RHV, OCP, OSP 모두 레드햇 제품입니다.) 다만 최신 제품(RHOV, RHOSO)은 VM 관련 기능이 OCP 위에서 돌아서 이 경계가 섞입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 55 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 55, 2, '설명에 해당하는 제품 고르기 (1): KVM 기반 서버 가상화', 'KVM 기반의 **서버 가상화 플랫폼**으로, VMware vSphere 와 직접 경쟁하던 레드햇 제품입니다. 하이퍼바이저 위에 VM 을 올려 관리하며 지금은 단종되었습니다. 어떤 제품일까요?', 'VM 을 관리하는 제품이고, 컨테이너 플랫폼은 아닙니다.', NULL, NULL, '[]', 'choice', '["RHV (Red Hat Virtualization)", "OCP (OpenShift Container Platform)", "RHOSO (Red Hat OpenStack Services on OpenShift)", "Ceph"]', 0, '**RHV** 는 KVM 기반 서버 가상화 플랫폼입니다. 후속은 OCP 위에서 VM 을 다루는 **RHOV** 입니다. OCP 는 컨테이너 플랫폼, RHOSO 는 OpenStack 을 OCP 위에서 돌리는 구조, Ceph 는 스토리지입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 55 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 55, 3, '설명에 해당하는 제품 고르기 (2): OCP 위에서 VM 직접 관리', 'RHV 의 후속입니다. 별도의 하이퍼바이저 플랫폼이 아니라, **OCP(쿠버네티스) 클러스터 위에서 KubeVirt 로 VM 을 쿠버네티스 오브젝트처럼** 관리합니다. 어떤 것일까요?', '"OpenShift" 위에서 "Virtualization" 을 한다는 뜻의 이름입니다.', NULL, NULL, '[]', 'choice', '["RHOSP (Red Hat OpenStack Platform)", "RHV (Red Hat Virtualization)", "RHOV (Red Hat OpenShift Virtualization)", "vCenter"]', 2, '**RHOV** 는 OCP 위에서 KubeVirt 로 VM 을 `VirtualMachine` 같은 쿠버네티스 오브젝트로 다룹니다. RHV 는 단종된 전신이고, RHOSP 는 OpenStack 기반 IaaS 입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 55 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 55, 4, '설명에 해당하는 제품 고르기 (3): OpenStack 기반 IaaS', 'VM, 네트워크, 스토리지를 **코드와 API 로 프로비저닝**하는 클라우드 인프라 계층입니다. OpenStack 을 레드햇이 패키징해 지원하는 제품이며 줄여서 OSP 라고도 부릅니다. 어떤 것일까요?', 'OpenStack 이라는 오픈소스 프로젝트의 레드햇 배포판입니다.', NULL, NULL, '[]', 'choice', '["OCP (OpenShift Container Platform)", "RHOV (Red Hat OpenShift Virtualization)", "KVM", "RHOSP (Red Hat OpenStack Platform)"]', 3, '**RHOSP(OSP)** 는 OpenStack 기반 IaaS 플랫폼입니다. 리눅스 커널(오픈소스 프로젝트)에 대한 RHEL(배포판)처럼, OpenStack(오픈소스 프로젝트)에 대한 레드햇 배포판입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 55 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 55, 5, 'RHOSP 와 RHOSO 의 차이 알기', 'RHOSO 는 RHOSP 와 같은 OpenStack 을 쓰지만 **구조가 다릅니다.** 무엇이 다를까요?', 'RHOSO 의 이름 "Services on OpenShift" 에 힌트가 있습니다.', NULL, NULL, '[]', 'choice', '["RHOSO 는 OpenStack 을 쓰지 않고 쿠버네티스만 쓴다", "RHOSO 는 VM 대신 컨테이너만 실행하는 제품이다", "RHOSO 는 OpenStack 의 제어 컴포넌트(서비스)들을 **OCP 위에 컨테이너로** 올려 관리하는 최신 아키텍처이다", "RHOSO 는 RHOSP 의 이전 세대 제품이다"]', 2, '**RHOSP** 는 OpenStack 컴포넌트가 별도 VM·베어메탈 위에서 직접 도는 전통 방식이고, **RHOSO** 는 같은 OpenStack 의 제어 컴포넌트를 OCP 위에 컨테이너로 올립니다. 그 위에서 돌아가는 사용자 VM 은 여전히 VM 입니다. 즉 "OCP 가 기반이 되고 그 위에 OpenStack 이 얹힌" 구조입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 55 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 55, 6, 'OCP 가 순정 쿠버네티스와 같은 것 알기', 'OCP 는 쿠버네티스를 레드햇이 패키징한 **배포판**입니다. 순정 쿠버네티스에서 쓰던 것 중 OCP 에서도 **그대로 쓰이는 것**은 무엇일까요?', '리눅스 커널과 배포판(우분투, RHEL)의 관계를 떠올려 보세요. 커널의 핵심은 같습니다.', NULL, NULL, '[]', 'choice', '["Pod, Deployment, Service 같은 오브젝트와 API (YAML 과 `kubectl` 도 대부분 그대로)", "설치·업그레이드 방식", "웹 콘솔과 로그인 방식", "소스에서 이미지를 빌드하는 기능"]', 0, 'OCP 가 더한 것은 설치·업그레이드 도구, OAuth 기반 인증, 이미지 빌드(Source-to-Image), 웹 콘솔, `oc` CLI 같은 **주변 계층**입니다. Pod, Deployment, Service 같은 **오브젝트와 API 자체는 그대로**여서 기존 매니페스트와 `kubectl` 이 대부분 동작합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 55 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 55, 7, 'OpenStack 에 대응하는 VMware 제품 알기', '레드햇 진영의 **OpenStack(RHOSP)** 처럼, 여러 팀·고객에게 독립된 가상 데이터센터를 **셀프서비스(멀티테넌트 IaaS)** 로 제공하는 계층에 대응하는 VMware 제품은 무엇일까요?', 'vCenter 는 여러 ESXi 호스트를 묶어 관리하는 쪽입니다. 그 위에 멀티테넌시를 얹는 제품이 따로 있습니다.', NULL, NULL, '[]', 'choice', '["vCenter", "ESXi", "vSphere Client", "vCloud Director"]', 3, '대응은 두 층으로 나뉩니다. 하이퍼바이저·단일 관리 층은 **ESXi ↔ KVM, vCenter ↔ RHV** 이고, 멀티테넌트 IaaS 층은 **vCloud Director ↔ OpenStack(RHOSP)** 입니다. 그래서 OpenStack 에 대응하는 것은 vSphere/vCenter 가 아니라 vCloud Director 입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 55 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 55, 8, 'KVM 과 QEMU 의 역할 구분', 'RHV, RHOSP, RHOV 는 이름과 관리 방식은 달라도 **밑바닥에서는 KVM/QEMU** 를 씁니다. KVM 과 QEMU 의 역할 분담으로 알맞은 것은 무엇일까요?', 'KVM 은 리눅스 **커널 안**에 있고, QEMU 는 **일반 프로세스**입니다.', NULL, NULL, '[]', 'choice', '["KVM 은 디스크·네트워크 에뮬레이션을, QEMU 는 CPU 가상화를 맡는다", "KVM(커널 모듈)은 CPU·메모리 가상화를 하드웨어 가속으로 처리하고, QEMU(유저스페이스 프로세스)는 디스크·네트워크 카드 에뮬레이션과 VM 프로세스 실행을 맡는다", "KVM 과 QEMU 는 서로 대체하는 별개의 하이퍼바이저이다", "KVM 은 VMware 의 하이퍼바이저 이름이다"]', 1, '**KVM** 은 별도 프로그램이 아니라 리눅스 커널에 들어 있는 모듈로, CPU 의 하드웨어 가상화 기능(VT-x/AMD-V)을 열어 CPU·메모리를 가상화합니다. **QEMU** 는 유저스페이스에서 디스크 이미지, 네트워크 카드 에뮬레이션과 VM 프로세스 실행을 맡고, `/dev/kvm` 으로 CPU 명령을 KVM 에 위임합니다. 그래서 항상 "KVM/QEMU" 로 묶어 부릅니다. VMware 의 하이퍼바이저는 ESXi 입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 55 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 55, 9, 'RHOV 에서 VM 하나가 뜨는 흐름 놓기', 'RHOV(OCP 위의 KubeVirt)에서 사용자가 VM 을 요청했을 때 실제로 일어나는 일을 **앞에서 뒤 순서**대로 놓으세요.', 'VM 도 결국 쿠버네티스가 스케줄링하는 Pod 안에서 돌아갑니다.', NULL, NULL, '[]', 'order', '["그 Pod 안에서 QEMU/KVM 프로세스가 실행된다", "사용자가 `VirtualMachine` 오브젝트(커스텀 리소스)를 선언한다", "VM 이 사용 가능한 상태가 된다", "`virt-launcher` Pod 가 노드에 스케줄링된다"]', NULL, '**`VirtualMachine` 선언 → `virt-launcher` Pod 스케줄 → Pod 안에서 QEMU/KVM 실행 → VM 가동** 순서입니다. VM 자체가 컨테이너로 바뀌는 것이 아니라 "QEMU/KVM 프로세스를 담은 Pod" 를 쿠버네티스가 스케줄링·재시작·감시하는 구조입니다. 그래서 `kubectl get pods` 로 보면 VM 도 Pod 하나로 보입니다.', '[1, 3, 0, 2]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 55 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 55, 10, '컨테이너와 VM 의 격리 차이 알기', '서로 **신뢰할 수 없는 다른 팀(테넌트)** 의 워크로드를 한 서버에 같이 올려야 해서 **강한 격리**가 필요합니다. 컨테이너와 VM 중 무엇이 더 알맞고, 이유는 무엇일까요?', '컨테이너는 호스트와 **커널을 공유**합니다. VM 은 어떨까요?', NULL, NULL, '[]', 'choice', '["컨테이너가 알맞다. 컨테이너는 커널을 서로 완전히 분리해서 쓴다", "둘의 격리 수준은 완전히 같다", "VM 이 알맞다. VM 은 커널까지 통째로 분리되어 있어 한쪽의 커널 취약점이 다른 쪽으로 번지기 어렵다", "컨테이너가 알맞다. 시작이 빨라서 안전하다"]', 2, '컨테이너는 하나의 리눅스 커널 위에서 namespace·cgroup 으로 프로세스를 격리하므로 **커널을 공유**합니다. 커널 취약점이 뚫리면 같은 호스트의 다른 컨테이너도 영향받을 수 있습니다. VM 은 **자기 커널을 따로** 가져 격리 경계가 훨씬 단단하지만, 부팅과 메모리 오버헤드가 있습니다. 시작 속도는 격리 강도와 무관합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 55 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 55, 11, '"OCP 위에서 도는 VM" 이라는 말 구분하기', '"OCP 위에서 도는 VM" 이라는 말이 나왔습니다. 둘 중 **VM 자체를 Pod(virt-launcher) 로 만들어** 쿠버네티스 오브젝트로 직접 관리하는 쪽은 무엇일까요?', '다른 한쪽은 OCP 위에 OpenStack 이라는 IaaS 도구를 컨테이너로 올리고, 그 도구가 VM 을 만듭니다.', NULL, NULL, '[]', 'choice', '["RHOSO (OpenStack 서비스가 컨테이너화되어 VM 을 만든다)", "RHOV (VM 자체를 KubeVirt 로 Pod 안에서 실행)", "둘 다 해당하지 않는다", "둘 다 같은 방식이다"]', 1, '**RHOV** 는 VM 을 쿠버네티스 오브젝트(Pod)로 직접 얹고, **RHOSO** 는 OpenStack 이라는 IaaS 도구 **자체**를 OCP 위에 컨테이너로 얹습니다(VM 은 OpenStack 이 만듭니다). 둘 다 OCP 가 기반이 된다는 점은 같지만 "무엇을 컨테이너로 올렸나"가 다릅니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 55 AND order_index = 11);

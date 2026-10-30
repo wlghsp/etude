@@ -1,0 +1,12 @@
+{
+  "setId": 51,
+  "answers": {
+    "4": "sed -i 's/^bakend/backend/' /tmp/haproxy.cfg\nhaproxy -c -f /tmp/haproxy.cfg\n\n# haproxy -c -f : 설정만 검사하고 실행하지 않는다",
+    "5": "echo '    server s2 127.0.0.1:9002 check' >> /tmp/haproxy.cfg\n\n# backend 구역의 마지막 줄이므로 파일 끝에 붙여도 된다",
+    "6": "haproxy -D -f /tmp/haproxy.cfg\nfor i in 1 2 3 4; do curl -s localhost:8080; echo; done > /tmp/rr.txt\n\n# -D : 백그라운드로 실행 (daemon)\n# roundrobin 이라 요청이 번갈아 간다",
+    "7": "sed -i 's/^    default_backend web/    use_backend api if { path_beg \\/api }\\n    default_backend web/' /tmp/haproxy.cfg\nhaproxy -D -f /tmp/haproxy.cfg\ncurl -s localhost:8080/api/users > /tmp/api.txt\ncurl -s localhost:8080/ > /tmp/web.txt\n\n# use_backend api if { path_beg /api } : 경로가 /api 로 시작하면 api backend\n# 그 외는 default_backend web",
+    "8": "haproxy -D -f /tmp/haproxy.cfg\npkill -f 'etude-httpd 900[2]'\nsleep 4\nfor i in 1 2 3 4 5 6; do curl -s localhost:8080; echo; done > /tmp/hc.txt\n\n# check inter 1s fall 1 : 1초마다 확인하고 한 번 실패하면 제외\n# 죽은 서버로는 요청이 가지 않아 A1 만 나온다",
+    "9": "sed -i 's/^    default_backend app/    stats enable\\n    stats uri \\/stats\\n    default_backend app/' /tmp/haproxy.cfg\nhaproxy -D -f /tmp/haproxy.cfg\ncurl -s localhost:8080/stats > /tmp/stats.txt\n\n# stats enable : 통계 화면 켜기\n# stats uri /stats : 접속 주소",
+    "10": "sed -i 's/^    server s1 \\(.*\\)$/    server s1 \\1 weight 3/; s/^    server s2 \\(.*\\)$/    server s2 \\1 weight 1/' /tmp/haproxy.cfg\nhaproxy -D -f /tmp/haproxy.cfg\nfor i in 1 2 3 4 5 6 7 8; do curl -s localhost:8080; echo; done > /tmp/w.txt\n\n# weight 3 : 3 몫, weight 1 : 1 몫 (기본값은 1)"
+  }
+}

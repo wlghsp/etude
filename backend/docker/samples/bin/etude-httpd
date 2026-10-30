@@ -1,9 +1,11 @@
 #!/usr/bin/perl
 # 퀘스트용 작은 HTTP 서버. 사용법: etude-httpd PORT
+#   etude-httpd PORT [이름]: 이름을 주면 본문이 healthy 대신 그 이름이 된다 (분산 확인용)
 #   /health → 503 down,  POST → "got:<본문>",  그 외 → 200 healthy (헤더 X-Env: prod)
 use strict; use warnings; use IO::Socket::INET;
 $SIG{PIPE} = 'IGNORE'; $SIG{CHLD} = 'IGNORE';
-my $port = shift or die "usage: etude-httpd PORT\n";
+my $port = shift or die "usage: etude-httpd PORT [NAME]\n";
+my $name = shift;
 my $s = IO::Socket::INET->new(Listen => 20, LocalPort => $port, ReuseAddr => 1, Proto => 'tcp') or die "bind: $!\n";
 while (my $c = $s->accept) {
     my $pid = fork;
@@ -15,7 +17,7 @@ while (my $c = $s->accept) {
     while (my $l = <$c>) { $l =~ s/\r?\n$//; last if $l eq ''; $h{lc $1} = $2 if $l =~ /^([^:]+):\s*(.*)$/ }
     my $body = '';
     read($c, $body, $h{'content-length'}) if ($h{'content-length'} || 0) > 0;
-    my ($code, $text, $out) = (200, 'OK', 'healthy');
+    my ($code, $text, $out) = (200, 'OK', $name // 'healthy');
     if ($path eq '/health') { ($code, $text, $out) = (503, 'Service Unavailable', 'down') }
     elsif ($m eq 'POST') { $out = "got:$body" }
     my $len = length $out;

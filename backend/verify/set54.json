@@ -1,0 +1,13 @@
+{
+  "setId": 54,
+  "answers": {
+    "4": "git clone /tmp/remote.git /tmp/work\n\n# clone : 원격의 전체 이력을 내려받고 origin 으로 연결한다",
+    "5": "cd /tmp/proj\ngit remote -v > /tmp/remote.txt\n\n# -v : 주소까지 자세히\n# 가져오기(fetch)와 올리기(push) 줄이 따로 나온다",
+    "6": "cd /tmp/proj\ngit push origin main\n\n# push : 내 커밋을 원격으로 올린다",
+    "7": "cd /tmp/proj\ngit switch -c feature/x\necho x > x.txt\ngit add x.txt\ngit commit -m \"add x\"\ngit push -u origin feature/x\n\n# -u : 이 브랜치와 원격 브랜치를 연결해 다음부터 git push/pull 만 써도 된다",
+    "8": "cd /tmp/proj\ngit pull\n\n# pull = fetch + merge",
+    "9": "cd /tmp/proj\ngit fetch\ngit log main..origin/main --oneline > /tmp/incoming.txt\n\n# fetch 는 작업 폴더를 바꾸지 않는다\n# A..B : B 에는 있고 A 에는 없는 커밋",
+    "10": "cd /tmp/proj\ngit pull --no-rebase --no-edit\ngit push\n\n# 먼저 원격 작업을 받아 합친 뒤 올린다\n# --force 로 밀어붙이면 팀원 커밋이 사라질 수 있다",
+    "11": "git clone /tmp/remote.git /tmp/work\ncd /tmp/work\ngit switch -c feature/docs\necho docs > docs.txt\ngit add docs.txt\ngit commit -m \"add docs\"\ngit push -u origin feature/docs"
+  }
+}

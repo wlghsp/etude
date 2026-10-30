@@ -1,0 +1,63 @@
+-- Git 세트 64. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set64.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 23, '미들웨어', 'CI/CD·레지스트리', 60 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 23);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 64, 'CI/CD 도구 입문: Jenkins, Nexus, Harbor', 'CI 와 CD 의 구분, Jenkinsfile(pipeline·agent·stages·steps·post·when)과 controller·agent, Nexus 의 저장소 종류(hosted·proxy·group), Harbor 와 이미지 주소 읽기, 이미지를 올리고 받아 쓰는 순서, ImagePullBackOff 와 latest 태그의 위험을 문제로 정리합니다.', 'quiz', '미들웨어'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 64);
+UPDATE quest_set SET display_order = 560, unit_id = (SELECT id FROM unit WHERE id = 23), icon = '🏭' WHERE id = 64;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 64, 1, 'CI 와 CD 구분하기', '**CI(지속적 통합)** 와 **CD(지속적 배포/전달)** 의 설명으로 알맞은 것은 무엇일까요?', 'CI 는 코드가 합쳐질 때마다 하는 일, CD 는 그 결과물을 내보내는 일입니다.', NULL, NULL, '[]', 'choice', '["CI 는 코드 변경이 올라올 때마다 **빌드와 테스트를 자동으로** 돌려 통합 문제를 일찍 발견하는 것이고, CD 는 검증된 결과물을 **환경에 자동으로 배포(전달)** 하는 것이다", "CI 는 서버를 배포하고 CD 는 코드를 컴파일한다", "CI 와 CD 는 같은 말이다", "CI 는 백업이고 CD 는 복구이다"]', 0, '코드가 `main` 에 합쳐질 때마다 자동으로 빌드·테스트(CI)하고, 통과한 결과물을 이미지로 만들어 레지스트리에 올리고 클러스터에 배포(CD)하는 것이 전형적인 흐름입니다. 이 흐름의 출발점이 Git 입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 64 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 64, 2, 'Jenkinsfile 의 기본 구조 읽기', '아래 Declarative Pipeline 에서 **실제 명령(`sh`)을 실행하는 구역**은 어디일까요?
+
+pipeline {
+  agent any
+  stages {
+    stage(''Build'') {
+      steps { sh ''make build'' }
+    }
+  }
+}', '큰 단위에서 작은 단위로: pipeline → stages → stage → ?', NULL, NULL, '[]', 'choice', '["`agent` (작업을 어디에서 실행할지 정하는 구역)", "`steps` (stage 안에서 실제 작업을 나열하는 구역)", "`stages` (stage 들을 묶는 구역)", "`pipeline` (이름만 정하는 구역)"]', 1, '**pipeline** 이 전체, **agent** 는 어디(어느 노드·컨테이너)에서 돌릴지, **stages** 는 단계들의 묶음, **stage** 는 하나의 단계(Build, Test, Deploy 등), **steps** 는 그 단계에서 실행할 실제 작업(`sh`, `echo` 등)입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 64 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 64, 3, 'post 블록의 용도 알기', 'Jenkins 파이프라인에서 **빌드가 끝난 뒤** 성공했든 실패했든 알림을 보내거나 정리 작업을 하고 싶습니다. 알맞은 블록은 무엇일까요?', '단계가 아니라 파이프라인(또는 stage)의 결과에 따라 실행됩니다.', NULL, NULL, '[]', 'choice', '["`environment { ... }` (환경 변수를 정의)", "`agent none` (아무도 실행하지 않음)", "`post { always { ... } failure { ... } }` (결과 조건에 따라 후처리 실행)", "`options { ... }` (표시 이름만 바꿈)"]', 2, '`post` 는 `always`(항상), `success`, `failure`, `unstable`, `cleanup` 같은 조건으로 후처리를 정의합니다. 실패 알림, 워크스페이스 정리, 테스트 리포트 수집에 씁니다. `environment` 는 변수 정의, `when` 은 stage 를 조건부로 실행할 때 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 64 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 64, 4, 'when 조건 알기', '특정 stage(예: Deploy)를 **`main` 브랜치일 때만** 실행하고 싶습니다. 어떻게 쓸까요?', 'stage 안에서 실행 조건을 거는 지시문입니다.', NULL, NULL, '[]', 'choice', '["stage 이름을 `main` 으로 짓는다", "`post { branch ''main'' }` 을 쓴다", "`steps` 안에서 `if` 없이 그냥 쓴다", "stage 에 `when { branch ''main'' }` 을 둔다"]', 3, '`when` 은 stage 를 조건부로 실행하는 지시문입니다(`branch`, `environment`, `expression` 등). 배포 단계는 `main` 이나 태그에서만 돌리고, 일반 브랜치에서는 빌드·테스트까지만 하는 식으로 자주 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 64 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 64, 5, 'Jenkins controller 와 agent 구분하기', 'Jenkins 에서 **빌드를 실제로 실행하는 일꾼 노드**와, **파이프라인·스케줄·UI 를 관리하는 중앙 서버**를 구분하면 각각 무엇일까요?', '중앙 서버는 지시하고, 일꾼은 실행합니다.', NULL, NULL, '[]', 'choice', '["일꾼 노드는 **agent**, 중앙 서버는 **controller**", "일꾼 노드는 controller, 중앙 서버는 agent", "둘 다 agent 이다", "둘 다 controller 이다"]', 0, '**controller**(예전 이름 master)는 설정, 파이프라인 정의, 스케줄링, 웹 UI 를 담당하고, **agent** 는 controller 의 지시를 받아 실제 빌드·테스트를 실행합니다. 빌드가 몰릴 때 controller 에서 직접 돌리지 않고 agent 를 늘려 분산하는 것이 일반적입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 64 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 64, 6, '설명에 해당하는 도구 고르기: Nexus', '**Maven 라이브러리, npm 패키지, Docker 이미지** 같은 빌드 산출물(아티팩트)을 저장하고 관리하는 **저장소 관리자**입니다. 외부 저장소를 대신 받아 **캐시**해 주는 프록시 저장소 기능도 있습니다. 무엇일까요?', 'CI 도구(Jenkins)도, 코드 저장소(Git)도 아닙니다.', NULL, NULL, '[]', 'choice', '["Jenkins", "Nexus Repository", "Git", "HAProxy"]', 1, '**Nexus** 는 여러 형식(Maven, npm, PyPI, Docker 등)의 아티팩트를 한 곳에서 관리합니다. 저장소 종류는 보통 **hosted**(우리가 직접 올리는 것), **proxy**(외부 저장소를 대신 받아 캐시), **group**(여러 저장소를 하나의 주소로 묶음)입니다. 빌드 속도와 외부 의존성 안정성에 도움이 됩니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 64 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 64, 7, 'Nexus 저장소 종류 구분하기', 'Nexus 에서 **외부 저장소(예: Maven Central)를 대신 받아 와서 캐시**해 주는 저장소 종류는 무엇일까요?', '이름 그대로 "대리"로 받아 줍니다.', NULL, NULL, '[]', 'choice', '["hosted 저장소", "group 저장소", "proxy 저장소", "snapshot 저장소만 해당한다"]', 2, '**proxy** 는 외부 저장소의 대리인으로 한 번 받은 것을 캐시해 이후 빠르게 제공하고 외부가 불안정해도 빌드가 돕니다. **hosted** 는 우리가 직접 올린 아티팩트를 저장하고, **group** 은 hosted 와 proxy 여러 개를 하나의 URL 로 묶어 빌드 도구 설정을 단순하게 합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 64 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 64, 8, '설명에 해당하는 도구 고르기: Harbor', '**컨테이너 이미지 레지스트리**로, 프로젝트별 권한 관리(RBAC), 이미지 **취약점 스캔**, 이미지 서명, 레지스트리 간 복제 기능을 제공하는 오픈소스 프로젝트입니다. 무엇일까요?', 'Docker Hub 와 같은 종류인데 사내에 직접 설치해 쓰는 것입니다.', NULL, NULL, '[]', 'choice', '["Jenkins", "Prometheus", "Redis", "Harbor"]', 3, '**Harbor** 는 사설(사내) 컨테이너 레지스트리입니다. 프로젝트 단위로 접근을 나누고, 이미지를 올릴 때 취약점을 스캔하며, 서명과 복제 같은 운영 기능을 제공합니다. Nexus 도 Docker 이미지를 저장할 수 있지만, 컨테이너 이미지 관리에 특화된 기능은 Harbor 가 풍부합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 64 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 64, 9, '이미지 주소 읽기', '`harbor.example.com/myteam/api:1.2.0` 에서 각 부분의 뜻으로 알맞은 것은 무엇일까요?', '왼쪽부터 레지스트리 주소 / 그 안의 구분 / 저장소 이름 : 버전표 순서입니다.', NULL, NULL, '[]', 'choice', '["`harbor.example.com` 은 레지스트리, `myteam` 은 **프로젝트**, `api` 는 **저장소(이미지 이름)**, `1.2.0` 은 **태그**", "`harbor.example.com` 은 이미지 이름, `1.2.0` 은 프로젝트", "`myteam` 은 레지스트리, `api` 는 태그", "전부 이미지 이름의 일부일 뿐 의미가 없다"]', 0, '이미지 참조는 `레지스트리/프로젝트(또는 네임스페이스)/저장소:태그` 입니다. 레지스트리를 생략하면 Docker Hub 로 간주되므로, 사내 레지스트리 이미지는 반드시 레지스트리 주소를 포함해 태그를 달아야 push 할 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 64 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 64, 10, '이미지를 사내 레지스트리에 올리는 순서 놓기', '이미 `docker login` 이 된 상태에서, 소스 코드를 이미지로 만들어 Harbor 에 올리고 클러스터가 받아 쓰기까지의 순서를 **앞에서 뒤로** 놓으세요.', '만들고 → 이름을 붙이고 → 올리고 → 받아 쓴다.', NULL, NULL, '[]', 'order', '["`docker push harbor.example.com/myteam/api:1.2.0` 으로 올린다", "`docker build -t api:1.2.0 .` 로 이미지를 만든다", "Pod 가 그 이미지를 pull 해서 실행된다", "`docker tag api:1.2.0 harbor.example.com/myteam/api:1.2.0` 로 레지스트리 주소가 포함된 이름을 붙인다"]', NULL, '**build → tag(레지스트리 주소 포함) → push → 클러스터가 pull** 순서입니다. push 하려면 이미지 이름에 레지스트리 주소와 프로젝트가 들어 있어야 하므로 `tag` 단계가 필요하고, 사설 레지스트리라면 push 전에 `docker login` 이 되어 있어야 합니다.', '[1, 3, 0, 2]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 64 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 64, 11, 'ImagePullBackOff 원인 짐작하기', '쿠버네티스에서 사설 Harbor 의 이미지를 쓰는 Pod 가 `ErrImagePull` → `ImagePullBackOff` 상태입니다. 가장 먼저 의심할 것은 무엇일까요?', '이미지가 레지스트리에 있다고 해도, 노드는 로그인 없이 받을 수 없습니다.', NULL, NULL, '[]', 'choice', '["Pod 의 CPU 개수가 부족하다", "**레지스트리 인증 정보**(`imagePullSecrets`)가 없거나 틀렸거나, 이미지 주소·태그가 잘못되었는지 (이미지 이름 오타와 태그 존재 여부 포함)", "로그 레벨이 너무 높다", "Service 의 포트 이름이 중복되었다"]', 1, '`kubectl describe pod` 의 Events 에 "unauthorized", "not found", "manifest unknown" 등의 메시지가 나옵니다. 사설 레지스트리는 `docker-registry` 타입 Secret 을 만들어 Pod(또는 ServiceAccount)에 `imagePullSecrets` 로 연결해야 합니다. 이름·태그 오타도 흔한 원인입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 64 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 64, 12, 'latest 태그의 위험 알기', '운영 배포에서 이미지를 항상 `myteam/api:latest` 로 참조하면 어떤 문제가 생길 수 있을까요?', '"어느 버전인지" 를 알 수 있어야 롤백도 가능합니다.', NULL, NULL, '[]', 'choice', '["`latest` 는 항상 가장 안정적인 버전을 보장한다", "`latest` 를 쓰면 이미지가 자동으로 삭제된다", "`latest` 는 계속 다른 이미지를 가리킬 수 있어 **지금 어떤 버전이 돌고 있는지 알기 어렵고, 롤백도 어렵다.** 버전 태그(`1.2.0`)나 이미지 다이제스트로 고정하는 것이 안전하다", "태그는 배포에 아무 영향이 없다"]', 2, '`latest` 는 특별한 의미가 있는 것이 아니라 그저 하나의 태그 이름이라서 누가 새로 push 하느냐에 따라 가리키는 이미지가 바뀝니다. 운영에서는 빌드 번호나 버전, 커밋 해시를 태그로 쓰고(필요하면 다이제스트로 고정) 같은 태그를 덮어쓰지 않는 것이 재현성과 롤백에 안전합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 64 AND order_index = 12);

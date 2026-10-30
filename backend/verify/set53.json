@@ -1,0 +1,13 @@
+{
+  "setId": 53,
+  "answers": {
+    "4": "cd /tmp/proj\ngit switch -c feature\n\n# switch -c : 새 브랜치를 만들면서 이동 (옛 방식: git checkout -b feature)",
+    "5": "cd /tmp/proj\ngit switch -c feature/login\necho login > login.txt\ngit add login.txt\ngit commit -m \"add login\"\n\n# main 은 그대로이고 feature/login 에만 커밋이 생긴다",
+    "6": "cd /tmp/proj\ngit branch > /tmp/branches.txt\n\n# * 가 붙은 것이 현재 브랜치",
+    "7": "cd /tmp/proj\ngit switch main\ngit merge feature\n\n# 받는 쪽(main)에서 실행한다\n# main 이 갈라지지 않았으므로 fast-forward 로 합쳐진다",
+    "8": "cd /tmp/proj\ngit merge feature --no-edit\n\n# 양쪽이 서로 다른 파일을 고쳤으므로 충돌 없이 자동으로 합쳐진다\n# 병합 커밋이 1개 생긴다",
+    "9": "cd /tmp/proj\ngit merge feature          # 충돌이 난다\necho \"port=8080\" > config.txt   # 원하는 내용만 남긴다\ngit add config.txt\ngit commit --no-edit\n\n# 충돌 파일을 고친 뒤 add 하면 \"해결됨\" 표시가 된다",
+    "10": "cd /tmp/proj\ngit branch -d feature\n\n# -d : 병합이 끝난 브랜치만 삭제 (안전)\n# -D : 병합 여부와 상관없이 강제 삭제 (주의)",
+    "11": "cd /tmp/proj\ngit switch -c hotfix\necho fix > fix.txt\ngit add fix.txt\ngit commit -m \"fix bug\"\ngit switch main\ngit merge hotfix\ngit branch -d hotfix"
+  }
+}

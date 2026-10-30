@@ -1,0 +1,13 @@
+{
+  "setId": 60,
+  "answers": {
+    "4": "redis-cli set greeting hello\nredis-cli get greeting\n\n# SET 키 값 : 저장, GET 키 : 읽기",
+    "5": "redis-cli set session abc EX 60\nredis-cli ttl session\n\n# EX 60 : 60초 뒤 자동 삭제 (또는 set 후 expire session 60)",
+    "6": "redis-cli incrby visits 5   # 또는 redis-cli incr visits 를 5번\nredis-cli get visits\n\n# INCR : 1 증가, INCRBY 키 n : n 증가 (둘 다 원자적)",
+    "7": "redis-cli hset user:1 name kim age 30\nredis-cli hgetall user:1\n\n# HSET 키 필드 값 [필드 값 ...] : 해시에 저장",
+    "8": "redis-cli rpush jobs a b c\nredis-cli lpop jobs > /tmp/job.txt\n\n# RPUSH : 뒤에 추가, LPOP : 앞에서 꺼내기 (FIFO 큐)",
+    "9": "redis-cli sadd tags a b a c\nredis-cli scard tags\n\n# SADD : 집합에 추가 (중복은 무시)",
+    "10": "redis-cli zrevrange ranking 0 0 > /tmp/top.txt\n\n# ZREVRANGE 키 0 0 : 점수 높은 순으로 첫 번째만",
+    "11": "redis-cli set lock:job worker1 NX EX 30\nredis-cli set lock:job worker2 NX EX 30 > /tmp/w2.txt\n\n# 두 번째는 이미 키가 있어 설정되지 않는다 (결과 nil → 빈 출력)"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "setId": 49,
+  "answers": {
+    "4": "wc -l < /tmp/fruits.txt > /tmp/count.txt\n\n# wc -l      : 줄 수 세기 (lines)\n# < 파일      : 파일을 입력으로 넘기면 파일 이름 없이 숫자만 나온다",
+    "5": "tail -n 2 /tmp/fruits.txt > /tmp/last2.txt\n\n# tail -n 2 : 끝에서 2줄 (head -n 2 는 처음 2줄)",
+    "6": "sort /tmp/fruits.txt | uniq > /tmp/unique.txt\n\n# sort : 같은 줄이 붙도록 정렬\n# uniq : 붙어 있는 중복을 하나로",
+    "7": "sort /tmp/fruits.txt | uniq -c > /tmp/freq.txt\n\n# uniq -c : 중복을 합치면서 개수를 앞에 붙인다 (count)",
+    "8": "cut -d: -f1 /tmp/users.txt > /tmp/names.txt\n\n# -d: : 구분 글자를 : 로\n# -f1 : 첫째 열",
+    "9": "tr a-z A-Z < /tmp/msg.txt > /tmp/upper.txt\n\n# tr 바꿀글자 바뀔글자 : a-z 를 A-Z 로\n# < 파일 : 입력으로 넘긴다",
+    "10": "sort /tmp/fruits.txt | uniq -c | sort -rn | head -n 1 > /tmp/top1.txt\n\n# sort : 같은 줄 모으기\n# uniq -c : 개수 세기\n# sort -rn : 개수가 큰 순서\n# head -n 1 : 1등만",
+    "11": "cut -d\" \" -f1 /tmp/access.log | sort | uniq -c | sort -rn | head -n 2 > /tmp/top_ips.txt\n\n# cut -d\" \" -f1 : 공백으로 나눠 첫째 열(IP)\n# sort | uniq -c : 모아서 세기\n# sort -rn | head -n 2 : 많은 순 상위 2개"
+  }
+}

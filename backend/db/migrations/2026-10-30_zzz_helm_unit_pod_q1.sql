@@ -1,0 +1,4 @@
+-- k8s 4단원(운영과 트러블슈팅)에 섞여 있던 Helm 을 별도 단원으로 옮기고, 세트 41 #1 을 용어를 묻는 형태로 고친다. 여러 번 실행해도 안전하다.
+INSERT INTO unit (id, category, title, display_order) SELECT 11, 'k8s', '패키지 관리 (Helm)', 50 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 11);
+UPDATE quest_set SET unit_id = (SELECT id FROM unit WHERE id = 11) WHERE id = 14;
+UPDATE quest SET description = '쿠버네티스 화면(`kubectl get pods`)에 나오는 **Pod** 는 무엇일까요?', choices = '["컨테이너를 하나 이상 담아 함께 실행하는, 쿠버네티스의 가장 작은 배포 단위이다", "컨테이너 안에서 돌아가는 프로세스 하나이다", "여러 대의 서버를 묶어 놓은 전체 묶음이다", "이미지를 모아 두는 저장소이다"]', answer_index = 0, explanation = '**Pod** 는 쿠버네티스가 다루는 가장 작은 배포 단위입니다. 보통 컨테이너 하나를 담지만, 함께 움직여야 하는 컨테이너를 여러 개 담을 수도 있고, 같은 Pod 안의 컨테이너는 네트워크(localhost)와 저장소를 나눠 씁니다. 여러 서버를 묶은 것은 클러스터, 이미지를 모아 두는 곳은 레지스트리입니다.' WHERE quest_set_id = 41 AND order_index = 1;

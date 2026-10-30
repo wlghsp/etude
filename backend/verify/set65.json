@@ -1,0 +1,13 @@
+{
+  "setId": 65,
+  "answers": {
+    "4": "chmod +x /tmp/run.sh\n/tmp/run.sh\n\n# +x : 실행 권한을 더한다 (a+x 와 같음)",
+    "5": "chmod 600 /tmp/secret.txt\nls -l /tmp/secret.txt\n\n# 600 = 소유자 rw-, 그룹 ---, 그 외 ---",
+    "6": "chmod 750 /tmp/deploy.sh\n\n# 7(rwx) 5(r-x) 0(---)",
+    "7": "chmod o-w /tmp/shared.txt\n\n# o : 그 외 사용자, -w : 쓰기 제거",
+    "8": "chown deploy /tmp/app.conf\nls -l /tmp/app.conf\n\n# chown 사용자 파일 : 소유자 변경",
+    "9": "chown deploy:ops /tmp/data.db\n\n# 소유자:그룹 형태로 한 번에\n# 그룹만 바꿀 때는 chgrp ops 파일 또는 chown :ops 파일",
+    "10": "umask 077\ntouch /tmp/private.txt\nls -l /tmp/private.txt\n\n# 파일 기본 666 - 077 = 600\n# 디렉터리 기본 777 - 077 = 700",
+    "11": "chown -R deploy:ops /tmp/release\nchmod 750 /tmp/release/start.sh\nls -l /tmp/release\n\n# -R : 하위 항목까지 재귀적으로"
+  }
+}

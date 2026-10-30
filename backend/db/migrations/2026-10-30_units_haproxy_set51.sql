@@ -1,0 +1,89 @@
+-- HAProxy 세트 51. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set51.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 13, '미들웨어', '로드밸런서', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 13);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 51, 'HAProxy 로드밸런서 익히기: 나누고, 거르고, 확인하기', '요청을 여러 서버로 나눠 주는 HAProxy 를 직접 다뤄 봅니다. frontend·backend 구조, 문법 검사(`haproxy -c`), 서버 추가, 번갈아 분산(roundrobin), 경로별 라우팅(`use_backend`), 헬스체크, 통계 화면, 가중치를 하나씩 연습합니다.', 'linux', '미들웨어'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 51);
+UPDATE quest_set SET display_order = 510, unit_id = (SELECT id FROM unit WHERE id = 13), icon = '⚖️' WHERE id = 51;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 51, 1, 'HAProxy 가 하는 일 알기', '서버 두 대가 같은 웹 서비스를 돌리고 있습니다. 사용자는 주소 하나로 접속하고, 앞에서 요청을 두 서버에 나눠 주면서 죽은 서버는 빼 주는 프로그램이 필요합니다. 이 역할을 하는 도구는 무엇일까요?', '여러 서버 앞에 서서 요청을 나눠 주는 도구를 로드밸런서(부하 분산기)라고 합니다.', NULL, NULL, '[]', 'choice', '["HAProxy 같은 로드밸런서(리버스 프록시)", "`grep` 같은 텍스트 검색 도구", "`tar` 같은 압축 도구", "`vim` 같은 편집기"]', 0, 'HAProxy 는 사용자의 요청을 **받아서(frontend)** 뒤의 여러 서버(backend)에 **나눠 보내고**, 응답 없는 서버는 헬스체크로 빼 주는 로드밸런서입니다. 사용자는 서버가 몇 대인지 몰라도 한 주소로 접속합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 51 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 51, 2, 'haproxy.cfg 의 frontend 와 backend 구분하기', '다음 설정에서 `bind *:8080` 과 `server s1 10.0.0.1:9001 check` 는 각각 어느 구역에 있어야 할까요?
+
+frontend web
+    bind *:8080
+    default_backend app
+backend app
+    server s1 10.0.0.1:9001 check', 'frontend 는 요청을 **받는 쪽**, backend 는 요청을 **넘겨받을 서버들**입니다.', NULL, NULL, '[]', 'choice', '["`bind` 는 frontend (받을 주소·포트), `server` 는 backend (넘길 서버)", "`bind` 는 backend, `server` 는 frontend", "둘 다 frontend", "둘 다 backend"]', 0, '`frontend` 구역은 **어디서 요청을 받을지**(`bind *:8080`)와 어느 backend 로 넘길지(`default_backend app`)를 적습니다. `backend` 구역은 **넘겨받을 서버 목록**(`server 이름 주소:포트 check`)과 분산 방식(`balance`)을 적습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 51 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 51, 3, 'server 줄의 check 의 뜻 알기', '`server s1 10.0.0.1:9001 check` 에서 맨 뒤 `check` 는 무슨 뜻일까요?', '서버 한 대가 죽었을 때 사용자에게 오류가 계속 가면 안 됩니다.', NULL, NULL, '[]', 'choice', '["주기적으로 서버가 살아 있는지 확인하고, 응답 없으면 분산 대상에서 뺀다", "설정 문법을 검사한다", "서버 이름을 확인한다", "서버를 재시작한다"]', 0, '`check` 는 **헬스체크**를 켭니다. HAProxy 가 주기적으로 서버에 연결해 보고, 응답이 없으면 그 서버를 분산 대상에서 빼며, 다시 살아나면 되돌립니다. `check` 가 없으면 죽은 서버로도 요청이 계속 갑니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 51 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 51, 4, '설정 문법 검사하고 오타 고치기 (haproxy -c)', '`/tmp/haproxy.cfg` 에 오타가 하나 있어서 HAProxy 가 읽지 못합니다. **문법 검사 명령으로 오류 메시지를 보고** 오타를 고쳐서 검사가 통과하게 만드세요.', '설정은 실행하기 전에 `haproxy -c -f 설정파일` 로 검사할 수 있습니다. 오류 메시지에 **몇 번째 줄**이 문제인지 나옵니다. 파일은 `vim` 또는 `sed -i` 로 고칠 수 있습니다.
+확인: `haproxy -c -f /tmp/haproxy.cfg`', 'sed -i ''s/^bakend/backend/'' /tmp/haproxy.cfg
+haproxy -c -f /tmp/haproxy.cfg
+
+# haproxy -c -f : 설정만 검사하고 실행하지 않는다', '["sh", "-c", "printf ''%s\\\\n'' ''defaults'' ''    mode http'' ''    timeout connect 5s'' ''    timeout client 30s'' ''    timeout server 30s'' ''frontend web'' ''    bind *:8080'' ''    default_backend app'' ''bakend app'' ''    server s1 127.0.0.1:9001 check'' > /tmp/haproxy.cfg"]', '["sh", "-c", "( haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1 ) && ( grep -q \\"^backend app\\" /tmp/haproxy.cfg ) && ( grep -q \\"bind \\\\*:8080\\" /tmp/haproxy.cfg )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "설정 파일이 문법 검사를 통과한다", "cmd": ["sh", "-c", "haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1"]}, {"label": "backend app 구역이 있다", "cmd": ["sh", "-c", "grep -q \\"^backend app\\" /tmp/haproxy.cfg"]}, {"label": "frontend 의 bind 설정이 그대로다", "cmd": ["sh", "-c", "grep -q \\"bind \\\\*:8080\\" /tmp/haproxy.cfg"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 51 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 51, 5, '서버 한 대 더 추가하기 (server)', '`/tmp/haproxy.cfg` 의 `backend app` 에는 서버가 `s1`(127.0.0.1:9001) 하나뿐입니다. **두 번째 서버 `s2`(127.0.0.1:9002)** 를 헬스체크가 켜진 채로 추가하세요. 설정은 문법 검사를 통과해야 합니다.', '`server 이름 주소:포트 check` 형태입니다. 기존 줄을 참고해서 같은 모양으로 한 줄을 더 적으세요.
+확인: `haproxy -c -f /tmp/haproxy.cfg`', 'echo ''    server s2 127.0.0.1:9002 check'' >> /tmp/haproxy.cfg
+
+# backend 구역의 마지막 줄이므로 파일 끝에 붙여도 된다', '["sh", "-c", "printf ''%s\\\\n'' ''defaults'' ''    mode http'' ''    timeout connect 5s'' ''    timeout client 30s'' ''    timeout server 30s'' ''frontend web'' ''    bind *:8080'' ''    default_backend app'' ''backend app'' ''    balance roundrobin'' ''    server s1 127.0.0.1:9001 check'' > /tmp/haproxy.cfg"]', '["sh", "-c", "( haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1 ) && ( [ \\"$(grep -c \\"^ *server \\" /tmp/haproxy.cfg)\\" -eq 2 ] ) && ( grep -qE \\"server s2 127.0.0.1:9002 .*check\\" /tmp/haproxy.cfg )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "설정 파일이 문법 검사를 통과한다", "cmd": ["sh", "-c", "haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1"]}, {"label": "server 줄이 2개다", "cmd": ["sh", "-c", "[ \\"$(grep -c \\"^ *server \\" /tmp/haproxy.cfg)\\" -eq 2 ]"]}, {"label": "s2 가 9002 포트를 가리키고 check 가 있다", "cmd": ["sh", "-c", "grep -qE \\"server s2 127.0.0.1:9002 .*check\\" /tmp/haproxy.cfg"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 51 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 51, 6, '실행하고 두 서버로 나뉘는지 확인하기 (roundrobin)', '두 서버(`A1` 은 9001, `A2` 는 9002)가 이미 떠 있고 `/tmp/haproxy.cfg` 도 준비되어 있습니다. HAProxy 를 **백그라운드로 실행**하고, 포트 8080 으로 요청을 보내 **응답이 `A1` 과 `A2` 둘 다 나오는지** 확인한 결과를 `/tmp/rr.txt` 에 저장하세요. (여러 번 요청해야 합니다)', '찾는 방법: `haproxy -h | grep -i daemon` (백그라운드 실행 옵션). 요청은 `curl -s localhost:8080` 입니다. 한 번만 보내면 한 서버 응답만 보입니다.
+확인: `cat /tmp/rr.txt`', 'haproxy -D -f /tmp/haproxy.cfg
+for i in 1 2 3 4; do curl -s localhost:8080; echo; done > /tmp/rr.txt
+
+# -D : 백그라운드로 실행 (daemon)
+# roundrobin 이라 요청이 번갈아 간다', '["sh", "-c", "nohup etude-httpd 9001 A1 >/dev/null 2>&1 & nohup etude-httpd 9002 A2 >/dev/null 2>&1 & sleep 1 && printf ''%s\\\\n'' ''defaults'' ''    mode http'' ''    timeout connect 5s'' ''    timeout client 30s'' ''    timeout server 30s'' ''frontend web'' ''    bind *:8080'' ''    default_backend app'' ''backend app'' ''    balance roundrobin'' ''    server s1 127.0.0.1:9001 check'' ''    server s2 127.0.0.1:9002 check'' > /tmp/haproxy.cfg"]', '["sh", "-c", "( pgrep haproxy >/dev/null ) && ( [ -s /tmp/rr.txt ] ) && ( grep -q A1 /tmp/rr.txt ) && ( grep -q A2 /tmp/rr.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "HAProxy 가 실행 중이다", "cmd": ["sh", "-c", "pgrep haproxy >/dev/null"]}, {"label": "결과 파일 /tmp/rr.txt 가 있다", "cmd": ["sh", "-c", "[ -s /tmp/rr.txt ]"]}, {"label": "A1 응답이 있다", "cmd": ["sh", "-c", "grep -q A1 /tmp/rr.txt"]}, {"label": "A2 응답도 있다 (두 서버로 나뉨)", "cmd": ["sh", "-c", "grep -q A2 /tmp/rr.txt"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 51 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 51, 7, '경로에 따라 다른 서버로 보내기 (acl 과 use_backend)', '`/tmp/haproxy.cfg` 에는 `web`(A1, 9001)과 `api`(A2, 9002) 두 backend 가 있지만 지금은 모든 요청이 `web` 으로 갑니다. **주소가 `/api` 로 시작하면 `api` backend 로** 가도록 설정을 고치고 HAProxy 를 실행하세요. 그리고 `localhost:8080/api/users` 응답을 `/tmp/api.txt` 에, `localhost:8080/` 응답을 `/tmp/web.txt` 에 저장하세요.', '찾는 방법: 공식 문서(`https://docs.haproxy.org/2.4/configuration.html`)에서 `use_backend` 와 `path_beg` 를 찾아보세요. 형태는 `use_backend 백엔드이름 if { path_beg /경로 }` 이며 frontend 구역 안에 `default_backend` 위나 아래에 적습니다.
+고친 뒤 `haproxy -c -f /tmp/haproxy.cfg` 로 먼저 검사하세요.', 'sed -i ''s/^    default_backend web/    use_backend api if { path_beg \\/api }\\n    default_backend web/'' /tmp/haproxy.cfg
+haproxy -D -f /tmp/haproxy.cfg
+curl -s localhost:8080/api/users > /tmp/api.txt
+curl -s localhost:8080/ > /tmp/web.txt
+
+# use_backend api if { path_beg /api } : 경로가 /api 로 시작하면 api backend
+# 그 외는 default_backend web', '["sh", "-c", "nohup etude-httpd 9001 A1 >/dev/null 2>&1 & nohup etude-httpd 9002 A2 >/dev/null 2>&1 & sleep 1 && printf ''%s\\\\n'' ''defaults'' ''    mode http'' ''    timeout connect 5s'' ''    timeout client 30s'' ''    timeout server 30s'' ''frontend gw'' ''    bind *:8080'' ''    default_backend web'' ''backend web'' ''    server w1 127.0.0.1:9001 check'' ''backend api'' ''    server a1 127.0.0.1:9002 check'' > /tmp/haproxy.cfg"]', '["sh", "-c", "( haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1 ) && ( pgrep haproxy >/dev/null ) && ( [ \\"$(cat /tmp/api.txt)\\" = ''A2'' ] ) && ( [ \\"$(cat /tmp/web.txt)\\" = ''A1'' ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "설정 파일이 문법 검사를 통과한다", "cmd": ["sh", "-c", "haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1"]}, {"label": "HAProxy 가 실행 중이다", "cmd": ["sh", "-c", "pgrep haproxy >/dev/null"]}, {"label": "/api 요청이 api 서버(A2)로 갔다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/api.txt)\\" = ''A2'' ]"]}, {"label": "일반 요청은 web 서버(A1)로 갔다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/web.txt)\\" = ''A1'' ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 51 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 51, 8, '죽은 서버가 분산에서 빠지는지 확인하기 (헬스체크)', '`/tmp/haproxy.cfg` 는 두 서버(`A1` 9001, `A2` 9002)에 `check` 가 켜져 있고 확인 주기가 1초입니다. HAProxy 를 실행한 뒤 **9002 서버(`etude-httpd 9002`)를 종료**하세요. 몇 초 뒤 요청을 여러 번 보내면 **`A1` 만** 나와야 합니다. 그 결과를 `/tmp/hc.txt` 에 저장하세요.', '프로세스를 이름으로 종료하는 명령은 `pkill -f "etude-httpd 9002"` 입니다. HAProxy 가 죽은 것을 알아채는 데 1~3초 걸리므로 `sleep 3` 으로 기다린 뒤 요청하세요. 기다리지 않으면 오류(503)가 섞일 수 있습니다.
+확인: `cat /tmp/hc.txt`', 'haproxy -D -f /tmp/haproxy.cfg
+pkill -f ''etude-httpd 9002''
+sleep 4
+for i in 1 2 3 4 5 6; do curl -s localhost:8080; echo; done > /tmp/hc.txt
+
+# check inter 1s fall 1 : 1초마다 확인하고 한 번 실패하면 제외
+# 죽은 서버로는 요청이 가지 않아 A1 만 나온다', '["sh", "-c", "nohup etude-httpd 9001 A1 >/dev/null 2>&1 & nohup etude-httpd 9002 A2 >/dev/null 2>&1 & sleep 1 && printf ''%s\\\\n'' ''defaults'' ''    mode http'' ''    timeout connect 5s'' ''    timeout client 30s'' ''    timeout server 30s'' ''frontend web'' ''    bind *:8080'' ''    default_backend app'' ''backend app'' ''    balance roundrobin'' ''    server s1 127.0.0.1:9001 check inter 1s fall 1'' ''    server s2 127.0.0.1:9002 check inter 1s fall 1'' > /tmp/haproxy.cfg"]', '["sh", "-c", "( pgrep haproxy >/dev/null ) && ( ! curl -s --max-time 1 localhost:9002 >/dev/null ) && ( [ -s /tmp/hc.txt ] ) && ( grep -q A1 /tmp/hc.txt ) && ( ! grep -qiE \\"A2|503|unavailable\\" /tmp/hc.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "HAProxy 가 실행 중이다", "cmd": ["sh", "-c", "pgrep haproxy >/dev/null"]}, {"label": "9002 서버가 종료되었다", "cmd": ["sh", "-c", "! curl -s --max-time 1 localhost:9002 >/dev/null"]}, {"label": "결과 파일 /tmp/hc.txt 가 있다", "cmd": ["sh", "-c", "[ -s /tmp/hc.txt ]"]}, {"label": "A1 응답이 있다", "cmd": ["sh", "-c", "grep -q A1 /tmp/hc.txt"]}, {"label": "A2 와 오류 응답은 없다", "cmd": ["sh", "-c", "! grep -qiE \\"A2|503|unavailable\\" /tmp/hc.txt"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 51 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 51, 9, '통계 화면 켜기 (stats)', '`/tmp/haproxy.cfg` 의 frontend 에 **통계 화면**을 `/stats` 주소로 켜고 HAProxy 를 실행하세요. 그리고 `localhost:8080/stats` 의 응답을 `/tmp/stats.txt` 에 저장하세요.', '찾는 방법: 공식 문서에서 `stats enable` 과 `stats uri` 를 찾아보세요. 둘 다 frontend 구역 안에 적습니다.
+확인: `grep -i statistics /tmp/stats.txt`', 'sed -i ''s/^    default_backend app/    stats enable\\n    stats uri \\/stats\\n    default_backend app/'' /tmp/haproxy.cfg
+haproxy -D -f /tmp/haproxy.cfg
+curl -s localhost:8080/stats > /tmp/stats.txt
+
+# stats enable : 통계 화면 켜기
+# stats uri /stats : 접속 주소', '["sh", "-c", "nohup etude-httpd 9001 A1 >/dev/null 2>&1 & nohup etude-httpd 9002 A2 >/dev/null 2>&1 & sleep 1 && printf ''%s\\\\n'' ''defaults'' ''    mode http'' ''    timeout connect 5s'' ''    timeout client 30s'' ''    timeout server 30s'' ''frontend web'' ''    bind *:8080'' ''    default_backend app'' ''backend app'' ''    server s1 127.0.0.1:9001 check'' ''    server s2 127.0.0.1:9002 check'' > /tmp/haproxy.cfg"]', '["sh", "-c", "( haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1 ) && ( pgrep haproxy >/dev/null ) && ( [ -s /tmp/stats.txt ] ) && ( grep -q \\"Statistics Report\\" /tmp/stats.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "설정 파일이 문법 검사를 통과한다", "cmd": ["sh", "-c", "haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1"]}, {"label": "HAProxy 가 실행 중이다", "cmd": ["sh", "-c", "pgrep haproxy >/dev/null"]}, {"label": "결과 파일 /tmp/stats.txt 가 있다", "cmd": ["sh", "-c", "[ -s /tmp/stats.txt ]"]}, {"label": "통계 화면(Statistics Report)이 저장되었다", "cmd": ["sh", "-c", "grep -q \\"Statistics Report\\" /tmp/stats.txt"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 51 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 51, 10, '합쳐서 쓰기: 가중치 3 대 1 로 나누기 (weight)', '`/tmp/haproxy.cfg` 를 고쳐서 **`A1`(9001) 이 `A2`(9002) 보다 3배 많이** 요청을 받게 하세요. HAProxy 를 실행하고 요청을 **8번** 보내 결과를 `/tmp/w.txt` 에 저장하세요. (A1 이 6번, A2 가 2번 나와야 합니다)', '찾는 방법: 공식 문서에서 `weight` 를 찾아보세요. `server` 줄 맨 뒤에 `weight 숫자` 를 붙입니다. 가중치의 비율대로 요청이 나뉩니다.
+확인: `sort /tmp/w.txt | uniq -c`', 'sed -i ''s/^    server s1 \\(.*\\)$/    server s1 \\1 weight 3/; s/^    server s2 \\(.*\\)$/    server s2 \\1 weight 1/'' /tmp/haproxy.cfg
+haproxy -D -f /tmp/haproxy.cfg
+for i in 1 2 3 4 5 6 7 8; do curl -s localhost:8080; echo; done > /tmp/w.txt
+
+# weight 3 : 3 몫, weight 1 : 1 몫 (기본값은 1)', '["sh", "-c", "nohup etude-httpd 9001 A1 >/dev/null 2>&1 & nohup etude-httpd 9002 A2 >/dev/null 2>&1 & sleep 1 && printf ''%s\\\\n'' ''defaults'' ''    mode http'' ''    timeout connect 5s'' ''    timeout client 30s'' ''    timeout server 30s'' ''frontend web'' ''    bind *:8080'' ''    default_backend app'' ''backend app'' ''    balance roundrobin'' ''    server s1 127.0.0.1:9001 check'' ''    server s2 127.0.0.1:9002 check'' > /tmp/haproxy.cfg"]', '["sh", "-c", "( haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1 ) && ( pgrep haproxy >/dev/null ) && ( [ -s /tmp/w.txt ] ) && ( [ \\"$(grep -c . /tmp/w.txt)\\" -eq 8 ] ) && ( [ \\"$(grep -c A1 /tmp/w.txt)\\" -eq 6 ] && [ \\"$(grep -c A2 /tmp/w.txt)\\" -eq 2 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "설정 파일이 문법 검사를 통과한다", "cmd": ["sh", "-c", "haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1"]}, {"label": "HAProxy 가 실행 중이다", "cmd": ["sh", "-c", "pgrep haproxy >/dev/null"]}, {"label": "결과 파일 /tmp/w.txt 가 있다", "cmd": ["sh", "-c", "[ -s /tmp/w.txt ]"]}, {"label": "8번 요청했다", "cmd": ["sh", "-c", "[ \\"$(grep -c . /tmp/w.txt)\\" -eq 8 ]"]}, {"label": "A1 이 6번, A2 가 2번 나왔다", "cmd": ["sh", "-c", "[ \\"$(grep -c A1 /tmp/w.txt)\\" -eq 6 ] && [ \\"$(grep -c A2 /tmp/w.txt)\\" -eq 2 ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 51 AND order_index = 10);

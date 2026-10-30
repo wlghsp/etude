@@ -1,0 +1,13 @@
+{
+  "setId": 50,
+  "answers": {
+    "4": "NAME=lee\necho \"hello $NAME\" > /tmp/hello.txt\n\n# NAME=lee : 변수 지정 (= 양옆 공백 없음)\n# \"hello $NAME\" : 큰따옴표 안에서는 $NAME 이 lee 로 바뀐다",
+    "5": "echo '$HOME' > /tmp/literal.txt\n\n# 작은따옴표 안은 글자 그대로",
+    "6": "echo \"$HOME\" > /tmp/home_value.txt\n\n# 큰따옴표(또는 따옴표 없이) : $HOME 이 값으로 바뀐다",
+    "7": "echo \"files: $(ls /tmp/data | wc -l)\" > /tmp/count_msg.txt\n\n# $(...) : 안쪽 명령을 실행한 출력으로 바뀐다",
+    "8": "mkdir \"/tmp/my docs\"\n\n# 따옴표로 묶으면 공백이 든 한 덩어리가 하나의 인자가 된다",
+    "9": "echo 'Price: $5' > /tmp/price.txt\n\n# 또는 echo \"Price: \\$5\" > /tmp/price.txt (\\ 는 다음 글자의 특수 의미를 없앤다)",
+    "10": "export APP_ENV=prod\nbash -c 'echo $APP_ENV' > /tmp/env.txt\n\n# export : 변수를 환경 변수로 만들어 자식 프로그램에도 전달\n# 작은따옴표 : $APP_ENV 는 바깥 쉘이 아니라 안쪽 bash 가 해석",
+    "11": "echo \"host=$(hostname) files=$(ls /tmp/data | wc -l)\" > /tmp/report.txt\n\n# $(hostname) : 호스트 이름\n# $(ls ... | wc -l) : 파일 개수"
+  }
+}

@@ -1,0 +1,86 @@
+-- 기본기 사다리 5: 세트 49(텍스트 도구 입문). 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set49.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 49, '텍스트 도구 입문: 센다, 정렬한다, 뽑는다', '`wc`, `head`/`tail`, `sort`, `uniq`, `cut`, `tr` 을 하나씩 익히고 `|` 로 이어 "가장 많이 나온 것 찾기" 같은 일을 한 줄로 해 봅니다. 로그와 목록을 다루는 모든 작업의 기본 도구입니다.', 'linux', '리눅스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 49);
+UPDATE quest_set SET display_order = 49, unit_id = (SELECT id FROM unit WHERE id = 2), icon = '📊' WHERE id = 49;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 49, 1, '파이프로 작은 도구를 이어 쓰는 이유 알기', '리눅스에는 `sort`, `uniq`, `wc`, `head`, `cut`, `tr` 같은 **작은 도구**가 많습니다. 이것들을 `|` 로 이어 쓰는 이유는 무엇일까요?', '한 도구는 한 가지만 잘합니다. 앞 도구의 출력이 뒤 도구의 입력이 됩니다.', NULL, NULL, '[]', 'choice', '["각 도구는 한 가지 일만 하고, 파이프로 이어 붙이면 복잡한 일도 해낼 수 있다", "한 줄로 써야만 실행되기 때문이다", "파이프를 쓰면 파일이 자동으로 삭제된다", "도구를 하나만 쓰면 오류가 나기 때문이다"]', 0, '`sort`(정렬), `uniq`(중복 제거·세기), `wc`(개수), `head`/`tail`(앞/뒤), `cut`(열 뽑기), `tr`(글자 바꾸기) 처럼 도구마다 하는 일이 작습니다. `|` 로 이으면 "뽑고 → 정렬하고 → 세고 → 상위만" 같은 일을 한 줄로 조립할 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 49 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 49, 2, '"가장 많이 나온 단어" 파이프 조립하기', '`words.txt` 에서 **가장 많이 나온 줄 하나**를 찾는 명령입니다. 조각을 `|` 로 이어질 순서대로 놓으세요.', '먼저 같은 것끼리 모으고(정렬), 세고, 많은 순으로 다시 정렬한 뒤, 맨 위만 봅니다.', NULL, NULL, '[]', 'order', '["`head -n 1` (맨 위 하나)", "`sort -rn` (숫자 큰 순)", "`sort words.txt` (정렬)", "`uniq -c` (중복 세기)"]', NULL, '`sort words.txt | uniq -c | sort -rn | head -n 1` 입니다. `uniq` 는 **붙어 있는** 같은 줄만 합치므로 먼저 `sort` 로 모읍니다. `uniq -c` 가 개수를 앞에 붙이고, `sort -rn` 이 큰 숫자부터 정렬하며, `head -n 1` 이 1등만 남깁니다.', '[2, 3, 1, 0]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 49 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 49, 3, 'uniq 앞에 sort 가 필요한 이유 알기', '`a`, `b`, `a` 가 한 줄씩 있는 파일에 그냥 `uniq` 를 쓰면 `a` 가 중복으로 처리되지 않고 3줄이 그대로 나옵니다. 왜일까요?', '`uniq` 는 파일 전체를 훑지 않고 **바로 위 줄과 같은지**만 비교합니다.', NULL, NULL, '[]', 'choice', '["`uniq` 는 이웃한 줄끼리만 비교하므로, 같은 줄이 붙어 있도록 먼저 `sort` 해야 한다", "`uniq` 는 숫자만 처리한다", "`a` 는 한 글자라 무시된다", "파일 이름이 틀렸기 때문이다"]', 0, '`uniq` 는 바로 앞 줄과만 비교합니다. `a, b, a` 에서는 두 `a` 가 떨어져 있어 중복으로 보지 않습니다. `sort | uniq` 처럼 먼저 정렬해 같은 줄을 붙여 놓는 것이 정석입니다. (`sort -u` 는 이 둘을 한 번에 합니다.)', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 49 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 49, 4, '줄 수 세기 (wc -l)', '`/tmp/fruits.txt` 에 과일 이름이 한 줄에 하나씩 있습니다. **줄이 모두 몇 개인지** 숫자만 `/tmp/count.txt` 에 저장하세요.', '찾는 방법: `wc --help | grep -i lines`
+파일 이름을 인자로 주면 숫자 뒤에 파일 이름이 붙습니다. 이름 없이 숫자만 얻는 방법은 `< 파일` 로 입력을 넘기는 것입니다.
+확인: `cat /tmp/count.txt`', 'wc -l < /tmp/fruits.txt > /tmp/count.txt
+
+# wc -l      : 줄 수 세기 (lines)
+# < 파일      : 파일을 입력으로 넘기면 파일 이름 없이 숫자만 나온다', '["sh", "-c", "printf ''apple\\\\nbanana\\\\napple\\\\ncherry\\\\nbanana\\\\napple\\\\n'' > /tmp/fruits.txt"]', '["sh", "-c", "( [ -s /tmp/count.txt ] ) && ( [ \\"$(cat /tmp/count.txt)\\" = \\"6\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일 /tmp/count.txt 가 있다", "cmd": ["sh", "-c", "[ -s /tmp/count.txt ]"]}, {"label": "숫자 6 만 들어 있다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/count.txt)\\" = \\"6\\" ]"]}]', '[{"title": "GNU coreutils 매뉴얼", "url": "https://www.gnu.org/software/coreutils/manual/coreutils.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 49 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 49, 5, '앞과 뒤 일부만 보기 (head, tail)', '`/tmp/fruits.txt` 의 **마지막 2줄**을 `/tmp/last2.txt` 에 저장하세요.', '찾는 방법: `tail --help | grep -i lines`
+(맨 앞 몇 줄은 `head` 입니다.)
+확인: `cat /tmp/last2.txt`', 'tail -n 2 /tmp/fruits.txt > /tmp/last2.txt
+
+# tail -n 2 : 끝에서 2줄 (head -n 2 는 처음 2줄)', '["sh", "-c", "printf ''apple\\\\nbanana\\\\napple\\\\ncherry\\\\nbanana\\\\napple\\\\n'' > /tmp/fruits.txt"]', '["sh", "-c", "( [ -s /tmp/last2.txt ] ) && ( [ \\"$(wc -l < /tmp/last2.txt)\\" -eq 2 ] ) && ( [ \\"$(cat /tmp/last2.txt)\\" = \\"banana\\napple\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일 /tmp/last2.txt 가 있다", "cmd": ["sh", "-c", "[ -s /tmp/last2.txt ]"]}, {"label": "2줄이다", "cmd": ["sh", "-c", "[ \\"$(wc -l < /tmp/last2.txt)\\" -eq 2 ]"]}, {"label": "마지막 두 줄(banana, apple)이다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/last2.txt)\\" = \\"banana\\napple\\" ]"]}]', '[{"title": "GNU coreutils 매뉴얼", "url": "https://www.gnu.org/software/coreutils/manual/coreutils.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 49 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 49, 6, '정렬하고 중복 없애기 (sort | uniq)', '`/tmp/fruits.txt` 에서 **중복을 없앤 과일 목록**을 가나다(알파벳) 순으로 `/tmp/unique.txt` 에 저장하세요. (`apple`, `banana`, `cherry` 한 번씩)', '`uniq` 는 붙어 있는 같은 줄만 합칩니다. 먼저 `sort` 로 같은 줄을 모은 뒤 `uniq` 에 넘기세요.
+확인: `cat /tmp/unique.txt`', 'sort /tmp/fruits.txt | uniq > /tmp/unique.txt
+
+# sort : 같은 줄이 붙도록 정렬
+# uniq : 붙어 있는 중복을 하나로', '["sh", "-c", "printf ''apple\\\\nbanana\\\\napple\\\\ncherry\\\\nbanana\\\\napple\\\\n'' > /tmp/fruits.txt"]', '["sh", "-c", "( [ -s /tmp/unique.txt ] ) && ( [ \\"$(wc -l < /tmp/unique.txt)\\" -eq 3 ] ) && ( [ \\"$(cat /tmp/unique.txt)\\" = \\"apple\\nbanana\\ncherry\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일 /tmp/unique.txt 가 있다", "cmd": ["sh", "-c", "[ -s /tmp/unique.txt ]"]}, {"label": "3줄이다", "cmd": ["sh", "-c", "[ \\"$(wc -l < /tmp/unique.txt)\\" -eq 3 ]"]}, {"label": "apple, banana, cherry 순서로 한 번씩 있다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/unique.txt)\\" = \\"apple\\nbanana\\ncherry\\" ]"]}]', '[{"title": "GNU coreutils 매뉴얼", "url": "https://www.gnu.org/software/coreutils/manual/coreutils.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 49 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 49, 7, '몇 번 나왔는지 세기 (uniq -c)', '`/tmp/fruits.txt` 에서 과일마다 **몇 번 나왔는지** 세어 `/tmp/freq.txt` 에 저장하세요. (`3 apple` 처럼 숫자가 앞에 붙습니다)', '찾는 방법: `uniq --help | grep -i count`
+`uniq` 앞에는 `sort` 가 필요하다는 점을 기억하세요.
+확인: `cat /tmp/freq.txt`', 'sort /tmp/fruits.txt | uniq -c > /tmp/freq.txt
+
+# uniq -c : 중복을 합치면서 개수를 앞에 붙인다 (count)', '["sh", "-c", "printf ''apple\\\\nbanana\\\\napple\\\\ncherry\\\\nbanana\\\\napple\\\\n'' > /tmp/fruits.txt"]', '["sh", "-c", "( [ -s /tmp/freq.txt ] ) && ( [ \\"$(wc -l < /tmp/freq.txt)\\" -eq 3 ] ) && ( grep -qE \\"^ *3 apple$\\" /tmp/freq.txt ) && ( grep -qE \\"^ *2 banana$\\" /tmp/freq.txt && grep -qE \\"^ *1 cherry$\\" /tmp/freq.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일 /tmp/freq.txt 가 있다", "cmd": ["sh", "-c", "[ -s /tmp/freq.txt ]"]}, {"label": "3줄이다", "cmd": ["sh", "-c", "[ \\"$(wc -l < /tmp/freq.txt)\\" -eq 3 ]"]}, {"label": "apple 이 3번으로 세어졌다", "cmd": ["sh", "-c", "grep -qE \\"^ *3 apple$\\" /tmp/freq.txt"]}, {"label": "banana 는 2번, cherry 는 1번이다", "cmd": ["sh", "-c", "grep -qE \\"^ *2 banana$\\" /tmp/freq.txt && grep -qE \\"^ *1 cherry$\\" /tmp/freq.txt"]}]', '[{"title": "GNU coreutils 매뉴얼", "url": "https://www.gnu.org/software/coreutils/manual/coreutils.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 49 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 49, 8, '열 뽑기 (cut)', '`/tmp/users.txt` 는 `이름:나이:도시` 형식입니다. **이름 열만** `/tmp/names.txt` 에 저장하세요.', '찾는 방법: `cut --help | grep -iE "delimiter|field"`
+구분 글자가 `:` 입니다.
+확인: `cat /tmp/names.txt`', 'cut -d: -f1 /tmp/users.txt > /tmp/names.txt
+
+# -d: : 구분 글자를 : 로
+# -f1 : 첫째 열', '["sh", "-c", "printf ''kim:30:seoul\\\\nlee:25:busan\\\\npark:41:daegu\\\\n'' > /tmp/users.txt"]', '["sh", "-c", "( [ -s /tmp/names.txt ] ) && ( [ \\"$(wc -l < /tmp/names.txt)\\" -eq 3 ] ) && ( [ \\"$(cat /tmp/names.txt)\\" = \\"kim\\nlee\\npark\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일 /tmp/names.txt 가 있다", "cmd": ["sh", "-c", "[ -s /tmp/names.txt ]"]}, {"label": "3줄이다", "cmd": ["sh", "-c", "[ \\"$(wc -l < /tmp/names.txt)\\" -eq 3 ]"]}, {"label": "이름 세 개만 있다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/names.txt)\\" = \\"kim\\nlee\\npark\\" ]"]}]', '[{"title": "GNU coreutils 매뉴얼", "url": "https://www.gnu.org/software/coreutils/manual/coreutils.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 49 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 49, 9, '글자 바꾸기 (tr)', '`/tmp/msg.txt` 의 소문자를 모두 **대문자로 바꿔** `/tmp/upper.txt` 에 저장하세요.', '찾는 방법: `tr --help | head -n 20` 에서 `a-z` 같은 범위 표기와 사용법을 읽어 보세요. `tr` 은 파일 이름을 인자로 받지 않고 **입력**으로만 받습니다 (`< 파일`).
+확인: `cat /tmp/upper.txt`', 'tr a-z A-Z < /tmp/msg.txt > /tmp/upper.txt
+
+# tr 바꿀글자 바뀔글자 : a-z 를 A-Z 로
+# < 파일 : 입력으로 넘긴다', '["sh", "-c", "printf ''hello world\\\\nlinux tools\\\\n'' > /tmp/msg.txt"]', '["sh", "-c", "( [ -s /tmp/upper.txt ] ) && ( [ \\"$(cat /tmp/upper.txt)\\" = \\"HELLO WORLD\\nLINUX TOOLS\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일 /tmp/upper.txt 가 있다", "cmd": ["sh", "-c", "[ -s /tmp/upper.txt ]"]}, {"label": "모든 글자가 대문자로 바뀌었다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/upper.txt)\\" = \\"HELLO WORLD\\nLINUX TOOLS\\" ]"]}]', '[{"title": "GNU coreutils 매뉴얼", "url": "https://www.gnu.org/software/coreutils/manual/coreutils.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 49 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 49, 10, '가장 많이 나온 것 1등 찾기', '`/tmp/fruits.txt` 에서 **가장 많이 나온 과일 한 줄**(개수 포함)을 `/tmp/top1.txt` 에 저장하세요.', '세기(`uniq -c`) → 큰 순 정렬(`sort -rn`) → 맨 위 하나(`head`). `sort` 로 먼저 모으는 것을 잊지 마세요.
+확인: `cat /tmp/top1.txt`', 'sort /tmp/fruits.txt | uniq -c | sort -rn | head -n 1 > /tmp/top1.txt
+
+# sort : 같은 줄 모으기
+# uniq -c : 개수 세기
+# sort -rn : 개수가 큰 순서
+# head -n 1 : 1등만', '["sh", "-c", "printf ''apple\\\\nbanana\\\\napple\\\\ncherry\\\\nbanana\\\\napple\\\\n'' > /tmp/fruits.txt"]', '["sh", "-c", "( [ -s /tmp/top1.txt ] ) && ( [ \\"$(wc -l < /tmp/top1.txt)\\" -eq 1 ] ) && ( grep -qE \\"^ *3 apple$\\" /tmp/top1.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일 /tmp/top1.txt 가 있다", "cmd": ["sh", "-c", "[ -s /tmp/top1.txt ]"]}, {"label": "1줄이다", "cmd": ["sh", "-c", "[ \\"$(wc -l < /tmp/top1.txt)\\" -eq 1 ]"]}, {"label": "apple 이 3번으로 1등이다", "cmd": ["sh", "-c", "grep -qE \\"^ *3 apple$\\" /tmp/top1.txt"]}]', '[{"title": "GNU coreutils 매뉴얼", "url": "https://www.gnu.org/software/coreutils/manual/coreutils.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 49 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 49, 11, '합쳐서 쓰기: 접속이 많은 IP 상위 2개', '`/tmp/access.log` 는 줄마다 맨 앞이 접속한 IP 이고 공백으로 나뉩니다. **접속 횟수가 많은 IP 상위 2개**를 횟수와 함께 `/tmp/top_ips.txt` 에 저장하세요.', '맨 앞 열을 뽑고(`cut`), 모으고(`sort`), 세고(`uniq -c`), 큰 순으로 정렬(`sort -rn`), 앞의 2개(`head`). 열 구분 글자가 공백이면 `-d" "` 로 적습니다.
+확인: `cat /tmp/top_ips.txt`', 'cut -d" " -f1 /tmp/access.log | sort | uniq -c | sort -rn | head -n 2 > /tmp/top_ips.txt
+
+# cut -d" " -f1 : 공백으로 나눠 첫째 열(IP)
+# sort | uniq -c : 모아서 세기
+# sort -rn | head -n 2 : 많은 순 상위 2개', '["sh", "-c", "printf ''10.0.0.1 GET /a\\\\n10.0.0.2 GET /b\\\\n10.0.0.1 POST /c\\\\n10.0.0.3 GET /a\\\\n10.0.0.1 GET /d\\\\n10.0.0.2 GET /a\\\\n'' > /tmp/access.log"]', '["sh", "-c", "( [ -s /tmp/top_ips.txt ] ) && ( [ \\"$(wc -l < /tmp/top_ips.txt)\\" -eq 2 ] ) && ( head -n 1 /tmp/top_ips.txt | grep -qE \\"^ *3 10\\\\.0\\\\.0\\\\.1$\\" ) && ( sed -n 2p /tmp/top_ips.txt | grep -qE \\"^ *2 10\\\\.0\\\\.0\\\\.2$\\" )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일 /tmp/top_ips.txt 가 있다", "cmd": ["sh", "-c", "[ -s /tmp/top_ips.txt ]"]}, {"label": "상위 2줄이다", "cmd": ["sh", "-c", "[ \\"$(wc -l < /tmp/top_ips.txt)\\" -eq 2 ]"]}, {"label": "1등은 10.0.0.1 (3번)이다", "cmd": ["sh", "-c", "head -n 1 /tmp/top_ips.txt | grep -qE \\"^ *3 10\\\\.0\\\\.0\\\\.1$\\""]}, {"label": "2등은 10.0.0.2 (2번)이다", "cmd": ["sh", "-c", "sed -n 2p /tmp/top_ips.txt | grep -qE \\"^ *2 10\\\\.0\\\\.0\\\\.2$\\""]}]', '[{"title": "GNU coreutils 매뉴얼", "url": "https://www.gnu.org/software/coreutils/manual/coreutils.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 49 AND order_index = 11);
