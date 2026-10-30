@@ -56,12 +56,14 @@ export function Login({ onLogin }: Props) {
           <p className="font-mono text-code-sm text-success" aria-hidden="true">$ etude start<span className="fx-blink ml-0.5">▍</span></p>
         </header>
 
-        <div className="bg-surface-container-low border border-outline-variant p-8">
+        <div className="rounded-2xl border border-outline-variant bg-surface-container-low/80 backdrop-blur p-8 shadow-[0_0_40px_rgba(129,140,248,0.12)]">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <label className="text-label-caps font-sans text-on-surface-variant block uppercase tracking-widest">
                 이메일
               </label>
+              <div className="relative">
+              <span className="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[20px] text-on-surface-variant" aria-hidden="true">mail</span>
               <input
                 type="email"
                 value={email}
@@ -69,8 +71,9 @@ export function Login({ onLogin }: Props) {
                 placeholder="name@okestro.com"
                 autoComplete="username"
                 required
-                className="w-full px-4 py-3 bg-surface border border-outline-variant text-on-surface font-sans text-body-md placeholder:text-on-surface-variant/30 focus:outline-none focus:border-info rounded-none"
+                className="w-full pl-11 pr-4 py-3 bg-surface border border-outline-variant text-on-surface font-sans text-body-md placeholder:text-on-surface-variant/30 focus:outline-none focus:border-info focus:ring-2 focus:ring-info/30 rounded-lg transition-shadow"
               />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -78,6 +81,7 @@ export function Login({ onLogin }: Props) {
                 비밀번호
               </label>
               <div className="relative">
+              <span className="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[20px] text-on-surface-variant" aria-hidden="true">lock</span>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
@@ -85,14 +89,14 @@ export function Login({ onLogin }: Props) {
                   autoComplete="current-password"
                   autoFocus={email !== ''}
                   required
-                  className="w-full pl-4 pr-12 py-3 bg-surface border border-outline-variant text-on-surface font-sans text-body-md focus:outline-none focus:border-info rounded-none"
+                  className="w-full pl-11 pr-12 py-3 bg-surface border border-outline-variant text-on-surface font-sans text-body-md focus:outline-none focus:border-info focus:ring-2 focus:ring-info/30 rounded-lg transition-shadow"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(v => !v)}
                   aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
                   aria-pressed={showPassword}
-                  className="absolute inset-y-0 right-0 px-3 flex items-center text-on-surface-variant hover:text-on-surface transition-colors"
+                  className="absolute inset-y-0 right-0 px-3 rounded-r-lg flex items-center text-on-surface-variant hover:text-on-surface transition-colors"
                 >
                   <span className="material-symbols-outlined text-[20px]">{showPassword ? 'visibility_off' : 'visibility'}</span>
                 </button>
@@ -104,7 +108,7 @@ export function Login({ onLogin }: Props) {
                 type="checkbox"
                 checked={remember}
                 onChange={e => setRemember(e.target.checked)}
-                className="w-4 h-4 accent-info"
+                className="w-4 h-4 rounded accent-info"
               />
               아이디 저장
             </label>
@@ -112,7 +116,7 @@ export function Login({ onLogin }: Props) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-info text-white font-sans text-body-md flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50"
+              className="w-full py-3 rounded-lg bg-gradient-to-r from-info to-accent text-white font-sans text-body-md font-semibold shadow-[0_6px_20px_rgba(96,165,250,0.25)] flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50"
             >
               <span>{loading ? '로그인 중...' : '로그인'}</span>
               {!loading && <span className="material-symbols-outlined text-[18px]">arrow_forward</span>}

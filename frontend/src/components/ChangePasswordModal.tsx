@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { changePassword } from "../api/auth";
 
 interface Props {
@@ -51,15 +51,23 @@ export function ChangePasswordModal({ open, onClose }: Props) {
         }
     }
 
+    useEffect(() => {
+        if (!open) return
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose() }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open])
+
     if (!open) return null
 
     return (
         <>
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                <div className="bg-surface border border-outline-variant w-[400px] p-6 flex flex-col gap-4">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" onClick={handleClose}>
+                <form className="fx-modal rounded-2xl border border-outline-variant bg-surface-container-low shadow-[0_0_40px_rgba(129,140,248,0.15)] w-full max-w-[400px] p-6 flex flex-col gap-4" onClick={(e) => e.stopPropagation()} onSubmit={(e) => { e.preventDefault(); handleSubmit() }}>
                     <div className="flex items-center justify-between">
-                        <h2 className="font-sans text-body-lg font-bold text-on-surface">비밀번호 변경</h2>
-                        <button onClick={handleClose} className="text-on-surface-variant hover:text-on-surface">
+                        <h2 className="flex items-center gap-2.5 font-sans text-body-lg font-bold text-on-surface"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/15"><span className="material-symbols-outlined text-[20px] text-accent">lock_reset</span></span>비밀번호 변경</h2>
+                        <button type="button" onClick={handleClose} className="rounded-lg p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" aria-label="닫기">
                             <span className="material-symbols-outlined text-[20px]">close</span>
                         </button>
                     </div>
@@ -69,48 +77,49 @@ export function ChangePasswordModal({ open, onClose }: Props) {
                         value={currentPassword}
                         onChange={e => setCurrentPassword(e.target.value)}
                         placeholder="현재 비밀번호"
-                        className="w-full bg-surface-container border border-outline-variant p-3 font-sans text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                        autoComplete="current-password" autoFocus className="w-full rounded-lg bg-surface border border-outline-variant px-3 py-2.5 font-sans text-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-info focus:ring-2 focus:ring-info/30 transition-shadow"
                     />
                     <input
                         type="password"
                         value={newPassword}
                         onChange={e => setNewPassword(e.target.value)}
                         placeholder="새 비밀번호"
-                        className="w-full bg-surface-container border border-outline-variant p-3 font-sans text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                        autoComplete="new-password" className="w-full rounded-lg bg-surface border border-outline-variant px-3 py-2.5 font-sans text-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-info focus:ring-2 focus:ring-info/30 transition-shadow"
                     />
                     <input
                         type="password"
                         value={confirmPassword}
                         onChange={e => setConfirmPassword(e.target.value)}
                         placeholder="새 비밀번호 확인"
-                        className="w-full bg-surface-container border border-outline-variant p-3 font-sans text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                        autoComplete="new-password" className="w-full rounded-lg bg-surface border border-outline-variant px-3 py-2.5 font-sans text-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-info focus:ring-2 focus:ring-info/30 transition-shadow"
                     />
 
                     {error && (
-                        <p className="font-sans text-body-sm text-error">{error}</p>
+                        <p className="flex items-center gap-2 rounded-lg border border-error/30 bg-error/5 px-3 py-2 font-sans text-body-md text-error" role="alert"><span className="material-symbols-outlined text-[18px]">error</span>{error}</p>
                     )}
 
                     <div className="flex justify-end gap-2">
                         <button
+                            type="button"
                             onClick={handleClose}
-                            className="px-4 py-2 border border-outline-variant font-sans text-label-caps text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                            className="rounded-lg px-4 py-2 border border-outline-variant font-sans text-label-caps text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
                         >
                             취소
                         </button>
                         <button
-                            onClick={handleSubmit}
+                            type="submit"
                             disabled={loading}
-                            className="px-4 py-2 bg-primary font-sans text-label-caps text-on-primary hover:brightness-110 transition-all disabled:opacity-50"
+                            className="rounded-lg bg-gradient-to-r from-info to-accent px-4 py-2 font-sans text-label-caps font-semibold text-white shadow-[0_4px_16px_rgba(96,165,250,0.25)] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed"
                         >
                             {loading ? '변경 중...' : '변경하기'}
                         </button>
                     </div>
-                </div>
+                </form>
             </div>
 
             {toast && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-surface-container border border-outline-variant font-sans text-label-caps text-on-surface">
-                    비밀번호가 변경됐습니다.
+                <div className="fx-pop fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-lg px-4 py-2.5 bg-surface-container border border-success/40 font-sans text-label-caps text-on-surface shadow-lg" role="status">
+                    <span className="material-symbols-outlined text-[18px] text-success" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>비밀번호가 변경됐습니다.
                 </div>
             )}
         </>
