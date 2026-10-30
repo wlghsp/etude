@@ -33,3 +33,13 @@ export function currentStreak(rows: Array<{ completions: Array<{ completedAt: st
     while (days.has(dayKey(cursor))) { streak++; cursor.setDate(cursor.getDate() - 1) }
     return streak
 }
+
+/** "방금 전", "3분 전", "2시간 전", "5일 전" (일주일이 넘으면 날짜) */
+export function timeAgo(iso: string, now: Date): string {
+    const sec = Math.max(0, Math.floor((now.getTime() - new Date(iso).getTime()) / 1000))
+    if (sec < 60) return '방금 전'
+    if (sec < 3600) return `${Math.floor(sec / 60)}분 전`
+    if (sec < 86400) return `${Math.floor(sec / 3600)}시간 전`
+    if (sec < 7 * 86400) return `${Math.floor(sec / 86400)}일 전`
+    return new Date(iso).toLocaleDateString('ko-KR')
+}

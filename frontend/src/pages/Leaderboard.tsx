@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react"
+import { FeedTab } from "./FeedTab"
+import { fetchFeedSummary, markFeedSeen } from "../api/feed"
 import { fetchLeaderboard, fetchReport, type MemberProgress, type Report } from "../api/user"
 import { TopNav } from "../components/TopNav"
 import { SideNav } from "../components/SideNav"
@@ -17,7 +19,8 @@ interface Props {
 export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
     const [rows, setRows] = useState<MemberProgress[]>([])
     const [openUsers, setOpenUsers] = useState<Set<number>>(new Set())
-    const [tab, setTab] = useState<'ranking' | 'report'>('ranking')
+    const [tab, setTab] = useState<'ranking' | 'report' | 'feed'>('ranking')
+    const [newForMe, setNewForMe] = useState(0) // 내 소식에 달린 안 본 좋아요·댓글 수
     const [report, setReport] = useState<Report | null>(null)
     const [reportError, setReportError] = useState(false)
 
@@ -28,6 +31,7 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
     }, [tab, report])
 
     useEffect(() => {
+        fetchFeedSummary().then((r) => setNewForMe(r.newForMe)).catch(() => { /* 알림이 없어도 화면은 그대로다 */ })
         fetchLeaderboard().then((data) =>
             setRows(data.map(u => ({ ...u, total: Number(u.total), completed: Number(u.completed) })))
         )
@@ -38,7 +42,7 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
     const pctOf = (u: MemberProgress) => (u.total > 0 ? Math.round((u.completed / u.total) * 100) : 0)
     const MEDALS = ['🥇', '🥈', '🥉']
     // 시상대는 2등 · 1등 · 3등 순서로 놓고, 1등을 가장 높게 세운다
-    const podium = [1, 0, 2].map((i) => ({ u: rows[i], rank: i })).filter((p) => p.u)
+    const podium = [1, 0, 2].map((i) => ({ u: rows[i], rank: i })).filter((p) => p.u && p.u.completed > 0) // 기록이 있는 사람만 시상대에 오른다
     const podiumStyle = [
         { h: 'h-28', text: 'text-gold', ring: 'border-gold/60', bg: 'from-gold/25 to-gold/5' },
         { h: 'h-20', text: 'text-on-surface', ring: 'border-outline', bg: 'from-on-surface/15 to-on-surface/5' },
@@ -73,15 +77,16 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
                     </div>
 
                     <div role="tablist" className="flex gap-1 border-b border-outline-variant mb-6">
-                        {([['ranking', '랭킹', 'leaderboard'], ['report', '명예의 전당', 'workspace_premium']] as const).map(([id, label, icon]) => (
+                        {([['ranking', '랭킹', 'leaderboard'], ['report', '명예의 전당', 'workspace_premium'], ['feed', '소식', 'forum']] as const).map(([id, label, icon]) => (
                             <button
                                 key={id}
                                 role="tab"
                                 aria-selected={tab === id}
-                                onClick={() => setTab(id)}
+                                onClick={() => { setTab(id); if (id === 'feed') markFeedSeen().then(() => setNewForMe(0)).catch(() => {}) }}
                                 className={`flex items-center gap-1.5 px-5 py-2.5 -mb-px border-b-2 font-sans text-label-caps transition-colors ${tab === id ? 'border-gold text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
                             >
                                 <span className={`material-symbols-outlined text-[18px] ${tab === id ? 'text-gold' : ''}`} style={tab === id ? { fontVariationSettings: "'FILL' 1" } : undefined}>{icon}</span>{label}
+                                {id === 'feed' && newForMe > 0 && tab !== 'feed' && <span className="fx-pop ml-0.5 rounded-full bg-rose px-1.5 py-0.5 font-sans text-[11px] font-bold text-white tabular-nums" aria-label={`새 반응 ${newForMe}개`}>{newForMe}</span>}
                             </button>
                         ))}
                     </div>
@@ -90,12 +95,12 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
                         <>
                     {meIndex >= 0 && (
                         <div className="mb-6 flex items-center gap-4 rounded-xl border border-info/40 bg-gradient-to-r from-info/15 via-accent/10 to-transparent px-6 py-4">
-                            <span className="text-[34px] leading-none">{MEDALS[meIndex] ?? '🏃'}</span>
+                            <span className="text-[34px] leading-none">{rows[meIndex]!.completed > 0 ? (MEDALS[meIndex] ?? '🏃') : '🌱'}</span>
                             <div className="min-w-0">
                                 <p className="font-sans text-label-caps text-on-surface-variant">내 순위</p>
-                                <p className="font-sans text-headline-md text-on-surface">{rows.length}명 중 {meIndex + 1}위 · 완료 {rows[meIndex]!.completed}/{rows[meIndex]!.total} 세트</p>
+                                <p className="font-sans text-headline-md text-on-surface">{rows[meIndex]!.completed > 0 ? `${rows.length}명 중 ${meIndex + 1}위 · 완료 ${rows[meIndex]!.completed}/${rows[meIndex]!.total} 세트` : '아직 시작 전이에요'}</p>
                             </div>
-                            <p className="ml-auto hidden md:block font-sans text-body-md text-on-surface-variant">{meIndex === 0 ? '1등이에요! 👑' : '한 세트만 더 끝내면 순위가 올라가요'}</p>
+                            <p className="ml-auto hidden md:block font-sans text-body-md text-on-surface-variant">{rows[meIndex]!.completed === 0 ? '첫 세트를 끝내면 순위에 이름이 올라가요' : meIndex === 0 ? '1등이에요! 👑' : '한 세트만 더 끝내면 순위가 올라가요'}</p>
                         </div>
                     )}
 
@@ -129,7 +134,7 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
                                         className="w-full flex items-center gap-4 px-4 py-4 hover:bg-surface-container-high transition-colors text-left"
                                     >
                                         <span className="font-sans text-headline-md text-on-surface-variant w-8 shrink-0">
-                                            {MEDALS[idx] ?? idx + 1}
+                                            {u.completed > 0 ? (MEDALS[idx] ?? idx + 1) : '–'}
                                         </span>
                                         <span className="font-sans text-body-md font-semibold text-on-surface w-32 shrink-0">
                                             {u.userName}{idx === meIndex && <span className="ml-2 px-1.5 py-0.5 rounded-full bg-info/20 text-info font-sans text-[11px]">나</span>}
@@ -179,6 +184,8 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
                     </div>
                         </>
                     )}
+                    {tab === 'feed' && <FeedTab userName={userName} />}
+
                     {tab === 'report' && (
                         <div className="space-y-6">
                             {reportError && <p className="font-sans text-body-md text-error">명예의 전당을 불러오지 못했어요. 잠시 후 다시 열어 주세요.</p>}
