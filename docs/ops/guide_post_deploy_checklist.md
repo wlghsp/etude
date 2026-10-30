@@ -19,7 +19,7 @@ docker images | grep etude
 | `linux` | `etude-linux` | 서버에서 직접 빌드 (`Dockerfile.linux`) |
 | `linux-ssh` | `etude-ssh` | 서버에서 직접 빌드 (`Dockerfile.ssh`) |
 | `docker`, `docker-persistent` | `docker:dind` | `docker pull` (setup.sh에 포함) |
-| `k8s`, `k8s-isolated` | `etude-k8s` | 서버에서 직접 빌드 (`Dockerfile.k8s`) |
+| `k8s`, `k8s-isolated` | `etude-k8s` | 배포 워크플로가 빌드 (`Dockerfile.k8s`, 안 바뀌었으면 캐시라 몇 초) |
 | `linux-systemd` | `rockylinux/rockylinux:9-ubi-init` | `docker pull` |
 
 목록에 없는 게 있으면:
