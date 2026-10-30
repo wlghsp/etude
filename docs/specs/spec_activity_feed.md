@@ -49,7 +49,7 @@
 ## 반응 (좋아요·박수·힘내요·대단해요)
 
 - 반응 종류는 ❤️ `like`, 👏 `clap`, 💪 `strong`, 🔥 `fire` 네 가지다 (빠른 응원 버튼, 글을 쓰지 않아도 응원할 수 있다).
-- **한 사람이 소식 한 건에 반응 하나**만 남긴다. 같은 반응을 다시 누르면 취소되고, 다른 반응을 누르면 바뀐다 (`feed_like.kind`, 기본 키는 그대로 `(completion_id, user_id)`).
+- **한 사람이 소식 한 건에 여러 반응**을 남길 수 있다 (카톡·Slack 처럼). 같은 반응을 다시 누르면 그 반응만 취소되고, 다른 반응을 누르면 추가된다 (2026-10-30 "한 사람 한 반응" 에서 변경). 기본 키는 `(completion_id, user_id, kind)` 이다.
 - **내 소식에는 남길 수 없다** (수를 부풀리지 못하게). 내 소식에는 받은 반응 수만 보인다.
 - 대댓글은 만들지 않는다 (응원까지만, 소통이 길어지는 것을 막는다). 2026-10-30 결정.
 
@@ -68,7 +68,7 @@
 
 외래 키는 두지 않는다 (`set_completion` 과 같은 이유). 소식의 id 는 `set_completion.id` 이다.
 
-- `feed_like(completion_id, user_id, kind, created_at)` — 기본 키 (completion_id, user_id), `kind` 는 반응 종류
+- `feed_like(completion_id, user_id, kind, created_at)` — 기본 키 (completion_id, user_id, kind), `kind` 는 반응 종류
 - `feed_comment(id, completion_id, user_id, body, created_at, deleted_at)`
 - `feed_seen(user_id, seen_at)`
 
@@ -77,7 +77,7 @@
 | 메서드 | 경로 | 설명 |
 |---|---|---|
 | GET | `/feed?before=<id>&limit=<n>` | 소식 목록(좋아요 수, 내가 눌렀는지, 댓글, 내가 지울 수 있는지 포함) |
-| POST | `/feed/:id/like` | 본문 `{ kind }` (생략하면 like). 반응을 남기거나 바꾸거나 취소 → `{ reaction, counts }` |
+| POST | `/feed/:id/like` | 본문 `{ kind }` (생략하면 like). 그 반응을 켜거나 끈다 → `{ mine, counts }` (`mine`: 내가 단 반응 종류 목록, `counts`: 종류별 수). 소식 항목의 `myReaction` 은 `myReactions`(목록)로 바뀐다 |
 | POST | `/feed/:id/comments` | 댓글 쓰기 `{ body }` → 만든 댓글 |
 | DELETE | `/feed/comments/:id` | 댓글 지우기 (작성자·관리자) |
 | GET | `/feed/summary` | `{ newForMe }` 안 본 새 반응 수 |
