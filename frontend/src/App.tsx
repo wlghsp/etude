@@ -12,7 +12,7 @@ import { Hall } from './pages/Hall'
 import { Review } from './pages/Review'
 import { Admin } from './pages/Admin'
 import type { Quest } from './types'
-import { fetchQuests, completeSet, startSet } from './api/quest'
+import { fetchQuests, completeSet, startSet, type CompletionXp } from './api/quest'
 import { fetchMe, token } from './api/auth'
 import { Login } from './pages/Login'
 import { ChangePasswordModal } from './components/ChangePasswordModal'
@@ -74,6 +74,7 @@ function App() {
   }, [maximized])
   // 세트 완료 기록 저장 상태 (모든 퀘스트를 통과하면 서버에 한 번 저장한다)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
+  const [xpGain, setXpGain] = useState<CompletionXp | null>(null)
   const [sessionId, setSessionId] = useState('')
   const [resetKey, setResetKey] = useState(0)
   const [preparing, setPreparing] = useState(false)
@@ -159,6 +160,7 @@ function App() {
         setRecords({})
         setSummaryOpen(false)
         setSaveState('idle')
+        setXpGain(null)
         const sid = `${Date.now()}-${Math.random().toString(36).slice(2)}`
         setSessionId(sid)
         setMaximized(null)
@@ -192,7 +194,7 @@ function App() {
     if (saveState !== 'idle' || selectedSetId === null || !sessionId) return
     if (quests.length === 0 || completedIndices.size < quests.length) return
     setSaveState('saving')
-    completeSet(selectedSetId, sessionId).then(() => setSaveState('saved')).catch(() => setSaveState('failed'))
+    completeSet(selectedSetId, sessionId).then((xp) => { setXpGain(xp); setSaveState('saved') }).catch(() => setSaveState('failed'))
   }, [saveState, selectedSetId, sessionId, quests.length, completedIndices])
 
   // 토큰 검증 전 - 빈 화면 (깜박임 방지)
@@ -275,7 +277,7 @@ function App() {
       <header className="flex items-center w-full px-gutter h-14 bg-surface border-b border-outline-variant shrink-0">
         <button onClick={() => navigate('home')} className="flex items-center gap-2 font-sans text-body-lg font-bold tracking-tighter text-on-surface hover:text-primary transition-colors">
           <Logo size={26} />
-          OKESTRO TRAINING | Etude
+          Etude
         </button>
         {isQuiz && (
           <span className="ml-4 font-sans text-label-caps text-on-surface-variant border border-outline-variant px-2 py-0.5">개념 퀴즈 · 터미널 없이 푸는 문제예요</span>
@@ -314,6 +316,7 @@ function App() {
                 quests={quests}
                 records={records}
                 saveState={saveState}
+                xpGain={xpGain}
                 onRetrySave={() => setSaveState('idle')}
                 onHome={() => navigate('home')}
                 onReview={(i) => { setQuestIndex(i); setSummaryOpen(false) }}

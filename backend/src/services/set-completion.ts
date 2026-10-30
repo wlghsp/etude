@@ -1,4 +1,6 @@
 import { db } from '../db.js'
+import { levelInfo, type LevelInfo } from './gamification.js'
+import { xpOf, type CompletionRec } from './xp.js'
 
 // 세트 완료 기록 (docs/specs/spec_progress_dashboard.md): 한 번 입장해서 세트의 모든 퀘스트를 통과하면 1건을 남긴다.
 
@@ -60,7 +62,9 @@ export function buildCompletion(quests: CompletionQuest[], attempts: CompletionA
     }
 }
 
-export type CompleteResult = { recorded: true; completion: Completion } | { recorded: false }
+// 이번 완료로 얻은 XP 와 레벨 변화. 새로 저장했을 때만 있다(같은 세션의 중복 요청이면 없다).
+export interface CompletionXp { gain: number; prevLevel: LevelInfo; level: LevelInfo }
+export type CompleteResult = { recorded: true; completion: Completion; xp?: CompletionXp } | { recorded: false }
 
 /** 서버가 quest_attempt 로 직접 확인한 뒤에만 저장한다 (화면의 요청만 믿지 않는다). 같은 세션의 중복 요청은 한 번만 저장된다. */
 export async function recordSetCompletion(userId: number, questSetId: number, sessionId: string): Promise<CompleteResult> {
@@ -84,11 +88,19 @@ export async function recordSetCompletion(userId: number, questSetId: number, se
     const completion = buildCompletion(quests, attempts)
     if (!completion) return { recorded: false }
 
-    await db.query(
+    const [inserted] = await db.query(
         `INSERT IGNORE INTO set_completion
            (user_id, quest_set_id, session_id, quest_count, total_seconds, hint_free_count, solution_free_count, detail)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [userId, questSetId, sessionId, completion.questCount, completion.totalSeconds,
-         completion.hintFreeCount, completion.solutionFreeCount, JSON.stringify(completion.detail)])
-    return { recorded: true, completion }
+         completion.hintFreeCount, completion.solutionFreeCount, JSON.stringify(completion.detail)]) as any[]
+    if (!inserted?.affectedRows) return { recorded: true, completion }
+
+    // 방금 저장한 기록이 이 사람의 가장 마지막 기록이므로, 그것을 뺀 XP 와 비교하면 이번에 얻은 XP 다 (XP 규칙의 기준은 xp.ts)
+    const [rows] = await db.query(
+        `SELECT id, quest_set_id, DATE_FORMAT(completed_at, '%Y-%m-%d') AS day, quest_count, hint_free_count, solution_free_count
+         FROM set_completion WHERE user_id = ? ORDER BY id`, [userId]) as any[]
+    const recs: CompletionRec[] = (rows as any[]).map((r) => ({ id: r.id, questSetId: r.quest_set_id, day: r.day, questCount: Number(r.quest_count), hintFree: Number(r.hint_free_count), solutionFree: Number(r.solution_free_count) }))
+    const before = xpOf(recs.slice(0, -1)), after = xpOf(recs)
+    return { recorded: true, completion, xp: { gain: after - before, prevLevel: levelInfo(before), level: levelInfo(after) } }
 }

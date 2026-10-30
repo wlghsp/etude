@@ -5,6 +5,7 @@ import { Celebration } from './Celebration'
 import { fetchGoals, fetchProgress, type Goals } from '../api/user'
 import { groupByUnit } from '../units'
 import { playFanfare } from '../sound'
+import type { CompletionXp } from '../api/quest'
 
 /** 한 문제를 푼 기록 (이번에 세트에 들어와서 푼 동안의 값) */
 export interface QuestRecord {
@@ -19,6 +20,7 @@ interface Props {
     quests: Quest[]
     records: Record<number, QuestRecord>
     saveState: 'idle' | 'saving' | 'saved' | 'failed'
+    xpGain: CompletionXp | null
     onRetrySave: () => void
     onHome: () => void
     onReview: (index: number) => void
@@ -36,7 +38,7 @@ function StatCard({ icon, label, value, sub }: { icon: string; label: string; va
     )
 }
 
-export function SetComplete({ setId, quests, records, saveState, onRetrySave, onHome, onReview }: Props) {
+export function SetComplete({ setId, quests, records, saveState, xpGain, onRetrySave, onHome, onReview }: Props) {
     const total = quests.length
     // 이 세트를 처음 끝냈고 단원의 모든 세트가 완료되면 단원 완료를 축하한다
     const [unitDone, setUnitDone] = useState<{ number: number | null; title: string; category: string } | null>(null)
@@ -107,6 +109,27 @@ export function SetComplete({ setId, quests, records, saveState, onRetrySave, on
                     <div className="mt-4 flex flex-wrap justify-center gap-2">
                         {perfect && <span className="fx-pop inline-flex items-center gap-1.5 rounded-full border border-gold/50 bg-gold/10 px-3 py-1 font-sans text-label-caps text-gold"><span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>퍼펙트 · 힌트·풀이 없이 모두</span>}
                         {firstTry && <span className="fx-pop inline-flex items-center gap-1.5 rounded-full border border-sky/50 bg-sky/10 px-3 py-1 font-sans text-label-caps text-sky" style={{ animationDelay: '0.15s' }}><span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>전부 한 번에 성공</span>}
+                    </div>
+                )}
+                {allDone && xpGain && xpGain.gain > 0 && (
+                    <div className="fx-pop mt-5 w-full max-w-[420px] rounded-xl border border-gold/40 bg-gold/10 px-5 py-4 text-left" style={{ animationDelay: '0.2s' }}>
+                        <div className="flex items-center justify-between">
+                            <p className="font-sans text-label-caps text-gold">✨ 경험치</p>
+                            <p className="font-sans text-headline-md text-gold tabular-nums">+{xpGain.gain} XP</p>
+                        </div>
+                        {xpGain.level.level > xpGain.prevLevel.level && (
+                            <p className="fx-pop mt-1 font-sans text-body-md font-bold text-on-surface">🎉 레벨 업! Lv.{xpGain.level.level} {xpGain.level.title}</p>
+                        )}
+                        <div className="mt-2 flex items-center justify-between font-sans text-code-sm text-on-surface-variant">
+                            <span>Lv.{xpGain.level.level} {xpGain.level.title}</span>
+                            <span className="tabular-nums">{xpGain.level.into} / {xpGain.level.need} XP</span>
+                        </div>
+                        <div className="mt-1 h-2.5 rounded-full bg-surface-container-highest overflow-hidden" role="progressbar" aria-valuenow={xpGain.level.pct} aria-valuemin={0} aria-valuemax={100}>
+                            <div className="h-full rounded-full bg-gradient-to-r from-gold via-rose to-accent transition-all duration-700" style={{ width: `${xpGain.level.pct}%` }} />
+                        </div>
+                        <p className="mt-2 font-sans text-label-caps text-on-surface-variant">
+                            {xpGain.level.need - xpGain.level.into > 0 ? `다음 레벨까지 ${xpGain.level.need - xpGain.level.into} XP` : ''}
+                        </p>
                     </div>
                 )}
                 {unitDone && (

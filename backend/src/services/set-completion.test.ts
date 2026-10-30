@@ -67,6 +67,44 @@ describe('recordSetCompletion', () => {
         expect(JSON.parse(params[7])[0]).toMatchObject({ questId: 11, seconds: 30 })
     })
 
+    const row = (id: number, hintFree: number, solFree: number) =>
+        ({ id, quest_set_id: 3, day: '2026-10-30', quest_count: 1, hint_free_count: hintFree, solution_free_count: solFree })
+    const savedWith = (recs: any[]) => vi.mocked(db.query)
+        .mockResolvedValueOnce([[{ id: 11, order_index: 1, title: 'q1' }]] as any)
+        .mockResolvedValueOnce([[{ quest_id: 11, passed: 1, elapsed_sec: 30, hint_used: 0, solution_used: 0 }]] as any)
+        .mockResolvedValueOnce([{ affectedRows: 1 }] as any)
+        .mockResolvedValueOnce([recs] as any)
+
+    it('새로 저장하면 이번에 얻은 XP 와 레벨(전·후)을 함께 돌려준다 (처음 + 퍼펙트 보너스)', async () => {
+        savedWith([row(5, 1, 1)])
+
+        const r: any = await recordSetCompletion(7, 3, 'sess-1')
+
+        expect(r.xp.gain).toBe(15) // 문제 1개: 처음 10 + 퍼펙트 5
+        expect(r.xp.prevLevel).toMatchObject({ level: 1, xp: 0 })
+        expect(r.xp.level).toMatchObject({ level: 1, xp: 15 })
+    })
+
+    it('같은 세트를 다시 끝내면 반복 보상(5 XP)만 돌려준다', async () => {
+        savedWith([row(1, 0, 0), row(2, 0, 0)])
+
+        const r: any = await recordSetCompletion(7, 3, 'sess-1')
+
+        expect(r.xp.gain).toBe(5)
+    })
+
+    it('같은 세션의 중복 요청이라 새로 저장되지 않으면 XP 를 돌려주지 않는다', async () => {
+        vi.mocked(db.query)
+            .mockResolvedValueOnce([[{ id: 11, order_index: 1, title: 'q1' }]] as any)
+            .mockResolvedValueOnce([[{ quest_id: 11, passed: 1, elapsed_sec: 30, hint_used: 0, solution_used: 0 }]] as any)
+            .mockResolvedValueOnce([{ affectedRows: 0 }] as any)
+
+        const r: any = await recordSetCompletion(7, 3, 'sess-1')
+
+        expect(r.recorded).toBe(true)
+        expect(r.xp).toBeUndefined()
+    })
+
     it('통과하지 못한 퀘스트가 있으면 저장하지 않는다', async () => {
         vi.mocked(db.query)
             .mockResolvedValueOnce([[{ id: 11, order_index: 1, title: 'q1' }, { id: 12, order_index: 2, title: 'q2' }]] as any)

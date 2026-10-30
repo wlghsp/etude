@@ -80,7 +80,7 @@ export const questRoutes: FastifyPluginAsync = async (app) => {
         if (!run.ok) return reply.code(403).send(runRejection(run))
         const result = await recordSetCompletion(req.user.userId, questSetId, sessionId)
         if (!result.recorded) return reply.code(409).send({ error: '이 세션에서 세트의 모든 퀘스트를 통과하지 않았습니다.' })
-        return { recorded: true }
+        return { recorded: true, xp: result.xp }
     })
 
     // 본인 세션의 컨테이너만, 그 세션의 세트에 속한 퀘스트만 채점한다.

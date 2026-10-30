@@ -43,13 +43,20 @@ export async function gradeQuest(
 }
 
 // 세트 완료 기록을 저장한다. 서버가 이 세션의 채점 기록으로 직접 확인한 뒤에만 저장하고, 같은 세션의 중복 요청은 한 번만 저장된다.
-export async function completeSet(setId: number, sessionId: string): Promise<void> {
+// 새로 저장했을 때만 이번에 얻은 XP 와 레벨 변화(전·후)가 함께 온다.
+export interface CompletionXp {
+  gain: number
+  prevLevel: { level: number; title: string; xp: number; into: number; need: number; pct: number }
+  level: { level: number; title: string; xp: number; into: number; need: number; pct: number }
+}
+export async function completeSet(setId: number, sessionId: string): Promise<CompletionXp | null> {
   const r = await fetch(`${BASE}/quest-sets/${setId}/complete`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ sessionId }),
   })
   if (!r.ok) throw await requestError(r)
+  return (await r.json()).xp ?? null
 }
 
 // 객관식 답 제출. 서버가 정답을 판정하고, 정답일 때만 해설을 돌려준다.
