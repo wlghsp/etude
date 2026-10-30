@@ -117,6 +117,64 @@ describe('verifyQuest', () => {
     })
 })
 
+describe('verifyQuest — 조건별 채점(checks)', () => {
+    const checks = [
+        { label: '파일이 있다', cmd: ['sh', '-c', 'test -f /tmp/r'] },
+        { label: '내용이 맞다', cmd: ['sh', '-c', 'grep -q / /tmp/r'] },
+    ]
+    const withChecks: VerifyQuest = { ...quest, checks }
+    const KEYS = { exists: 'sh -c test -f /tmp/r', content: 'sh -c grep -q / /tmp/r' }
+
+    // 정답을 수행한 첫 컨테이너에서는 모두 통과하고, 무행동 컨테이너에서는 grade 와 조건 하나가 실패하는 샌드박스
+    const sandboxes = (answerOverrides: Record<string, number> = {}) => {
+        let n = 0
+        const factory: SandboxFactory = async () => {
+            const id = ++n
+            return {
+                exec: async (cmd) => {
+                    const key = cmd.join(' ')
+                    if (id === 1) return answerOverrides[key] ?? 0
+                    return key === GRADE_KEY || key === KEYS.content ? 1 : 0
+                },
+                dispose: async () => {},
+            }
+        }
+        return factory
+    }
+
+    it('정답 뒤에 모든 조건이 통과하고 무행동에서는 일부 조건이 실패하면 ok 이다', async () => {
+        expect(await verifyQuest(withChecks, answer, sandboxes())).toEqual({ orderIndex: 1, title: quest.title, ok: true })
+    })
+
+    it('정답을 수행했는데 조건 하나가 통과하지 않으면 answer-rejected 이고 조건 이름을 알려 준다', async () => {
+        const result = await verifyQuest(withChecks, answer, sandboxes({ [KEYS.exists]: 1 }))
+
+        expect(result).toMatchObject({ ok: false, reason: 'answer-rejected' })
+        expect((result as { detail: string }).detail).toContain('파일이 있다')
+    })
+
+    it('아무것도 안 했는데 모든 조건이 통과하면 trivially-passes 이다 (grade_cmd 가 아니라 조건이 엇나간 경우)', async () => {
+        let n = 0
+        const factory: SandboxFactory = async () => {
+            const id = ++n
+            // 무행동 컨테이너에서도 조건은 모두 통과하고 grade_cmd 만 실패한다 → 체크리스트가 비어 보이는 문제
+            return { exec: async (cmd) => (id !== 1 && cmd.join(' ') === GRADE_KEY ? 1 : 0), dispose: async () => {} }
+        }
+
+        // grade_cmd 와 다른 명령으로 된 조건 (같은 문자열이면 같이 실패해 버린다)
+        const distinct: VerifyQuest = { ...quest, checks: [{ label: 'A', cmd: ['sh', '-c', 'test -f /tmp/a'] }, { label: 'B', cmd: ['sh', '-c', 'test -s /tmp/b'] }] }
+
+        const result = await verifyQuest(distinct, answer, factory)
+
+        expect(result).toMatchObject({ ok: false, reason: 'trivially-passes' })
+        expect((result as { detail: string }).detail).toContain('조건')
+    })
+
+    it('조건이 없는 문제는 기존처럼 검증한다', async () => {
+        expect(await verifyQuest({ ...quest, checks: undefined }, answer, sandboxes())).toMatchObject({ ok: true })
+    })
+})
+
 describe('채점 타임아웃', () => {
     it('grade_cmd는 실제 채점과 같은 15초 타임아웃으로 실행한다', async () => {
         const calls: Array<{ cmd: string; timeoutMs?: number }> = []

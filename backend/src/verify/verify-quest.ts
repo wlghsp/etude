@@ -8,6 +8,7 @@ export interface VerifyQuest {
     title: string
     setupCmd: string[] | null
     gradeCmd: string[]
+    checks?: Array<{ label: string; cmd: string[] }> | undefined // 조건별 채점(spec_grade_checks.md)이 있는 문제의 조건 목록
 }
 
 export interface VerifySandbox {
@@ -60,18 +61,32 @@ export async function verifyQuest(quest: VerifyQuest, answer: string, factory: S
         const answerPassed = await withSandbox(factory, async (sandbox) => {
             await runSetup(sandbox, quest)
             await sandbox.exec(['sh', '-c', answer])
-            return (await sandbox.exec(quest.gradeCmd, GRADE_TIMEOUT_MS)) === 0
+            if ((await sandbox.exec(quest.gradeCmd, GRADE_TIMEOUT_MS)) !== 0) return { failed: 'grade_cmd가 통과하지 않았다' }
+            // 조건이 있는 문제는 정답을 수행한 뒤 모든 조건이 통과해야 한다 (체크리스트에 빨간 표시가 남지 않도록)
+            for (const check of quest.checks ?? []) {
+                if ((await sandbox.exec(check.cmd, GRADE_TIMEOUT_MS)) !== 0) return { failed: `조건 "${check.label}" 이(가) 통과하지 않았다` }
+            }
+            return { failed: null }
         })
-        if (!answerPassed) {
-            return { ...base, ok: false, reason: 'answer-rejected', detail: '정답을 수행했는데 grade_cmd가 통과하지 않았다' }
+        if (answerPassed.failed !== null) {
+            return { ...base, ok: false, reason: 'answer-rejected', detail: `정답을 수행했는데 ${answerPassed.failed}` }
         }
 
         const idlePassed = await withSandbox(factory, async (sandbox) => {
             await runSetup(sandbox, quest)
-            return (await sandbox.exec(quest.gradeCmd, GRADE_TIMEOUT_MS)) === 0
+            const gradePassed = (await sandbox.exec(quest.gradeCmd, GRADE_TIMEOUT_MS)) === 0
+            // 조건이 있는 문제는 아무것도 안 했을 때 일부 조건이 실패해야 한다 (모두 통과면 체크리스트가 의미 없다)
+            let allChecksPassed = (quest.checks?.length ?? 0) > 0
+            for (const check of quest.checks ?? []) {
+                if ((await sandbox.exec(check.cmd, GRADE_TIMEOUT_MS)) !== 0) { allChecksPassed = false; break }
+            }
+            return { gradePassed, allChecksPassed }
         })
-        if (idlePassed) {
+        if (idlePassed.gradePassed) {
             return { ...base, ok: false, reason: 'trivially-passes', detail: '아무것도 안 했는데 grade_cmd가 통과했다' }
+        }
+        if (idlePassed.allChecksPassed) {
+            return { ...base, ok: false, reason: 'trivially-passes', detail: '아무것도 안 했는데 모든 조건이 통과했다 (실패하는 조건이 하나도 없다)' }
         }
 
         return { ...base, ok: true }

@@ -34,13 +34,22 @@ function parseSetIds(argv: string[]): number[] | 'all' {
 
 const asArray = (raw: unknown): string[] | null => (raw == null ? null : typeof raw === 'string' ? JSON.parse(raw) : (raw as string[]))
 
+// 조건별 채점(quest.checks): [{label, cmd}]. 없거나 깨졌으면 undefined.
+function parseChecks(raw: unknown): VerifyQuest['checks'] {
+    if (!raw) return undefined
+    try {
+        const v = typeof raw === 'string' ? JSON.parse(raw) : raw
+        return Array.isArray(v) && v.length > 0 ? v : undefined
+    } catch { return undefined }
+}
+
 async function loadQuests(setId: number): Promise<VerifyQuest[]> {
     const [rows] = await db.query<any[]>(
         // 객관식(kind='choice')은 grade_cmd 가 없고 정답을 서버가 판정하므로 verify:quiz 가 따로 검증한다
-        "SELECT order_index, title, setup_cmd, grade_cmd FROM quest WHERE quest_set_id = ? AND kind = 'terminal' ORDER BY order_index",
+        "SELECT order_index, title, setup_cmd, grade_cmd, checks FROM quest WHERE quest_set_id = ? AND kind = 'terminal' ORDER BY order_index",
         [setId],
     )
-    return rows.map((r) => ({ orderIndex: r.order_index, title: r.title, setupCmd: asArray(r.setup_cmd), gradeCmd: asArray(r.grade_cmd)! }))
+    return rows.map((r) => ({ orderIndex: r.order_index, title: r.title, setupCmd: asArray(r.setup_cmd), gradeCmd: asArray(r.grade_cmd)!, checks: parseChecks(r.checks) }))
 }
 
 function print(result: QuestResult) {
