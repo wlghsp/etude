@@ -1,0 +1,13 @@
+{
+  "setId": 35,
+  "answers": {
+    "1": "for x in a b c; do echo $x; done > /tmp/for1.txt",
+    "2": "for f in /tmp/logs/*.log; do wc -l < $f; done > /tmp/line_counts.txt",
+    "3": "for i in $(seq 1 5); do touch /tmp/seq/file$i.txt; done",
+    "4": "for f in /tmp/ren/*.txt; do mv \"$f\" \"${f%.txt}.bak\"; done",
+    "5": "for h in web1 web2 db1; do getent hosts $h; done > /tmp/hosts_check.txt",
+    "6": "while read name; do echo \"hello $name\"; done < /tmp/users.txt > /tmp/hello.txt",
+    "7": "for f in /tmp/chk/*.txt; do [ -s \"$f\" ] || rm \"$f\"; done",
+    "8": "for f in /tmp/brk/*; do n=$(basename $f); [ \"$n\" = stop.txt ] && break; echo $n; done > /tmp/seen.txt"
+  }
+}
