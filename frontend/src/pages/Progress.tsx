@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react"
 import { groupByUnit } from "../units"
-import { fetchGamification, fetchProgress, type CompletionRecord, type Gamification, type SetProgress } from "../api/user"
+import { fetchGamification, fetchGoals, fetchProgress, type CompletionRecord, type Gamification, type Goals, type SetProgress } from "../api/user"
+import { weekActivity } from "../activity"
+import { MyStatus } from "../components/MyStatus"
+import { GoalsPanel } from "../components/GoalsPanel"
 import { TopNav } from "../components/TopNav"
 import { SideNav } from "../components/SideNav"
 import { formatDuration } from "../components/useQuestTimer"
@@ -32,6 +35,7 @@ export function Progress({ onBack, onLeaderboard, onHall, onReview, onFeed, onAd
     const [sets, setSets] = useState<SetProgress[] | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [gami, setGami] = useState<Gamification | null>(null)
+    const [goals, setGoals] = useState<Goals | null>(null)
     const badges = gami?.badges ?? null
     const level = gami?.level ?? null
     const [filter, setFilter] = useState<Filter>({ kind: 'all' })
@@ -39,6 +43,7 @@ export function Progress({ onBack, onLeaderboard, onHall, onReview, onFeed, onAd
     const [openRecords, setOpenRecords] = useState<Set<number>>(new Set())
 
     useEffect(() => {
+        fetchGoals().then(setGoals).catch(() => { /* 목표가 없어도 진행현황은 보인다 */ })
         fetchGamification().then(setGami).catch(() => { /* 배지가 없어도 진행현황은 보인다 */ })
         fetchProgress().then((rows) => { setSets(rows) }).catch((e) => setError(e instanceof Error ? e.message : '진행현황을 불러오지 못했습니다.'))
     }, [])
@@ -137,6 +142,9 @@ export function Progress({ onBack, onLeaderboard, onHall, onReview, onFeed, onAd
                         )}
 
                         {sets && <>
+                            {gami && <MyStatus userName={userName} totalPct={rate} level={gami.level} streak={gami.streak} week={weekActivity(sets, new Date())} />}
+                            {goals && <GoalsPanel goals={goals} />}
+
                             <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {card('task_alt', 'text-success', '완료한 세트', `${completedSets}`, `/ ${list.length}개 (${rate}%)`)}
                                 {card('repeat', 'text-primary', '총 완료 횟수', `${allRecords.length}`, '회')}

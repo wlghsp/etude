@@ -67,11 +67,11 @@ export function SideNav({ activePage, userName, userEmail, userRole, onHome, onP
             </div>
             <nav className="flex-1 space-y-1">
                 {item('grid_view', '트레이닝 세트', 'home', onHome)}
-                {item('event_repeat', '복습', 'review', onReview)}
                 {item('assignment', '내 진행현황', 'progress', onProgress)}
                 {item('analytics', '랭킹', 'leaderboard', onLeaderboard)}
                 {item('workspace_premium', '명예의 전당', 'hall', onHall)}
                 {item('forum', '소식', 'feed', onFeed, newForMe)}
+                {item('event_repeat', '복습', 'review', onReview)}
                 {userRole === 'admin' && onAdmin && item('admin_panel_settings', '관리자', 'admin', onAdmin)}
             </nav>
             <div className="border-t border-outline-variant pt-4 px-2">

@@ -20,6 +20,7 @@ import { ConfirmModal } from './components/ConfirmModal'
 import { LoadingScreen } from './components/LoadingScreen'
 import { SoundToggle } from './components/SoundToggle'
 import { Logo } from './components/Logo'
+import { SplitHandle, SPLIT_DEFAULT } from './components/SplitHandle'
 
 
 
@@ -30,6 +31,15 @@ const TERMINAL_STATUS_VIEW: Record<TerminalStatus, { dot: string; label: string 
 }
 
 type Page = 'home' | 'progress' | 'leaderboard' | 'hall' | 'review' | 'feed' | 'admin'
+
+// 한쪽 패널을 화면 가득 크게 보거나 되돌리는 버튼 (Esc 로도 되돌린다)
+function PaneToggle({ active, onClick }: { active: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick} aria-pressed={active} title={active ? '원래 크기로 (Esc)' : '전체보기'} className="rounded p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors">
+      <span className="material-symbols-outlined text-[18px]">{active ? 'close_fullscreen' : 'open_in_full'}</span>
+    </button>
+  )
+}
 
 function App() {
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null)
@@ -49,6 +59,19 @@ function App() {
   // 시간 제한 세트(시험형): 서버가 기록한 시작 시각 기준의 마감. 없으면 일반 세트. 마감되면 결과 화면으로 넘어간다.
   const [run, setRun] = useState<{ limitSec: number; deadlineMs: number } | null>(null)
   const [expired, setExpired] = useState(false)
+  // 문제 풀이 화면의 카드 레이아웃: 문제 패널의 폭 비율(기억해 둔다)과 한쪽만 크게 보는 전체보기
+  const [splitPct, setSplitPct] = useState<number>(() => {
+    try { const v = Number(localStorage.getItem('etude.split')); return v >= 25 && v <= 70 ? v : SPLIT_DEFAULT } catch { return SPLIT_DEFAULT }
+  })
+  const [maximized, setMaximized] = useState<null | 'task' | 'terminal'>(null)
+  const panesRef = useRef<HTMLElement>(null)
+  useEffect(() => { try { localStorage.setItem('etude.split', String(Math.round(splitPct))) } catch { /* 기억하지 못해도 화면은 그대로다 */ } }, [splitPct])
+  useEffect(() => {
+    if (!maximized) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMaximized(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [maximized])
   // 세트 완료 기록 저장 상태 (모든 퀘스트를 통과하면 서버에 한 번 저장한다)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
   const [sessionId, setSessionId] = useState('')
@@ -138,6 +161,7 @@ function App() {
         setSaveState('idle')
         const sid = `${Date.now()}-${Math.random().toString(36).slice(2)}`
         setSessionId(sid)
+        setMaximized(null)
         setRun(null)
         setExpired(false)
         startSet(selectedSetId, sid)
@@ -246,7 +270,6 @@ function App() {
 
   return (
     <div className="dark h-screen flex flex-col bg-surface overflow-hidden relative">
-      <FeedbackButton page="quest" questId={quest?.id} questSetId={selectedSetId} />
       {/* TopNav */}
       <header className="flex items-center w-full px-gutter h-14 bg-surface border-b border-outline-variant shrink-0">
         <button onClick={() => navigate('home')} className="flex items-center gap-2 font-sans text-body-lg font-bold tracking-tighter text-on-surface hover:text-primary transition-colors">
@@ -262,11 +285,23 @@ function App() {
               🔥 {combo}콤보
             </span>
           )}
+          <FeedbackButton inline page="quest" questId={quest?.id} questSetId={selectedSetId} />
           <SoundToggle />
         </div>
       </header>
-      <main className="flex flex-1 overflow-hidden">
-        <section className={isQuiz ? 'w-full max-w-5xl mx-auto flex flex-col bg-gradient-to-b from-accent/10 via-transparent to-transparent' : 'w-[40%] flex flex-col'}>
+      <main ref={panesRef} className={isQuiz ? 'flex flex-1 overflow-hidden' : `flex flex-1 overflow-hidden bg-surface-container-lowest ${maximized ? 'p-0' : 'p-3'}`}>
+        <section
+          className={isQuiz
+            ? 'w-full max-w-5xl mx-auto flex flex-col bg-gradient-to-b from-accent/10 via-transparent to-transparent'
+            : `flex flex-col overflow-hidden border border-outline-variant bg-surface ${maximized ? 'rounded-none' : 'rounded-2xl'} ${maximized === 'terminal' ? 'hidden' : ''}`}
+          style={isQuiz ? undefined : { width: maximized === 'task' ? '100%' : `calc(${splitPct}% - 6px)` }}
+        >
+          {!isQuiz && (
+            <div className="h-9 border-b border-outline-variant flex items-center justify-between px-4 bg-surface shrink-0">
+              <span className="font-sans text-label-caps text-on-surface flex items-center gap-2"><span className="material-symbols-outlined text-[16px]">assignment</span> 문제</span>
+              <PaneToggle active={maximized === 'task'} onClick={() => setMaximized(maximized === 'task' ? null : 'task')} />
+            </div>
+          )}
           {summaryOpen && expired && (
             <div className="mx-6 mt-4 flex items-center gap-2 rounded-lg border border-warning/50 bg-warning/10 px-4 py-3 font-sans text-body-md text-warning" role="status">
               <span className="material-symbols-outlined text-[20px]">hourglass_bottom</span>시간이 끝났어요. 지금까지 푼 기록이에요.
@@ -310,8 +345,9 @@ function App() {
             />
           )}
         </section>
+        {!isQuiz && !maximized && <SplitHandle value={splitPct} onChange={setSplitPct} containerRef={panesRef} />}
         {!isQuiz && (
-          <section className="w-[60%] flex flex-col bg-surface-container-lowest">
+          <section className={`relative flex flex-1 min-w-0 flex-col overflow-hidden border border-outline-variant bg-surface-container-lowest ${maximized ? 'rounded-none' : 'rounded-2xl'} ${maximized === 'task' ? 'hidden' : ''}`}>
             <div className="h-9 border-b border-outline-variant flex items-center px-4 bg-surface justify-between shrink-0">
               <div className="flex items-center gap-4">
                 <span className="font-sans text-label-caps text-on-surface flex items-center gap-2">
@@ -335,6 +371,7 @@ function App() {
                 </div>
                 <span className={`w-2 h-2 rounded-full ${TERMINAL_STATUS_VIEW[terminalStatus].dot}`}></span>
                 <span className="font-sans text-label-caps text-on-surface-variant">{TERMINAL_STATUS_VIEW[terminalStatus].label}</span>
+                <PaneToggle active={maximized === 'terminal'} onClick={() => setMaximized(maximized === 'terminal' ? null : 'terminal')} />
               </div>
             </div>
             {quest

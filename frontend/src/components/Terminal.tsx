@@ -56,7 +56,9 @@ export function Terminal({ questId, fontSize, onConnected, onStatus }: Props) {
         resizeRef.current = sendResize
 
         // 브라우저 창 크기 변경 대응
-        const resizeObserver = new ResizeObserver(() => sendResize())
+        // 폭을 끌어 조절하는 동안 프레임마다 서버로 보내지 않도록 한 프레임에 한 번만 맞춘다
+        let raf = 0
+        const resizeObserver = new ResizeObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(sendResize) })
         resizeObserver.observe(containerRef.current!)
 
         const connect = (ticket: string) => {

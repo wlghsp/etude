@@ -20,16 +20,13 @@ interface Props {
 export function Leaderboard({ onBack, onProgress, onHall, onReview, onFeed, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
     const [rows, setRows] = useState<MemberProgress[]>([])
     const [openUsers, setOpenUsers] = useState<Set<number>>(new Set())
-    const [tab, setTab] = useState<'total' | 'weekly'>('total')
     const [weekly, setWeekly] = useState<WeeklyLeaderboard | null>(null)
     const [weeklyError, setWeeklyError] = useState(false)
 
 
-    // 이번 주 XP 는 탭을 처음 열 때 불러온다
     useEffect(() => {
-        if (tab !== 'weekly' || weekly) return
         fetchWeeklyLeaderboard().then(setWeekly).catch(() => setWeeklyError(true))
-    }, [tab, weekly])
+    }, [])
 
     useEffect(() => {
         fetchLeaderboard().then((data) =>
@@ -76,48 +73,6 @@ export function Leaderboard({ onBack, onProgress, onHall, onReview, onFeed, onAd
                         <h1 className="font-sans text-headline-lg text-on-surface">랭킹</h1>
                     </div>
 
-                    <div role="tablist" className="flex gap-1 border-b border-outline-variant mb-6">
-                        {([['total', '누적 세트', 'leaderboard'], ['weekly', '이번 주 XP', 'bolt']] as const).map(([id, label, icon]) => (
-                            <button
-                                key={id}
-                                role="tab"
-                                aria-selected={tab === id}
-                                onClick={() => setTab(id)}
-                                className={`flex items-center gap-1.5 px-5 py-2.5 -mb-px border-b-2 font-sans text-label-caps transition-colors ${tab === id ? 'border-gold text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
-                            >
-                                <span className={`material-symbols-outlined text-[18px] ${tab === id ? 'text-gold' : ''}`} style={tab === id ? { fontVariationSettings: "'FILL' 1" } : undefined}>{icon}</span>{label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {tab === 'weekly' && (
-                        <div className="max-w-[640px] space-y-4">
-                            <p className="font-sans text-body-md text-on-surface-variant">최근 7일 동안 얻은 XP예요. 이번 주에 열심히 한 사람이 앞서요 ⚡</p>
-                            {weeklyError && <p className="font-sans text-body-md text-error">이번 주 순위를 불러오지 못했어요. 잠시 후 다시 열어 주세요.</p>}
-                            {!weekly && !weeklyError && <div className="h-32 rounded-xl bg-surface-container animate-pulse" aria-label="불러오는 중" />}
-                            {weekly && weekly.entries.length === 0 && (
-                                <p className="rounded-xl border border-dashed border-outline-variant px-5 py-6 font-sans text-body-lg text-on-surface">🌟 이번 주 첫 주인공이 되어 보세요! 세트를 끝내면 XP가 쌓여요.</p>
-                            )}
-                            {weekly && weekly.entries.length > 0 && (
-                                <ol className="space-y-2">
-                                    {weekly.entries.map((e, i) => (
-                                        <li key={e.userId} className={`flex items-center gap-3 rounded-xl px-4 py-3 ${e.userName === userName ? 'bg-info/15 ring-1 ring-info/40' : 'bg-surface-container-low border border-outline-variant'}`}>
-                                            <span className="w-8 text-center text-[22px] leading-none">{MEDALS[i] ?? <span className="font-sans text-body-md text-on-surface-variant tabular-nums">{i + 1}</span>}</span>
-                                            <span className="flex-1 min-w-0 truncate font-sans text-body-md font-semibold text-on-surface">{e.userName}{e.userName === userName && <span className="ml-2 px-1.5 py-0.5 rounded-full bg-info/20 text-info font-sans text-[11px]">나</span>}</span>
-                                            <span className="font-sans text-body-md font-bold text-gold tabular-nums">{e.xp} XP</span>
-                                        </li>
-                                    ))}
-                                </ol>
-                            )}
-                            {weekly && weekly.me.rank === null && (
-                                <p className="rounded-xl bg-info/10 px-4 py-3 font-sans text-body-md text-on-surface">
-                                    {weekly.me.xp > 0 ? `나는 이번 주 ${weekly.me.xp} XP를 얻었어요. 조금만 더 하면 상위권이에요! 💪` : '이번 주에는 아직 XP가 없어요. 세트 하나로 시작해 볼까요?'}
-                                </p>
-                            )}
-                        </div>
-                    )}
-
-                    {tab === 'total' && <>
                     {meIndex >= 0 && (
                         <div className="mb-6 flex items-center gap-4 rounded-xl border border-info/40 bg-gradient-to-r from-info/15 via-accent/10 to-transparent px-6 py-4">
                             <span className="text-[34px] leading-none">{rows[meIndex]!.completed > 0 ? (MEDALS[meIndex] ?? '🏃') : '🌱'}</span>
@@ -144,71 +99,98 @@ export function Leaderboard({ onBack, onProgress, onHall, onReview, onFeed, onAd
                         </div>
                     )}
 
-                    <div className="bg-surface-container border border-outline-variant overflow-hidden">
-                        <div className="p-4 border-b border-outline-variant bg-surface-container-high flex justify-between items-center">
-                            <h3 className="font-sans text-label-caps uppercase tracking-widest text-on-surface">팀원 랭킹</h3>
-                        </div>
+                    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 items-start">
+                        <section aria-label="누적 세트 순위">
+                        <div className="bg-surface-container border border-outline-variant overflow-hidden">
+                            <div className="p-4 border-b border-outline-variant bg-surface-container-high flex justify-between items-center">
+                                <h3 className="font-sans text-label-caps uppercase tracking-widest text-on-surface">누적 세트 · 팀원 랭킹</h3>
+                            </div>
 
-                        {rows.map((u, idx) => {
-                            const pct = u.total > 0 ? Math.round((u.completed / u.total) * 100) : 0
-                            const isOpen = openUsers.has(u.userId)
-                            return (
-                                <div key={u.userId} className={`border-b border-outline-variant last:border-0 ${idx === meIndex ? 'bg-info/10 border-l-4 border-l-info' : ''}`}>
-                                    <button
-                                        onClick={() => toggleUser(u.userId)}
-                                        className="w-full flex items-center gap-4 px-4 py-4 hover:bg-surface-container-high transition-colors text-left"
-                                    >
-                                        <span className="font-sans text-headline-md text-on-surface-variant w-8 shrink-0">
-                                            {u.completed > 0 ? (MEDALS[idx] ?? idx + 1) : '–'}
-                                        </span>
-                                        <span className="font-sans text-body-md font-semibold text-on-surface w-32 shrink-0">
-                                            {u.userName}{idx === meIndex && <span className="ml-2 px-1.5 py-0.5 rounded-full bg-info/20 text-info font-sans text-[11px]">나</span>}
-                                        </span>
-                                        <div className="flex-1 h-2 bg-surface-container-highest">
-                                            <div
-                                                className={`h-full bg-gradient-to-r ${pct === 100 ? 'from-success to-gold' : 'from-info to-accent'} transition-all duration-700`}
-                                                style={{ width: `${pct}%` }}
-                                            />
-                                        </div>
-                                        <span className="font-sans text-code-sm text-on-surface-variant w-20 text-right shrink-0">
-                                            {u.completed}/{u.total} 세트
-                                        </span>
-                                        <span className={`font-sans text-body-md font-bold w-12 text-right shrink-0 ${pct === 100 ? 'text-success' : 'text-primary'}`}>
-                                            {pct}%
-                                        </span>
-                                        <span
-                                            className="material-symbols-outlined text-on-surface-variant text-[20px] shrink-0 transition-transform"
-                                            style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                            {rows.map((u, idx) => {
+                                const pct = u.total > 0 ? Math.round((u.completed / u.total) * 100) : 0
+                                const isOpen = openUsers.has(u.userId)
+                                return (
+                                    <div key={u.userId} className={`border-b border-outline-variant last:border-0 ${idx === meIndex ? 'bg-info/10 border-l-4 border-l-info' : ''}`}>
+                                        <button
+                                            onClick={() => toggleUser(u.userId)}
+                                            className="w-full flex items-center gap-4 px-4 py-4 hover:bg-surface-container-high transition-colors text-left"
                                         >
-                                            expand_more
-                                        </span>
-                                    </button>
+                                            <span className="font-sans text-headline-md text-on-surface-variant w-8 shrink-0">
+                                                {u.completed > 0 ? (MEDALS[idx] ?? idx + 1) : '–'}
+                                            </span>
+                                            <span className="font-sans text-body-md font-semibold text-on-surface w-32 shrink-0">
+                                                {u.userName}{idx === meIndex && <span className="ml-2 px-1.5 py-0.5 rounded-full bg-info/20 text-info font-sans text-[11px]">나</span>}
+                                            </span>
+                                            <div className="flex-1 h-2 bg-surface-container-highest">
+                                                <div
+                                                    className={`h-full bg-gradient-to-r ${pct === 100 ? 'from-success to-gold' : 'from-info to-accent'} transition-all duration-700`}
+                                                    style={{ width: `${pct}%` }}
+                                                />
+                                            </div>
+                                            <span className="font-sans text-code-sm text-on-surface-variant w-20 text-right shrink-0">
+                                                {u.completed}/{u.total} 세트
+                                            </span>
+                                            <span className={`font-sans text-body-md font-bold w-12 text-right shrink-0 ${pct === 100 ? 'text-success' : 'text-primary'}`}>
+                                                {pct}%
+                                            </span>
+                                            <span
+                                                className="material-symbols-outlined text-on-surface-variant text-[20px] shrink-0 transition-transform"
+                                                style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                                            >
+                                                expand_more
+                                            </span>
+                                        </button>
 
-                                    {isOpen && (
-                                        <div className="border-t border-outline-variant bg-surface-container-lowest">
-                                            {u.sets.map(s => {
-                                                const sComplete = s.completed > 0
-                                                return (
-                                                    <div key={s.questSetId} className="flex items-center gap-4 px-4 py-3 border-b border-outline-variant/50 last:border-0">
-                                                        <span className="w-8 shrink-0" />
-                                                        <span className="font-sans text-code-sm text-on-surface-variant w-32 shrink-0">{s.category}</span>
-                                                        <span className="font-sans text-code-sm text-on-surface flex-1">{s.questSetTitle}</span>
-                                                        <span className={`font-sans text-code-sm w-24 text-right shrink-0 flex items-center justify-end gap-1 ${sComplete ? 'text-success font-bold' : 'text-on-surface-variant'}`}>
-                                                            {sComplete && <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>}
-                                                            {sComplete ? '완료' : '미완료'}
-                                                        </span>
-                                                        <span className="w-[20px] shrink-0" />
-                                                    </div>
-                                                )
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
-                            )
-                        })}
+                                        {isOpen && (
+                                            <div className="border-t border-outline-variant bg-surface-container-lowest">
+                                                {u.sets.map(s => {
+                                                    const sComplete = s.completed > 0
+                                                    return (
+                                                        <div key={s.questSetId} className="flex items-center gap-4 px-4 py-3 border-b border-outline-variant/50 last:border-0">
+                                                            <span className="w-8 shrink-0" />
+                                                            <span className="font-sans text-code-sm text-on-surface-variant w-32 shrink-0">{s.category}</span>
+                                                            <span className="font-sans text-code-sm text-on-surface flex-1">{s.questSetTitle}</span>
+                                                            <span className={`font-sans text-code-sm w-24 text-right shrink-0 flex items-center justify-end gap-1 ${sComplete ? 'text-success font-bold' : 'text-on-surface-variant'}`}>
+                                                                {sComplete && <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>}
+                                                                {sComplete ? '완료' : '미완료'}
+                                                            </span>
+                                                            <span className="w-[20px] shrink-0" />
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        </section>
+                        <section aria-label="이번 주 XP" className="space-y-4">
+                            <h2 className="font-sans text-headline-md text-on-surface">⚡ 이번 주 XP</h2>
+                            <p className="font-sans text-body-md text-on-surface-variant">최근 7일 동안 얻은 XP예요. 이번 주에 열심히 한 사람이 앞서요 ⚡</p>
+                            {weeklyError && <p className="font-sans text-body-md text-error">이번 주 순위를 불러오지 못했어요. 잠시 후 다시 열어 주세요.</p>}
+                            {!weekly && !weeklyError && <div className="h-32 rounded-xl bg-surface-container animate-pulse" aria-label="불러오는 중" />}
+                            {weekly && weekly.entries.length === 0 && (
+                                <p className="rounded-xl border border-dashed border-outline-variant px-5 py-6 font-sans text-body-lg text-on-surface">🌟 이번 주 첫 주인공이 되어 보세요! 세트를 끝내면 XP가 쌓여요.</p>
+                            )}
+                            {weekly && weekly.entries.length > 0 && (
+                                <ol className="space-y-2">
+                                    {weekly.entries.map((e, i) => (
+                                        <li key={e.userId} className={`flex items-center gap-3 rounded-xl px-4 py-3 ${e.userName === userName ? 'bg-info/15 ring-1 ring-info/40' : 'bg-surface-container-low border border-outline-variant'}`}>
+                                            <span className="w-8 text-center text-[22px] leading-none">{MEDALS[i] ?? <span className="font-sans text-body-md text-on-surface-variant tabular-nums">{i + 1}</span>}</span>
+                                            <span className="flex-1 min-w-0 truncate font-sans text-body-md font-semibold text-on-surface">{e.userName}{e.userName === userName && <span className="ml-2 px-1.5 py-0.5 rounded-full bg-info/20 text-info font-sans text-[11px]">나</span>}</span>
+                                            <span className="font-sans text-body-md font-bold text-gold tabular-nums">{e.xp} XP</span>
+                                        </li>
+                                    ))}
+                                </ol>
+                            )}
+                            {weekly && weekly.me.rank === null && (
+                                <p className="rounded-xl bg-info/10 px-4 py-3 font-sans text-body-md text-on-surface">
+                                    {weekly.me.xp > 0 ? `나는 이번 주 ${weekly.me.xp} XP를 얻었어요. 조금만 더 하면 상위권이에요! 💪` : '이번 주에는 아직 XP가 없어요. 세트 하나로 시작해 볼까요?'}
+                                </p>
+                            )}
+                        </section>
                     </div>
-
-                    </>}
                 </main>
             </div>
         </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Quest } from '../types'
 import { formatDuration } from './useQuestTimer'
 import { Celebration } from './Celebration'
-import { fetchProgress } from '../api/user'
+import { fetchGoals, fetchProgress, type Goals } from '../api/user'
 import { groupByUnit } from '../units'
 import { playFanfare } from '../sound'
 
@@ -40,6 +40,8 @@ export function SetComplete({ setId, quests, records, saveState, onRetrySave, on
     const total = quests.length
     // 이 세트를 처음 끝냈고 단원의 모든 세트가 완료되면 단원 완료를 축하한다
     const [unitDone, setUnitDone] = useState<{ number: number | null; title: string; category: string } | null>(null)
+    // 이 세트를 끝낸 뒤의 오늘의 목표·이달의 도전 진행 (저장이 끝난 뒤 불러온다)
+    const [goals, setGoals] = useState<Goals | null>(null)
     const done = quests.map((_, i) => records[i]).filter(Boolean)
     const allDone = done.length === total
     const totalSeconds = done.reduce((sum, r) => sum + r.seconds, 0)
@@ -69,6 +71,13 @@ export function SetComplete({ setId, quests, records, saveState, onRetrySave, on
         }).catch(() => { /* 단원 축하가 없어도 세트 완료는 그대로다 */ })
         return () => { cancelled = true }
     }, [allDone, saveState, setId])
+
+    useEffect(() => {
+        if (!allDone || saveState !== 'saved') return
+        let cancelled = false
+        fetchGoals().then((g) => { if (!cancelled) setGoals(g) }).catch(() => { /* 목표가 없어도 세트 완료는 그대로다 */ })
+        return () => { cancelled = true }
+    }, [allDone, saveState])
 
     const review = quests
         .map((q, i) => ({ q, i, r: records[i] }))
@@ -105,6 +114,21 @@ export function SetComplete({ setId, quests, records, saveState, onRetrySave, on
                         <p className="font-sans text-label-caps text-accent flex items-center justify-center gap-1.5"><span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>military_tech</span>단원 완료!</p>
                         <p className="font-sans text-headline-md text-on-surface mt-1">{unitDone.category} {unitDone.number !== null ? `${unitDone.number}단원 · ` : ''}{unitDone.title}</p>
                         <p className="font-sans text-body-md text-on-surface-variant mt-1">이 단원의 모든 세트를 끝냈어요. 홈에서 다음 단원을 만나 보세요.</p>
+                    </div>
+                )}
+                {goals && (
+                    <div className="fx-pop mt-5 w-full max-w-[420px] rounded-xl border border-gold/40 bg-gold/10 px-5 py-4 text-left" style={{ animationDelay: '0.5s' }}>
+                        <p className="font-sans text-label-caps text-gold">🎁 오늘의 목표</p>
+                        <ul className="mt-2 space-y-1">
+                            {goals.today.goals.map((g) => (
+                                <li key={g.key} className="flex items-center gap-2 font-sans text-body-md text-on-surface">
+                                    <span className={g.done ? 'text-success' : 'text-on-surface-variant'}>{g.done ? '✅' : '⬜'}</span>
+                                    <span className="flex-1">{g.title}</span>
+                                    <span className="tabular-nums text-on-surface-variant">{g.current}/{g.target}</span>
+                                </li>
+                            ))}
+                        </ul>
+                        <p className="mt-3 font-sans text-body-md text-on-surface">{goals.month.done ? `🎉 ${goals.month.label}의 도전을 완료했어요!` : `${goals.month.label}의 도전 ${goals.month.current}/${goals.month.target} — 잘하고 있어요!`}</p>
                     </div>
                 )}
                 {allDone && saveState !== 'idle' && (

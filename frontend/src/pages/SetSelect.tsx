@@ -6,9 +6,6 @@ import { SideNav } from "../components/SideNav";
 import { TopNav } from "../components/TopNav";
 import { groupByUnit } from "../units";
 import { ProgressRing } from "../components/ProgressRing";
-import { GoalsPanel } from "../components/GoalsPanel";
-import { WeekStrip } from "../components/WeekStrip";
-import { weekActivity, type DayActivity } from "../activity";
 
 interface Props {
     onSelect: (setId: number, sandboxType: string) => void
@@ -36,10 +33,8 @@ const DEFAULT_META = { icon: '📁', text: 'text-info', border: 'border-info/60'
 interface Stats {
     completed: number // 완료한 세트 수
     total: number
-    weekCount: number // 최근 7일 완료 횟수
     streak: number // 연속 학습일 (오늘 또는 어제까지 이어진 날 수)
     lastCategory: string | null // 가장 최근에 세트를 끝낸 분야
-    week: DayActivity[] // 최근 7일 하루별 완료 횟수
     level: LevelInfo // 경험치와 레벨
 }
 
@@ -51,8 +46,6 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
     const [chosen, setChosen] = useState<string | null>(() => { try { return localStorage.getItem('etude.category') } catch { return null } })
     const [stats, setStats] = useState<Stats | null>(null)
     const [goals, setGoals] = useState<Goals | null>(null)
-    // 다시 풀기 추천: 힌트·풀이를 많이 쓰고 끝낸 세트 (본인에게만 보인다)
-    const [retry, setRetry] = useState<Array<{ id: number; title: string; category: string; assistedPct: number }>>([])
 
     useEffect(() => {
         fetchQuestSets().then(setSets)
@@ -62,20 +55,15 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
             const map: Record<number, number> = {}
             rows.forEach(r => { map[r.questSetId] = r.completions.length })
             setCompletedCount(map)
-            setRetry(rows.filter((r) => r.retry).map((r) => ({ id: r.questSetId, title: r.title, category: r.category, assistedPct: r.retry!.assistedPct })).sort((a, b) => b.assistedPct - a.assistedPct).slice(0, 3))
 
             // 이번 주 완료·마지막 분야는 완료 기록에서 계산하고, 연속 학습일·레벨은 서버 값을 쓴다 (세트 완료만 센다)
             const all = rows.flatMap((r) => r.completions.map((c) => ({ at: new Date(c.completedAt), category: r.category })))
-            const now = new Date()
-            const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000
             const latest = all.reduce<{ at: Date; category: string } | null>((best, c) => (!best || c.at > best.at ? c : best), null)
             setStats({
                 completed: rows.filter((r) => r.completions.length > 0).length,
                 total: rows.length,
-                weekCount: all.filter((c) => c.at.getTime() >= weekAgo).length,
                 streak: gami.streak,
                 lastCategory: latest?.category ?? null,
-                week: weekActivity(rows, now),
                 level: gami.level,
             })
         }).catch(() => { /* 완료 표시가 없어도 세트는 고를 수 있다 */ })
@@ -95,7 +83,6 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
     const nextSet = recommendedCategory ? nextIn(recommendedCategory) : undefined
     // 분야 카드로 고른 분야 (고른 적이 없으면 이어서 학습할 분야). 마지막으로 고른 분야는 기억해 둔다.
     const selectedCategory = chosen && grouped[chosen] ? chosen : (recommendedCategory ?? categoryOrder[0])
-    const totalPct = stats && stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0
 
     function chooseCategory(category: string) {
         setChosen(category)
@@ -112,74 +99,21 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
                 <main className="fx-page flex-1 md:ml-60 p-8 bg-surface bg-[radial-gradient(ellipse_at_top_right,rgba(167,139,250,0.14),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(56,189,248,0.08),transparent_50%)]">
                     <div className="max-w-[1000px] mx-auto space-y-8">
                         {stats && (
-                            <section className="relative overflow-hidden rounded-xl border border-outline-variant bg-gradient-to-br from-accent/20 via-info/10 to-warning/10 p-6 md:p-8">
-                                <span className="fx-sparkle pointer-events-none absolute top-4 right-6 material-symbols-outlined text-[28px] text-gold" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
-                                <div className="flex flex-col md:flex-row md:items-center gap-6">
-                                    <ProgressRing value={totalPct} size={112} stroke={9} className="text-gold">
-                                        <div className="text-center leading-tight">
-                                            <div className="font-sans text-[26px] font-extrabold text-on-surface tabular-nums">{totalPct}%</div>
-                                            <div className="font-sans text-[11px] text-on-surface-variant">전체 진행</div>
-                                        </div>
-                                    </ProgressRing>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-sans text-label-caps text-on-surface-variant">{stats.completed === 0 ? '첫 세트를 시작해 볼까요?' : '오늘도 한 걸음 더'}</p>
-                                        <h1 className="font-sans text-headline-lg text-on-surface truncate">안녕하세요, {userName}님 👋</h1>
-                                        <div className="mt-3 max-w-[460px]">
-                                            <div className="flex items-baseline justify-between font-sans text-label-caps">
-                                                <span className="text-gold">Lv.{stats.level.level} {stats.level.title}</span>
-                                                <span className="text-on-surface-variant tabular-nums">{stats.level.into} / {stats.level.need} XP</span>
-                                            </div>
-                                            <div className="mt-1 h-2.5 rounded-full bg-surface-container-highest overflow-hidden" role="progressbar" aria-valuenow={stats.level.pct} aria-valuemin={0} aria-valuemax={100} aria-label="레벨 진행">
-                                                <div className="h-full rounded-full bg-gradient-to-r from-gold via-rose to-accent transition-all duration-700" style={{ width: `${Math.max(3, stats.level.pct)}%` }} />
-                                            </div>
-                                        </div>
-                                        <div className="mt-3 flex flex-wrap gap-2">
-                                            <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-sans text-label-caps ${stats.streak > 0 ? 'border-gold/50 bg-gold/10 text-gold' : 'border-outline-variant text-on-surface-variant'}`}>
-                                                🔥 {stats.streak > 0 ? `연속 ${stats.streak}일 학습 중` : '오늘 첫 세트를 끝내면 연속 기록이 시작돼요'}
-                                            </span>
-                                            <span className="lg:hidden inline-flex items-center gap-1.5 rounded-full border border-sky/40 bg-sky/10 px-3 py-1 font-sans text-label-caps text-sky">📅 최근 7일 {stats.weekCount}회 완료</span>
-                                        </div>
-                                    </div>
-                                    <div className="hidden lg:block shrink-0"><WeekStrip days={stats.week} /></div>
-                                    {nextSet && (
-                                        <button
-                                            onClick={() => onSelect(nextSet.id, nextSet.sandbox_type)}
-                                            className="shrink-0 md:max-w-[260px] text-left rounded-lg bg-gradient-to-r from-info to-accent px-5 py-4 font-sans text-white hover:brightness-110 active:scale-[0.98] transition-all"
-                                        >
-                                            <span className="block text-label-caps opacity-90">{stats.completed === 0 ? '시작하기' : '이어서 학습하기'} →</span>
-                                            <span className="block text-body-md font-bold truncate">#{nextSet.id} {nextSet.title}</span>
-                                        </button>
-                                    )}
-                                </div>
-                            </section>
-                        )}
-                        {goals && <GoalsPanel goals={goals} />}
-
-                        {retry.length > 0 && (
-                            <section aria-label="다시 풀기 추천" className="rounded-xl border border-gold/40 bg-gradient-to-r from-gold/10 via-transparent to-transparent p-5">
-                                <div className="flex items-baseline justify-between gap-3">
-                                    <h2 className="font-sans text-headline-md text-on-surface">💪 퍼펙트에 도전해 볼까요?</h2>
-                                    <button onClick={onReview} className="font-sans text-label-caps text-info hover:underline">복습 모두 보기 →</button>
-                                </div>
-                                <p className="mt-1 font-sans text-body-md text-on-surface-variant">힌트나 풀이의 도움을 받고 끝낸 세트예요. 한 번 더 풀면 더 단단해져요.</p>
-                                <div className="mt-3 flex flex-col sm:flex-row gap-2">
-                                    {retry.map((r) => {
-                                        const meta = CATEGORY_META[r.category] ?? DEFAULT_META
-                                        const setInfo = sets.find((s) => s.id === r.id)
-                                        return (
-                                            <button
-                                                key={r.id}
-                                                onClick={() => setInfo && onSelect(r.id, setInfo.sandbox_type)}
-                                                disabled={!setInfo}
-                                                className={`flex-1 min-w-0 rounded-lg border ${meta.border} bg-surface-container px-4 py-3 text-left hover:bg-surface-container-high transition-colors disabled:opacity-50`}
-                                            >
-                                                <span className={`font-sans text-label-caps ${meta.text}`}>{meta.icon} {r.category}</span>
-                                                <span className="mt-0.5 block truncate font-sans text-body-md font-semibold text-on-surface">#{r.id} {r.title}</span>
-                                                <span className="mt-0.5 block font-sans text-code-sm text-on-surface-variant">다시 풀기 →</span>
-                                            </button>
-                                        )
-                                    })}
-                                </div>
+                            <section aria-label="내 상태" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-outline-variant bg-gradient-to-r from-accent/15 via-info/10 to-transparent px-4 py-3">
+                                <button onClick={onProgress} title="내 진행현황 보기" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-left min-w-0">
+                                    <span className="font-sans text-body-md font-semibold text-on-surface truncate">안녕하세요, {userName}님 👋</span>
+                                    <span className="rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 font-sans text-label-caps text-gold">Lv.{stats.level.level} {stats.level.title}</span>
+                                    {stats.streak > 0 && <span className="font-sans text-label-caps text-gold">🔥 {stats.streak}일 연속</span>}
+                                    {goals && <span className="font-sans text-label-caps text-on-surface-variant tabular-nums">🎁 오늘 {goals.today.goals.filter((g) => g.done).length}/{goals.today.goals.length} · {goals.month.label} {goals.month.current}/{goals.month.target}</span>}
+                                </button>
+                                {nextSet && (
+                                    <button
+                                        onClick={() => onSelect(nextSet.id, nextSet.sandbox_type)}
+                                        className="ml-auto max-w-full shrink-0 rounded-lg bg-gradient-to-r from-info to-accent px-4 py-2 text-left font-sans text-body-md font-semibold text-white hover:brightness-110 active:scale-[0.98] transition-all"
+                                    >
+                                        <span className="block max-w-[320px] truncate">{stats.completed === 0 ? '시작하기' : '이어서 학습'} → #{nextSet.id} {nextSet.title}</span>
+                                    </button>
+                                )}
                             </section>
                         )}
                         <div role="tablist" aria-label="분야" className="grid grid-cols-1 sm:grid-cols-3 gap-3">

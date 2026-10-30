@@ -5,9 +5,10 @@ interface Props {
     page: string
     questId?: number | null
     questSetId?: number | null
+    inline?: boolean // true 면 화면에 고정하지 않고 놓은 자리에 그대로 둔다 (문제 풀이 화면 헤더처럼 다른 버튼과 겹칠 때)
 }
 
-export function FeedbackButton({ page, questId, questSetId }: Props) {
+export function FeedbackButton({ page, questId, questSetId, inline = false }: Props) {
     const [open, setOpen] = useState(false)
     const [body, setBody] = useState('')
     const [loading, setLoading] = useState(false)
@@ -40,7 +41,7 @@ export function FeedbackButton({ page, questId, questSetId }: Props) {
             <button
                 onClick={() => setOpen(true)}
                 title="피드백 보내기"
-                className="fixed top-4 right-4 z-50 flex items-center gap-1.5 rounded-lg px-3 py-1.5 border border-outline-variant bg-surface hover:border-rose/60 hover:bg-rose/10 hover:text-rose font-sans text-label-caps text-on-surface-variant transition-colors"
+                className={`${inline ? '' : 'fixed top-4 right-4 z-50'} flex items-center gap-1.5 rounded-lg px-3 py-1.5 border border-outline-variant bg-surface hover:border-rose/60 hover:bg-rose/10 hover:text-rose font-sans text-label-caps text-on-surface-variant transition-colors`}
             >
                 <span className="material-symbols-outlined text-[16px]">feedback</span>
                 피드백

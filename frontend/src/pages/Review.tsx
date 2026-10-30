@@ -72,7 +72,7 @@ export function Review({ onHome, onSelect, onProgress, onLeaderboard, onHall, on
             <div className="flex flex-1 pt-14">
                 <SideNav activePage="review" userName={userName} userEmail={userEmail} userRole={userRole} onHome={onHome} onProgress={onProgress} onLeaderboard={onLeaderboard} onReview={() => {}} onHall={onHall} onFeed={onFeed} onAdmin={onAdmin} onLogout={onLogout} onChangePassword={onChangePassword} />
                 <main className="fx-page flex-1 md:ml-60 p-margin-page bg-surface overflow-y-auto">
-                    <div className="max-w-[820px] space-y-8">
+                    <div className="mx-auto w-full max-w-[820px] space-y-8">
                         <div className="flex flex-col gap-2">
                             <div className="flex items-center gap-2 text-on-surface-variant font-sans text-label-caps">
                                 <span className="text-primary">root</span><span>/</span><span>workspace</span><span>/</span><span className="text-on-surface">복습</span>

@@ -28,17 +28,19 @@ export function Feed({ onHome, onProgress, onLeaderboard, onHall, onReview, onAd
             <div className="flex flex-1 pt-14">
                 <SideNav activePage="feed" userName={userName} userEmail={userEmail} userRole={userRole} onHome={onHome} onProgress={onProgress} onLeaderboard={onLeaderboard} onHall={onHall} onReview={onReview} onFeed={() => {}} onAdmin={onAdmin} onLogout={onLogout} onChangePassword={onChangePassword} />
                 <main className="fx-page flex-1 md:ml-60 p-margin-page bg-surface overflow-y-auto">
-                    <div className="flex flex-col gap-2 mb-8">
-                        <div className="flex items-center gap-2 text-on-surface-variant font-sans text-label-caps">
-                            <span className="text-primary">root</span>
-                            <span>/</span>
-                            <span>workspace</span>
-                            <span>/</span>
-                            <span className="text-on-surface">소식</span>
+                    <div className="mx-auto w-full max-w-[760px]">
+                        <div className="flex flex-col gap-2 mb-8">
+                            <div className="flex items-center gap-2 text-on-surface-variant font-sans text-label-caps">
+                                <span className="text-primary">root</span>
+                                <span>/</span>
+                                <span>workspace</span>
+                                <span>/</span>
+                                <span className="text-on-surface">소식</span>
+                            </div>
+                            <h1 className="font-sans text-headline-lg text-on-surface">소식</h1>
                         </div>
-                        <h1 className="font-sans text-headline-lg text-on-surface">소식</h1>
+                        <FeedTab userName={userName} />
                     </div>
-                    <FeedTab userName={userName} />
                 </main>
             </div>
         </div>
