@@ -55,7 +55,7 @@ describe('getChoiceQuest', () => {
     it('판정에 필요한 정답과 선택지 개수를 읽는다', async () => {
         vi.mocked(db.query).mockResolvedValueOnce([[{ id: 5, quest_set_id: 3, kind: 'choice', choices: '["a","b","c"]', answer_index: 2, explanation: '해설' }]] as any)
 
-        expect(await getChoiceQuest(5)).toEqual({ questId: 5, questSetId: 3, kind: 'choice', choiceCount: 3, answerIndex: 2, explanation: '해설' })
+        expect(await getChoiceQuest(5)).toEqual({ questId: 5, questSetId: 3, kind: 'choice', choiceCount: 3, answerIndex: 2, answerSpec: null, explanation: '해설' })
     })
 
     it('없는 퀘스트는 null', async () => {

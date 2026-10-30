@@ -6,6 +6,7 @@ import { useCountdown } from './useCountdown'
 import type { QuestRecord } from './SetComplete'
 import { ConfirmModal } from './ConfirmModal'
 import { playFail, playSuccess } from '../sound'
+import { FillQuestion, OrderQuestion } from './PickQuestions'
 
 // `백틱`은 코드 모양으로, **별표 두 개**는 굵게 보여 준다 (명령어·파일 경로·값과 강조를 본문과 구분하기 위해).
 function RichText({ text }: { text: string }) {
@@ -91,6 +92,15 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
 
     // 객관식 상태: 고른 번호, 이미 틀린 번호(다시 고를 수 없게), 정답을 맞힌 뒤에 받는 해설
     const isChoice = quest.kind === 'choice'
+    const isOrder = quest.kind === 'order'
+    const isFill = quest.kind === 'fill'
+    const isPick = quest.kind !== 'terminal' // 컨테이너 없이 보기에서 답을 고르는 형식 (객관식·순서 맞추기·빈칸 채우기)
+    const blankCount = isFill ? new Set(quest.template?.match(/\{\d+\}/g) ?? []).size : 0
+    // 순서 맞추기: 놓은 카드 번호(놓은 순서), 빈칸 채우기: 빈칸마다 고른 칩 번호. 바꾸면 이전 채점 결과는 지운다.
+    const [picks, setPicks] = useState<Array<number | null>>(() => (isFill ? Array(blankCount).fill(null) : []))
+    const [pickResults, setPickResults] = useState<boolean[] | null>(null)
+    const changePicks = (next: Array<number | null>) => { setPicks(next); setPickResults(null); if (result === false) setResult(null) }
+    const pickReady = isOrder ? picks.length === (quest.choices?.length ?? 0) : isFill ? picks.length > 0 && picks.every((p) => p !== null) : false
     const [selected, setSelected] = useState<number | null>(null)
     const [wrongChoices, setWrongChoices] = useState<Set<number>>(new Set())
     const [explanation, setExplanation] = useState<string | null>(null)
@@ -99,7 +109,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
     const [gradeError, setGradeError] = useState<string | null>(null)
     // 조건별 채점 결과 (조건 목록이 있는 문제만). 아직 채점하지 않았으면 null, 있으면 조건 순서대로 통과 여부
     const [checkResults, setCheckResults] = useState<boolean[] | null>(null)
-    const checkLabels = !isChoice ? quest.check_labels : null
+    const checkLabels = !isPick ? quest.check_labels : null
     const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
     const ns = containerId ? `quest-${containerId.slice(0, 8)}` : '$NS'
     const resolve = (text: string) => text.replace(/\$NS/g, ns)
@@ -109,10 +119,11 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
         setLoading(true)
         setGradeError(null)
         try {
-            if (isChoice) {
-                if (selected === null || setId === null) return
-                const data = await answerChoice(setId, { questId: quest.id, sessionId, choiceIndex: selected, elapsedSec: timer.getSeconds(), hintUsed })
+            if (isPick) {
+                if (setId === null || (isChoice && selected === null) || (!isChoice && !pickReady)) return
+                const data = await answerChoice(setId, { questId: quest.id, sessionId, ...(isChoice ? { choiceIndex: selected! } : { answer: picks as number[] }), elapsedSec: timer.getSeconds(), hintUsed })
                 setResult(data.passed)
+                setPickResults(data.results ?? null)
                 if (data.passed) playSuccess(); else playFail()
                 if (data.passed) {
                     setExplanation(data.explanation ?? null)
@@ -120,8 +131,10 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                     setFinalSeconds(seconds)
                     onComplete(index, { seconds, hintUsed, solutionUsed: false, attempts: failedAttempts + 1 })
                 } else {
-                    setWrongChoices((prev) => new Set(prev).add(selected))
-                    setSelected(null)
+                    if (isChoice) {
+                        setWrongChoices((prev) => new Set(prev).add(selected!))
+                        setSelected(null)
+                    }
                     setFailedAttempts((n) => n + 1)
                 }
                 return
@@ -201,13 +214,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                             <span className="font-mono text-body-lg font-semibold tabular-nums">{formatClock(finalSeconds ?? timer.seconds)}</span>
                         </div>
                         )}
-                        <button onClick={onPrev} disabled={index === 0} title="이전 문제" className="rounded-lg border border-outline-variant hover:bg-surface-container-high px-3 py-1.5 flex items-center font-sans text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default">
-                            <span className="material-symbols-outlined text-[18px]">chevron_left</span>이전
-                        </button>
-                        <button onClick={handleNext} disabled={index === total - 1} title="다음 문제" className={`rounded-lg border px-3 py-1.5 flex items-center font-sans text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default ${completedIndices.has(index) ? 'border-success bg-success text-on-primary font-bold hover:brightness-110' : 'border-outline-variant hover:bg-surface-container-high'}`}>
-                            다음<span className="material-symbols-outlined text-[18px]">chevron_right</span>
-                        </button>
-                        {!isChoice && (
+                        {!isPick && (
                             <button onClick={() => setResetConfirmOpen(true)} title="환경 초기화 (터미널을 처음 상태로)" className="rounded-lg border border-outline-variant hover:border-warning/60 hover:bg-warning/10 hover:text-warning text-on-surface-variant px-3 py-1.5 flex items-center gap-1 font-sans text-label-caps transition-colors">
                                 <span className="material-symbols-outlined text-[18px]">restart_alt</span>초기화
                             </button>
@@ -221,7 +228,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                 {([
                     { id: 'task', label: '문제', icon: 'assignment', show: true },
                     { id: 'hint', label: '힌트', icon: 'lightbulb', show: !exam },
-                    { id: 'solution', label: '풀이', icon: 'task_alt', show: !isChoice && !exam },
+                    { id: 'solution', label: '풀이', icon: 'task_alt', show: !isPick && !exam },
                 ] as const).filter((t) => t.show).map((t) => (
                     <button
                         key={t.id}
@@ -242,6 +249,16 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
             <div className="p-6 flex-1 overflow-y-auto">
                 <div className="space-y-4">
                     {tab === 'task' && <>
+                    {quest.docs && (
+                        <div className="flex flex-wrap items-center gap-2" aria-label="참고 문서">
+                            <span className="font-sans text-label-caps text-on-surface-variant">📖 참고 문서</span>
+                            {quest.docs.map((d) => (
+                                <a key={d.url} href={d.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full border border-info/40 bg-info/10 px-3 py-1 font-sans text-label-caps text-info hover:bg-info/20 transition-colors">
+                                    {d.title}<span className="material-symbols-outlined text-[14px]" aria-hidden="true">open_in_new</span><span className="sr-only"> (새 탭에서 열림)</span>
+                                </a>
+                            ))}
+                        </div>
+                    )}
                     <div className="rounded-xl border border-outline-variant bg-surface-container p-4">
                         <p className="font-sans text-body-lg text-on-surface leading-7 break-words whitespace-pre-wrap"><RichText text={resolve(quest.description)} /></p>
                     </div>
@@ -278,6 +295,13 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                         </div>
                     )}
 
+                    {isOrder && quest.choices && (
+                        <OrderQuestion cards={quest.choices} value={picks as number[]} onChange={changePicks} results={pickResults} locked={result === true} renderText={(t) => <RichText text={resolve(t)} />} />
+                    )}
+                    {isFill && quest.choices && quest.template && (
+                        <FillQuestion template={quest.template} chips={quest.choices} value={picks} onChange={changePicks} results={pickResults} locked={result === true} />
+                    )}
+
                     {allDone && result !== true && (
                         <button onClick={onFinish} className="w-full rounded-lg border border-success/50 bg-success/10 text-success py-3 font-sans font-bold hover:bg-success/20 transition-colors flex items-center justify-center gap-2">
                             <span className="material-symbols-outlined text-[20px]">emoji_events</span>모든 퀘스트 완료 · 결과 보기
@@ -312,11 +336,11 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                     {/* Grade Button */}
                     <button
                         onClick={grade}
-                        disabled={loading || result === true || (isChoice && selected === null)}
+                        disabled={loading || result === true || (isChoice && selected === null) || (!isChoice && isPick && !pickReady)}
                         className="w-full py-3 rounded-lg bg-info text-white font-sans text-label-caps hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                        {loading ? '채점 중...' : isChoice ? '정답 확인' : '채점하기'}
+                        {loading ? '채점 중...' : isOrder && !pickReady ? `카드를 모두 놓아 주세요 (${picks.length}/${quest.choices?.length ?? 0})` : isFill && !pickReady ? `빈칸을 모두 채워 주세요 (${picks.filter((p) => p !== null).length}/${picks.length})` : isChoice && selected === null ? '보기를 골라 주세요' : isPick ? '정답 확인' : '채점하기'}
                     </button>
 
                     {/* Result */}
@@ -332,7 +356,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                             <div>
                                 <p className="font-sans text-body-lg font-bold text-error">틀렸어요</p>
                                 <p className="font-sans text-body-md text-on-surface-variant">
-                                    {isChoice ? '틀린 선택지는 지워졌어요. 다른 선택지를 골라 보세요.' : checkLabels ? '빨간 표시가 된 조건을 확인하고 다시 시도해 보세요.' : '완료 조건을 다시 확인하고 한 번 더 시도해 보세요.'}
+                                    {isChoice ? '틀린 선택지는 지워졌어요. 다른 선택지를 골라 보세요.' : isPick ? '빨간 칸을 눌러 바꾸고 다시 확인해 보세요. 초록 칸은 맞았어요.' : checkLabels ? '빨간 표시가 된 조건을 확인하고 다시 시도해 보세요.' : '문제에 적힌 결과가 만들어졌는지 확인하고 한 번 더 시도해 보세요.'}
                                     {failedAttempts >= 2 && !hintUsed && ' 막히면 힌트를 열어 볼 수 있어요.'}
                                 </p>
                             </div>
@@ -378,7 +402,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                         </div>
                     )}
 
-                    {tab === 'solution' && !isChoice && (
+                    {tab === 'solution' && !isPick && (
                         <div className="border border-warning/40 bg-surface-container p-4">
                             <div className="font-sans text-label-caps text-warning mb-3 flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px]">task_alt</span>풀이 (풀이 사용으로 기록됐어요)</div>
                             <pre className="font-mono text-code-sm text-on-surface-variant break-words whitespace-pre-wrap">{resolve(quest.solution ?? '')}</pre>
@@ -387,6 +411,19 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                     )}
                 </div>
             </div>
+            {/* 문제 이동: 풀기 전에는 "건너뛰기", 푼 뒤에는 초록 "다음" */}
+            <nav aria-label="문제 이동" className="flex shrink-0 items-center justify-between border-t border-outline-variant px-6 py-3">
+                <button onClick={onPrev} disabled={index === 0} className="flex items-center gap-1 font-sans text-label-caps text-info hover:underline disabled:opacity-30 disabled:no-underline disabled:cursor-default">
+                    <span className="material-symbols-outlined text-[18px]">arrow_back</span>이전
+                </button>
+                <button
+                    onClick={handleNext}
+                    disabled={index === total - 1}
+                    className={`flex items-center gap-1 font-sans text-label-caps transition-colors disabled:opacity-30 disabled:cursor-default ${completedIndices.has(index) ? 'rounded-lg bg-success px-4 py-1.5 font-bold text-on-primary hover:brightness-110' : 'text-info hover:underline'}`}
+                >
+                    {completedIndices.has(index) ? '다음' : '건너뛰기'}<span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                </button>
+            </nav>
             <ConfirmModal
                 open={solutionConfirmOpen}
                 title="풀이를 볼까요?"

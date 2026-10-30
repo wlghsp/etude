@@ -22,6 +22,7 @@ CREATE TABLE quest_set (
   display_order INT NOT NULL DEFAULT 0,
   unit_id      INT NULL,
   is_review    BOOLEAN NOT NULL DEFAULT FALSE,
+  icon         VARCHAR(16) NULL, -- 홈의 세트 길에 보이는 이모지 (08_set_icons.sql)
   time_limit_sec INT NULL, -- 시험형 세트의 제한 시간(초). NULL 이면 제한 없음
   FOREIGN KEY (sandbox_type) REFERENCES sandbox(type),
   FOREIGN KEY (unit_id) REFERENCES unit(id)
@@ -42,6 +43,11 @@ CREATE TABLE quest (
   choices      JSON NULL,
   answer_index INT NULL,
   explanation  TEXT NULL,
+  -- 순서 맞추기(order)·빈칸 채우기(fill) (docs/specs/spec_question_types.md): answer_spec 은 서버 전용 정답, template 은 빈칸이 {0} {1} 로 표시된 명령 줄
+  answer_spec  JSON NULL,
+  template     TEXT NULL,
+  -- 참고 공식 문서 링크 [{title, url}] (https 만): 문제 화면 위쪽에 보인다 (docs/specs/spec_question_docs.md)
+  docs         JSON NULL,
   -- 조건별 채점(docs/specs/spec_grade_checks.md): [{label, cmd}]. 없으면 grade_cmd 하나로 채점한다.
   checks       JSON NULL,
   FOREIGN KEY (quest_set_id) REFERENCES quest_set(id)

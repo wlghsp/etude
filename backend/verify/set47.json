@@ -1,0 +1,11 @@
+{
+  "setId": 47,
+  "answers": {
+    "3": "cut -d, -f2 /tmp/data.csv > /tmp/ages.txt\n\n# -d, : 열을 나누는 글자(delimiter)를 쉼표로\n# -f2 : 둘째 열(field)만\n# > 파일 : 결과를 저장",
+    "4": "sort -nr /tmp/nums.txt > /tmp/sorted.txt\n\n# -n : 글자가 아니라 숫자 크기로 비교\n# -r : 순서를 뒤집어 큰 것부터 (reverse)",
+    "5": "head -n 3 /tmp/words.txt > /tmp/first3.txt\n\n# -n 3 : 처음 3줄만 (lines)",
+    "6": "date +%Y-%m-%d > /tmp/today.txt\n\n# +%Y-%m-%d : + 로 시작하면 출력 형식\n#   %Y 네 자리 연도, %m 두 자리 월, %d 두 자리 일\n# (같은 뜻으로 date +%F 도 된다)",
+    "7": "ls -S /tmp/sz > /tmp/by_size.txt\n\n# -S : 파일 크기가 큰 것부터 정렬 (Size)",
+    "8": "grep -c 404 /tmp/access.log > /tmp/count404.txt\n\n# -c : 맞는 줄을 출력하지 않고 줄 수(count)만 출력"
+  }
+}

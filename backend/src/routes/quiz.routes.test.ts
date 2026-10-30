@@ -11,7 +11,8 @@ vi.mock('../services/quest.js', async () => {
         getQuests: vi.fn(),
         getQuestSets: vi.fn(),
         gradeQuest: vi.fn(),
-        judgeChoice: actual.judgeChoice, // 판정 로직은 진짜를 쓴다
+        judgeChoice: actual.judgeChoice,
+        judgeAnswer: actual.judgeAnswer, // 판정 로직은 진짜를 쓴다
     }
 })
 vi.mock('../services/set-run.js', () => ({ checkRun: vi.fn(async () => ({ ok: true })), startRun: vi.fn() }))
@@ -91,6 +92,48 @@ describe('POST /quest-sets/:id/answer', () => {
         vi.mocked(getChoiceQuest).mockResolvedValue(null)
         expect((await post({ questId: 5, sessionId: 's1', choiceIndex: 2 })).statusCode).toBe(404)
         expect(recordAttempt).not.toHaveBeenCalled()
+    })
+})
+
+describe('POST /quest-sets/:id/answer — 순서·빈칸', () => {
+    const orderQuest = { questId: 6, questSetId: 3, kind: 'order', choiceCount: 3, answerIndex: null, answerSpec: [1, 2, 0], explanation: '해설: 순서대로' }
+    beforeEach(() => {
+        vi.clearAllMocks()
+        vi.mocked(canAccessQuestSet).mockResolvedValue(true)
+        vi.mocked(getChoiceQuest).mockResolvedValue(orderQuest as any)
+    })
+    const post = async (body: any, setId = 3) => (await app()).inject({ method: 'POST', url: `/quest-sets/${setId}/answer`, headers, payload: body })
+
+    it('정답이면 passed, 자리별 결과와 해설을 돌려주고 기록한다', async () => {
+        const res = await post({ questId: 6, sessionId: 's1', answer: [1, 2, 0], elapsedSec: 12 })
+
+        expect(res.json()).toEqual({ passed: true, results: [true, true, true], explanation: '해설: 순서대로' })
+        expect(recordAttempt).toHaveBeenCalledWith(7, 6, 3, 's1', true, 12, undefined, false)
+    })
+
+    it('오답이면 어느 자리가 맞았는지만 알려 주고 해설은 숨긴다', async () => {
+        const res = await post({ questId: 6, sessionId: 's1', answer: [1, 0, 2] })
+
+        expect(res.json()).toEqual({ passed: false, results: [true, false, false] })
+        expect(JSON.stringify(res.json())).not.toContain('해설')
+        expect(recordAttempt).toHaveBeenCalledWith(7, 6, 3, 's1', false, undefined, undefined, false)
+    })
+
+    it('형식이 틀린 답(중복·길이·숫자 아님)은 400 이고 기록하지 않는다', async () => {
+        for (const answer of [[1, 1, 0], [1, 2], 'x', null, [1, 2, 9]]) {
+            expect((await post({ questId: 6, sessionId: 's1', answer })).statusCode, JSON.stringify(answer)).toBe(400)
+        }
+        expect(recordAttempt).not.toHaveBeenCalled()
+    })
+
+    it('빈칸 채우기도 같은 경로로 판정한다', async () => {
+        vi.mocked(getChoiceQuest).mockResolvedValue({ questId: 7, questSetId: 3, kind: 'fill', choiceCount: 4, answerIndex: null, answerSpec: [3, 1], explanation: '해설' } as any)
+
+        const ok = await post({ questId: 7, sessionId: 's1', answer: [3, 1] })
+        const bad = await post({ questId: 7, sessionId: 's1', answer: [3, 2] })
+
+        expect(ok.json()).toMatchObject({ passed: true, results: [true, true] })
+        expect(bad.json()).toEqual({ passed: false, results: [true, false] })
     })
 })
 

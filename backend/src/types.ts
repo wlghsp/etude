@@ -6,6 +6,7 @@ export interface QuestSet {
   category: string
   is_review: boolean
   time_limit_sec: number | null
+  icon: string | null // 홈의 세트 길에 보이는 이모지
   unit_id: number | null
   unit_title: string | null
   unit_order: number | null

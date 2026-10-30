@@ -55,8 +55,9 @@ export async function completeSet(setId: number, sessionId: string): Promise<voi
 // 객관식 답 제출. 서버가 정답을 판정하고, 정답일 때만 해설을 돌려준다.
 export async function answerChoice(
   setId: number,
-  body: { questId: number; sessionId: string; choiceIndex: number; elapsedSec: number; hintUsed: boolean },
-): Promise<{ passed: boolean; explanation?: string | null }> {
+  // 객관식은 choiceIndex, 순서 맞추기·빈칸 채우기는 answer(번호 배열)
+  body: { questId: number; sessionId: string; choiceIndex?: number; answer?: number[]; elapsedSec: number; hintUsed: boolean },
+): Promise<{ passed: boolean; results?: boolean[]; explanation?: string | null }> {
   const r = await fetch(`${BASE}/quest-sets/${setId}/answer`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },

@@ -7,6 +7,7 @@ vi.mock('../services/quest.js', async () => {
     return {
         canAccessQuestSet: vi.fn(), getChoiceQuest: vi.fn(), getQuestContext: vi.fn(), getQuests: vi.fn(), getQuestSets: vi.fn(), gradeQuest: vi.fn(),
         judgeChoice: actual.judgeChoice,
+        judgeAnswer: actual.judgeAnswer,
     }
 })
 vi.mock('../services/progress.js', () => ({ recordAttempt: vi.fn(async () => {}) }))

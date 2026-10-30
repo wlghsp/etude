@@ -1,0 +1,16 @@
+{
+  "setId": 44,
+  "answers": {
+    "4": "find /tmp/lab -name \"*.txt\" > /tmp/found_txt.txt\n\n# /tmp/lab        : 이 폴더 아래(하위 폴더까지)에서 찾는다\n# -name \"*.txt\"   : 이름이 .txt 로 끝나는 것 (따옴표로 쉘이 * 를 펼치지 않게 한다)\n# > 파일          : 찾은 경로를 파일에 저장",
+    "5": "find /tmp/lab -type d > /tmp/found_dirs.txt\n\n# -type d : 폴더만 (-type f 는 일반 파일만)",
+    "6": "find /tmp/lab -type f -size +10k > /tmp/big_files.txt\n\n# -size +10k : 10KB 보다 큰 것 (+ 는 보다 큼, - 는 보다 작음)\n# -type f    : 폴더 말고 일반 파일만",
+    "7": "find /tmp/lab/logs -name \"*.log\" -mtime +7 > /tmp/old_logs.txt\n\n# -mtime +7 : 마지막 수정이 7일보다 오래된 것 (-7 은 최근 7일 안)\n# 조건을 여러 개 쓰면 모두 만족하는 것만 나온다",
+    "8": "find /tmp/lab -maxdepth 1 -type f > /tmp/top_files.txt\n\n# -maxdepth 1 : 바로 아래 한 단계까지만 내려간다\n# -type f     : 일반 파일만",
+    "9": "find /tmp/lab -type f \\( -name \"*.log\" -o -name \"*.txt\" \\) > /tmp/log_or_txt.txt\n\n# \\( ... \\) : 조건을 묶는다 (\\ 는 쉘이 괄호를 해석하지 못하게)\n# -o         : 또는",
+    "10": "find /tmp/lab -type f ! -name \"*.py\" > /tmp/not_py.txt\n\n# !  : 뒤에 오는 조건을 뒤집는다 (\"~가 아닌\")",
+    "11": "find /tmp/lab -name \"*.log\" -exec wc -l {} \\; > /tmp/log_lines.txt\n\n# -exec 명령 {} \\; : 찾은 파일마다 명령을 실행 ({} 는 파일 이름 자리, \\; 는 끝)",
+    "12": "find /tmp/lab -name \"*.tmp\"           # 먼저 무엇이 잡히는지 확인\nfind /tmp/lab -name \"*.tmp\" -delete   # 확인한 뒤 삭제\n\n# -delete : 조건에 맞는 항목을 지운다 (반드시 조건 뒤에 쓴다)",
+    "13": "find /tmp/lab -name \"*.py\" | xargs cat | wc -l > /tmp/py_total.txt\n\n# find ... : .py 파일 목록을 출력\n# | xargs cat : 그 목록을 cat 의 인자로 바꿔 실행 (내용을 이어서 출력)\n# | wc -l : 줄 수를 셈",
+    "14": "find /tmp/proj -type f -name \"*.log\" -mtime +7 -size +1k > /tmp/cleanup.txt\n\n# -type f        : 일반 파일\n# -name \"*.log\"  : 이름이 .log 로 끝남\n# -mtime +7      : 7일보다 오래됨\n# -size +1k      : 1KB 보다 큼\n# 조건을 이어 쓰면 모두 만족하는 것만 나온다"
+  }
+}

@@ -43,7 +43,7 @@ export async function getQuestContext(questId: number): Promise<{ questSetId: nu
 
 export async function getQuestSets(userId: number, role: string): Promise<QuestSet[]> {
   const [rows] = await db.query(`
-    SELECT qs.id, qs.title, qs.description, qs.sandbox_type, qs.category, qs.is_review, qs.time_limit_sec, qs.unit_id, u.title AS unit_title, u.display_order AS unit_order
+    SELECT qs.id, qs.title, qs.description, qs.sandbox_type, qs.category, qs.is_review, qs.icon, qs.time_limit_sec, qs.unit_id, u.title AS unit_title, u.display_order AS unit_order
     FROM quest_set qs
     LEFT JOIN unit u ON u.id = qs.unit_id
     WHERE qs.is_public = TRUE
@@ -88,15 +88,28 @@ export async function revokeQuestSetAccess(questSetId: number, userId: number) {
   await db.query('DELETE FROM quest_set_access WHERE quest_set_id = ? AND user_id = ?', [questSetId, userId])
 }
 
+/** 참고 문서 링크: [{title, url}]. https 주소만 내보낸다 (잘못된 데이터가 화면에서 스크립트 주소로 열리지 않게). */
+function parseDocs(raw: unknown): Array<{ title: string; url: string }> | null {
+  if (!raw) return null
+  try {
+    const v = typeof raw === 'string' ? JSON.parse(raw) : raw
+    if (!Array.isArray(v)) return null
+    const ok = v.filter((d) => d && typeof d.title === 'string' && typeof d.url === 'string' && /^https:\/\//.test(d.url)).map((d) => ({ title: d.title, url: d.url }))
+    return ok.length > 0 ? ok : null
+  } catch { return null }
+}
+
 export async function getQuests(questSetId: number): Promise<Quest[]> {
-  // answer_index, explanation 은 일부러 조회하지 않는다 (정답이 화면으로 나가면 안 된다)
+  // answer_index, answer_spec, explanation 은 일부러 조회하지 않는다 (정답이 화면으로 나가면 안 된다)
   const [rows] = await db.query(
-    'SELECT id, title, description, hint, solution, setup_cmd, kind, choices, checks FROM quest WHERE quest_set_id = ? ORDER BY order_index',
+    'SELECT id, title, description, hint, solution, setup_cmd, kind, choices, template, docs, checks FROM quest WHERE quest_set_id = ? ORDER BY order_index',
     [questSetId]
   )
-  return (rows as any[]).map(({ checks, ...r }) => ({
+  return (rows as any[]).map(({ checks, docs, ...r }) => ({
     ...r,
     setup_cmd: r.setup_cmd ? JSON.parse(r.setup_cmd) : null,
+    docs: parseDocs(docs), // 공식 문서 링크 (https 만)
+    template: r.template ?? null, // 빈칸 채우기의 명령 줄 틀 ({0}, {1} … 이 빈칸)
     choices: r.choices ? (typeof r.choices === 'string' ? JSON.parse(r.choices) : r.choices) : null,
     // 조건의 이름만 내보낸다. 채점 명령(cmd)은 학습자에게 보내지 않는다.
     check_labels: parseChecks(checks)?.map((c) => c.label) ?? null,
@@ -109,13 +122,14 @@ export interface ChoiceQuest {
   kind: string
   choiceCount: number
   answerIndex: number | null
+  answerSpec?: number[] | null // 순서 맞추기·빈칸 채우기의 정답 (서버 전용)
   explanation: string | null
 }
 
 /** 객관식 판정에 필요한 값을 DB에서 읽는다 (정답과 해설 포함 — 서버 안에서만 쓴다). */
 export async function getChoiceQuest(questId: number): Promise<ChoiceQuest | null> {
   const [rows] = await db.query<any[]>(
-    'SELECT id, quest_set_id, kind, choices, answer_index, explanation FROM quest WHERE id = ?',
+    'SELECT id, quest_set_id, kind, choices, answer_index, answer_spec, explanation FROM quest WHERE id = ?',
     [questId]
   )
   const r = rows[0]
@@ -127,6 +141,7 @@ export async function getChoiceQuest(questId: number): Promise<ChoiceQuest | nul
     kind: r.kind,
     choiceCount: Array.isArray(choices) ? choices.length : 0,
     answerIndex: r.answer_index === null ? null : Number(r.answer_index),
+    answerSpec: r.answer_spec ? (typeof r.answer_spec === 'string' ? JSON.parse(r.answer_spec) : r.answer_spec) : null,
     explanation: r.explanation ?? null,
   }
 }
@@ -191,4 +206,27 @@ export async function gradeQuest(
   const results: GradeCheck[] = []
   for (const c of checks) results.push({ label: c.label, passed: await execCheck(container, resolveCmd(c.cmd)) })
   return { passed: results.every((r) => r.passed), checks: results }
+}
+
+const isIndex = (v: unknown, max: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < max
+
+/**
+ * 답을 판정한다 (객관식·순서 맞추기·빈칸 채우기). 모든 답은 보기 번호이다.
+ * - choice: 번호 하나. 결과는 { passed }.
+ * - order: 카드 번호를 놓은 순서대로 나열한 배열(길이는 정답과 같고 중복 없음). 결과는 { passed, results } (자리마다 맞았는지).
+ * - fill: 빈칸마다 고른 칩 번호 배열(같은 칩을 여러 빈칸에 써도 된다).
+ * 형식이 틀리거나 판정할 수 없는 문제(실습형, 정답 정보 없음)는 null.
+ */
+export function judgeAnswer(quest: ChoiceQuest, answer: unknown): { passed: boolean; results?: boolean[] } | null {
+  if (quest.kind === 'choice') {
+    const passed = judgeChoice(quest, answer)
+    return passed === null ? null : { passed }
+  }
+  if (quest.kind !== 'order' && quest.kind !== 'fill') return null
+  const spec = quest.answerSpec
+  if (!spec || !Array.isArray(answer) || answer.length !== spec.length) return null
+  if (!answer.every((v) => isIndex(v, quest.choiceCount))) return null
+  if (quest.kind === 'order' && new Set(answer).size !== answer.length) return null
+  const results = spec.map((expected, i) => answer[i] === expected)
+  return { passed: results.every(Boolean), results }
 }
