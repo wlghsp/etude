@@ -20,7 +20,7 @@ interface Props {
     userRole?: string
 }
 
-const CATEGORY_ICON: Record<string, string> = { '리눅스': '🐧', '도커': '🐳', 'k8s': '☸️' }
+const CATEGORY_ICON: Record<string, string> = { '리눅스': '🐧', '도커': '🐳', 'k8s': '☸️', 'Git': '🌿', '미들웨어': '🧩', '인프라': '🏗️' }
 
 export function Review({ onHome, onSelect, onProgress, onLeaderboard, onHall, onFeed, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
     const [data, setData] = useState<ReviewData | null>(null)

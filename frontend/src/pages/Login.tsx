@@ -48,7 +48,7 @@ export function Login({ onLogin }: Props) {
         <header className="text-center mb-10 space-y-2">
           <div className="flex justify-center mb-3"><Logo size={56} className="drop-shadow-[0_0_18px_rgba(129,140,248,0.5)]" /></div>
           <h2 className="text-label-caps font-sans uppercase tracking-[0.3em] text-on-surface-variant opacity-60">
-            okestro training
+            etude
           </h2>
           <h1 className="font-sans text-[40px] font-extrabold tracking-tighter fx-shine-text">
             Etude
@@ -68,7 +68,7 @@ export function Login({ onLogin }: Props) {
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="name@okestro.com"
+                placeholder="name@example.com"
                 autoComplete="username"
                 required
                 className="w-full pl-11 pr-4 py-3 bg-surface border border-outline-variant text-on-surface font-sans text-body-md placeholder:text-on-surface-variant/30 focus:outline-none focus:border-info focus:ring-2 focus:ring-info/30 rounded-lg transition-shadow"
@@ -138,7 +138,7 @@ export function Login({ onLogin }: Props) {
         <footer className="mt-8 flex justify-between items-center px-2">
           <div className="flex items-center gap-4">
             <span className="w-[1px] h-3 bg-outline-variant/30"></span>
-            <span className="font-sans text-on-surface-variant/40 text-[10px]">OKESTRO TRAINING</span>
+            <span className="font-sans text-on-surface-variant/40 text-[10px]">ETUDE</span>
           </div>
           <span className="material-symbols-outlined text-on-surface-variant/40 text-[16px]">terminal</span>
         </footer>

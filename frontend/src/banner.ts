@@ -10,4 +10,4 @@ const LETTERS: Array<{ color: number; rows: string[] }> = [
 const RESET = '\x1b[0m'
 const logo = [0, 1, 2, 3, 4].map((r) => LETTERS.map((l) => `\x1b[38;5;${l.color}m${l.rows[r]}`).join('') + RESET).join('\r\n')
 
-export const ETUDE_BANNER = `\r\n${logo}\r\n\x1b[2m  OKESTRO TRAINING · 직접 해 보며 배우는 현장 실습${RESET}\r\n\r\n`
+export const ETUDE_BANNER = `\r\n${logo}\r\n\x1b[2m  ETUDE · 직접 해 보며 배우는 현장 실습${RESET}\r\n\r\n`

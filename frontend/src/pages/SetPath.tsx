@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { QuestSet } from '../types'
+import { setKind } from '../setKind'
 import { Logo } from '../components/Logo'
 
 // 한 단원의 세트를 구불구불한 길 위의 노드로 보여 준다 (듀오링고식 + 마스코트 + 보물상자).
@@ -99,7 +100,7 @@ export function SetPath({ items, completedCount, perfectIds, nextId, firstTime, 
                             style={{ left: x + size / 2 + 14, top: y - 18, width: WIDTH - 10 - (x + size / 2 + 14) }}
                         >
                             <span className={`block truncate font-sans text-body-md font-semibold ${done ? 'text-on-surface' : 'text-on-surface-variant'}`}>{s.title}</span>
-                            <span className="font-sans text-code-sm text-on-surface-variant/80">{s.is_review ? '복습 · ' : ''}{done ? (perfect ? '퍼펙트 ★' : '끝냈어요') : isNext ? '다음 추천' : '도전해 봐요'}</span>
+                            <span className="font-sans text-code-sm text-on-surface-variant/80">{setKind(s).icon} {s.is_review ? '복습 · ' : ''}{done ? (perfect ? '퍼펙트 ★' : '끝냈어요') : isNext ? '다음 추천' : '도전해 봐요'}</span>
                         </button>
 
                         {open && (
@@ -110,6 +111,7 @@ export function SetPath({ items, completedCount, perfectIds, nextId, firstTime, 
                             >
                                 <p className="font-sans text-body-md font-semibold text-on-surface"><span className="mr-1.5 font-normal text-on-surface-variant">#{s.id}</span>{s.icon} {s.title}</p>
                                 <p className="mt-1 font-sans text-code-sm leading-5 text-on-surface-variant">{s.description}</p>
+                                <p className="mt-2 font-sans text-label-caps text-on-surface-variant">{setKind(s).icon} {setKind(s).label} · {setKind(s).hint}</p>
                                 <div className="mt-3 flex items-center gap-3">
                                     <button
                                         onClick={() => onSelect(s.id, s.sandbox_type)}

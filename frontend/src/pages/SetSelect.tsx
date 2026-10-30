@@ -1,3 +1,4 @@
+import { setKind } from '../setKind'
 import { useEffect, useState } from "react";
 import type { QuestSet } from "../types";
 import { fetchQuestSets } from "../api/quest";
@@ -29,6 +30,9 @@ const CATEGORY_META: Record<string, { icon: string; text: string; border: string
     '리눅스': { icon: '🐧', text: 'text-warning', border: 'border-warning/60', ring: 'text-warning', grad: 'from-warning/15', bar: 'from-warning/70', nodeRing: 'ring-warning/60' },
     '도커':   { icon: '🐳', text: 'text-sky', border: 'border-sky/60', ring: 'text-sky', grad: 'from-sky/15', bar: 'from-sky/70', nodeRing: 'ring-sky/60' },
     'k8s':    { icon: '☸️', text: 'text-accent', border: 'border-accent/60', ring: 'text-accent', grad: 'from-accent/15', bar: 'from-accent/70', nodeRing: 'ring-accent/60' },
+    'Git':    { icon: '🌿', text: 'text-lime', border: 'border-lime/60', ring: 'text-lime', grad: 'from-lime/15', bar: 'from-lime/70', nodeRing: 'ring-lime/60' },
+    '미들웨어': { icon: '🧩', text: 'text-teal', border: 'border-teal/60', ring: 'text-teal', grad: 'from-teal/15', bar: 'from-teal/70', nodeRing: 'ring-teal/60' },
+    '인프라':  { icon: '🏗️', text: 'text-coral', border: 'border-coral/60', ring: 'text-coral', grad: 'from-coral/15', bar: 'from-coral/70', nodeRing: 'ring-coral/60' },
 }
 const DEFAULT_META = { icon: '📁', text: 'text-info', border: 'border-info/60', ring: 'text-info', grad: 'from-info/15', bar: 'from-info/70', nodeRing: 'ring-info/60' }
 
@@ -127,6 +131,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
                                     <div className="min-w-0 flex-1">
                                         <p className="font-sans text-label-caps text-on-surface-variant">{stats.completed === 0 ? '첫 세트를 시작해 볼까요? 🙂' : '오늘은 이거 해 볼까요? 🙂'}</p>
                                         <h2 className="mt-1 font-sans text-headline-lg text-on-surface">{nextSet.title}</h2>
+                                        <p className="mt-1 font-sans text-label-caps text-on-surface-variant">{setKind(nextSet).icon} {setKind(nextSet).label} · {setKind(nextSet).hint}</p>
                                         <p className="mt-1 line-clamp-2 font-sans text-body-md text-on-surface-variant">{nextSet.description.split(/(?<=[.。])\s/)[0]}</p>
                                     </div>
                                     <button
