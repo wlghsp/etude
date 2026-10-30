@@ -1,0 +1,10 @@
+{
+  "setId": 36,
+  "answers": {
+    "1": "printf '%s\\n' \"10.0.0.11 web1\" \"10.0.0.12 web2\" \"10.0.0.13 db\" >> /etc/hosts",
+    "2": "echo \"10.0.0.20 api api.internal\" >> /etc/hosts",
+    "3": "grep -v ' db$' /etc/hosts > /tmp/hosts.new; echo \"10.0.0.31 db\" >> /tmp/hosts.new; cat /tmp/hosts.new > /etc/hosts",
+    "5": "echo \"127.0.0.1 appsrv\" >> /etc/hosts; nc -zv appsrv 9000 > /tmp/nc_result.txt 2>&1",
+    "6": "cp /etc/hosts /etc/hosts.bak; echo \"10.0.0.50 temp\" >> /etc/hosts; cp /etc/hosts /tmp/hosts.edited; cp /etc/hosts.bak /etc/hosts"
+  }
+}
