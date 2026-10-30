@@ -11,6 +11,17 @@ export function setSoundEnabled(on: boolean) {
     window.dispatchEvent(new Event(EVENT))
 }
 
+const ASKED_KEY = 'etude.sound.asked'
+
+/** 효과음을 켜 볼지 한 번 물어봤는지 (한 번 묻고 다시 묻지 않는다) */
+export function soundAsked(): boolean {
+    try { return localStorage.getItem(ASKED_KEY) === '1' } catch { return true }
+}
+
+export function markSoundAsked() {
+    try { localStorage.setItem(ASKED_KEY, '1') } catch { /* 저장 실패는 무시 */ }
+}
+
 export function subscribeSound(cb: () => void): () => void {
     window.addEventListener(EVENT, cb)
     return () => window.removeEventListener(EVENT, cb)

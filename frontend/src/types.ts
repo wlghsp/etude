@@ -26,4 +26,6 @@ export interface QuestSet {
   unit_id: number | null
   unit_title: string | null
   unit_order: number | null
+  quest_count: number
+  first_xp: number // 처음 끝내면 얻는 XP (서버가 계산)
 }

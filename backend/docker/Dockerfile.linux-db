@@ -1,0 +1,5 @@
+# 데이터베이스 실습용 (sandbox 타입 linux-db). 기본 리눅스 이미지 위에 MariaDB 서버·클라이언트(mysqldump 포함)만 더한다.
+# 기본 이미지의 층을 그대로 쓰므로 디스크는 MariaDB 층만큼만 늘고, 일반 리눅스 실습 이미지는 가벼운 채로 둔다.
+FROM etude-linux:latest
+RUN apt-get update && apt-get install -y --no-install-recommends mariadb-server mariadb-client \
+    && rm -rf /var/lib/apt/lists/*

@@ -2,6 +2,8 @@ import { ProgressRing } from './ProgressRing'
 import { WeekStrip } from './WeekStrip'
 import type { DayActivity } from '../activity'
 import type { LevelInfo } from '../api/user'
+import { Character } from './Character'
+import { stageOf } from '../characters'
 
 interface Props {
     userName: string
@@ -9,10 +11,11 @@ interface Props {
     level: LevelInfo
     streak: number
     week: DayActivity[]
+    gear?: string[] // 정복한 분야(장비)
 }
 
 /** 내 진행현황 맨 위의 "내 상태" 카드: 전체 진행, 레벨·XP, 연속 학습일, 최근 7일. 홈에서는 한 줄 띠로 줄여 보인다. */
-export function MyStatus({ userName, totalPct, level, streak, week }: Props) {
+export function MyStatus({ userName, totalPct, level, streak, week, gear = [] }: Props) {
     return (
         <section className="relative overflow-hidden rounded-xl border border-outline-variant bg-gradient-to-br from-accent/20 via-info/10 to-warning/10 p-6">
             <span className="fx-sparkle pointer-events-none absolute top-4 right-6 material-symbols-outlined text-[28px] text-gold" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
@@ -23,6 +26,10 @@ export function MyStatus({ userName, totalPct, level, streak, week }: Props) {
                         <div className="font-sans text-[11px] text-on-surface-variant">전체 진행</div>
                     </div>
                 </ProgressRing>
+                <div className="flex flex-col items-center shrink-0 md:w-28" aria-label="내 캐릭터">
+                    <Character level={level.level} gear={gear} size={64} />
+                    <span className="mt-1 font-sans text-label-caps text-gold">{stageOf(level.level).name}</span>
+                </div>
                 <div className="flex-1 min-w-0">
                     <h2 className="font-sans text-headline-md text-on-surface truncate">{userName}님의 상태 👋</h2>
                     <div className="mt-2 max-w-[420px]">
@@ -34,6 +41,7 @@ export function MyStatus({ userName, totalPct, level, streak, week }: Props) {
                             <div className="h-full rounded-full bg-gradient-to-r from-gold via-rose to-accent transition-all duration-700" style={{ width: `${Math.max(3, level.pct)}%` }} />
                         </div>
                     </div>
+                    <p className="mt-2 font-sans text-code-sm text-on-surface-variant">{stageOf(level.level).desc}</p>
                     <p className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-sans text-label-caps ${streak > 0 ? 'border-gold/50 bg-gold/10 text-gold' : 'border-outline-variant text-on-surface-variant'}`}>
                         🔥 {streak > 0 ? `연속 ${streak}일 학습 중` : '오늘 첫 세트를 끝내면 연속 기록이 시작돼요'}
                     </p>

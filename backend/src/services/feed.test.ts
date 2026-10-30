@@ -36,34 +36,38 @@ describe('toggleLike (반응)', () => {
         expect(q).not.toHaveBeenCalled()
     })
 
-    it('아직 안 눌렀으면 반응을 남기고 종류별 수를 돌려준다', async () => {
+    it('아직 안 눌렀으면 그 반응을 켜고, 내가 단 반응 목록과 종류별 수를 돌려준다', async () => {
         q.mockResolvedValueOnce([[{ user_id: 8 }]] as any) // 소식 주인
-            .mockResolvedValueOnce([[]] as any)               // 내 기존 반응 없음
+            .mockResolvedValueOnce([[]] as any)               // 이 반응은 아직 없음
             .mockResolvedValueOnce([ok] as any)               // INSERT
-            .mockResolvedValueOnce([[{ kind: 'clap', n: 2 }, { kind: 'like', n: 1 }]] as any)
+            .mockResolvedValueOnce([[{ kind: 'clap', n: 2, mine: 1 }, { kind: 'like', n: 1, mine: 1 }]] as any)
 
-        expect(await toggleLike(7, 5, 'clap')).toEqual({ reaction: 'clap', counts: { like: 1, clap: 2, strong: 0, fire: 0 } })
+        expect(await toggleLike(7, 5, 'clap')).toEqual({ mine: ['like', 'clap'], counts: { like: 1, clap: 2, strong: 0, fire: 0 } })
+        expect(String(q.mock.calls[1]![0])).toContain('kind = ?')
         expect(String(q.mock.calls[2]![0])).toContain('INSERT')
     })
 
-    it('같은 반응을 다시 누르면 취소한다', async () => {
+    it('같은 반응을 다시 누르면 그 반응만 끈다 (다른 반응은 그대로)', async () => {
         q.mockResolvedValueOnce([[{ user_id: 8 }]] as any)
             .mockResolvedValueOnce([[{ kind: 'clap' }]] as any)
             .mockResolvedValueOnce([ok] as any)
-            .mockResolvedValueOnce([[{ kind: 'like', n: 1 }]] as any)
+            .mockResolvedValueOnce([[{ kind: 'like', n: 1, mine: 1 }]] as any)
 
-        expect(await toggleLike(7, 5, 'clap')).toEqual({ reaction: null, counts: { like: 1, clap: 0, strong: 0, fire: 0 } })
-        expect(String(q.mock.calls[2]![0])).toContain('DELETE')
+        expect(await toggleLike(7, 5, 'clap')).toEqual({ mine: ['like'], counts: { like: 1, clap: 0, strong: 0, fire: 0 } })
+        const del = String(q.mock.calls[2]![0])
+        expect(del).toContain('DELETE')
+        expect(del).toContain('kind = ?')
     })
 
-    it('다른 반응을 누르면 내 반응을 바꾼다 (한 사람 한 반응)', async () => {
+    it('다른 반응을 누르면 기존 반응을 지우지 않고 추가한다', async () => {
         q.mockResolvedValueOnce([[{ user_id: 8 }]] as any)
-            .mockResolvedValueOnce([[{ kind: 'like' }]] as any)
+            .mockResolvedValueOnce([[]] as any)
             .mockResolvedValueOnce([ok] as any)
-            .mockResolvedValueOnce([[{ kind: 'fire', n: 1 }]] as any)
+            .mockResolvedValueOnce([[{ kind: 'like', n: 1, mine: 1 }, { kind: 'fire', n: 1, mine: 1 }]] as any)
 
-        expect((await toggleLike(7, 5, 'fire')).reaction).toBe('fire')
-        expect(String(q.mock.calls[2]![0])).toContain('UPDATE')
+        expect((await toggleLike(7, 5, 'fire')).mine).toEqual(['like', 'fire'])
+        expect(String(q.mock.calls[2]![0])).toContain('INSERT')
+        expect(q.mock.calls.some((c) => String(c[0]).includes('UPDATE'))).toBe(false)
     })
 })
 
@@ -167,10 +171,10 @@ describe('getFeed', () => {
 
         const feed = await getFeed(7, 'member', {})
 
-        expect(feed[0]).toMatchObject({ id: 10, userName: '다', perfect: true, isFirst: true, isReview: false, reactions: { like: 1, clap: 1, strong: 0, fire: 0 }, myReaction: 'clap' })
+        expect(feed[0]).toMatchObject({ id: 10, userName: '다', perfect: true, isFirst: true, isReview: false, reactions: { like: 1, clap: 1, strong: 0, fire: 0 }, myReactions: ['clap'] })
         expect(feed[0]!.comments.map((c) => [c.userName, c.canDelete])).toEqual([['나', true], ['다', false]]) // 내 댓글만 지울 수 있다
         expect(feed[0]!.cheers.map((c) => c.text)).toContain("'첫 걸음' 배지를 얻었어요") // 첫 세트 완료 축하
-        expect(feed[1]).toMatchObject({ id: 9, perfect: false, isFirst: false, isReview: true, reactions: { like: 0, clap: 0, strong: 0, fire: 0 }, myReaction: null, comments: [] })
+        expect(feed[1]).toMatchObject({ id: 9, perfect: false, isFirst: false, isReview: true, reactions: { like: 0, clap: 0, strong: 0, fire: 0 }, myReactions: [], comments: [] })
     })
 
     it('관리자는 모든 댓글을 지울 수 있다', async () => {

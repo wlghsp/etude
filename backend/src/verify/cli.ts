@@ -11,6 +11,8 @@ import { summarize, type QuestResult, type VerifyQuest } from './verify-quest.js
 // 실제 앱(terminal.ts)의 핸들러와 같은 구성: docker 계열은 Privileged dind이고 데몬이 뜰 때까지 기다린다.
 const PROFILES: Record<string, SandboxProfile> = {
     linux: {},
+    // MariaDB 가 더 설치된 같은 계열 이미지 (앱은 기본 핸들러로 띄운다)
+    'linux-db': {},
     docker: DIND_PROFILE,
     'docker-persistent': DIND_PROFILE,
     // 앱은 linux-ssh에서도 /bin/bash를 띄운다(sshd는 퀘스트 setup이 직접 시작). 그래서 linux와 같다.

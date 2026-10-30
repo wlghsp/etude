@@ -1,4 +1,5 @@
-import { setKind } from '../setKind'
+import { setKind, firstXpLabel } from '../setKind'
+import { stageOf } from '../characters'
 import { useEffect, useState } from "react";
 import type { QuestSet } from "../types";
 import { fetchQuestSets } from "../api/quest";
@@ -118,7 +119,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
                             <section aria-label="내 상태" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-outline-variant bg-gradient-to-r from-accent/15 via-info/10 to-transparent px-4 py-3">
                                 <button onClick={onProgress} title="내 진행현황 보기" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-left min-w-0">
                                     <span className="font-sans text-body-md font-semibold text-on-surface truncate">안녕하세요, {userName}님 👋</span>
-                                    <span className="rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 font-sans text-label-caps text-gold">Lv.{stats.level.level} {stats.level.title}</span>
+                                    <span className="rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 font-sans text-label-caps text-gold">{stageOf(stats.level.level).body} Lv.{stats.level.level} {stats.level.title}</span>
                                     {stats.streak > 0 && <span className="font-sans text-label-caps text-gold">🔥 {stats.streak}일 연속</span>}
                                     {goals && <span className="font-sans text-label-caps text-on-surface-variant tabular-nums">🎁 오늘 {goals.today.goals.filter((g) => g.done).length}/{goals.today.goals.length} · {goals.month.label} {goals.month.current}/{goals.month.target}</span>}
                                 </button>
@@ -132,6 +133,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
                                         <p className="font-sans text-label-caps text-on-surface-variant">{stats.completed === 0 ? '첫 세트를 시작해 볼까요? 🙂' : '오늘은 이거 해 볼까요? 🙂'}</p>
                                         <h2 className="mt-1 font-sans text-headline-lg text-on-surface">{nextSet.title}</h2>
                                         <p className="mt-1 font-sans text-label-caps text-on-surface-variant">{setKind(nextSet).icon} {setKind(nextSet).label} · {setKind(nextSet).hint}</p>
+                                        {(completedCount[nextSet.id] ?? 0) === 0 && firstXpLabel(nextSet) && <span className="mt-2 inline-block rounded-full border border-gold/50 bg-gold/10 px-3 py-0.5 font-sans text-label-caps text-gold">첫 완료 {firstXpLabel(nextSet)}</span>}
                                         <p className="mt-1 line-clamp-2 font-sans text-body-md text-on-surface-variant">{nextSet.description.split(/(?<=[.。])\s/)[0]}</p>
                                     </div>
                                     <button

@@ -69,17 +69,18 @@ export function FeedTab({ userName }: Props) {
     }
 
     async function react(ev: FeedEvent, kind: Reaction) {
-        // 먼저 화면을 바꾸고, 실패하면 되돌린다 (같은 반응이면 취소, 다른 반응이면 바꿈)
+        // 먼저 화면을 바꾸고, 실패하면 되돌린다 (그 반응만 켜거나 끈다)
         patch(ev.id, (e) => {
-            const counts = { ...e.reactions }
-            if (e.myReaction) counts[e.myReaction] = Math.max(0, counts[e.myReaction] - 1)
-            const next = e.myReaction === kind ? null : kind
-            if (next) counts[next] += 1
-            return { ...e, reactions: counts, myReaction: next }
+            const on = e.myReactions.includes(kind)
+            return {
+                ...e,
+                reactions: { ...e.reactions, [kind]: Math.max(0, e.reactions[kind] + (on ? -1 : 1)) },
+                myReactions: on ? e.myReactions.filter((k) => k !== kind) : [...e.myReactions, kind],
+            }
         })
         try {
             const r = await toggleLike(ev.id, kind)
-            patch(ev.id, (e) => ({ ...e, reactions: r.counts, myReaction: r.reaction }))
+            patch(ev.id, (e) => ({ ...e, reactions: r.counts, myReactions: r.mine }))
         } catch (e) {
             patch(ev.id, () => ev)
             say(ev.id, e instanceof Error ? e.message : '반응을 남기지 못했어요.')
@@ -164,7 +165,7 @@ export function FeedTab({ userName }: Props) {
                         <div className="mt-4 flex items-center gap-2 border-t border-outline-variant/60 pt-3">
                             <div role="group" aria-label="반응" className="flex items-center gap-1.5">
                                 {REACTIONS.map((r) => {
-                                    const picked = ev.myReaction === r.kind
+                                    const picked = ev.myReactions.includes(r.kind)
                                     const count = ev.reactions[r.kind]
                                     return (
                                         <button

@@ -40,7 +40,7 @@ export interface FeedEvent {
     isReview: boolean // 이미 끝낸 세트를 다시 끝냄
     cheers: Cheer[] // 이 완료로 처음 이룬 일 (좋은 소식만, 우선순위 순)
     reactions: Record<Reaction, number> // 반응 종류별 수
-    myReaction: Reaction | null // 내가 남긴 반응 (한 사람 한 반응)
+    myReactions: Reaction[] // 내가 남긴 반응들 (한 사람이 여러 종류를 달 수 있다)
     comments: FeedComment[]
 }
 
@@ -95,14 +95,14 @@ export async function getFeed(userId: number, role: string, opts: { before?: num
     }
 
     const reactionCounts = new Map<number, Record<Reaction, number>>()
-    const myReactions = new Map<number, Reaction>()
+    const myReactions = new Map<number, Reaction[]>()
     for (const l of likeRows as any[]) {
         const kind = l.kind as Reaction
         if (!REACTIONS.includes(kind)) continue
         const counts = reactionCounts.get(l.completion_id) ?? emptyCounts()
         counts[kind] = Number(l.n)
         reactionCounts.set(l.completion_id, counts)
-        if (Number(l.mine) > 0) myReactions.set(l.completion_id, kind)
+        if (Number(l.mine) > 0) myReactions.set(l.completion_id, [...(myReactions.get(l.completion_id) ?? []), kind])
     }
     const comments = new Map<number, FeedComment[]>()
     for (const c of commentRows as any[]) {
@@ -126,7 +126,7 @@ export async function getFeed(userId: number, role: string, opts: { before?: num
             isFirst: earlier === 0,
             isReview: earlier > 0,
             reactions: reactionCounts.get(r.id) ?? emptyCounts(),
-            myReaction: myReactions.get(r.id) ?? null,
+            myReactions: sortReactions(myReactions.get(r.id) ?? []),
             comments: comments.get(r.id) ?? [],
             cheers: cheersFor(history.get(r.user_id) ?? [], sets, r.id),
         }
@@ -139,20 +139,25 @@ async function ownerOf(completionId: number): Promise<number> {
     return (rows as any[])[0].user_id
 }
 
-/** 반응을 남기거나 바꾸거나 취소한다 (한 사람 한 반응: 같은 걸 다시 누르면 취소, 다른 걸 누르면 바뀐다). 내 소식에는 남길 수 없다. */
-export async function toggleLike(userId: number, completionId: number, kind: Reaction = 'like'): Promise<{ reaction: Reaction | null; counts: Record<Reaction, number> }> {
+// 화면에 늘 같은 순서(like, clap, strong, fire)로 보이게 한다
+const sortReactions = (list: Reaction[]) => REACTIONS.filter((k) => list.includes(k))
+
+/** 반응 하나를 켜거나 끈다 (한 사람이 여러 종류를 달 수 있고, 같은 걸 다시 누르면 그 반응만 취소된다). 내 소식에는 남길 수 없다. */
+export async function toggleLike(userId: number, completionId: number, kind: Reaction = 'like'): Promise<{ mine: Reaction[]; counts: Record<Reaction, number> }> {
     if (!REACTIONS.includes(kind)) throw new FeedError(400, '알 수 없는 반응이에요.')
     if (await ownerOf(completionId) === userId) throw new FeedError(400, '내 소식에는 반응을 남길 수 없어요.')
-    const [existing] = await db.query('SELECT kind FROM feed_like WHERE completion_id = ? AND user_id = ?', [completionId, userId]) as any[]
-    const mine = (existing as any[])[0]?.kind as string | undefined
-    let reaction: Reaction | null = kind
-    if (mine === undefined) await db.query('INSERT IGNORE INTO feed_like (completion_id, user_id, kind) VALUES (?, ?, ?)', [completionId, userId, kind])
-    else if (mine === kind) { await db.query('DELETE FROM feed_like WHERE completion_id = ? AND user_id = ?', [completionId, userId]); reaction = null }
-    else await db.query('UPDATE feed_like SET kind = ? WHERE completion_id = ? AND user_id = ?', [kind, completionId, userId])
-    const [rows] = await db.query('SELECT kind, COUNT(*) AS n FROM feed_like WHERE completion_id = ? GROUP BY kind', [completionId]) as any[]
+    const [existing] = await db.query('SELECT kind FROM feed_like WHERE completion_id = ? AND user_id = ? AND kind = ?', [completionId, userId, kind]) as any[]
+    if ((existing as any[]).length === 0) await db.query('INSERT IGNORE INTO feed_like (completion_id, user_id, kind) VALUES (?, ?, ?)', [completionId, userId, kind])
+    else await db.query('DELETE FROM feed_like WHERE completion_id = ? AND user_id = ? AND kind = ?', [completionId, userId, kind])
+    const [rows] = await db.query('SELECT kind, COUNT(*) AS n, SUM(user_id = ?) AS mine FROM feed_like WHERE completion_id = ? GROUP BY kind', [userId, completionId]) as any[]
     const counts = emptyCounts()
-    for (const r of rows as any[]) if (REACTIONS.includes(r.kind)) counts[r.kind as Reaction] = Number(r.n)
-    return { reaction, counts }
+    const mine: Reaction[] = []
+    for (const r of rows as any[]) {
+        if (!REACTIONS.includes(r.kind)) continue
+        counts[r.kind as Reaction] = Number(r.n)
+        if (Number(r.mine) > 0) mine.push(r.kind)
+    }
+    return { mine: sortReactions(mine), counts }
 }
 
 export async function addComment(userId: number, completionId: number, body: unknown): Promise<FeedComment> {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Logo } from './Logo'
+import { stageOf } from '../characters'
 import { fetchFeedSummary } from '../api/feed'
 import { avatarTone } from '../avatar'
 import { fetchGamification, type LevelInfo } from '../api/user'
@@ -91,7 +92,7 @@ export function SideNav({ activePage, userName, userEmail, userRole, onHome, onP
                         <div className="font-sans text-body-md font-semibold text-on-surface truncate">{userName}</div>
                         {level ? (
                             <>
-                                <div className="font-sans text-code-sm text-gold truncate">Lv.{level.level} {level.title}</div>
+                                <div className="font-sans text-code-sm text-gold truncate">{stageOf(level.level).body} Lv.{level.level} {level.title}</div>
                                 <div className="mt-1 h-1.5 rounded-full bg-surface-container-highest overflow-hidden" role="progressbar" aria-valuenow={level.pct} aria-valuemin={0} aria-valuemax={100} aria-label="레벨 진행">
                                     <div className="h-full rounded-full bg-gradient-to-r from-gold via-rose to-accent" style={{ width: `${Math.max(4, level.pct)}%` }} />
                                 </div>

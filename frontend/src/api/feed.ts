@@ -32,7 +32,7 @@ export interface FeedEvent {
   isReview: boolean
   cheers: Array<{ kind: 'category' | 'unit' | 'challenge' | 'level' | 'streak' | 'badge'; key: string; icon: string; text: string }> // 이 완료로 처음 이룬 일 (우선순위 순)
   reactions: Record<Reaction, number> // 반응 종류별 수
-  myReaction: Reaction | null // 내가 남긴 반응 (한 사람 한 반응)
+  myReactions: Reaction[] // 내가 남긴 반응들 (여러 종류를 달 수 있다)
   comments: FeedComment[]
 }
 
@@ -54,8 +54,8 @@ const post = (url: string, body?: unknown) => fetch(`${BASE}${url}`, {
 export const fetchFeed = (before?: number): Promise<FeedEvent[]> =>
   fetch(`${BASE}/feed${before ? `?before=${before}` : ''}`, { headers: authHeaders() }).then((r) => parse<FeedEvent[]>(r))
 
-// 반응을 남기거나(같은 걸 다시 누르면 취소, 다른 걸 누르면 바꿈) 서버가 돌려준 종류별 수로 맞춘다
-export const toggleLike = (id: number, kind: Reaction) => post(`/feed/${id}/like`, { kind }).then((r) => parse<{ reaction: Reaction | null; counts: Record<Reaction, number> }>(r))
+// 반응 하나를 켜거나 끈다(같은 걸 다시 누르면 그 반응만 취소). 서버가 돌려준 내 반응 목록과 종류별 수로 맞춘다
+export const toggleLike = (id: number, kind: Reaction) => post(`/feed/${id}/like`, { kind }).then((r) => parse<{ mine: Reaction[]; counts: Record<Reaction, number> }>(r))
 export const postComment = (id: number, body: string) => post(`/feed/${id}/comments`, { body }).then((r) => parse<FeedComment>(r))
 export const removeComment = (id: number) => fetch(`${BASE}/feed/comments/${id}`, { method: 'DELETE', headers: authHeaders() }).then((r) => parse<{ ok: boolean }>(r))
 export const fetchFeedSummary = () => fetch(`${BASE}/feed/summary`, { headers: authHeaders() }).then((r) => parse<{ newForMe: number }>(r))

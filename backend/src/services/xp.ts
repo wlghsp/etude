@@ -8,6 +8,9 @@ export interface CompletionRec { id: number; questSetId: number; day: string; qu
 
 const TOP = 10
 
+/** 세트를 처음 끝낼 때 문제 하나당 얻는 XP (xpOf 와 세트 목록의 "첫 완료 시 +N XP" 가 함께 쓴다) */
+export const XP_PER_QUEST = 10
+
 export const TITLES = ['새싹', '견습생', '실습생', '현장 요원', '숙련자', '베테랑', '엘리트', '마스터', '그랜드마스터', '레전드']
 
 export const isPerfect = (r: CompletionRec) => r.questCount > 0 && r.hintFree === r.questCount && r.solutionFree === r.questCount
@@ -21,7 +24,7 @@ export function xpOf(recs: CompletionRec[]): number {
     let xp = 0
     for (const list of bySet.values()) {
         const n = list[0]!.questCount
-        xp += n * 10
+        xp += n * XP_PER_QUEST
         if (list.some(isPerfect)) xp += n * 5
         xp += Math.min(list.length - 1, 5) * 5
     }

@@ -3,6 +3,7 @@ import { groupByUnit } from "../units"
 import { fetchGamification, fetchGoals, fetchProgress, type CompletionRecord, type Gamification, type Goals, type SetProgress } from "../api/user"
 import { weekActivity } from "../activity"
 import { MyStatus } from "../components/MyStatus"
+import { conqueredCategories } from "../characters"
 import { GoalsPanel } from "../components/GoalsPanel"
 import { TopNav } from "../components/TopNav"
 import { SideNav } from "../components/SideNav"
@@ -142,7 +143,7 @@ export function Progress({ onBack, onLeaderboard, onHall, onReview, onFeed, onAd
                         )}
 
                         {sets && <>
-                            {gami && <MyStatus userName={userName} totalPct={rate} level={gami.level} streak={gami.streak} week={weekActivity(sets, new Date())} />}
+                            {gami && <MyStatus userName={userName} totalPct={rate} level={gami.level} streak={gami.streak} week={weekActivity(sets, new Date())} gear={conqueredCategories(sets)} />}
                             {goals && <GoalsPanel goals={goals} />}
 
                             <section className="grid grid-cols-2 md:grid-cols-4 gap-4">

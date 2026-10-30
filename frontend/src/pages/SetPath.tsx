@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { QuestSet } from '../types'
-import { setKind } from '../setKind'
+import { setKind, firstXpLabel } from '../setKind'
 import { Logo } from '../components/Logo'
 
 // 한 단원의 세트를 구불구불한 길 위의 노드로 보여 준다 (듀오링고식 + 마스코트 + 보물상자).
@@ -111,7 +111,7 @@ export function SetPath({ items, completedCount, perfectIds, nextId, firstTime, 
                             >
                                 <p className="font-sans text-body-md font-semibold text-on-surface"><span className="mr-1.5 font-normal text-on-surface-variant">#{s.id}</span>{s.icon} {s.title}</p>
                                 <p className="mt-1 font-sans text-code-sm leading-5 text-on-surface-variant">{s.description}</p>
-                                <p className="mt-2 font-sans text-label-caps text-on-surface-variant">{setKind(s).icon} {setKind(s).label} · {setKind(s).hint}</p>
+                                <p className="mt-2 font-sans text-label-caps text-on-surface-variant">{setKind(s).icon} {setKind(s).label} · {setKind(s).hint}{!done && firstXpLabel(s) ? ` · 첫 완료 ${firstXpLabel(s)}` : ''}</p>
                                 <div className="mt-3 flex items-center gap-3">
                                     <button
                                         onClick={() => onSelect(s.id, s.sandbox_type)}

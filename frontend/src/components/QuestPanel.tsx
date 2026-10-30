@@ -5,7 +5,7 @@ import { useQuestTimer, formatClock, formatDuration } from './useQuestTimer'
 import { useCountdown } from './useCountdown'
 import type { QuestRecord } from './SetComplete'
 import { ConfirmModal } from './ConfirmModal'
-import { playFail, playSuccess } from '../sound'
+import { markSoundAsked, playFail, playSuccess, setSoundEnabled, soundAsked, soundEnabled } from '../sound'
 import { FillQuestion, OrderQuestion } from './PickQuestions'
 
 // `백틱`은 코드 모양으로, **별표 두 개**는 굵게 보여 준다 (명령어·파일 경로·값과 강조를 본문과 구분하기 위해).
@@ -104,6 +104,9 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
     const [selected, setSelected] = useState<number | null>(null)
     const [wrongChoices, setWrongChoices] = useState<Set<number>>(new Set())
     const [explanation, setExplanation] = useState<string | null>(null)
+    // 처음 정답을 맞혔을 때 효과음을 켜 볼지 한 번만 묻는다 (기본은 꺼짐)
+    const [soundOffer, setSoundOffer] = useState(false)
+    const offerSoundOnce = () => { if (!soundEnabled() && !soundAsked()) setSoundOffer(true) }
     const [result, setResult] = useState<boolean | null>(null)
     const [loading, setLoading] = useState(false)
     const [gradeError, setGradeError] = useState<string | null>(null)
@@ -126,6 +129,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                 setPickResults(data.results ?? null)
                 if (data.passed) playSuccess(); else playFail()
                 if (data.passed) {
+                    offerSoundOnce()
                     setExplanation(data.explanation ?? null)
                     const seconds = timer.finish()
                     setFinalSeconds(seconds)
@@ -144,6 +148,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
             setCheckResults(Array.isArray(data.checks) ? data.checks.map((c: { passed: boolean }) => c.passed) : null)
             if (data.passed) playSuccess(); else playFail()
             if (data.passed) {
+                offerSoundOnce()
                 const seconds = timer.finish()
                 setFinalSeconds(seconds)
                 onComplete(index, { seconds, hintUsed, solutionUsed, attempts: failedAttempts + 1 })
@@ -374,6 +379,14 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                                     </p>
                                 </div>
                             </div>
+                            {soundOffer && (
+                                <div className="relative mb-3 flex items-center gap-3 rounded-lg border border-success/30 bg-surface-container px-3 py-2">
+                                    <span className="material-symbols-outlined text-gold text-[20px]">volume_up</span>
+                                    <p className="flex-1 font-sans text-body-md text-on-surface">정답 효과음(띠링!)이 있어요. 켜 볼까요? 위쪽 스피커 버튼으로 언제든 끌 수 있어요.</p>
+                                    <button onClick={() => { setSoundEnabled(true); playSuccess(); markSoundAsked(); setSoundOffer(false) }} className="rounded-md bg-success text-on-primary px-3 py-1 font-sans text-label-caps font-bold hover:brightness-110">켜기</button>
+                                    <button onClick={() => { markSoundAsked(); setSoundOffer(false) }} className="rounded-md border border-outline-variant px-3 py-1 font-sans text-label-caps text-on-surface-variant hover:bg-surface-container-high">괜찮아요</button>
+                                </div>
+                            )}
                             {explanation && (
                                 <div className="relative mb-4 border border-success/30 bg-surface-container p-4">
                                     <div className="font-sans text-label-caps text-success mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px]">menu_book</span>해설</div>

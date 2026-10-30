@@ -6,6 +6,7 @@ import { fetchGoals, fetchProgress, type Goals } from '../api/user'
 import { groupByUnit } from '../units'
 import { playFanfare } from '../sound'
 import type { CompletionXp } from '../api/quest'
+import { stageOf } from '../characters'
 
 /** 한 문제를 푼 기록 (이번에 세트에 들어와서 푼 동안의 값) */
 export interface QuestRecord {
@@ -118,7 +119,13 @@ export function SetComplete({ setId, quests, records, saveState, xpGain, onRetry
                             <p className="font-sans text-headline-md text-gold tabular-nums">+{xpGain.gain} XP</p>
                         </div>
                         {xpGain.level.level > xpGain.prevLevel.level && (
-                            <p className="fx-pop mt-1 font-sans text-body-md font-bold text-on-surface">🎉 레벨 업! Lv.{xpGain.level.level} {xpGain.level.title}</p>
+                            <div className="fx-pop mt-2 flex items-center gap-3 rounded-lg bg-gold/10 px-3 py-2">
+                                <span className="fx-bounce text-[44px] leading-none" role="img" aria-label={stageOf(xpGain.level.level).name}>{stageOf(xpGain.level.level).body}</span>
+                                <div>
+                                    <p className="font-sans text-body-md font-bold text-on-surface">🎉 레벨 업! Lv.{xpGain.level.level} {xpGain.level.title}</p>
+                                    <p className="font-sans text-code-sm text-on-surface-variant">{stageOf(xpGain.prevLevel.level).name} → <b className="text-gold">{stageOf(xpGain.level.level).name}</b>{stageOf(xpGain.level.level).name === stageOf(xpGain.prevLevel.level).name ? '' : '(으)로 성장했어요!'}</p>
+                                </div>
+                            </div>
                         )}
                         <div className="mt-2 flex items-center justify-between font-sans text-code-sm text-on-surface-variant">
                             <span>Lv.{xpGain.level.level} {xpGain.level.title}</span>
