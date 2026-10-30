@@ -71,6 +71,10 @@ export interface SetProgress {
     questSetId: number
     title: string
     category: string
+    unitId: number | null
+    unitTitle: string | null
+    unitOrder: number | null
+    isReview: boolean
     completions: CompletionRecord[] // 최근 완료가 먼저
 }
 
@@ -82,8 +86,9 @@ function parseDetail(raw: unknown): CompletionRecord['detail'] {
 /** 사용자가 볼 수 있는 세트(공개/관리자/접근 권한)와 각 세트의 완료 기록. */
 export async function getSetProgress(userId: number, role: string): Promise<SetProgress[]> {
     const [setRows] = await db.query(`
-        SELECT qs.id, qs.title, qs.category
+        SELECT qs.id, qs.title, qs.category, qs.is_review, qs.unit_id, u.title AS unit_title, u.display_order AS unit_order
         FROM quest_set qs
+        LEFT JOIN unit u ON u.id = qs.unit_id
         WHERE qs.is_public = TRUE
            OR ? = 'admin'
            OR EXISTS (SELECT 1 FROM quest_set_access qsa WHERE qsa.quest_set_id = qs.id AND qsa.user_id = ?)
@@ -98,6 +103,10 @@ export async function getSetProgress(userId: number, role: string): Promise<SetP
         questSetId: s.id,
         title: s.title,
         category: s.category,
+        unitId: s.unit_id ?? null,
+        unitTitle: s.unit_title ?? null,
+        unitOrder: s.unit_order ?? null,
+        isReview: Boolean(s.is_review),
         completions: (doneRows as any[])
             .filter((d) => d.quest_set_id === s.id)
             .map((d) => ({

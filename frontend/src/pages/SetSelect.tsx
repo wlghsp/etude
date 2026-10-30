@@ -4,6 +4,7 @@ import { fetchQuestSets } from "../api/quest";
 import { fetchProgress } from "../api/user";
 import { SideNav } from "../components/SideNav";
 import { TopNav } from "../components/TopNav";
+import { groupByUnit } from "../units";
 
 interface Props {
     onSelect: (setId: number, sandboxType: string) => void
@@ -80,34 +81,50 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onAdmin, onLogo
                                     </button>
 
                                     {isOpen && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                                            {items.map((s) => {
-                                                const doneCount = completedCount[s.id] ?? 0
-                                                const isComplete = doneCount > 0
+                                        <div className="mt-6 space-y-8">
+                                            {groupByUnit(items, (s) => ({ unitId: s.unit_id, unitTitle: s.unit_title, unitOrder: s.unit_order })).map((g) => {
+                                                const done = g.items.filter((s) => (completedCount[s.id] ?? 0) > 0).length
                                                 return (
-                                                    <button
-                                                        key={s.id}
-                                                        onClick={() => onSelect(s.id, s.sandbox_type)}
-                                                        className="text-left p-5 border border-outline-variant bg-surface-container-low hover:border-primary hover:bg-surface-container transition-all group"
-                                                        onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
-                                                        onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
-                                                        style={{ transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)' }}
-                                                    >
-                                                        <div className="flex justify-between items-start mb-6">
-                                                            <div className="flex flex-col gap-1">
-                                                                <h3 className="font-sans text-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">
-                                                                    <span className="text-on-surface-variant font-normal mr-2">#{s.id}</span>{s.title}
-                                                                    {s.sandbox_type === 'quiz' && <span className="ml-2 px-1.5 py-0.5 align-middle border border-primary/50 text-primary font-sans text-label-caps font-normal">퀴즈</span>}
-                                                                </h3>
-                                                                <p className="font-sans text-code-sm text-on-surface-variant">{s.description}</p>
+                                                    <div key={g.unitId ?? 'none'}>
+                                                        {g.title && (
+                                                            <div className="flex items-baseline gap-3 mb-3">
+                                                                <h3 className="font-sans text-body-lg font-semibold text-on-surface">{g.number}단원 · {g.title}</h3>
+                                                                <span className="font-sans text-code-sm text-on-surface-variant">완료 {done}/{g.items.length}</span>
                                                             </div>
+                                                        )}
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            {g.items.map((s) => {
+                                                                const doneCount = completedCount[s.id] ?? 0
+                                                                const isComplete = doneCount > 0
+                                                                return (
+                                                                    <button
+                                                                        key={s.id}
+                                                                        onClick={() => onSelect(s.id, s.sandbox_type)}
+                                                                        className="text-left p-5 border border-outline-variant bg-surface-container-low hover:border-primary hover:bg-surface-container transition-all group"
+                                                                        onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
+                                                                        onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
+                                                                        style={{ transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                                                                    >
+                                                                        <div className="flex justify-between items-start mb-6">
+                                                                            <div className="flex flex-col gap-1">
+                                                                                <h3 className="font-sans text-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">
+                                                                                    <span className="text-on-surface-variant font-normal mr-2">#{s.id}</span>{s.title}
+                                                                                    {s.sandbox_type === 'quiz' && <span className="ml-2 px-1.5 py-0.5 align-middle border border-primary/50 text-primary font-sans text-label-caps font-normal">퀴즈</span>}
+                                                                                    {s.is_review && <span className="ml-2 px-1.5 py-0.5 align-middle border border-primary/50 text-primary font-sans text-label-caps font-normal">복습</span>}
+                                                                                </h3>
+                                                                                <p className="font-sans text-code-sm text-on-surface-variant">{s.description}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className={`flex items-center gap-1.5 font-sans text-code-sm ${isComplete ? 'text-success font-bold' : 'text-on-surface-variant'}`}>
+                                                                            {isComplete
+                                                                                ? <><span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>완료{doneCount > 1 ? ` · ${doneCount}회` : ''}</>
+                                                                                : '미완료'}
+                                                                        </div>
+                                                                    </button>
+                                                                )
+                                                            })}
                                                         </div>
-                                                        <div className={`flex items-center gap-1.5 font-sans text-code-sm ${isComplete ? 'text-success font-bold' : 'text-on-surface-variant'}`}>
-                                                            {isComplete
-                                                                ? <><span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>완료{doneCount > 1 ? ` · ${doneCount}회` : ''}</>
-                                                                : '미완료'}
-                                                        </div>
-                                                    </button>
+                                                    </div>
                                                 )
                                             })}
                                         </div>

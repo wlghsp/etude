@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { groupByUnit } from "../units"
 import { fetchProgress, type CompletionRecord, type SetProgress } from "../api/user"
 import { TopNav } from "../components/TopNav"
 import { SideNav } from "../components/SideNav"
@@ -129,6 +130,30 @@ export function Progress({ onBack, onLeaderboard, onAdmin, onLogout, onChangePas
                                 {card('repeat', 'text-primary', '총 완료 횟수', `${allRecords.length}`, '회')}
                                 {card('timer', 'text-primary', '총 학습 시간', totalSeconds > 0 ? formatDuration(totalSeconds) : '-')}
                                 {card('calendar_month', 'text-primary', '이번 주 완료', `${weekCount}`, '회')}
+                            </section>
+
+                            <section className="flex flex-col gap-4">
+                                <h2 className="font-sans text-headline-md text-on-surface">단원별 진행</h2>
+                                {categories.map((c) => (
+                                    <div key={c} className="border border-outline-variant bg-surface-container-low p-5 flex flex-col gap-4">
+                                        <span className="font-sans text-body-lg font-semibold text-on-surface">{c}</span>
+                                        {groupByUnit(list.filter((s) => s.category === c), (s) => ({ unitId: s.unitId, unitTitle: s.unitTitle, unitOrder: s.unitOrder })).map((g) => {
+                                            const done = g.items.filter((s) => s.completions.length > 0).length
+                                            const pct = Math.round((done / g.items.length) * 100)
+                                            return (
+                                                <div key={g.unitId ?? 'none'} className="flex flex-col gap-1.5">
+                                                    <div className="flex items-baseline justify-between gap-3">
+                                                        <span className="font-sans text-body-md text-on-surface">{g.title ? `${g.number}단원 · ${g.title}` : '기타'}</span>
+                                                        <span className="font-sans text-code-sm text-on-surface-variant tabular-nums">{done}/{g.items.length} 세트</span>
+                                                    </div>
+                                                    <div className="h-1.5 bg-surface-container-highest" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+                                                        <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                ))}
                             </section>
 
                             <section className="flex flex-col gap-4">

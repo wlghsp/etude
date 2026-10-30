@@ -9,7 +9,7 @@ describe('getSetProgress', () => {
 
     it('볼 수 있는 세트 규칙(공개/관리자/접근 권한)으로 세트를 조회하고, 세트별 완료 기록을 최근 순으로 붙인다', async () => {
         vi.mocked(db.query)
-            .mockResolvedValueOnce([[{ id: 1, title: 'A', category: '리눅스' }, { id: 2, title: 'B', category: 'k8s' }]] as any)
+            .mockResolvedValueOnce([[{ id: 1, title: 'A', category: '리눅스', unit_id: 3, unit_title: '기초', unit_order: 10, is_review: 1 }, { id: 2, title: 'B', category: 'k8s', unit_id: null, unit_title: null, unit_order: null, is_review: 0 }]] as any)
             .mockResolvedValueOnce([[
                 { id: 9, quest_set_id: 1, completed_at: '2026-10-29 10:00:00', total_seconds: 120, quest_count: 3, hint_free_count: 2, solution_free_count: 3, detail: '[{"questId":1,"orderIndex":1,"title":"q","seconds":40,"hintUsed":false,"solutionUsed":false,"attempts":1}]' },
                 { id: 8, quest_set_id: 1, completed_at: '2026-10-28 10:00:00', total_seconds: 200, quest_count: 3, hint_free_count: 0, solution_free_count: 3, detail: null },
@@ -26,6 +26,18 @@ describe('getSetProgress', () => {
         expect(r[0]!.completions[0]!.detail![0]).toMatchObject({ questId: 1, seconds: 40 })
         expect(r[0]!.completions[1]!.detail).toBeNull()
         expect(r[1]!.completions).toEqual([])
+    })
+
+    it('세트가 속한 단원과 복습 여부를 함께 돌려주고, 단원이 없으면 null 이다', async () => {
+        vi.mocked(db.query)
+            .mockResolvedValueOnce([[{ id: 1, title: 'A', category: '리눅스', unit_id: 3, unit_title: '기초', unit_order: 10, is_review: 1 }, { id: 2, title: 'B', category: 'k8s', unit_id: null, unit_title: null, unit_order: null, is_review: 0 }]] as any)
+            .mockResolvedValueOnce([[]] as any)
+
+        const r = await getSetProgress(7, 'member')
+
+        expect(vi.mocked(db.query).mock.calls[0]![0]).toContain('LEFT JOIN unit')
+        expect(r[0]).toMatchObject({ unitId: 3, unitTitle: '기초', unitOrder: 10, isReview: true })
+        expect(r[1]).toMatchObject({ unitId: null, unitTitle: null, unitOrder: null, isReview: false })
     })
 
     it('문제별 내역 JSON 이 깨져 있어도 목록은 돌려준다', async () => {

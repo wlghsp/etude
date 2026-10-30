@@ -6,6 +6,12 @@ CREATE TABLE sandbox (
   description TEXT
 );
 
+CREATE TABLE unit (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  category      VARCHAR(50) NOT NULL,
+  title         VARCHAR(100) NOT NULL,
+  display_order INT NOT NULL DEFAULT 0
+);
 CREATE TABLE quest_set (
   id           INT AUTO_INCREMENT PRIMARY KEY,
   title        VARCHAR(100) NOT NULL,
@@ -14,7 +20,10 @@ CREATE TABLE quest_set (
   category     VARCHAR(50) NOT NULL DEFAULT '기타',
   is_public    BOOLEAN NOT NULL DEFAULT TRUE,
   display_order INT NOT NULL DEFAULT 0,
-  FOREIGN KEY (sandbox_type) REFERENCES sandbox(type)
+  unit_id      INT NULL,
+  is_review    BOOLEAN NOT NULL DEFAULT FALSE,
+  FOREIGN KEY (sandbox_type) REFERENCES sandbox(type),
+  FOREIGN KEY (unit_id) REFERENCES unit(id)
 );
 
 CREATE TABLE quest (

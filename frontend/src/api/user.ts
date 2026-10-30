@@ -25,6 +25,10 @@ export interface SetProgress {
   questSetId: number
   title: string
   category: string
+  unitId: number | null
+  unitTitle: string | null
+  unitOrder: number | null
+  isReview: boolean
   completions: CompletionRecord[] // 최근 완료가 먼저
 }
 

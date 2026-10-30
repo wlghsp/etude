@@ -16,4 +16,8 @@ export interface QuestSet {
   description: string
   sandbox_type: string
   category: string
+  is_review: boolean
+  unit_id: number | null
+  unit_title: string | null
+  unit_order: number | null
 }
