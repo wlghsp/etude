@@ -1,0 +1,206 @@
+-- 세트 34(리눅스 명령 연결하기: 파이프와 리다이렉션) 추가와 표시 순서 지정(세트 3 과 21 사이). 여러 번 실행해도 안전하도록 NOT EXISTS 가드를 둔다 (원본: 02_quest_set.sql, 03_quest_set34.sql, 05_display_order.sql).
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 34, '리눅스 명령 연결하기: 파이프와 리다이렉션', '파이프(|)로 명령의 결과를 다른 명령에 넘기고, >, >>, <, 2> 로 입출력을 파일에 연결하고, &&, ||, ; 로 명령을 이어 실행하는 법을 연습합니다. grep, awk, sort 같은 도구를 조합하기 전에 꼭 필요한 연결 문법입니다.', 'linux', '리눅스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 34);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd)
+SELECT 34, 1, '파이프(|)로 명령의 결과를 다른 명령에 넘기기',
+   '명령 하나가 하는 일은 작지만, 명령을 **연결하면** 원하는 결과를 얻을 수 있습니다. 파이프(`|`)는 **앞 명령의 출력을 뒤 명령의 입력으로 넘겨주는 통로**입니다. 앞 명령의 결과가 화면에 나오는 대신 뒤 명령이 받아서 처리합니다.
+
+`/tmp/g` 디렉터리에는 `.txt` 파일과 `.log` 파일이 섞여 있습니다. 이 중 **`.txt` 파일이 몇 개인지** 숫자만 `/tmp/txt_count.txt` 에 저장하세요.
+
+완료 조건: 파일에 `.txt` 파일 개수가 들어 있어야 합니다.',
+   '`ls /tmp/g/*.txt` 는 `.txt` 파일 이름을 한 줄에 하나씩 출력합니다. 이 출력을 `|` 로 `wc -l` 에 넘기면 **줄 수**(= 파일 개수)를 셉니다. (`wc -l` 의 `-l` 은 줄(line) 수를 세는 옵션) `A | B` 는 A 의 출력이 B 의 입력이 된다는 뜻입니다. 결과를 파일로 저장하려면 맨 뒤에 `> 파일` 을 붙입니다.',
+   'ls /tmp/g/*.txt | wc -l > /tmp/txt_count.txt
+
+# ls /tmp/g/*.txt : .txt 파일 이름을 한 줄씩 출력
+# | wc -l : 그 출력을 받아 줄 수(파일 개수)를 셈
+# > : 최종 결과(숫자)를 파일에 저장',
+   '["sh", "-c", "mkdir -p /tmp/g && touch /tmp/g/a.txt /tmp/g/b.txt /tmp/g/c.txt /tmp/g/d.log"]',
+   '["sh", "-c", "[ \\"$(tr -d ''[:space:]'' < /tmp/txt_count.txt)\\" = 3 ]"]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 34 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd)
+SELECT 34, 2, '파이프를 여러 번 이어 필요한 줄만 세기',
+   '파이프는 여러 번 이어 쓸 수 있습니다. 앞에서 넘어온 결과를 한 단계씩 걸러 가며 원하는 것만 남깁니다. 지금 이름이 `jobx` 인 프로세스가 3개 돌고 있습니다.
+
+`ps aux` 의 결과에서 **`jobx` 프로세스가 몇 개인지** 숫자만 `/tmp/job_count.txt` 에 저장하세요. 단, `ps aux | grep jobx` 를 실행하면 **`grep jobx` 명령 자신도** 목록에 잡혀서 개수가 하나 많아집니다. 자기 자신은 제외해야 합니다.
+
+완료 조건: 파일에 `3` 이 들어 있어야 합니다.',
+   '`ps aux | grep jobx` 의 `grep` 은 `jobx` 가 들어 있는 줄만 남깁니다. 그런데 `grep jobx` 자신의 명령줄에도 `jobx` 가 있어서 목록에 포함됩니다. 이 줄을 빼려면 한 번 더 파이프로 연결해 `grep -v grep` 을 씁니다. (`-v` 는 패턴이 **들어 있는 줄을 제외**하는 옵션) 마지막에 `wc -l` 로 줄 수를 세면 됩니다.',
+   'ps aux | grep jobx | grep -v grep | wc -l > /tmp/job_count.txt
+
+# grep jobx : jobx 가 들어 있는 줄만 (grep 자신도 포함됨)
+# grep -v grep : grep 이 들어 있는 줄은 제외 (-v : 반대로)
+# wc -l : 남은 줄 수',
+   '["sh", "-c", "cp /bin/sleep /tmp/jobx; for i in 1 2 3; do nohup /tmp/jobx 600 >/dev/null 2>&1 & done; sleep 1"]',
+   '["sh", "-c", "[ \\"$(tr -d ''[:space:]'' < /tmp/job_count.txt)\\" = 3 ]"]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 34 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd)
+SELECT 34, 3, '> 와 >> 의 차이: 덮어쓰기와 이어쓰기',
+   '결과를 파일에 저장할 때 `>` 는 파일을 **새로 만들며 기존 내용을 지우고**, `>>` 는 기존 내용을 **그대로 두고 뒤에 이어 씁니다.** 이 차이를 모르고 `>` 를 쓰면 로그가 통째로 사라질 수 있습니다.
+
+`/tmp/log.txt` 에는 이미 `first` 한 줄이 있습니다. 이 내용을 **지우지 않고** 다음 줄에 `second` 를 추가하세요.
+
+완료 조건: 파일이 `first`, `second` 두 줄이어야 합니다.',
+   '`echo 글자 >> 파일` 은 파일의 맨 끝에 한 줄을 추가합니다. `echo 글자 > 파일` 은 파일을 지우고 새로 씁니다. 실행한 뒤 `cat /tmp/log.txt` 로 두 줄이 모두 있는지 확인하세요. (실수로 `>` 를 썼다면 `first` 가 사라졌을 거예요)',
+   'echo second >> /tmp/log.txt
+
+# >> : 기존 내용 뒤에 이어 쓰기 (> 는 덮어쓰기라 first 가 지워집니다)
+cat /tmp/log.txt',
+   '["sh", "-c", "echo first > /tmp/log.txt"]',
+   '["sh", "-c", "[ \\"$(tr ''\\\\n'' '','' < /tmp/log.txt)\\" = ''first,second,'' ]"]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 34 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd)
+SELECT 34, 4, '< 로 파일을 입력으로 넣어 숫자만 얻기',
+   '`wc -l 파일` 은 줄 수 **뒤에 파일 이름도** 함께 출력합니다. 스크립트에서 숫자만 필요할 때는 파일 이름이 방해가 됩니다. `<` 는 파일의 내용을 명령의 **입력으로 넣어** 주는 기호라서, 명령은 파일 이름을 모르고 내용만 받아 숫자만 출력합니다.
+
+`/tmp/words.txt` 의 줄 수를 **숫자만** `/tmp/wc_only.txt` 에 저장하세요.
+
+완료 조건: 파일에 줄 수 `5` 만 들어 있어야 하고, 파일 이름이 함께 있으면 안 됩니다.',
+   '`wc -l < /tmp/words.txt` 는 파일 내용을 `wc` 의 입력으로 넣습니다. 이 결과를 `> /tmp/wc_only.txt` 로 저장하세요. `wc -l /tmp/words.txt` 와 출력을 비교해 보세요. 뒤에 파일 이름이 붙는지 다릅니다.',
+   'wc -l < /tmp/words.txt > /tmp/wc_only.txt
+
+# < /tmp/words.txt : 파일 내용을 입력으로 (wc 는 파일 이름을 모른다)
+# > /tmp/wc_only.txt : 결과를 저장',
+   '["sh", "-c", "printf ''%s\\\\n'' ''apple'' ''banana'' ''cherry'' ''date'' ''elder'' > /tmp/words.txt"]',
+   '["sh", "-c", "[ \\"$(tr -d ''[:space:]'' < /tmp/wc_only.txt)\\" = 5 ]"]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 34 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd)
+SELECT 34, 5, '오류 메시지만 따로 파일에 저장하기 (2>)',
+   '명령의 출력은 두 갈래입니다. 정상 결과는 **표준 출력(1번)**, 오류 메시지는 **표준 에러(2번)** 로 나가고, `>` 는 기본적으로 1번만 파일로 보냅니다. `2>` 는 **오류 메시지만** 파일로 보냅니다. 장애 때 오류만 모아 볼 때 씁니다.
+
+`ls /tmp/tt /no/such/dir` 을 실행하되 **오류 메시지만** `/tmp/err.txt` 에 저장하세요. (정상 결과인 `/tmp/tt` 의 파일 목록은 화면에 나와야 합니다)
+
+완료 조건: `/tmp/err.txt` 에 `No such file` 오류가 있고, `/tmp/tt` 의 파일 이름(`marker.txt`)은 없어야 합니다.',
+   '`명령 2> 파일` 은 표준 에러(2번)만 파일로 보냅니다. 정상 출력은 그대로 화면에 나옵니다. (`2>&1` 은 에러를 1번 쪽으로 합치는 것이라, `> 파일 2>&1` 은 정상 출력과 오류를 **모두** 파일로 보냅니다) 실행한 뒤 화면에 `marker.txt` 가 보이는지, 파일에는 오류만 있는지 확인하세요.',
+   'ls /tmp/tt /no/such/dir 2> /tmp/err.txt
+
+# 2> : 표준 에러(오류 메시지)만 파일로
+# 정상 출력(marker.txt 목록)은 화면에 그대로 나옵니다
+cat /tmp/err.txt',
+   '["sh", "-c", "mkdir -p /tmp/tt && touch /tmp/tt/marker.txt"]',
+   '["sh", "-c", "grep -q ''No such file'' /tmp/err.txt && ! grep -q marker.txt /tmp/err.txt"]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 34 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd)
+SELECT 34, 6, '정상 출력과 오류를 한 파일에 합쳐 저장하기 (2>&1)',
+   '리눅스 프로그램은 실행되면 **통로 세 개**를 가집니다. `0`번은 표준 입력(키보드), `1`번은 표준 출력(정상 결과), `2`번은 표준 에러(오류 메시지)입니다. 평소에는 1번과 2번이 모두 화면으로 나와서 구분이 안 되지만 실제로는 서로 다른 통로입니다. 그래서 `>` 는 1번만, `2>` 는 2번만 파일로 보냅니다. **`2>&1` 은 "2번 통로를 1번이 가고 있는 곳으로 보내라"** 는 뜻이고, `&1` 의 `&` 는 `1` 이 파일 이름이 아니라 **1번 통로**를 가리킨다는 표시입니다.
+
+`ls /tmp/tt /no/such/dir` 의 **정상 결과와 오류 메시지를 모두** `/tmp/all.txt` 한 파일에 저장하세요.
+
+완료 조건: `/tmp/all.txt` 에 파일 이름 `marker.txt` 와 `No such file` 오류가 둘 다 있어야 합니다.',
+   '`명령 > 파일 2>&1` 처럼 씁니다. 순서가 중요합니다. 먼저 `> 파일` 로 1번의 목적지를 파일로 바꾸고, 그다음 `2>&1` 로 2번을 1번이 향하는 곳(파일)에 합칩니다. 순서를 바꿔 `2>&1 > 파일` 로 쓰면 2번이 합쳐질 때 1번이 아직 화면을 향하고 있어서 오류가 화면에 남습니다. bash 에서는 `명령 &> 파일` 로 줄여 쓸 수도 있습니다.',
+   'ls /tmp/tt /no/such/dir > /tmp/all.txt 2>&1
+
+# > /tmp/all.txt : 1번(정상 출력)을 파일로
+# 2>&1 : 2번(오류)을 1번이 가는 곳(파일)으로 합침 (순서 중요)
+# bash 단축형: ls /tmp/tt /no/such/dir &> /tmp/all.txt
+cat /tmp/all.txt',
+   '["sh", "-c", "mkdir -p /tmp/tt && touch /tmp/tt/marker.txt"]',
+   '["sh", "-c", "grep -q marker.txt /tmp/all.txt && grep -q ''No such file'' /tmp/all.txt"]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 34 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd)
+SELECT 34, 7, '&& 로 앞 명령이 성공하면 이어서 실행하기',
+   '명령을 한 줄로 이을 때 `;` 는 앞 명령의 **성공·실패와 상관없이** 다음 명령을 실행하지만, `&&` 는 앞 명령이 **성공했을 때만** 다음 명령을 실행합니다. 디렉터리를 만들지 못했는데 그 안에 파일을 만들려고 하면 엉뚱한 곳이 어질러지므로, 순서가 중요한 작업에는 `&&` 를 씁니다.
+
+한 줄로 `/tmp/work` 디렉터리를 만들고, **만들기가 성공하면** 그 안에 `ready.txt` 파일을 만드세요.
+
+완료 조건: `/tmp/work/ready.txt` 가 있어야 합니다.',
+   '`명령A && 명령B` 는 A 가 성공(종료 코드 0)하면 B 를 실행합니다. `mkdir /tmp/work && touch /tmp/work/ready.txt` 처럼 씁니다. (`mkdir` 은 디렉터리 만들기, `touch` 는 빈 파일 만들기) `&&` 대신 `;` 를 쓰면 mkdir 이 실패해도 touch 가 실행됩니다.',
+   'mkdir /tmp/work && touch /tmp/work/ready.txt
+
+# && : 앞 명령(mkdir)이 성공했을 때만 뒤 명령(touch)을 실행
+# ; 는 앞 명령의 결과와 상관없이 다음 명령을 실행',
+   NULL,
+   '["sh", "-c", "[ -f /tmp/work/ready.txt ]"]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 34 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd)
+SELECT 34, 8, '|| 로 앞 명령이 실패했을 때만 실행하기',
+   '`||` 는 `&&` 의 반대로, 앞 명령이 **실패했을 때만** 다음 명령을 실행합니다. "확인해 보고 없으면 처리하라"는 형태에 씁니다. (성공하면 뒤 명령은 실행되지 않습니다)
+
+`/tmp/status.txt` 에는 현재 상태가 적혀 있습니다. 한 줄로, **`done` 이라는 글자가 없으면** `/tmp/action.txt` 에 `retry` 를 쓰세요.
+
+완료 조건: `/tmp/action.txt` 에 `retry` 가 있어야 합니다.',
+   '`grep -q done 파일` 은 `done` 이 있으면 성공(0), 없으면 실패(1)를 종료 코드로 남깁니다. (`-q` 는 화면에 출력하지 않고 종료 코드만 남기는 옵션) 이어서 `|| echo retry > /tmp/action.txt` 를 붙이면 grep 이 실패했을 때만 실행됩니다. 전체: `grep -q done /tmp/status.txt || echo retry > /tmp/action.txt`',
+   'grep -q done /tmp/status.txt || echo retry > /tmp/action.txt
+
+# grep -q done : done 이 있으면 성공, 없으면 실패
+# || : 앞 명령이 실패했을 때만 뒤 명령을 실행',
+   '["sh", "-c", "echo running > /tmp/status.txt"]',
+   '["sh", "-c", "[ \\"$(tr -d ''[:space:]'' < /tmp/action.txt)\\" = retry ]"]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 34 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation)
+SELECT 34, 9, '2>1 이라고 쓰면 생기는 일로 통로 번호 이해하기',
+   '리눅스 프로그램에는 `0`번(입력), `1`번(정상 출력), `2`번(오류 메시지) 통로가 있습니다. 오류를 파일로 보낼 때 `2>` 를 쓰는 건 알고 있는데, `2>&1` 을 `2>1` 로 잘못 쓰면 어떻게 될까요?
+
+터미널에서 `cd /tmp` 로 이동한 뒤 `ls /no/such/dir 2>1` 을 실행하세요. 화면에는 오류가 나오지 않았고, `ls -l /tmp` 를 보면 `1` 이라는 **파일**이 생겼습니다. 왜 이런 일이 생겼는지 고르세요.',
+   '`>` 뒤에 오는 것은 기본적으로 **파일 이름**입니다. 통로 번호를 가리키려면 앞에 `&` 를 붙여 `&1` 로 씁니다. `cat /tmp/1` 로 그 파일 안에 무엇이 들어 있는지 확인해 보세요.',
+   NULL,
+   NULL,
+   '[]',
+   'choice',
+   '["`2>1` 은 오류(2번)를 1번 통로로 보내라는 뜻이라 화면에 나오지 않는다", "`2>1` 은 오류(2번)를 `1` 이라는 **이름의 파일**로 보내라는 뜻이다. 1번 통로로 보내려면 `&` 를 붙여 `2>&1` 로 써야 한다", "`1` 은 `ls` 가 만드는 파일 크기를 나타낸다", "`ls` 에 `1` 이라는 파일을 만드는 옵션이 있어서"]',
+   1,
+   '정답은 **B** 입니다. `ls /no/such/dir 2>1` 을 실행하면 오류 메시지 `No such file or directory` 가 `1` 이라는 이름의 파일에 저장됩니다. `cat /tmp/1` 로 확인할 수 있습니다.
+
+**원리:** 파일 디스크립터(통로 번호) `0`(표준 입력), `1`(표준 출력), `2`(표준 에러)는 프로그램이 시작될 때 열려 있는 세 개의 입출력 통로입니다. 리다이렉션 `>` 는 통로의 목적지를 바꾸는 기호이고, 목적지로 쓴 `1` 은 **파일 이름**으로 해석됩니다. "통로 1번"을 가리키려면 `&1` 처럼 `&` 를 붙여야 합니다. 그래서 정상 출력과 오류를 한 곳에 모을 때는 `명령 > 파일 2>&1` 이라고 씁니다.
+
+- A 파일이 아니라 1번 통로로 가려면 `&1` 이어야 합니다. 이 명령은 1번 통로로 보내지 않았고 `1` 파일에 저장했습니다.
+- C 파일 크기와 무관합니다.
+- D `ls` 에는 그런 옵션이 없습니다. 리다이렉션을 해석한 쉘이 파일을 만듭니다.
+
+확인: `cd /tmp; ls /no/such/dir 2>1; cat /tmp/1`'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 34 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation)
+SELECT 34, 10, '파이프와 세미콜론(;)의 차이 확인하기',
+   '`/tmp/g` 에는 `.txt` 파일 3개가 있습니다. 아래 명령들은 모두 `ls` 와 `wc -l` 을 쓰지만 연결 기호가 다릅니다. 터미널에서 직접 실행해서(입력을 기다리며 멈추면 `Ctrl+D` 로 끝냅니다) 결과를 비교하고, **`.txt` 파일 개수 `3` 을 출력하는 명령**을 고르세요.',
+   '`A | B` 는 A 의 **출력**이 B 의 **입력**이 됩니다. `A ; B` 와 `A && B` 는 A 가 끝난 뒤 B 를 **따로** 실행할 뿐 A 의 출력을 B 에게 넘기지 않습니다. 입력을 못 받은 `wc -l` 은 키보드 입력을 기다리며 멈춥니다. 멈추면 `Ctrl+D`(입력 끝)로 끝내세요.',
+   NULL,
+   '["sh", "-c", "mkdir -p /tmp/g && touch /tmp/g/a.txt /tmp/g/b.txt /tmp/g/c.txt /tmp/g/d.log"]',
+   '[]',
+   'choice',
+   '["ls /tmp/g/*.txt ; wc -l", "ls /tmp/g/*.txt | wc -l", "ls /tmp/g/*.txt && wc -l", "ls /tmp/g/*.txt > wc -l"]',
+   1,
+   '정답은 **B `ls /tmp/g/*.txt | wc -l`** 입니다. `ls` 가 출력한 파일 이름 3줄이 파이프를 지나 `wc -l` 의 입력이 되어 `3` 이 출력됩니다.
+
+**원리:** 파이프(`|`)는 앞 명령의 **표준 출력**을 뒤 명령의 **표준 입력**에 직접 연결합니다. 그래서 `wc -l` 은 키보드가 아니라 `ls` 의 결과를 읽습니다. `;` 와 `&&` 는 명령을 **순서대로 따로** 실행하는 기호일 뿐 데이터를 전달하지 않습니다.
+
+- A `;` : `ls` 가 파일 이름을 화면에 출력하고 끝난 뒤, `wc -l` 은 입력을 받지 못해 키보드 입력을 기다리며 멈춥니다.
+- C `&&` : `ls` 가 성공하면 `wc -l` 이 실행되지만 `ls` 의 출력은 전달되지 않아 마찬가지로 입력을 기다립니다.
+- D `>` : `>` 는 출력을 **파일**로 보냅니다. `wc` 라는 이름의 파일에 `ls` 결과를 쓰고(`-l` 은 `ls` 의 인자), 개수를 세지 않습니다.
+
+확인: `ls /tmp/g/*.txt | wc -l`'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 34 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation)
+SELECT 34, 11, 'yes | head 가 끝나는 이유 이해하기',
+   '`yes` 는 `y` 라는 글자를 **끝없이** 출력하는 명령입니다. 그런데 `yes | head -n 3` 은 `y` 를 3줄만 출력하고 **스스로 끝납니다.** 터미널에서 `yes | head -n 3` 을 실행해 확인해 보세요. (`yes` 만 실행하면 끝나지 않으니 `Ctrl+C` 로 끝내세요)
+
+`yes` 가 끝없이 출력하는 명령인데도 이 한 줄이 끝나는 **이유**를 고르세요.',
+   '파이프로 이어진 명령들은 하나가 끝나길 기다렸다가 다음이 시작되는 것이 아니라 **동시에 실행**됩니다. `head -n 3` 은 3줄을 읽으면 어떻게 될까요? 그 뒤 `yes` 가 출력하려 하면 어떻게 될지 생각해 보세요.',
+   NULL,
+   NULL,
+   '[]',
+   'choice',
+   '["`yes` 가 3줄만 출력하도록 만들어져 있어서", "`head` 가 3줄을 읽고 끝나면 파이프가 닫혀서, 출력하려던 `yes` 도 함께 종료된다", "파이프가 자동으로 출력을 3줄로 잘라서", "터미널이 출력이 길어지면 명령을 멈춰서"]',
+   1,
+   '정답은 **B `head` 가 3줄을 읽고 끝나면 파이프가 닫혀서, 출력하려던 `yes` 도 함께 종료된다** 입니다.
+
+**원리:** 파이프로 연결된 명령들은 **동시에** 실행되고, 데이터는 흐르는 대로 전달됩니다(스트림). `head -n 3` 이 3줄을 받고 종료하면 파이프의 읽는 쪽이 닫힙니다. 그 상태에서 `yes` 가 계속 쓰려고 하면 커널이 `SIGPIPE` 시그널을 보내 `yes` 를 종료시킵니다. 그래서 끝없는 출력도 `head` 로 앞부분만 보는 용도로 안전하게 쓸 수 있습니다. (큰 로그 파일에서 앞부분만 볼 때 `cat 큰파일 | head` 가 끝까지 읽지 않는 이유도 같습니다)
+
+- A `yes` 는 계속 출력하도록 만들어진 명령입니다. 횟수 제한이 없습니다.
+- C 파이프는 데이터를 자르지 않고 전달만 합니다. 줄을 3개로 정하는 건 `head -n 3` 입니다.
+- D 터미널은 출력 길이를 이유로 명령을 멈추지 않습니다. (`yes` 만 실행하면 끝없이 나옵니다)
+
+확인: `yes | head -n 3`'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 34 AND order_index = 11);
+
+UPDATE quest_set SET display_order = 35 WHERE id = 34;

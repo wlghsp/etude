@@ -36,7 +36,8 @@ const asArray = (raw: unknown): string[] | null => (raw == null ? null : typeof 
 
 async function loadQuests(setId: number): Promise<VerifyQuest[]> {
     const [rows] = await db.query<any[]>(
-        'SELECT order_index, title, setup_cmd, grade_cmd FROM quest WHERE quest_set_id = ? ORDER BY order_index',
+        // 객관식(kind='choice')은 grade_cmd 가 없고 정답을 서버가 판정하므로 verify:quiz 가 따로 검증한다
+        "SELECT order_index, title, setup_cmd, grade_cmd FROM quest WHERE quest_set_id = ? AND kind = 'terminal' ORDER BY order_index",
         [setId],
     )
     return rows.map((r) => ({ orderIndex: r.order_index, title: r.title, setupCmd: asArray(r.setup_cmd), gradeCmd: asArray(r.grade_cmd)! }))

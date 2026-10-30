@@ -1,0 +1,13 @@
+{
+  "setId": 34,
+  "answers": {
+    "1": "ls /tmp/g/*.txt | wc -l > /tmp/txt_count.txt",
+    "2": "ps aux | grep jobx | grep -v grep | wc -l > /tmp/job_count.txt",
+    "3": "echo second >> /tmp/log.txt",
+    "4": "wc -l < /tmp/words.txt > /tmp/wc_only.txt",
+    "5": "ls /tmp/tt /no/such/dir 2> /tmp/err.txt",
+    "6": "ls /tmp/tt /no/such/dir > /tmp/all.txt 2>&1",
+    "7": "mkdir /tmp/work && touch /tmp/work/ready.txt",
+    "8": "grep -q done /tmp/status.txt || echo retry > /tmp/action.txt"
+  }
+}

@@ -32,3 +32,7 @@ UPDATE quest_set SET display_order = 300 WHERE id = 14;
 UPDATE quest_set SET display_order = 310 WHERE id = 23;
 UPDATE quest_set SET display_order = 320 WHERE id = 31;
 UPDATE quest_set SET display_order = 330 WHERE id = 29;
+UPDATE quest_set SET display_order = 35 WHERE id = 34;
+UPDATE quest_set SET display_order = 95 WHERE id = 35;
+UPDATE quest_set SET display_order = 115 WHERE id = 36;
+UPDATE quest_set SET display_order = 285 WHERE id = 37;

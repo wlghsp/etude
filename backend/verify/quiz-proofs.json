@@ -355,5 +355,110 @@
     "image": "host",
     "cmd": "NS=qv31-8-1; trap 'kubectl delete ns $NS --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NS --ignore-not-found >/dev/null 2>&1; kubectl create ns $NS >/dev/null && kubectl run shop --image=nginx --env=DB_HOST=mysql.prod.svc --env=DB_PORT=3306 -n $NS >/dev/null 2>&1; kubectl wait --for=condition=Ready pod/shop -n $NS --timeout=90s >/dev/null 2>&1; true ; kubectl exec shop -n $NS -- env | grep '^DB_HOST'",
     "expect": "DB_HOST=mysql.prod.svc"
+  },
+  {
+    "set": 34,
+    "order": 9,
+    "image": "etude-linux",
+    "cmd": "cd /tmp; ls /no/such/dir 2>1; cat /tmp/1",
+    "expect": "No such file"
+  },
+  {
+    "set": 34,
+    "order": 10,
+    "image": "etude-linux",
+    "cmd": "mkdir -p /tmp/g && touch /tmp/g/a.txt /tmp/g/b.txt /tmp/g/c.txt /tmp/g/d.log; (ls /tmp/g/*.txt ; wc -l) < /dev/null | tail -n 1",
+    "expect": "0"
+  },
+  {
+    "set": 34,
+    "order": 10,
+    "image": "etude-linux",
+    "cmd": "mkdir -p /tmp/g && touch /tmp/g/a.txt /tmp/g/b.txt /tmp/g/c.txt /tmp/g/d.log; ls /tmp/g/*.txt | wc -l",
+    "expect": "3"
+  },
+  {
+    "set": 34,
+    "order": 11,
+    "image": "etude-linux",
+    "cmd": "timeout 5 sh -c 'yes | head -n 3 >/dev/null'; echo rc=$?",
+    "expect": "rc=0"
+  },
+  {
+    "set": 34,
+    "order": 11,
+    "image": "etude-linux",
+    "cmd": "yes | head -n 3 | wc -l",
+    "expect": "3"
+  },
+  {
+    "set": 35,
+    "order": 9,
+    "image": "etude-linux",
+    "cmd": "mkdir -p /tmp/sp && touch '/tmp/sp/my file.txt' /tmp/sp/b.txt; cd /tmp/sp; n=0; for f in $(ls); do n=$((n+1)); done; echo n=$n",
+    "expect": "n=3"
+  },
+  {
+    "set": 35,
+    "order": 9,
+    "image": "etude-linux",
+    "cmd": "mkdir -p /tmp/sp && touch '/tmp/sp/my file.txt' /tmp/sp/b.txt; cd /tmp/sp; n=0; for f in *; do n=$((n+1)); done; echo n=$n",
+    "expect": "n=2"
+  },
+  {
+    "set": 35,
+    "order": 10,
+    "image": "etude-linux",
+    "cmd": "mkdir -p /tmp/g && touch /tmp/g/a.txt /tmp/g/b.txt /tmp/g/c.txt /tmp/g/d.log; for f in /tmp/g/*.txt; do echo $f; done | wc -l",
+    "expect": "3"
+  },
+  {
+    "set": 36,
+    "order": 4,
+    "image": "etude-linux",
+    "cmd": "printf '10.0.0.40 cache\\n10.0.0.41 cache\\n' >> /etc/hosts; getent hosts cache | wc -l",
+    "expect": "2"
+  },
+  {
+    "set": 36,
+    "order": 7,
+    "image": "etude-linux",
+    "cmd": "echo '127.0.0.1 appsrv' >> /etc/hosts; curl -sS -o /dev/null http://ghost:9100 2>&1 | head -n 1",
+    "expect": "Could not resolve host"
+  },
+  {
+    "set": 36,
+    "order": 7,
+    "image": "etude-linux",
+    "cmd": "echo '127.0.0.1 appsrv' >> /etc/hosts; curl -sS -o /dev/null http://appsrv:9100 2>&1 | head -n 1",
+    "expect": "Connection refused"
+  },
+  {
+    "set": 36,
+    "order": 8,
+    "image": "etude-linux",
+    "cmd": "getent hosts localhost | head -n 1",
+    "expect": "localhost"
+  },
+  {
+    "set": 37,
+    "order": 6,
+    "image": "host",
+    "cmd": "NSA=qv37-a$$; NSB=qv37-b$$; trap 'kubectl delete ns $NSA $NSB --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NSA $NSB --ignore-not-found >/dev/null 2>&1; kubectl create ns $NSA >/dev/null && kubectl create ns $NSB >/dev/null && kubectl create deployment db --image=nginx -n $NSA >/dev/null && kubectl expose deployment db --port=80 -n $NSA >/dev/null && kubectl rollout status deployment/db -n $NSA --timeout=90s >/dev/null && kubectl run client --image=busybox -n $NSB --command -- sleep 3600 >/dev/null && kubectl wait --for=condition=Ready pod/client -n $NSB --timeout=90s >/dev/null; sleep 4; kubectl exec client -n $NSB -- wget -T 5 -qO- http://db 2>&1 | head -n 1",
+    "expect": "bad address"
+  },
+  {
+    "set": 37,
+    "order": 6,
+    "image": "host",
+    "cmd": "NSA=qv37-a$$; NSB=qv37-b$$; trap 'kubectl delete ns $NSA $NSB --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NSA $NSB --ignore-not-found >/dev/null 2>&1; kubectl create ns $NSA >/dev/null && kubectl create ns $NSB >/dev/null && kubectl create deployment db --image=nginx -n $NSA >/dev/null && kubectl expose deployment db --port=80 -n $NSA >/dev/null && kubectl rollout status deployment/db -n $NSA --timeout=90s >/dev/null && kubectl run client --image=busybox -n $NSB --command -- sleep 3600 >/dev/null && kubectl wait --for=condition=Ready pod/client -n $NSB --timeout=90s >/dev/null; sleep 4; kubectl exec client -n $NSB -- wget -T 8 -qO- http://db.$NSA 2>&1 | head -n 4",
+    "expect": "Welcome to nginx"
+  },
+  {
+    "set": 37,
+    "order": 8,
+    "image": "host",
+    "cmd": "NS=qv37-c$$; trap 'kubectl delete ns $NS --wait=false >/dev/null 2>&1' EXIT; kubectl delete ns $NS --ignore-not-found >/dev/null 2>&1; kubectl create ns $NS >/dev/null && kubectl create deployment web --image=nginx -n $NS >/dev/null && kubectl expose deployment web --name=web-svc --port=8080 --target-port=80 --type=NodePort -n $NS >/dev/null; kubectl get svc web-svc -n $NS -o jsonpath='{.spec.ports[0].port}/{.spec.ports[0].targetPort}'",
+    "expect": "8080/80"
   }
 ]
