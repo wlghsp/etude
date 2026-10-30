@@ -1,0 +1,73 @@
+-- 미들웨어 세트 103. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set103.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 103, 'Prometheus 알림 기본기: up, 알림 규칙, Alertmanager', 'Prometheus 로 서버를 감시하고 알림을 받는 기본기를 익힙니다. up 메트릭 읽기, 알림 규칙(expr, for, severity), 알림이 전달되는 흐름, 새 타깃 추가 절차, 히스토그램과 p95, Alertmanager 의 그룹핑·silence·라우팅을 빈칸·순서·객관식과 파일 실습으로 다룹니다.', 'linux', '미들웨어'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 103);
+UPDATE quest_set SET display_order = 523, unit_id = (SELECT id FROM unit WHERE id = 18), icon = '🔔' WHERE id = 103;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 103, 1, '알림 규칙 채우기', '타깃(서버)이 **응답하지 않을 때** 알림을 보내는 규칙입니다. 조건은 `up` 이 **0** 인 것, **5분 동안 계속**될 때만 발화, 심각도는 **critical** 입니다. 빈칸을 채우세요.', '`up` 은 수집이 성공하면 1, 실패하면 0 입니다. 지속 시간은 `for` 에 씁니다.', NULL, NULL, '[]', 'fill', '["0", "1", "5m", "critical", "warning"]', NULL, '`up == 0` 은 "마지막 수집이 실패"라는 뜻입니다. `for: 5m` 은 조건이 5분 이어져야 발화해 일시적 실패에는 울리지 않습니다. `severity` 레이블은 Alertmanager 가 알림을 누구에게 보낼지 나누는 기준으로 자주 씁니다.', '[0, 2, 3]', '- alert: InstanceDown
+  expr: up == {0}
+  for: {1}
+  labels:
+    severity: {2}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 103 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 103, 2, '알림이 사람에게 전달되는 흐름', 'Prometheus 에서 규칙 조건이 충족된 뒤 담당자 메신저로 알림이 가기까지의 흐름을 **앞에서 뒤**로 놓으세요.', '평가 → 대기(pending) → 발화(firing) → 전달 서버 → 수신자 순서입니다.', NULL, NULL, '[]', 'order', '["Alertmanager 가 알림을 묶고(group) 중복·억제를 처리해 수신자(메일·메신저)에게 보낸다", "Prometheus 가 주기적으로 규칙을 평가해 조건이 처음 참이 되면 `pending` 이 된다", "조건이 `for` 시간 동안 계속되면 `firing` 이 되고 Alertmanager 로 전송된다", "조건이 풀리면 `resolved` 로 해소 알림이 간다"]', NULL, '**평가(pending) → for 경과(firing) → Alertmanager(그룹·억제·라우팅) → 수신자 → 해소(resolved)** 입니다. Prometheus 는 알림을 "만들고", Alertmanager 가 "누구에게 어떻게 보낼지"를 책임집니다.', '[1, 2, 0, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 103 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 103, 3, '새 서버를 모니터링에 추가하는 순서', '새 서버에 exporter 를 띄웠습니다. Prometheus 가 이 서버를 수집하게 만드는 흐름을 **앞에서 뒤**로 놓으세요.', '먼저 서버가 메트릭을 내놓는지 보고, 설정을 고치고, 검사하고, 반영하고, 확인합니다.', NULL, NULL, '[]', 'order', '["설정을 다시 읽게 한다 (reload)", "`curl` 로 exporter 의 `/metrics` 가 응답하는지 확인한다", "`scrape_configs` 에 새 job 과 `targets` 를 추가한다", "Targets 화면이나 `up` 값으로 수집 성공(`up == 1`)을 확인한다", "`promtool check config` 로 설정 문법을 검사한다"]', NULL, '**/metrics 확인 → 설정 추가 → 검사 → reload → up 확인** 입니다. 설정 오류를 반영 전에 `promtool` 로 거르고, 마지막에는 반드시 실제로 수집되는지(`up == 1`) 눈으로 확인합니다.', '[1, 2, 4, 0, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 103 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 103, 4, 'up 메트릭의 의미', '`up{job="node", instance="10.0.0.5:9100"} 0` 이 보입니다. 올바른 해석은 무엇일까요?', '`up` 은 수집 자체의 성공 여부입니다.', NULL, NULL, '[]', 'choice', '["CPU 사용률이 0 이다", "타깃이 정상적으로 유휴 상태이다", "Prometheus 가 그 타깃을 마지막으로 수집하는 데 **실패**했다 (타깃 다운, 포트·방화벽, 인증, 타임아웃 등)", "그 job 의 설정이 삭제되었다"]', 2, '`up` 은 Prometheus 가 스스로 만들어 주는 메트릭이라 exporter 가 죽어도 `0` 으로 남습니다. 그래서 가장 기본적인 가용성 알림이 `up == 0` 입니다. 실패 사유는 Targets 화면의 Error 열에서 확인합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 103 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 103, 5, '`for` 가 하는 일', '알림 규칙에 `for: 10m` 이 있습니다. 조건이 한 번 참이 되었다가 3분 뒤 거짓이 되면 어떻게 될까요?', '`for` 는 조건이 이어져야 하는 시간입니다.', NULL, NULL, '[]', 'choice', '["3분 시점에 즉시 알림이 간다", "10분 뒤 무조건 알림이 간다", "규칙이 삭제된다", "`pending` 이었다가 `for` 시간을 채우기 전에 풀렸으므로 알림이 **발화하지 않고** 사라진다"]', 3, '`for` 는 순간적인 스파이크로 새벽에 깨는 일을 막습니다. 너무 길면 장애 인지가 늦어지므로 서비스 특성에 맞춰 정합니다(가용성 알림은 보통 몇 분).', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 103 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 103, 6, '평균 대신 p95 를 보는 이유', '응답 시간 평균은 120ms 로 정상인데 사용자들은 "가끔 매우 느리다"고 합니다. 무엇을 봐야 할까요?', '평균은 극단적으로 느린 소수의 요청을 가립니다.', NULL, NULL, '[]', 'choice', '["평균을 더 짧은 구간으로 계산한다", "히스토그램 메트릭에 `histogram_quantile(0.95, sum by (le) (rate(요청시간_bucket[5m])))` 를 써서 **p95·p99 같은 분위수**를 본다", "메모리 사용량만 본다", "요청 수의 합계만 본다"]', 1, '평균은 대부분의 빠른 요청에 묻혀 느린 꼬리를 숨깁니다. p95 는 "95% 의 요청이 이 시간 안에 끝난다"는 뜻입니다. 분위수는 `_bucket` 의 누적 개수를 근거로 근사값을 계산하므로 버킷 경계 설정이 중요합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 103 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 103, 7, 'Alertmanager 의 그룹핑', '네트워크 장애로 서버 200대에서 `InstanceDown` 이 **동시에** 발화했습니다. 담당자의 메신저에 알림이 200개 쏟아지지 않게 하려면 무엇을 설정할까요?', '비슷한 알림을 한 번에 묶어 보냅니다.', NULL, NULL, '[]', 'choice', '["모든 알림 규칙을 삭제한다", "Prometheus 의 scrape 간격을 늘린다", "Alertmanager 의 `group_by`(예: `alertname`)와 `group_wait` 로 같은 종류의 알림을 **하나로 묶어** 보낸다", "서버 이름을 짧게 바꾼다"]', 2, '그룹핑은 알림 폭주를 막고 한눈에 "무슨 일이 크게 벌어졌는지" 보게 합니다. 상위 원인이 있을 때 하위 알림을 막는 `inhibit_rules` 도 함께 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 103 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 103, 8, '점검 작업 중 알림 끄기', '서버 한 대를 1시간 점검하는 동안 그 서버의 알림이 울리지 않게 하고 싶습니다. 가장 알맞은 방법은 무엇일까요?', '알림 규칙을 지우면 점검 뒤 되돌리는 것을 잊기 쉽습니다.', NULL, NULL, '[]', 'choice', '["Alertmanager 에서 해당 서버 레이블로 **silence**(기간 한정 음소거)를 만든다", "알림 규칙 파일을 삭제한다", "Prometheus 를 재설치한다", "메신저 앱을 종료한다"]', 0, 'silence 는 만료 시간이 있어 끝나면 자동으로 알림이 다시 살아납니다. 누가 왜 만들었는지 코멘트를 남기는 것이 좋습니다. 규칙을 지우면 점검이 끝나도 계속 감시되지 않는 사고가 생깁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 103 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 103, 9, '바로 울리는 알림 규칙에 for 달기', '`/tmp/rules.yml` 의 `InstanceDown` 규칙에는 `for` 가 없어 **한 번만 수집에 실패해도 즉시** 알림이 갑니다. `expr` 아래에 **`for: 5m`** 을 같은 들여쓰기로 추가하세요.', '`expr:` 줄과 **같은 들여쓰기(8칸)** 로 `for: 5m` 을 넣어야 합니다. 편집기나 `sed` 모두 가능합니다.\\n확인: `cat /tmp/rules.yml`', 'cat /tmp/rules.yml
+sed -i ''s/^        expr: up == 0$/        expr: up == 0\\n        for: 5m/'' /tmp/rules.yml
+cat /tmp/rules.yml
+
+# YAML 은 들여쓰기가 구조다: for 는 expr 와 같은 깊이여야 한다', '["sh", "-c", "printf ''%s\\\\n'' ''groups:'' ''  - name: basic'' ''    rules:'' ''      - alert: InstanceDown'' ''        expr: up == 0'' ''        labels:'' ''          severity: critical'' > /tmp/rules.yml"]', '["sh", "-c", "( grep -qx ''        for: 5m'' /tmp/rules.yml ) && ( grep -qx ''        expr: up == 0'' /tmp/rules.yml ) && ( grep -A1 ''        expr: up == 0'' /tmp/rules.yml | grep -q ''for: 5m'' )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "for: 5m 이 expr 와 같은 들여쓰기로 있다", "cmd": ["sh", "-c", "grep -qx ''        for: 5m'' /tmp/rules.yml"]}, {"label": "expr 가 그대로다", "cmd": ["sh", "-c", "grep -qx ''        expr: up == 0'' /tmp/rules.yml"]}, {"label": "for 가 expr 바로 다음 줄이다", "cmd": ["sh", "-c", "grep -A1 ''        expr: up == 0'' /tmp/rules.yml | grep -q ''for: 5m''"]}]', '[{"title": "Prometheus 공식 문서", "url": "https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 103 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 103, 10, 'up 값에서 죽은 타깃 찾기', '`/tmp/up.txt` 는 Prometheus 의 `up` 메트릭을 텍스트로 뽑은 것입니다. **값이 0 인 타깃의 `instance` 주소**를 한 줄에 하나씩 **`/tmp/down.txt`** 에 저장하세요.', '값은 줄의 마지막 필드입니다. `grep` 이나 `awk` 로 0 인 줄을 고르고, `sed` 로 `instance="…"` 안의 값만 뽑으세요.\\n확인: `cat /tmp/up.txt`', 'cat /tmp/up.txt
+awk ''$NF==0'' /tmp/up.txt | sed ''s/.*instance="\\([^"]*\\)".*/\\1/'' > /tmp/down.txt
+cat /tmp/down.txt
+
+# up 0 = 수집 실패, 마지막 필드가 값', '["sh", "-c", "printf ''%s\\\\n'' ''up{job=\\"node\\",instance=\\"10.0.0.5:9100\\"} 1'' ''up{job=\\"node\\",instance=\\"10.0.0.6:9100\\"} 0'' ''up{job=\\"db\\",instance=\\"10.0.0.7:9104\\"} 1'' ''up{job=\\"db\\",instance=\\"10.0.0.8:9104\\"} 0'' > /tmp/up.txt"]', '["sh", "-c", "( [ -s /tmp/down.txt ] ) && ( [ \\"$(sort /tmp/down.txt | tr \\"\\\\n\\" \\" \\")\\" = \\"10.0.0.6:9100 10.0.0.8:9104 \\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일이 있다", "cmd": ["sh", "-c", "[ -s /tmp/down.txt ]"]}, {"label": "죽은 타깃 2개가 정확히 들어 있다", "cmd": ["sh", "-c", "[ \\"$(sort /tmp/down.txt | tr \\"\\\\n\\" \\" \\")\\" = \\"10.0.0.6:9100 10.0.0.8:9104 \\" ]"]}]', '[{"title": "Prometheus 공식 문서", "url": "https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 103 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 103, 11, '히스토그램에서 p95 버킷 찾기', '`/tmp/hist.txt` 는 요청 시간 히스토그램의 누적 버킷입니다(`le` 는 "이 시간 이하"). 전체 요청의 **95% 이상이 포함되는 가장 작은 `le`** 값을 **`/tmp/p95.txt`** 에 저장하세요. (`+Inf` 줄이 전체 개수입니다)', '누적이라 `le` 가 커질수록 값이 커집니다. 전체의 95% 이상이 처음 되는 버킷을 찾으세요.\\n확인: `cat /tmp/hist.txt`', 'cat /tmp/hist.txt
+awk -F''"'' ''{split($3,v," "); if($2=="+Inf"){t=v[2]} else {L[n]=$2; V[n++]=v[2]}} END{for(i=0;i<n;i++) if(V[i]>=t*0.95){print L[i]; exit}}'' /tmp/hist.txt > /tmp/p95.txt
+cat /tmp/p95.txt
+
+# 전체 100 의 95% = 95 → 누적이 처음 95 이상이 되는 le', '["sh", "-c", "printf ''%s\\\\n'' ''req_seconds_bucket{le=\\"0.1\\"} 50'' ''req_seconds_bucket{le=\\"0.5\\"} 90'' ''req_seconds_bucket{le=\\"1\\"} 97'' ''req_seconds_bucket{le=\\"5\\"} 100'' ''req_seconds_bucket{le=\\"+Inf\\"} 100'' > /tmp/hist.txt"]', '["sh", "-c", "( [ -s /tmp/p95.txt ] ) && ( [ \\"$(cat /tmp/p95.txt)\\" = 1 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일이 있다", "cmd": ["sh", "-c", "[ -s /tmp/p95.txt ]"]}, {"label": "p95 버킷이 1 이다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/p95.txt)\\" = 1 ]"]}]', '[{"title": "Prometheus 공식 문서", "url": "https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 103 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 103, 12, 'critical 알림이 엉뚱한 곳으로 갈 때', '`/tmp/alertmanager.yml` 의 라우팅에서 **`severity="critical"` 알림이 기본 수신자(`team-mail`)로** 가고 있습니다. critical 은 **`oncall`** 수신자에게 가도록 고치세요. (기본 수신자는 그대로 둡니다)', '`routes:` 아래 `severity="critical"` 항목의 `receiver` 값만 바꿉니다.\\n확인: `cat /tmp/alertmanager.yml`', 'cat /tmp/alertmanager.yml
+sed -i ''/severity="critical"/{n;s/team-mail/oncall/;}'' /tmp/alertmanager.yml
+cat /tmp/alertmanager.yml
+
+# 자식 route 의 receiver 가 우선하고, 매치되지 않으면 부모의 기본 receiver 로 간다', '["sh", "-c", "printf ''%s\\\\n'' ''route:'' ''  receiver: team-mail'' ''  group_by: [alertname]'' ''  routes:'' ''    - matchers: [severity=\\"critical\\"]'' ''      receiver: team-mail'' ''receivers:'' ''  - name: team-mail'' ''  - name: oncall'' > /tmp/alertmanager.yml"]', '["sh", "-c", "( grep -A1 ''severity=\\"critical\\"'' /tmp/alertmanager.yml | grep -q ''receiver: oncall'' ) && ( grep -qx ''  receiver: team-mail'' /tmp/alertmanager.yml ) && ( grep -qx ''  - name: oncall'' /tmp/alertmanager.yml && grep -qx ''  - name: team-mail'' /tmp/alertmanager.yml )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "critical 라우트의 receiver 가 oncall 이다", "cmd": ["sh", "-c", "grep -A1 ''severity=\\"critical\\"'' /tmp/alertmanager.yml | grep -q ''receiver: oncall''"]}, {"label": "기본 receiver 는 team-mail 그대로다", "cmd": ["sh", "-c", "grep -qx ''  receiver: team-mail'' /tmp/alertmanager.yml"]}, {"label": "receivers 목록이 그대로다", "cmd": ["sh", "-c", "grep -qx ''  - name: oncall'' /tmp/alertmanager.yml && grep -qx ''  - name: team-mail'' /tmp/alertmanager.yml"]}]', '[{"title": "Prometheus 공식 문서", "url": "https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 103 AND order_index = 12);

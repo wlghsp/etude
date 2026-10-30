@@ -1,0 +1,9 @@
+{
+  "setId": 77,
+  "answers": {
+    "10": "ls /proc/self/ns > /tmp/ns.txt\ncat /tmp/ns.txt\n\n# 링크가 가리키는 [번호]가 같으면 같은 네임스페이스에 속한 것이다",
+    "11": "ps -o comm= -p 1 > /tmp/pid1.txt\ncat /tmp/pid1.txt\n\n# 컨테이너에서는 PID 1 이 init 이 아니라 컨테이너를 시작한 첫 프로세스다",
+    "12": "hostname > /tmp/host.txt\ncat /tmp/host.txt\n\n# 보통 컨테이너 ID 의 앞부분이다. 호스트의 이름과 다르다",
+    "13": "cat /sys/fs/cgroup/memory.max > /tmp/mem.txt\ncat /tmp/mem.txt\n\n# docker run --memory=256m 으로 띄우면 268435456 같은 숫자가 보인다"
+  }
+}

@@ -1,0 +1,46 @@
+-- Git 세트 68. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set68.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 19, '미들웨어', '메시징·CDC', 30 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 19);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 68, 'CDC 운영 심화: 양방향 루프 방지, 초기 동기화, 장애 복구', '두 DB 를 서로 동기화하는 양방향 CDC 를 운영할 때 마주치는 문제를 문제로 정리합니다. 무한 루프를 막는 sql_log_bin=0, PK 대역 분리, 초기 동기화 순서, DELETE·tombstone 처리, 커넥터 재시작과 offset 무효화, at-least-once 와 멱등 sink, Galera 와 CDC 의 주의점을 다룹니다.', 'quiz', '미들웨어'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 68);
+UPDATE quest_set SET display_order = 535, unit_id = (SELECT id FROM unit WHERE id = 19), icon = '🔁' WHERE id = 68;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 68, 1, '양방향 CDC 에서 루프가 생기는 이유 알기', '서로 다른 두 DB(A, B)를 CDC 로 **양방향** 동기화하면 어떤 문제가 생길 수 있을까요?', 'Debezium 은 binlog 에 기록된 모든 변경을 읽습니다. sink 가 쓴 변경도 binlog 에 남으면 어떻게 될까요?', NULL, NULL, '[]', 'choice', '["한쪽에서 받은 변경을 DB 에 쓰면 그 쓰기가 다시 binlog 에 남아 반대편으로 되돌아가는 **무한 루프**가 생길 수 있다", "양쪽 DB 의 디스크가 자동으로 합쳐진다", "Kafka 토픽이 자동으로 삭제된다", "Debezium 이 스스로 중지된다"]', 0, 'DB A 에 INSERT → Debezium → Kafka → sink 가 DB B 에 INSERT → DB B 의 binlog → Debezium → ... 이렇게 계속 돕니다. 양방향 구성에서는 sink 가 쓴 변경을 다시 캡처하지 않게 하는 장치가 반드시 필요합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 68 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 68, 2, '루프를 막는 방법 고르기', 'sink 작업을 하는 DB 세션에서만 **binlog 기록을 끄는** 방법으로 루프를 막으려고 합니다. 알맞은 설정은 무엇일까요?', 'Debezium 은 binlog 를 읽습니다. binlog 에 없으면 캡처할 수 없습니다.', NULL, NULL, '[]', 'choice', '["Debezium 의 `database.user.exclude.list` 로 sink 계정을 제외한다 (MariaDB 커넥터에서 공식 지원)", "sink 세션에서 `SET sql_log_bin=0` (이를 위해 sink 계정에 `BINLOG ADMIN` 권한이 필요하다)", "Kafka 의 `acks=0` 으로 바꾼다", "토픽 파티션을 2배로 늘린다"]', 1, 'MySQL 커넥터의 `database.user.exclude.list` 는 Debezium MariaDB 커넥터에서 공식 지원되지 않아 쓸 수 없었고, 세션 단위로 binlog 를 끄는 `sql_log_bin=0` 을 채택했습니다. 다른 세션(정상 사용자 쓰기)에는 영향이 없습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 68 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 68, 3, 'sql_log_bin=0 이 영향을 주는 범위 알기', 'sink 세션에서 `SET sql_log_bin=0` 을 하면 영향 범위는 어디까지일까요?', '"세션 레벨" 설정입니다.', NULL, NULL, '[]', 'choice', '["서버 전체의 모든 쓰기가 binlog 에서 빠진다", "다음 재시작 때까지 모든 세션이 영향을 받는다", "그 **세션의 쓰기만** binlog 에 남지 않는다. 다른 세션의 정상 쓰기는 그대로 기록되고 캡처된다", "복제(replication)가 영구적으로 비활성화된다"]', 2, '세션 변수라서 sink 연결에서만 쓰기가 binlog 에서 빠집니다. 정상 애플리케이션 쓰기는 계속 binlog 에 남아 Debezium 이 캡처합니다. 다만 같은 계정이 의도치 않게 정상 쓰기를 하면 그 변경은 캡처되지 않는다는 점을 알아 두어야 합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 68 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 68, 4, '양방향 PK 충돌을 막는 방법 알기', 'DB A 와 DB B 가 모두 AUTO_INCREMENT 로 PK 를 만들 때 충돌을 막는 방법으로 알맞은 것은 무엇일까요? (예: 한쪽은 홀수, 다른 쪽은 짝수)', '각 DB 가 만드는 번호 대역이 겹치지 않아야 합니다.', NULL, NULL, '[]', 'choice', '["양쪽 모두 같은 offset 을 쓴다", "AUTO_INCREMENT 를 끄고 PK 를 NULL 로 둔다", "DB 이름을 PK 에 문자로 붙인다", "DB 마다 `auto_increment_increment` 와 `auto_increment_offset` 으로 번호 대역을 **미리 갈라 놓는다**"]', 3, 'Galera 의 `wsrep_auto_increment_control=ON` 은 **한 클러스터 안의** 노드 간 충돌만 막습니다. DB 간(양방향 CDC)은 따로 갈라야 합니다. 번호 대역이 겹치지 않으면 두 DB 의 데이터가 한 테이블에 섞여도 PK 충돌이 없고, "홀수 PK = DB A 에서 온 데이터" 같은 구분도 됩니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 68 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 68, 5, 'CDC 를 처음 켜기 전 초기 동기화 순서 놓기', '양쪽 DB 의 데이터를 맞춘 뒤 CDC 를 켜는 안전한 순서를 **앞에서 뒤**로 놓으세요.', '먼저 파이프라인을 물리적으로 끊고 맞추고, 그다음 연결합니다.', NULL, NULL, '[]', 'order', '["Debezium 을 다시 켜고 반대편 실사용 데이터를 역방향으로 동기화·검증한다", "양쪽 Debezium 을 모두 끈 상태(완전 격리)에서 덤프를 이관해 베이스를 맞춘다", "평시 양방향 실시간 동기화로 운영한다"]', NULL, '**1) Debezium OFF 상태에서 덤프 이관 → 2) Debezium ON 후 역싱크·검증 → 3) 평시 운영** 입니다. CDC 를 켠 채로 대량 덤프를 넣으면 그 INSERT 가 곧바로 반대편으로 복제되어 충돌이나 루프가 생길 수 있어서, 파이프라인을 끊은 진공 상태에서 맞춥니다.', '[1, 0, 2]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 68 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 68, 6, 'DELETE 이벤트 처리 알기', 'Debezium 으로 DB 의 행이 **삭제**되었을 때 Kafka 로 흘러가는 것으로 알맞은 것은 무엇일까요?', '삭제도 변경 이벤트이고, 값이 없는 마커(tombstone)가 따라올 수 있습니다.', NULL, NULL, '[]', 'choice', '["삭제를 나타내는 변경 이벤트(예: 삭제 표시 필드)가 흘러가고, 설정에 따라 값이 비어 있는 **tombstone** 레코드가 이어진다. sink 는 이를 보고 대상 DB 의 행을 지워야 한다", "삭제는 이벤트로 흐르지 않고 사라진다", "삭제된 행의 전체 테이블이 다시 전송된다", "Kafka 가 자동으로 대상 DB 에서 삭제한다"]', 0, '삭제도 캡처되어야 반대편이 같은 상태가 됩니다. Debezium 은 삭제 이벤트와 (Kafka 의 compact 토픽 정리를 위한) tombstone 을 보낼 수 있으므로, sink(예: Logstash)에서 삭제 표시 조건을 판단해 DELETE 를 실행하고 tombstone(빈 값)은 무시하는 처리가 필요합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 68 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 68, 7, 'Debezium 커넥터가 FAILED 일 때', '커넥터의 task 상태가 `FAILED` 입니다. 가장 먼저 시도할 것은 무엇일까요?', '가장 가벼운 조치부터 순서대로 합니다.', NULL, NULL, '[]', 'choice', '["곧바로 Kafka 토픽을 모두 삭제한다", "커넥터 상태·로그를 확인하고 **커넥터를 재시작**한다. 그래도 안 되면 재등록하고, binlog 가 이미 삭제되어 offset 이 무효인 경우에만 offset 을 초기화(스냅샷 재실행)한다", "곧바로 DB 를 재부팅한다", "아무것도 하지 않고 기다린다"]', 1, '순서는 **상태 확인 → 재시작 → 재등록 → (최후) offset 초기화**입니다. 초기화하면 스냅샷부터 다시 읽어 부하와 중복이 커지므로, binlog purge 로 offset 이 가리키는 위치가 사라진 경우처럼 꼭 필요할 때만 합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 68 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 68, 8, 'offset 이 무효가 되는 경우 알기', 'Debezium 이 마지막으로 읽은 binlog 위치가 이미 **purge 되어 사라졌습니다.** 무엇이 문제이고 어떻게 해결할까요?', 'binlog 는 영원히 보관되지 않습니다.', NULL, NULL, '[]', 'choice', '["Kafka 가 binlog 를 대신 복원해 준다", "offset 을 `latest` 로 바꾸면 자동으로 전부 복구된다", "저장된 offset 이 가리키는 binlog 가 없어서 이어 읽을 수 없다. 커넥터를 **삭제 후 재등록**해 스냅샷부터 다시 시작해야 한다 (그 전에 중복·부하를 고려)", "아무 영향이 없다"]', 2, 'Debezium 은 offset(binlog 파일과 위치)을 저장해 두었다가 이어서 읽습니다. DB 쪽 binlog 보관 기간이 Debezium 중단 기간보다 짧으면 위치를 잃습니다. 그래서 binlog 보관 기간을 커넥터 장애 복구 시간보다 길게 두는 운영이 중요합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 68 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 68, 9, 'at-least-once 에서 중복 처리 알기', 'CDC 파이프라인(Debezium → Kafka → sink)은 보통 **at-least-once** 입니다. 같은 변경이 두 번 도착해도 대상 DB 가 올바르게 유지되려면 sink 는 어떻게 만들어야 할까요?', '같은 요청을 몇 번 해도 결과가 같게(멱등) 만듭니다.', NULL, NULL, '[]', 'choice', '["중복을 막기 위해 Kafka 를 사용하지 않는다", "같은 이벤트가 두 번 오면 오류로 파이프라인을 중단한다", "이벤트가 한 번만 오도록 네트워크를 끊는다", "INSERT 대신 **upsert**(있으면 갱신) 같은 **멱등** 쓰기로 만들어서, 재전송으로 같은 이벤트가 다시 와도 결과가 같게 한다"]', 3, '응답 유실로 인한 재전송은 막을 수 없어서 중복은 생깁니다. 유실 없는 대신 중복을 허용하는 at-least-once 에서는 sink 가 멱등이어야 합니다. 삭제는 이미 없는 행을 또 지워도 오류가 아니도록 처리합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 68 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 68, 10, 'Galera 와 CDC 의 주의점 알기', 'Galera Cluster 에서 CDC 를 쓸 때 일반 단일 DB 와 달리 **추가로 고려할 것**으로 알맞은 것은 무엇일까요?', '모든 노드가 각자 binlog 를 가집니다.', NULL, NULL, '[]', 'choice', '["어느 노드의 binlog 를 읽을지, 노드 장애 시 다른 노드로 어떻게 전환할지, 노드마다 binlog 순서가 다른 것을 어떻게 다룰지, 충돌로 롤백된 트랜잭션이 잠깐 기록되는 타이밍 문제", "Galera 는 binlog 가 없어서 CDC 가 불가능하다", "Galera 에서는 아무 차이 없이 그대로 쓰면 된다", "CDC 는 Galera 의 AUTO_INCREMENT 를 대신 관리해 준다"]', 0, 'Galera 는 멀티 마스터 동기 복제이고 낙관적 충돌 감지를 해서, 롤백될 트랜잭션이 binlog 에 잠깐 있다가 무효화되는 타이밍과 CDC 가 충돌할 수 있습니다. 그래서 읽을 노드를 정하고(보통 한 노드), 장애 시 전환 절차를 미리 정해 둡니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 68 AND order_index = 10);

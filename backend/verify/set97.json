@@ -1,0 +1,10 @@
+{
+  "setId": 97,
+  "answers": {
+    "8": "docker logs job\ndocker inspect -f '{{.State.ExitCode}}' job > /tmp/exit.txt\ncat /tmp/exit.txt\n\n# -f : 출력 형식 템플릿, 종료 코드만 뽑는다",
+    "9": "docker ps\ndocker rm -f old\ndocker run -d --name web -p 8080:80 alpine sleep 3600\ndocker port web\n\n# -p 호스트포트:컨테이너포트 (호스트 포트가 충돌한다)",
+    "10": "docker logs app\ndocker rm app\ndocker run -d --name app -e DB_HOST=db.example.com myapp:1\ndocker ps\n\n# -e : 컨테이너에 환경 변수 전달",
+    "11": "docker ps -a\ndocker container prune -f\ndocker ps -a\n\n# prune : 종료된 컨테이너만 일괄 삭제 (실행 중인 것은 건드리지 않는다)",
+    "12": "docker update --restart unless-stopped web\ndocker inspect -f '{{.HostConfig.RestartPolicy.Name}}' web\n\n# --restart : no(기본) | on-failure | always | unless-stopped"
+  }
+}

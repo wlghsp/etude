@@ -1,0 +1,8 @@
+{
+  "setId": 92,
+  "answers": {
+    "7": "grep gateway /tmp/lab/vs.yaml\nsed -i 's/web-gatway/web-gateway/' /tmp/lab/vs.yaml\ngrep gateway /tmp/lab/vs.yaml\n\n# gateways 에 적는 이름은 Gateway 리소스의 metadata.name 과 같아야 한다",
+    "8": "grep weight /tmp/lab/canary.yaml\nsed -i 's/weight: 80/weight: 90/' /tmp/lab/canary.yaml\ngrep weight /tmp/lab/canary.yaml\n\n# 가중치 합이 100 이 아니면 설정이 거부된다",
+    "9": "grep -c '^kind: VirtualService' /tmp/lab/mesh.yaml > /tmp/lab/vs_count.txt\ncat /tmp/lab/vs_count.txt\n\n# 한 파일에 --- 로 여러 리소스를 묶을 수 있다"
+  }
+}

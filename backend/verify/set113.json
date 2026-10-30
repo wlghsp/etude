@@ -1,0 +1,10 @@
+{
+  "setId": 113,
+  "answers": {
+    "8": "cat /tmp/health.json\ngrep unassigned_shards /tmp/health.json | grep -o '[0-9]*' > /tmp/n.txt\ncat /tmp/n.txt\n\n# unassigned_shards 가 0 이 아니면 yellow/red 의 원인이 있다",
+    "9": "cat /tmp/shards.txt\nawk '$4==\"UNASSIGNED\"{print $1}' /tmp/shards.txt | sort -u > /tmp/un.txt\ncat /tmp/un.txt\n\n# sort -u : 정렬하면서 중복 제거",
+    "10": "cat /tmp/explain.json\ngrep '\"decider\"' /tmp/explain.json | cut -d'\"' -f4 > /tmp/decider.txt\ncat /tmp/decider.txt\n\n# disk_threshold : 디스크 사용률 때문에 배치가 거부됨",
+    "11": "cat > /tmp/unblock.txt <<'EOF'\ncurl -X PUT localhost:9200/_all/_settings -H 'Content-Type: application/json' -d '{\"index.blocks.read_only_allow_delete\": null}'\nEOF\ncat /tmp/unblock.txt\n\n# 공간을 먼저 확보한 뒤에 해제해야 다시 막히지 않는다",
+    "12": "cat /tmp/indices.txt\ngrep -E '^logs-2026\\.0[89]' /tmp/indices.txt | sed 's#^#curl -X DELETE localhost:9200/#' > /tmp/delete.sh\ncat /tmp/delete.sh\n\n# 삭제 명령은 만든 뒤 눈으로 확인하고 실행한다 (인덱스 삭제는 되돌릴 수 없다)"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "setId": 94,
+  "answers": {
+    "8": "cd /tmp/lab/app\ngit init -b main\ngit config user.name tester\ngit config user.email tester@example.com\ngit remote add origin /tmp/lab/remote.git\ngit add .\ngit commit -m 'initial commit'\ngit push -u origin main\ngit status -sb\n\n# 설정 → 연결 → 기록 → 올리기. -u 로 추적 연결을 만들면 이후 git push 만으로 올라간다",
+    "9": "cd /tmp/lab/proj\ngit commit -m first             # 오류\ngit config user.name tester\ngit config user.email tester@example.com\ngit commit -m first\ngit log --oneline\n\n# --global 없이 설정하면 이 저장소에만 적용된다",
+    "10": "cd /tmp/lab/proj\ngit remote -v\ngit remote set-url origin /tmp/lab/remote.git\ngit push -u origin main\n\n# origin 이 이미 있을 때는 add 가 아니라 set-url",
+    "11": "cd /tmp/lab/proj\ngit push -u origin main                 # 거절\ngit pull --rebase origin main\ngit push -u origin main\ngit log --oneline\n\n# --force 는 쓰지 않는다. 원격 커밋을 먼저 받아서 그 위에 내 커밋을 얹는다"
+  }
+}

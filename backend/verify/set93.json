@@ -1,0 +1,8 @@
+{
+  "setId": 93,
+  "answers": {
+    "8": "N=$(ls /tmp/lab/jenkins_home/jobs/app/builds | sort -n | tail -n 1)\necho \"/tmp/lab/jenkins_home/jobs/app/builds/$N/archive\" > /tmp/lab/latest.txt\ncat /tmp/lab/latest.txt\n\n# sort -n : 숫자 크기로 정렬 (글자순이면 9 가 10 보다 뒤)",
+    "9": "du -s /tmp/lab/jenkins_home/jobs/* | sort -rn | head -n 1 | awk '{print $2}' | xargs basename > /tmp/lab/biggest.txt\ncat /tmp/lab/biggest.txt\n\n# du -s : 폴더 전체 크기, sort -rn : 큰 숫자부터",
+    "10": "cd /tmp/lab/work/app\ngit status                    # 오류\ngit config --global --add safe.directory /tmp/lab/work/app\ngit status -sb | head -n 1 > /tmp/lab/status.txt\ncat /tmp/lab/status.txt\n\n# 마운트한 폴더의 소유자가 컨테이너 사용자와 다를 때 자주 생긴다. '*' 로 모두 허용할 수도 있지만 보안상 필요한 경로만 등록하는 편이 안전하다"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "setId": 98,
+  "answers": {
+    "8": "curl -s -o /dev/null -w '%{http_code}\\n' localhost:8080\nsed -i 's/9009/9001/' /tmp/haproxy.cfg\nhaproxy -c -f /tmp/haproxy.cfg\npkill haproxy; sleep 1\nhaproxy -D -f /tmp/haproxy.cfg\nsleep 1\ncurl -s -o /dev/null -w '%{http_code}' localhost:8080 > /tmp/code.txt\n\n# 서버 주소가 틀리면 헬스체크 실패 → 모든 서버 DOWN → 503",
+    "9": "curl -s 'localhost:8404/stats;csv' | cut -d, -f1,2,18\ncurl -s 'localhost:8404/stats;csv' | grep ',DOWN,' | cut -d, -f2 > /tmp/down.txt\ncat /tmp/down.txt\n\n# stats CSV : 1열 proxy 이름, 2열 서버 이름, 18열 status",
+    "10": "haproxy -c -f /tmp/haproxy.cfg\nsed -i 's/appp/app/' /tmp/haproxy.cfg\nhaproxy -c -f /tmp/haproxy.cfg\npkill haproxy; sleep 1\nhaproxy -D -f /tmp/haproxy.cfg\nsleep 1\ncurl -s -o /dev/null -w '%{http_code}' localhost:8080 > /tmp/code.txt\n\n# 'unable to find required backend' : default_backend 가 가리키는 이름이 실제 backend 와 다르다",
+    "11": "ss -ltnp | grep 8080\nsed -i 's/\\*:8080/*:8081/' /tmp/haproxy.cfg\nhaproxy -D -f /tmp/haproxy.cfg\nsleep 1\ncurl -s -o /dev/null -w '%{http_code}' localhost:8081 > /tmp/code.txt\n\n# 이미 쓰는 포트는 바꾸지 말고 HAProxy 쪽 bind 를 옮긴다",
+    "12": "printf '    server s2 127.0.0.1:9002 check\\n' >> /tmp/haproxy.cfg\nhaproxy -c -f /tmp/haproxy.cfg\nhaproxy -D -f /tmp/haproxy.cfg -p /tmp/hp.pid -sf $(cat /tmp/hp.pid)\nsleep 1\nfor i in 1 2 3 4 5 6; do curl -s localhost:8080; echo; done > /tmp/r.txt\n\n# -sf PID : 새 프로세스가 뜬 뒤 이전 프로세스가 기존 연결을 마치고 종료"
+  }
+}

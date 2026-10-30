@@ -1,0 +1,9 @@
+{
+  "setId": 89,
+  "answers": {
+    "7": "awk 'NR>1 { sum += $6 } END { print sum }' /tmp/lab/lag.txt > /tmp/lab/total_lag.txt\ncat /tmp/lab/total_lag.txt\n\n# lag 은 소비가 얼마나 밀렸는가. 합계가 계속 늘면 소비가 생산을 못 따라가는 것",
+    "8": "awk '{ for (i=1;i<=NF;i++) { if ($i==\"Partition:\") p=$(i+1); if ($i==\"Replicas:\") r=$(i+1); if ($i==\"Isr:\") s=$(i+1) } if (split(s,a,\",\") < split(r,b,\",\")) print p }' /tmp/lab/describe.txt > /tmp/lab/under.txt\ncat /tmp/lab/under.txt\n\n# Isr 이 Replicas 보다 적으면 동기화에서 빠진 복제본이 있다",
+    "9": "grep snapshot /tmp/lab/connector.json\nsed -i 's/\"inital\"/\"initial\"/' /tmp/lab/connector.json\ngrep snapshot /tmp/lab/connector.json\n\n# 값 오타는 커넥터 상태(FAILED)와 로그의 오류 메시지에서 찾는다",
+    "10": "echo \"retention.ms=$((3*24*60*60*1000))\" > /tmp/lab/retention.txt\ncat /tmp/lab/retention.txt\n\n# 1일 = 86,400,000 ms 이므로 3일은 259,200,000"
+  }
+}

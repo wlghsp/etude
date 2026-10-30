@@ -1,0 +1,8 @@
+{
+  "setId": 85,
+  "answers": {
+    "9": "sh -c 'echo $$ > /tmp/fork.txt; sh -c \"echo \\$\\$ >> /tmp/fork.txt\"'\nsh -c 'echo $$ > /tmp/exec.txt; exec sh -c \"echo \\$\\$ >> /tmp/exec.txt\"'\ncat /tmp/fork.txt /tmp/exec.txt\n\n# fork : 자식이 새 PID 를 받는다 (두 값이 다름)\n# exec : 같은 프로세스가 내용만 바뀐다 (두 값이 같음)",
+    "10": "tr \"\\0\" \" \" < /proc/1/cmdline > /tmp/init_cmd.txt\ncat /tmp/init_cmd.txt\n\n# /proc 은 커널이 프로세스·시스템 정보를 파일처럼 보여 주는 가상 파일시스템이다",
+    "11": "head -c 100 /dev/zero > /tmp/zero.bin\nls -l /tmp/zero.bin\n\n# /dev/null : 쓰면 버려지는 곳, /dev/zero : 0 바이트 공급원 (모든 것은 파일)"
+  }
+}

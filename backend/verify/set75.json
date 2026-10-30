@@ -1,0 +1,9 @@
+{
+  "setId": 75,
+  "answers": {
+    "6": "ssh-keygen -t rsa -b 4096 -C deploy@lab -f /tmp/lab/id_rsa -N \"\"\nssh-keygen -l -f /tmp/lab/id_rsa.pub\n\n# -t 알고리즘, -b 길이, -C 메모, -f 저장 경로, -N \"\" 암호 없음",
+    "7": "mkdir -p /tmp/lab/target/.ssh\ncat /tmp/lab/ops.pub >> /tmp/lab/target/.ssh/authorized_keys\nchmod 700 /tmp/lab/target/.ssh\nchmod 600 /tmp/lab/target/.ssh/authorized_keys\n\n# >> 는 기존 키를 지우지 않고 추가한다\n# 권한이 느슨하면 sshd 가 키 인증을 거부한다 (StrictModes)",
+    "8": "chmod 700 /tmp/lab/t2/.ssh\nchmod 600 /tmp/lab/t2/.ssh/authorized_keys\n\n# 700 : 소유자만 접근, 600 : 소유자만 읽고 쓰기",
+    "9": "ssh-keygen -l -f /tmp/lab/friend.pub > /tmp/lab/fp.txt\n\n# -l : 지문(fingerprint)과 키 길이, 메모를 보여 준다\n# 보낸 사람과 지문을 비교해 키가 바뀌지 않았는지 확인한다"
+  }
+}

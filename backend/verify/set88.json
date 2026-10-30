@@ -1,0 +1,10 @@
+{
+  "setId": 88,
+  "answers": {
+    "7": "grep advertised /tmp/lab/server.properties\nsed -i '/^advertised.listeners=/s/0.0.0.0/broker1.example.com/' /tmp/lab/server.properties\ngrep advertised /tmp/lab/server.properties\n\n# advertised 주소는 클라이언트가 접속 가능한 이름이어야 한다 (0.0.0.0 은 listen 용)",
+    "8": "grep retention /tmp/lab/server.properties\nsed -i 's/^log.retention.hours=.*/log.retention.hours=720/' /tmp/lab/server.properties\ngrep retention /tmp/lab/server.properties\n\n# 값을 바꾼 뒤에는 브로커를 순차 재시작해 적용한다 (한꺼번에 재시작 금지)",
+    "9": "grep -E '^-Xm[sx]' /tmp/lab/jvm.options\nsed -i 's/^-Xms.*/-Xms2g/' /tmp/lab/jvm.options\ngrep -E '^-Xm[sx]' /tmp/lab/jvm.options\n\n# Xms == Xmx : 힙 리사이즈 비용을 없앤다",
+    "10": "cat >> /tmp/lab/prometheus.yml <<'EOF'\n  - job_name: 'node'\n    static_configs:\n      - targets: ['app.example.com:9100']\nEOF\ncat /tmp/lab/prometheus.yml\n\n# 적용 전에는 promtool check config 로 문법을 검사한다",
+    "11": "grep -vE '^[[:space:]]*(#|$)' /tmp/lab/app.conf > /tmp/lab/active.txt\ncat /tmp/lab/active.txt\n\n# -v : 패턴과 맞는 줄을 제외한 나머지"
+  }
+}

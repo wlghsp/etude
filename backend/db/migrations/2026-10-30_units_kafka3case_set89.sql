@@ -1,0 +1,61 @@
+-- 리눅스 세트 89. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set89.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 19, '미들웨어', '메시징·CDC', 30 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 19);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 89, 'Kafka 명령과 출력 다루기: 만들고, 읽고, 계산하기', 'Kafka 를 다루는 CLI 명령(토픽 생성, 컨슈머 그룹 조회)과 Debezium 커넥터 설정을 빈칸으로 채워 익히고, offset 재설정의 안전한 순서를 놓아 보고, 컨슈머 lag 과 ISR 이 모자란 파티션을 샘플 출력에서 awk 로 직접 계산해 봅니다. 객관식, 빈칸, 순서, 터미널 실습을 섞었습니다.', 'linux', '미들웨어'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 89);
+UPDATE quest_set SET display_order = 537, unit_id = (SELECT id FROM unit WHERE id = 19), icon = '⌨️' WHERE id = 89;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 89, 1, '토픽 만드는 명령 채우기', '`orders` 토픽을 **파티션 3개, 복제 3**으로 새로 만드는 명령입니다. 빈칸을 채우세요.', '토픽을 만드는 동작 이름과 숫자 옵션을 고릅니다. 같은 칩을 두 칸에 써도 됩니다.', NULL, NULL, '[]', 'fill', '["create", "describe", "delete", "3", "1"]', NULL, '`--create` 는 만들기, `--describe` 는 파티션·Leader·ISR 조회, `--delete` 는 삭제입니다. 복제 수는 브로커 수 이하여야 하고, 파티션 수는 소비 병렬도의 상한이 됩니다. (앞서 배운 대로 파티션 수는 **늘릴 수만** 있고 줄일 수는 없습니다.)', '[0, 3, 3]', 'kafka-topics.sh --bootstrap-server broker1.example.com:9092 --{0} --topic orders --partitions {1} --replication-factor {2}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 89 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 89, 2, '컨슈머 그룹 lag 조회 명령 채우기', '`orders-app` 컨슈머 그룹이 **얼마나 밀려 있는지(lag)** 보려는 명령입니다. 빈칸을 채우세요.', '그룹의 상세 상태(파티션별 offset, LAG)를 보여 주는 동작과 그룹 이름을 고릅니다.', NULL, NULL, '[]', 'fill', '["describe", "list", "reset-offsets", "orders-app", "orders"]', NULL, '`--list` 는 그룹 목록, `--describe` 는 한 그룹의 파티션별 `CURRENT-OFFSET`, `LOG-END-OFFSET`, `LAG` 을 보여 줍니다. `reset-offsets` 는 위치를 바꾸는 위험한 동작이라 별도 절차가 필요합니다. `orders` 는 토픽 이름이지 그룹 이름이 아닙니다.', '[0, 3]', 'kafka-consumer-groups.sh --bootstrap-server broker1.example.com:9092 --{0} --group {1}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 89 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 89, 3, '컨슈머 그룹 offset 을 되돌리는 안전한 순서 놓기', '버그를 고친 뒤 `orders-app` 그룹이 **과거 시점부터 다시 처리**하도록 offset 을 되돌립니다. 안전한 순서를 **앞에서 뒤**로 놓으세요.', '실행하기 전에 미리 보기(dry-run)가 있습니다.', NULL, NULL, '[]', 'order', '["컨슈머를 다시 시작해 새 위치부터 처리하는지 확인한다", "`--dry-run` 으로 어디로 바뀌는지 미리 확인한다", "그 그룹의 컨슈머를 모두 중지한다", "`--execute` 로 offset 을 실제로 재설정한다"]', NULL, '**컨슈머 중지 → dry-run → execute → 재시작** 입니다. 컨슈머가 떠 있는 동안에는 offset 재설정이 거부되거나 다시 덮어써지고, dry-run 없이 실행하면 잘못된 위치로 옮겨 대량 재처리나 유실이 생길 수 있습니다. 재처리되는 메시지가 중복 처리되어도 안전한지(멱등)도 확인해야 합니다.', '[2, 1, 3, 0]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 89 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 89, 4, 'Debezium 커넥터 설정 채우기', '`shop` DB 의 `orders` 테이블을 **처음에 전체 스냅샷을 뜬 뒤 변경을 따라가며**, 토픽 이름은 `shop` 으로 시작하게 하는 커넥터 설정의 일부입니다. 빈칸을 채우세요.', '`snapshot.mode` 의 기본 동작, 토픽 접두사, 대상 테이블 지정입니다.', NULL, NULL, '[]', 'fill', '["initial", "never", "shop", "shop.orders", "orders"]', NULL, '`initial` 은 처음에 기존 데이터를 스냅샷으로 읽고 그 뒤 binlog 변경을 따라갑니다(`never` 는 스냅샷 없이 변경만). `topic.prefix` 는 토픽 이름의 앞부분이고, 대상 테이블은 `데이터베이스.테이블` 형식(`shop.orders`)으로 적습니다. 스냅샷 단계에서 `SELECT`·`LOCK TABLES` 권한이 필요했던 것을 떠올려 보세요.', '[0, 2, 3]', '"snapshot.mode": "{0}",
+"topic.prefix": "{1}",
+"table.include.list": "{2}"', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 89 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 89, 5, '파티션 수를 바꿀 때', '운영 중인 토픽의 파티션을 **3개에서 6개로 늘렸습니다.** 키 기반으로 메시지를 보내는 경우 주의할 점은 무엇일까요?', '키로 파티션을 고르는 방식은 파티션 수에 의존합니다.', NULL, NULL, '[]', 'choice', '["파티션을 늘려도 기존 메시지와 키 매핑은 전혀 영향이 없다", "키를 파티션 수로 나눈 값으로 파티션을 고르므로, 늘리면 **같은 키가 다른 파티션으로** 가서 키별 순서 보장이 깨질 수 있다 (파티션은 늘릴 수만 있고 줄일 수 없다)", "파티션은 자유롭게 줄일 수 있다", "파티션을 늘리면 데이터가 자동으로 삭제된다"]', 1, '순서가 중요한 키(예: 주문 ID)는 파티션 수를 처음부터 넉넉히 잡거나, 변경 시 새 토픽으로 옮기는 방식을 고려합니다. 소비 병렬도의 상한이 파티션 수라는 점도 함께 생각해야 합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 89 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 89, 6, 'ISR 이 줄었다는 신호', '`--describe` 출력에서 한 파티션의 `Replicas: 2,3,1`, `Isr: 2,3` 입니다. 무엇을 뜻할까요?', 'Replicas 는 있어야 할 복제본, Isr 은 지금 동기화된 복제본입니다.', NULL, NULL, '[]', 'choice', '["파티션이 삭제되었다", "Leader 가 3번이라는 뜻이다", "정상 상태이며 확인할 것이 없다", "복제본 1번 브로커가 Leader 를 **따라잡지 못하거나 내려가** ISR 에서 빠져 있다 (min.insync.replicas 와 함께 쓰기 가능 여부를 확인해야 한다)"]', 3, '모든 복제본이 동기화되어 있으면 `Isr` 이 `Replicas` 와 같습니다. 줄어 있으면 해당 브로커의 장애, 디스크·네트워크 지연을 의심합니다. 이런 파티션을 모아 보는 `--under-replicated-partitions` 옵션도 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 89 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 89, 7, '컨슈머 lag 합계 계산하기', '`/tmp/lab/lag.txt` 는 `kafka-consumer-groups.sh --describe` 의 출력입니다. **LAG 열**(여섯 번째 열)의 **합계**를 계산해 `/tmp/lab/total_lag.txt` 에 숫자만 저장하세요. (첫 줄은 제목 줄입니다)', '`awk` 로 열을 더할 수 있습니다: `awk ''NR>1 { sum += $6 } END { print sum }'' 파일`. `NR>1` 은 첫 줄을 건너뜁니다.\\n확인: `cat /tmp/lab/lag.txt`', 'awk ''NR>1 { sum += $6 } END { print sum }'' /tmp/lab/lag.txt > /tmp/lab/total_lag.txt
+cat /tmp/lab/total_lag.txt
+
+# lag 은 소비가 얼마나 밀렸는가. 합계가 계속 늘면 소비가 생산을 못 따라가는 것', '["sh", "-c", "mkdir -p /tmp/lab && printf ''GROUP TOPIC PARTITION CURRENT-OFFSET LOG-END-OFFSET LAG CONSUMER-ID\\\\norders-app orders 0 100 120 20 c1\\\\norders-app orders 1 200 200 0 c1\\\\norders-app orders 2 150 190 40 c2\\\\n'' > /tmp/lab/lag.txt"]', '["sh", "-c", "( [ -s /tmp/lab/total_lag.txt ] ) && ( [ \\"$(cat /tmp/lab/total_lag.txt)\\" = 60 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일이 있다", "cmd": ["sh", "-c", "[ -s /tmp/lab/total_lag.txt ]"]}, {"label": "lag 합계가 60 이다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/lab/total_lag.txt)\\" = 60 ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 89 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 89, 8, 'ISR 이 모자란 파티션 찾기', '`/tmp/lab/describe.txt` 는 `kafka-topics.sh --describe` 의 출력입니다. **`Isr` 의 개수가 `Replicas` 의 개수보다 적은 파티션의 번호**를 한 줄에 하나씩 `/tmp/lab/under.txt` 에 저장하세요.', '줄에서 `Partition:` 다음 값, `Replicas:` 다음 값, `Isr:` 다음 값을 `awk` 로 뽑아 쉼표로 나눈 개수를 비교합니다 (`split(문자열, 배열, ",")` 는 개수를 반환합니다).', 'awk ''{ for (i=1;i<=NF;i++) { if ($i=="Partition:") p=$(i+1); if ($i=="Replicas:") r=$(i+1); if ($i=="Isr:") s=$(i+1) } if (split(s,a,",") < split(r,b,",")) print p }'' /tmp/lab/describe.txt > /tmp/lab/under.txt
+cat /tmp/lab/under.txt
+
+# Isr 이 Replicas 보다 적으면 동기화에서 빠진 복제본이 있다', '["sh", "-c", "mkdir -p /tmp/lab && printf ''Topic: orders Partition: 0 Leader: 1 Replicas: 1,2,3 Isr: 1,2,3\\\\nTopic: orders Partition: 1 Leader: 2 Replicas: 2,3,1 Isr: 2,3\\\\nTopic: orders Partition: 2 Leader: 3 Replicas: 3,1,2 Isr: 3\\\\n'' > /tmp/lab/describe.txt"]', '["sh", "-c", "( [ -s /tmp/lab/under.txt ] ) && ( [ \\"$(cat /tmp/lab/under.txt)\\" = \\"1\\n2\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일이 있다", "cmd": ["sh", "-c", "[ -s /tmp/lab/under.txt ]"]}, {"label": "1번과 2번 파티션만 나왔다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/lab/under.txt)\\" = \\"1\\n2\\" ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 89 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 89, 9, '커넥터 설정의 오타 고치기', '`/tmp/lab/connector.json` 의 `snapshot.mode` 값이 `inital` 로 **오타**가 나 있어 커넥터가 기동에 실패합니다. 올바른 값 **`initial`** 로 고치세요. (다른 설정은 그대로)', '`grep snapshot` 으로 현재 값을 확인한 뒤 `sed -i` 로 그 값만 바꿉니다.\\n확인: `grep snapshot /tmp/lab/connector.json`', 'grep snapshot /tmp/lab/connector.json
+sed -i ''s/"inital"/"initial"/'' /tmp/lab/connector.json
+grep snapshot /tmp/lab/connector.json
+
+# 값 오타는 커넥터 상태(FAILED)와 로그의 오류 메시지에서 찾는다', '["sh", "-c", "mkdir -p /tmp/lab && printf ''{\\\\n  \\"name\\": \\"shop-source\\",\\\\n  \\"config\\": {\\\\n    \\"snapshot.mode\\": \\"inital\\",\\\\n    \\"topic.prefix\\": \\"shop\\",\\\\n    \\"table.include.list\\": \\"shop.orders\\"\\\\n  }\\\\n}\\\\n'' > /tmp/lab/connector.json"]', '["sh", "-c", "( grep -q \\"\\\\\\"snapshot.mode\\\\\\": \\\\\\"initial\\\\\\"\\" /tmp/lab/connector.json ) && ( ! grep -q inital /tmp/lab/connector.json ) && ( grep -q \\"\\\\\\"topic.prefix\\\\\\": \\\\\\"shop\\\\\\"\\" /tmp/lab/connector.json && grep -q \\"shop.orders\\" /tmp/lab/connector.json )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "snapshot.mode 가 initial 이다", "cmd": ["sh", "-c", "grep -q \\"\\\\\\"snapshot.mode\\\\\\": \\\\\\"initial\\\\\\"\\" /tmp/lab/connector.json"]}, {"label": "오타가 남아 있지 않다", "cmd": ["sh", "-c", "! grep -q inital /tmp/lab/connector.json"]}, {"label": "다른 설정은 그대로다", "cmd": ["sh", "-c", "grep -q \\"\\\\\\"topic.prefix\\\\\\": \\\\\\"shop\\\\\\"\\" /tmp/lab/connector.json && grep -q \\"shop.orders\\" /tmp/lab/connector.json"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 89 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 89, 10, '보관 기간을 밀리초로 계산하기', '토픽의 `retention.ms` 는 **밀리초** 단위입니다. 보관 기간 **3일**을 밀리초로 계산해 `retention.ms=값` 한 줄을 `/tmp/lab/retention.txt` 에 저장하세요. (손으로 계산하지 말고 쉘 산술을 쓰세요)', '쉘의 `$(( ))` 로 곱셈을 할 수 있습니다: 3일 × 24시간 × 60분 × 60초 × 1000밀리초.', 'echo "retention.ms=$((3*24*60*60*1000))" > /tmp/lab/retention.txt
+cat /tmp/lab/retention.txt
+
+# 1일 = 86,400,000 ms 이므로 3일은 259,200,000', '["sh", "-c", "mkdir -p /tmp/lab && rm -f /tmp/lab/retention.txt"]', '["sh", "-c", "( [ -s /tmp/lab/retention.txt ] ) && ( [ \\"$(cat /tmp/lab/retention.txt)\\" = \\"retention.ms=259200000\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일이 있다", "cmd": ["sh", "-c", "[ -s /tmp/lab/retention.txt ]"]}, {"label": "3일의 밀리초 값이다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/lab/retention.txt)\\" = \\"retention.ms=259200000\\" ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 89 AND order_index = 10);

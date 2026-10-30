@@ -1,0 +1,61 @@
+-- 리눅스 운영 세트 75. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set75.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 4, '리눅스', '운영과 장애 대응', 40 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 4);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 75, '리눅스 운영 기본기: SSH 키, 시간 동기화, NFS, 정책 라우팅', '현장 서버를 다룰 때 매일 쓰는 운영 기본기를 익힙니다. SSH 공개키/개인키 인증(키 생성, authorized_keys 등록, 권한), 클러스터에서 시간 동기화(chrony)가 중요한 이유, NFS 임시 마운트와 언마운트가 안 될 때, 비대칭 라우팅과 정책 라우팅의 임시·영구 적용을 다룹니다.', 'linux', '리눅스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 75);
+UPDATE quest_set SET display_order = 160, unit_id = (SELECT id FROM unit WHERE id = 4), icon = '🧰' WHERE id = 75;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 75, 1, 'SSH 공개키와 개인키의 역할 알기', 'SSH 키 인증에서 **공개키**와 **개인키**는 각각 어디에 두어야 할까요?', '"자물쇠"와 "열쇠"에 비유합니다.', NULL, NULL, '[]', 'choice', '["개인키를 서버에 올리고 공개키는 내가 보관한다", "공개키는 접속 대상 서버의 `authorized_keys` 에 등록하고, 개인키는 접속하는 내가 안전하게 보관한다", "둘 다 서버에 올려 둔다", "둘 다 메신저로 팀원에게 공유한다"]', 1, '공개키는 자물쇠라서 여러 서버에 복사해도 안전합니다. 개인키는 열쇠라서 절대 유출하면 안 됩니다. 서버는 공개키로 "이 사람이 쌍이 맞는 개인키를 가졌는가"를 확인합니다. 키 생성은 접속하는 쪽에서 한 번만 합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 75 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 75, 2, '시간 동기화가 중요한 이유', 'Kafka, Elasticsearch, Prometheus 같은 서버들에 **모두 NTP(chrony)** 를 적용하는 이유로 알맞은 것은 무엇일까요?', '여러 서버가 같은 시각을 기준으로 데이터를 다룹니다.', NULL, NULL, '[]', 'choice', '["디스크 용량을 줄이기 위해서이다", "네트워크 속도를 빠르게 하기 위해서이다", "SSH 접속 비밀번호를 대신하기 위해서이다", "Prometheus 의 scrape 타임스탬프와 클러스터 노드 간 시각이 어긋나면 데이터·합의에 문제가 생기기 때문이다"]', 3, '서버마다 시계가 다르면 로그·메트릭의 순서가 뒤섞이고, 노드 간 시간에 민감한 인증서·토큰·클러스터 통신에서 오류가 납니다. 그래서 모든 VM 이 같은 내부 NTP 서버를 바라보게 합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 75 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 75, 3, 'chronyc 로 동기화 상태 읽기', '`chronyc sources -v` 의 출력에서 **`^*`** 로 표시된 줄은 무엇을 뜻할까요?', '별표(*)는 "현재 선택된 것"을 의미합니다.', NULL, NULL, '[]', 'choice', '["연결할 수 없는 서버", "로컬 시계 자체", "현재 동기화에 사용 중인 NTP 서버", "삭제 예정인 서버"]', 2, '`^*` 는 현재 동기화 중인 소스, `^+` 는 후보 소스, `^?` 는 연결 확인이 안 된 소스입니다. 전체 상태는 `chronyc tracking`(오차 수십 ms 이내면 정상)과 `timedatectl` 의 `NTPSynchronized=yes` 로도 확인합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 75 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 75, 4, 'NFS 를 언마운트할 수 없을 때', 'NFS 공유 폴더를 `umount` 하려는데 `device is busy` 가 납니다. 가장 먼저 할 일은 무엇일까요?', '누가 그 폴더를 쓰고 있는지부터 확인합니다.', NULL, NULL, '[]', 'choice', '["`lsof +D 마운트경로` 로 마운트 지점을 사용 중인 프로세스를 찾아 정리한 뒤 다시 시도한다", "바로 `umount -l` 로 강제 해제한다", "서버를 재부팅한다", "마운트 폴더를 `rm -rf` 로 삭제한다"]', 0, '사용 중인 프로세스(작업 쉘이 그 폴더 안에 있는 경우도 많음)를 정리하고 재시도하는 것이 정석입니다. `umount -l`(lazy)은 마지막 수단입니다. `rm -rf` 는 마운트된 NFS 의 실제 파일을 지울 수 있어 절대 하면 안 됩니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 75 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 75, 5, '임시 라우팅과 영구 라우팅', '비대칭 라우팅 문제를 풀려고 `ip route add` 와 `ip rule add` 로 **정책 라우팅**을 바로 적용했습니다. 서버를 재부팅하면 어떻게 될까요?', '명령으로 직접 넣은 설정은 어디에 저장될까요?', NULL, NULL, '[]', 'choice', '["자동으로 영구 저장된다", "명령으로 넣은 설정은 **재부팅하면 사라지므로** 네트워크 설정 파일에 영구 적용을 해 두어야 한다", "재부팅하면 정책이 두 배로 늘어난다", "재부팅과 무관하다"]', 1, '`ip` 명령은 지금 커널의 상태만 바꿉니다. 영구 적용은 배포판의 네트워크 설정(RHEL 계열은 연결 프로파일의 route/rule 설정)에 넣습니다. 적용 뒤에는 `ip rule`, `ip route show table N` 으로 확인합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 75 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 75, 6, 'SSH 키 쌍 만들기 (ssh-keygen)', '접속하는 쪽에서 **RSA 4096 비트** 키 쌍을 만드세요. 파일은 `/tmp/lab/id_rsa`(개인키)와 `/tmp/lab/id_rsa.pub`(공개키)이고, 키에 붙는 메모(comment)는 `deploy@lab`, 암호(passphrase)는 비워 두세요. (자동화 용도)', '찾는 방법: `ssh-keygen --help` 또는 `man ssh-keygen`. 알고리즘(`-t`), 길이(`-b`), 메모(`-C`), 저장 경로(`-f`), 암호(`-N`) 옵션이 있습니다.
+확인: `ssh-keygen -l -f /tmp/lab/id_rsa.pub`', 'ssh-keygen -t rsa -b 4096 -C deploy@lab -f /tmp/lab/id_rsa -N ""
+ssh-keygen -l -f /tmp/lab/id_rsa.pub
+
+# -t 알고리즘, -b 길이, -C 메모, -f 저장 경로, -N "" 암호 없음', '["sh", "-c", "rm -rf /tmp/lab && mkdir -p /tmp/lab"]', '["sh", "-c", "( [ -s /tmp/lab/id_rsa ] ) && ( [ -s /tmp/lab/id_rsa.pub ] ) && ( ssh-keygen -l -f /tmp/lab/id_rsa.pub | grep -q \\"^4096 \\" ) && ( ssh-keygen -l -f /tmp/lab/id_rsa.pub | grep -q \\"deploy@lab\\" ) && ( [ \\"$(stat -c %a /tmp/lab/id_rsa)\\" = 600 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "개인키 파일이 있다", "cmd": ["sh", "-c", "[ -s /tmp/lab/id_rsa ]"]}, {"label": "공개키 파일이 있다", "cmd": ["sh", "-c", "[ -s /tmp/lab/id_rsa.pub ]"]}, {"label": "키 길이가 4096 이다", "cmd": ["sh", "-c", "ssh-keygen -l -f /tmp/lab/id_rsa.pub | grep -q \\"^4096 \\""]}, {"label": "메모가 deploy@lab 이다", "cmd": ["sh", "-c", "ssh-keygen -l -f /tmp/lab/id_rsa.pub | grep -q \\"deploy@lab\\""]}, {"label": "개인키는 소유자만 읽을 수 있다 (600)", "cmd": ["sh", "-c", "[ \\"$(stat -c %a /tmp/lab/id_rsa)\\" = 600 ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 75 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 75, 7, '공개키를 서버에 등록하기 (authorized_keys)', '`/tmp/lab/ops.pub` 는 접속할 사람의 공개키입니다. 접속 대상 서버의 홈 `/tmp/lab/target` 아래 **`.ssh/authorized_keys` 에 이 공개키를 등록**하세요. SSH 가 받아들이도록 **`.ssh` 폴더는 700, `authorized_keys` 는 600** 이어야 합니다.', '`.ssh` 폴더를 만들고, 공개키 내용을 `authorized_keys` 파일 **끝에 추가**(`>>`)합니다. 만든 직후의 기본 권한은 SSH 가 거부할 수 있으니 `chmod` 로 맞추세요.
+확인: `ls -ld /tmp/lab/target/.ssh /tmp/lab/target/.ssh/authorized_keys`', 'mkdir -p /tmp/lab/target/.ssh
+cat /tmp/lab/ops.pub >> /tmp/lab/target/.ssh/authorized_keys
+chmod 700 /tmp/lab/target/.ssh
+chmod 600 /tmp/lab/target/.ssh/authorized_keys
+
+# >> 는 기존 키를 지우지 않고 추가한다
+# 권한이 느슨하면 sshd 가 키 인증을 거부한다 (StrictModes)', '["sh", "-c", "rm -rf /tmp/lab && mkdir -p /tmp/lab && mkdir -p /tmp/lab/target && ssh-keygen -q -t rsa -b 2048 -N '''' -C ops@lab -f /tmp/lab/ops"]', '["sh", "-c", "( grep -qF \\"$(cut -d\\" \\" -f2 /tmp/lab/ops.pub)\\" /tmp/lab/target/.ssh/authorized_keys ) && ( [ \\"$(stat -c %a /tmp/lab/target/.ssh)\\" = 700 ] ) && ( [ \\"$(stat -c %a /tmp/lab/target/.ssh/authorized_keys)\\" = 600 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "authorized_keys 에 ops 공개키가 들어 있다", "cmd": ["sh", "-c", "grep -qF \\"$(cut -d\\" \\" -f2 /tmp/lab/ops.pub)\\" /tmp/lab/target/.ssh/authorized_keys"]}, {"label": ".ssh 폴더가 700 이다", "cmd": ["sh", "-c", "[ \\"$(stat -c %a /tmp/lab/target/.ssh)\\" = 700 ]"]}, {"label": "authorized_keys 가 600 이다", "cmd": ["sh", "-c", "[ \\"$(stat -c %a /tmp/lab/target/.ssh/authorized_keys)\\" = 600 ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 75 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 75, 8, '느슨한 권한 고치기', '`/tmp/lab/t2/.ssh` 는 권한이 777, 그 안의 `authorized_keys` 는 666 이라서 **SSH 가 이 키를 거부**합니다. 폴더는 700, 파일은 600 으로 고치세요. (파일 내용은 그대로 둡니다)', '앞에서 배운 `chmod` 숫자 권한입니다. 폴더와 파일의 값이 다릅니다.
+확인: `ls -ld /tmp/lab/t2/.ssh /tmp/lab/t2/.ssh/authorized_keys`', 'chmod 700 /tmp/lab/t2/.ssh
+chmod 600 /tmp/lab/t2/.ssh/authorized_keys
+
+# 700 : 소유자만 접근, 600 : 소유자만 읽고 쓰기', '["sh", "-c", "rm -rf /tmp/lab && mkdir -p /tmp/lab && mkdir -p /tmp/lab/t2/.ssh && echo ''ssh-ed25519 AAAAC3Nza fake@lab'' > /tmp/lab/t2/.ssh/authorized_keys && chmod 777 /tmp/lab/t2/.ssh && chmod 666 /tmp/lab/t2/.ssh/authorized_keys"]', '["sh", "-c", "( [ \\"$(stat -c %a /tmp/lab/t2/.ssh)\\" = 700 ] ) && ( [ \\"$(stat -c %a /tmp/lab/t2/.ssh/authorized_keys)\\" = 600 ] ) && ( grep -q \\"fake@lab\\" /tmp/lab/t2/.ssh/authorized_keys )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": ".ssh 폴더가 700 이다", "cmd": ["sh", "-c", "[ \\"$(stat -c %a /tmp/lab/t2/.ssh)\\" = 700 ]"]}, {"label": "authorized_keys 가 600 이다", "cmd": ["sh", "-c", "[ \\"$(stat -c %a /tmp/lab/t2/.ssh/authorized_keys)\\" = 600 ]"]}, {"label": "파일 내용은 그대로다", "cmd": ["sh", "-c", "grep -q \\"fake@lab\\" /tmp/lab/t2/.ssh/authorized_keys"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 75 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 75, 9, '공개키 지문(fingerprint) 확인하기', '동료가 보낸 공개키가 맞는지 **지문(fingerprint)** 으로 확인하려고 합니다. `/tmp/lab/friend.pub` 의 지문을 `/tmp/lab/fp.txt` 에 저장하세요. (저장할 내용은 `ssh-keygen` 이 출력하는 지문 줄 그대로입니다)', '찾는 방법: `ssh-keygen --help` 에서 fingerprint 를 보여 주는 옵션(`-l`)과 파일 지정(`-f`)을 찾습니다.
+확인: `cat /tmp/lab/fp.txt`', 'ssh-keygen -l -f /tmp/lab/friend.pub > /tmp/lab/fp.txt
+
+# -l : 지문(fingerprint)과 키 길이, 메모를 보여 준다
+# 보낸 사람과 지문을 비교해 키가 바뀌지 않았는지 확인한다', '["sh", "-c", "rm -rf /tmp/lab && mkdir -p /tmp/lab && ssh-keygen -q -t ed25519 -N '''' -C friend@lab -f /tmp/lab/friend"]', '["sh", "-c", "( [ -s /tmp/lab/fp.txt ] ) && ( [ \\"$(cat /tmp/lab/fp.txt)\\" = \\"$(ssh-keygen -l -f /tmp/lab/friend.pub)\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "지문 파일이 있다", "cmd": ["sh", "-c", "[ -s /tmp/lab/fp.txt ]"]}, {"label": "저장한 값이 ssh-keygen 의 지문 출력과 같다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/lab/fp.txt)\\" = \\"$(ssh-keygen -l -f /tmp/lab/friend.pub)\\" ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 75 AND order_index = 9);

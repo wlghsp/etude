@@ -1,0 +1,8 @@
+{
+  "setId": 90,
+  "answers": {
+    "7": "awk '/code=\"5/ { s += $2 } END { print s }' /tmp/lab/metrics.txt > /tmp/lab/errors.txt\ncat /tmp/lab/errors.txt\n\n# 레이블이 다르면 별개의 시계열이다. 여기서는 5xx 시계열의 값을 합쳤다",
+    "8": "grep -o 'user_id=\"[^\"]*\"' /tmp/lab/series.txt | sort -u | wc -l > /tmp/lab/user_count.txt\ncat /tmp/lab/user_count.txt\n\n# 사용자가 100만이면 시계열도 100만 — 이런 값은 레이블이 아니라 로그로 남긴다",
+    "9": "grep expr /tmp/lab/rules.yml\nsed -i 's/up == 1/up == 0/' /tmp/lab/rules.yml\ngrep expr /tmp/lab/rules.yml\n\n# up : 수집 성공 1, 실패 0. 알림은 이상 상태를 조건으로 건다"
+  }
+}

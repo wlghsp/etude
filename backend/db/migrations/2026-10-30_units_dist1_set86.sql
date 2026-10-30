@@ -1,0 +1,58 @@
+-- Git 세트 86. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set86.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 19, '미들웨어', '메시징·CDC', 30 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 19);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 86, '분산 시스템 핵심 개념: 합의, 일관성, Saga, 멱등, 백프레셔', 'Kafka·etcd·데이터베이스를 이해하는 바탕이 되는 분산 시스템 개념을 정리합니다. 합의(Paxos·Raft)와 과반수(quorum), Raft 커밋과 Kafka acks 의 차이, 강한 일관성과 최종 일관성, 이벤트 기반 구조, 2PC 의 한계와 Saga(보상 트랜잭션), 멱등성, 백프레셔, 배치와 스트림 처리를 문제로 익힙니다.', 'quiz', '미들웨어'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 86);
+UPDATE quest_set SET display_order = 536, unit_id = (SELECT id FROM unit WHERE id = 19), icon = '🕸️' WHERE id = 86;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 86, 1, '합의 알고리즘이 푸는 문제', '**합의(consensus) 알고리즘**(Paxos, Raft)이 해결하려는 문제는 무엇일까요?', '네트워크 단절과 노드 장애가 있는 상황입니다.', NULL, NULL, '[]', 'choice', '["모든 노드를 항상 동시에 켜 두는 것", "여러 노드가 네트워크 단절·장애가 있어도 **하나의 값(또는 같은 로그)에 동의**하도록 만드는 것", "데이터를 압축하는 것", "로그를 암호화하는 것"]', 1, 'Paxos 는 고정 리더가 없고 과반수 승인으로 값을 확정하는 대칭적 구조이며 이해·구현이 어렵다는 평가를 받았습니다. Raft 는 같은 문제를 "항상 리더 하나만 쓰기를 받는" 비대칭 구조로 이해하기 쉽게 설계했습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 86 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 86, 2, 'Raft 의 리더와 로그 복제', 'Raft 에서 클라이언트의 쓰기 요청과 커밋은 어떻게 처리될까요?', '항상 하나의 리더만 쓰기를 받습니다.', NULL, NULL, '[]', 'choice', '["모든 노드가 동시에 쓰기를 받고 나중에 합친다", "팔로워가 쓰기를 직접 받아 리더에게 알린다", "모든 노드가 저장을 확인해야만 커밋한다", "쓰기는 **리더만** 받고, 리더가 팔로워에게 로그를 복제해 **과반수가 저장을 확인하면 커밋**한다. 리더가 죽으면 과반수 투표로 새 리더를 뽑는다"]', 3, '리더 선출과 로그 복제가 명확히 분리되어 있어 구현의 모호함이 적습니다. Raft 는 etcd(쿠버네티스 상태 저장소), Kafka 의 KRaft 메타데이터, Consul, CockroachDB 등에 쓰입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 86 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 86, 3, '과반수(quorum)와 홀수 구성', '합의가 필요한 클러스터를 **홀수**(3대, 5대)로 구성하는 이유로 알맞은 것은 무엇일까요?', '2대와 4대의 장애 허용 수를 비교해 보세요.', NULL, NULL, '[]', 'choice', '["3대는 1대, 5대는 2대 장애를 견디는데, 4대도 1대만 견뎌서(과반수는 3대) 3대와 장애 허용이 같아 노드만 늘리는 낭비이기 때문이다", "짝수가 더 안정적이라서이다", "홀수여야 네트워크가 연결되어서이다", "과반수 개념이 필요 없어서이다"]', 0, '과반수(quorum)는 N/2 + 1 입니다. 3대면 2대, 4대면 3대, 5대면 3대가 필요합니다. 두 구역으로 갈라지는 네트워크 분할에서도 과반수를 가진 쪽만 쓰기를 진행해 split-brain 을 막습니다. etcd, KRaft 컨트롤러, Galera 가 모두 이 원리입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 86 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 86, 4, 'Raft 커밋과 Kafka acks 의 차이', 'Raft 의 "과반수가 확인하면 커밋"과 Kafka 의 `acks=all` 의 차이로 알맞은 것은 무엇일까요?', '확정의 기준이 무엇인가를 비교하세요.', NULL, NULL, '[]', 'choice', '["둘은 완전히 같은 개념이다", "Kafka 는 과반수가 아니라 한 노드만 확인한다", "Raft 는 **과반수**가 저장하면 확정하고, Kafka `acks=all` 은 고정 비율이 아니라 그 시점의 **ISR 전체**가 받아야 성공으로 본다. 또 일반 파티션 복제는 Raft 가 아닌 ISR 기반 프로토콜이다", "Raft 는 전원 저장을 요구한다"]', 2, 'Raft 의 "커밋"은 합의 알고리즘 내부의 확정 시점이고, Kafka 의 acks 는 프로듀서가 요구하는 응답 대기 수준이라 계층도 다릅니다. 진짜 Raft 커밋은 KRaft 메타데이터 복제에서 등장합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 86 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 86, 5, '강한 일관성과 최종 일관성', '**최종 일관성(eventual consistency)** 의 의미로 알맞은 것은 무엇일까요?', '지금은 아니어도 결국에는입니다.', NULL, NULL, '[]', 'choice', '["변경 즉시 모든 곳에서 같은 값이 보인다", "변경이 전파되는 동안은 노드마다 값이 다를 수 있지만, **결국에는 모든 곳이 같은 상태**가 된다는 보장이다 (빠르고 가용성이 높은 대신 잠깐의 불일치를 허용)", "영원히 불일치할 수 있다", "쓰기를 모두 거부한다"]', 1, '강한 일관성은 항상 정확하지만 모든 노드에 동기적으로 반영해야 해 느립니다. 이벤트 기반 구조에서는 서비스마다 처리 시점이 달라 잠깐 불일치하는 것이 정상이고, 화면이나 로직이 이를 감안해 설계되어야 합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 86 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 86, 6, '이벤트 기반 구조(EDA)', '**EDA(Event-Driven Architecture)** 에서 이벤트와 발행자에 대한 설명으로 알맞은 것은 무엇일까요?', '이벤트는 "일어난 사실"입니다.', NULL, NULL, '[]', 'choice', '["이벤트는 수신자에게 내리는 명령이다", "발행자는 모든 구독자의 응답을 기다린다", "서비스가 서로 직접 호출하는 구조이다", "이벤트는 과거형 **사실**(\\"주문이 생성됐다\\")이며, 발행자는 브로커에 발행하고 끝이다. 누가 구독해 무엇을 하는지 모르므로 서비스 간 결합이 느슨해진다"]', 3, '구독자가 죽어 있어도 발행자는 계속 발행하고, 구독자가 살아나면 쌓인 이벤트부터 이어서 처리합니다(장애 격리). 보존형 브로커(Kafka)면 과거 이벤트를 재처리할 수도 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 86 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 86, 7, '2PC 의 한계', '분산 트랜잭션을 묶는 고전적 방법인 **2PC(2 Phase Commit)** 의 문제로 알맞은 것은 무엇일까요?', '준비 상태에서 모두가 기다립니다.', NULL, NULL, '[]', 'choice', '["락이 전혀 필요 없다", "코디네이터 없이 동작한다", "준비(prepare) 단계에서 참여자들이 **락을 잡고 대기**해 성능이 떨어지고, 코디네이터가 죽으면 전체가 멈추는 **단일 장애점**이 되며, 서비스가 많을수록 느려진다", "서비스가 많을수록 빨라진다"]', 2, '마이크로서비스는 서비스마다 DB 가 따로라 한 번의 DB 트랜잭션(`BEGIN/COMMIT`)으로 묶을 수 없습니다. 2PC 대신 로컬 트랜잭션의 연속과 보상으로 처리하는 Saga 를 많이 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 86 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 86, 8, '보상 트랜잭션은 ROLLBACK 이 아니다', 'Saga 패턴의 **보상 트랜잭션**에 대한 설명으로 알맞은 것은 무엇일까요?', '이미 커밋된 일을 어떻게 되돌릴까요?', NULL, NULL, '[]', 'choice', '["이미 커밋된 일을 DB ROLLBACK 처럼 없던 일로 만드는 것이 아니라, **새로운 트랜잭션으로 의미적으로 되돌리는 것**이다 (결제 취소 이력이 DB 에 남는다)", "보상은 DB ROLLBACK 과 정확히 같다", "보상 트랜잭션은 이력을 남기지 않는다", "보상은 항상 자동으로 실패한다"]', 0, '그래서 보상이 가능한 단계(예: 결제 취소)와 불가능한 단계(예: 이미 보낸 이메일)를 설계 때 구분해야 하고, 보상 자체도 실패할 수 있어 재시도(멱등)가 필요합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 86 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 86, 9, 'Saga 실패 시 보상 순서 놓기', '주문 → 결제 → 재고 차감 순으로 진행하던 Saga 에서 **재고 차감이 실패**했습니다. 이후의 흐름을 **앞에서 뒤**로 놓으세요.', '이미 성공한 단계를 거꾸로 되돌립니다.', NULL, NULL, '[]', 'order', '["주문 취소(보상)를 한다", "결제 취소(보상)를 한다", "재고 차감이 실패했다고 보고한다"]', NULL, '**실패 보고 → 결제 취소(보상) → 주문 취소(보상)** 처럼 성공했던 단계를 **역순**으로 되돌립니다. Choreography 에서는 이 흐름이 이벤트에 흩어지고, Orchestration 에서는 오케스트레이터가 지시합니다.', '[2, 1, 0]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 86 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 86, 10, 'Choreography 와 Orchestration', 'Saga 구현 방식 두 가지의 차이로 알맞은 것은 무엇일까요?', '한쪽은 중앙 관리자가 없고, 한쪽은 있습니다.', NULL, NULL, '[]', 'choice', '["Choreography 가 중앙 오케스트레이터를 쓴다", "둘은 보상 트랜잭션 유무로만 갈린다", "Orchestration 은 이벤트를 쓸 수 없다", "Choreography 는 중앙 관리자 없이 서비스가 이벤트로 서로 반응(가볍지만 전체 흐름·장애 추적이 어렵다), Orchestration 은 오케스트레이터가 전체 흐름을 지시(흐름이 한 곳에 보여 추적이 쉽지만 의존이 커질 수 있다)"]', 3, '서비스가 적고 흐름이 단순하면 Choreography, 서비스가 많고 흐름과 보상이 복잡하면 Orchestration 이 낫습니다. Temporal 같은 워크플로 엔진이 Orchestration 구현체입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 86 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 86, 11, '멱등한 작업 고르기', '다음 중 **여러 번 실행해도 결과가 같은(멱등한)** 작업은 무엇일까요?', '"몇 번을 해도 같은 상태"입니다.', NULL, NULL, '[]', 'choice', '["`SET counter = 10` (또는 `PUT` 으로 전체 교체, 이미 없는 행의 `DELETE`)", "`counter = counter + 1`", "`INSERT INTO orders VALUES (...)` (중복 키 방지 없음)", "`POST /payments` (결제 요청)"]', 0, 'At-least-once 환경에서는 같은 메시지가 두 번 올 수 있어서 수신 측이 멱등해야 합니다. 멱등하게 만드는 방법은 고유 키(idempotency key)로 중복 무시, UPSERT, 절대값으로 쓰기입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 86 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 86, 12, '백프레셔', '생산자가 초당 10,000건을 보내는데 소비자는 초당 1,000건만 처리할 수 있어 **버퍼가 계속 차오릅니다.** **백프레셔(backpressure)** 는 무엇일까요?', '압력이 거슬러 올라갑니다.', NULL, NULL, '[]', 'choice', '["생산자가 더 빠르게 보내 버퍼를 채운다", "소비자가 데이터를 무조건 버린다", "소비자(downstream)가 처리할 수 있는 양을 생산자(upstream)에게 알려 **속도를 늦추게 하는** 메커니즘이다. Kafka 는 consumer 가 직접 poll 하는 pull 방식이라 그 자체가 백프레셔의 한 형태이다", "생산자와 소비자를 합쳐서 하나로 만든다"]', 2, '백프레셔가 없으면 소비자의 메모리 증가, OOM 과 재시작, 데이터 유실, 지연 폭증이 생깁니다. TCP 의 수신 윈도우, Reactive Streams 의 `request(n)`, HTTP/2 의 flow control 이 대표 구현입니다. 소비 지연(lag)을 감시해 생산 속도를 조절합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 86 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 86, 13, '배치 처리와 스트림 처리', '**배치 처리**와 **스트림 처리**의 차이로 알맞은 것은 무엇일까요?', '데이터를 모았다가 처리하는가, 들어오는 즉시 처리하는가의 차이입니다.', NULL, NULL, '[]', 'choice', '["배치는 즉시, 스트림은 하루 한 번 처리한다", "배치는 데이터를 쌓아 두었다가 한꺼번에 처리(예: 자정 집계)해 구현이 단순하고 지연이 길고, 스트림은 **데이터가 생성되는 즉시** 처리하며 무한한 흐름을 집계하려고 **윈도우**(예: 최근 5분)와 상태를 쓴다", "스트림은 상태를 가질 수 없다", "둘은 같은 방식이다"]', 1, '이상 거래 탐지처럼 즉시성이 필요하면 스트림, 하루 단위 집계처럼 지연을 허용하면 배치가 단순합니다. Kafka 는 스트림 처리의 입력·출력 저장소로 자주 쓰입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 86 AND order_index = 13);

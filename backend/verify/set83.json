@@ -1,0 +1,11 @@
+{
+  "setId": 83,
+  "answers": {
+    "9": "S='if redis.call(\"GET\", KEYS[1]) == ARGV[1] then return redis.call(\"DEL\", KEYS[1]) else return 0 end'\nredis-cli eval \"$S\" 1 lock:a tokenA\nredis-cli eval \"$S\" 1 lock:b tokenA\n\n# GET 과 DEL 을 하나의 원자적 연산으로 묶었다. lock:b 는 값이 달라 그대로 남는다",
+    "10": "printf \"MULTI\\nSET x 10\\nSET y 20\\nEXEC\\n\" | redis-cli\nredis-cli mget x y\n\n# EXEC 가 올 때까지 명령은 큐에 쌓이고, EXEC 으로 한꺼번에 실행된다",
+    "11": "S='local c = tonumber(redis.call(\"GET\", KEYS[1]) or \"0\")\nif c < tonumber(ARGV[1]) then redis.call(\"INCR\", KEYS[1]) return 1 else return 0 end'\nfor i in 1 2 3 4 5; do redis-cli eval \"$S\" 1 req:u1 3; done > /tmp/rl.txt\n\n# 읽기·비교·증가를 한 스크립트로 묶어 동시 요청이 와도 한도를 넘지 않는다",
+    "12": "redis-cli persist session\nredis-cli ttl session\n\n# ttl 값: -1 만료 없음, -2 키 없음",
+    "13": "redis-cli config set appendonly yes\nredis-cli config get appendonly\n\n# 영구 반영하려면 redis.conf 에도 appendonly yes 를 적는다 (CONFIG REWRITE 로 저장 가능)",
+    "14": "redis-cli config set maxmemory 10mb\nredis-cli config set maxmemory-policy allkeys-lru\n\n# 지워도 되는 캐시는 allkeys-lru, 지우면 안 되면 noeviction"
+  }
+}

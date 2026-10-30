@@ -1,0 +1,10 @@
+{
+  "setId": 109,
+  "answers": {
+    "8": "mysqldump --single-transaction shop > /tmp/shop.sql\nls -l /tmp/shop.sql\ngrep -c INSERT /tmp/shop.sql\n\n# 덤프는 SQL 문장(CREATE TABLE, INSERT)이 든 텍스트 파일이다",
+    "9": "mysqldump --single-transaction shop | gzip > /tmp/shop.sql.gz\ngzip -t /tmp/shop.sql.gz && echo ok\nzcat /tmp/shop.sql.gz | grep -c INSERT\n\n# 파이프로 연결하면 큰 평문 파일을 디스크에 만들지 않는다",
+    "10": "head -n 20 /tmp/backup.sql\nmariadb -e 'create database shop'\nmariadb shop < /tmp/backup.sql\nmariadb -e 'select * from shop.orders'\n\n# 복원 = 덤프 속 SQL 문장을 다시 실행하는 것",
+    "11": "grep -n 'Table structure' /tmp/full.sql\nsed -n '/Table structure for table `customers`/,/Table structure for table `orders`/p' /tmp/full.sql | mariadb shop\nmariadb -e 'select * from shop.customers'\n\n# 구간을 잘라 필요한 테이블만 넣으면 다른 테이블은 건드리지 않는다",
+    "12": "mariadb -e 'create database shop_check'\nmariadb shop_check < /tmp/backup.sql\nmariadb -N -e 'select count(*) from shop_check.orders' > /tmp/count.txt\ncat /tmp/count.txt\n\n# 운영 DB 와 분리된 이름에 복원해 검증하면 안전하다"
+  }
+}

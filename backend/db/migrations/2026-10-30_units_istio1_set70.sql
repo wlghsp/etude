@@ -1,0 +1,38 @@
+-- Git 세트 70. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set70.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 13, '미들웨어', '로드밸런서', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 13);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 70, 'HAProxy 와 Istio 함께 읽기: Gateway·VirtualService', 'HAProxy 가 앞단에서 L4 로 넘기고 Istio Gateway·VirtualService 가 TLS 종단과 도메인 라우팅을 맡는 구성을 읽습니다. 트래픽 흐름, 역할 차이, TLS 패스스루, 새 서비스 추가 절차, 리다이렉트와 경로 라우팅, NodePort 연결을 다룹니다.', 'quiz', '미들웨어'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 70);
+UPDATE quest_set SET display_order = 512, unit_id = (SELECT id FROM unit WHERE id = 13), icon = '🌐' WHERE id = 70;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 70, 1, 'L4 로드밸런서 뒤의 Istio 게이트웨이 트래픽 흐름 놓기', '외부 클라이언트의 HTTPS 요청이 서비스 Pod 에 도달하는 흐름을 **앞에서 뒤**로 놓으세요.', 'HAProxy 는 TCP 로 넘기기만 하고, TLS 는 Istio 쪽에서 끝납니다.', NULL, NULL, '[]', 'order', '["Istio Gateway 가 TLS 를 종료하고 요청을 받는다", "L4 로드밸런서(HAProxy 등)가 80/443 으로 받아 TCP 로 Istio ingress 의 NodePort 에 넘긴다", "VirtualService 가 도메인(경로)에 따라 서비스로 라우팅한다", "서비스 Pod 가 요청을 처리한다", "외부 클라이언트가 HTTPS 로 접속한다"]', NULL, '**클라이언트 → HAProxy(L4 포워딩) → Istio ingress NodePort → Gateway(TLS 종단) → VirtualService(도메인 라우팅) → Pod** 입니다. 같은 TLS 종단·도메인 분기 역할이 HAProxy 단독 환경에서는 HAProxy 에 있었고, Istio 환경에서는 Gateway 와 VirtualService 로 옮겨 갑니다.', '[4, 1, 0, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 70 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 70, 2, 'HAProxy 단독과 Istio 환경의 역할 차이', 'Istio 가 앞단에 있는 환경에서 HAProxy 의 역할은 어떻게 달라질까요?', 'TLS 종단과 도메인 라우팅은 누가 하게 되나요?', NULL, NULL, '[]', 'choice', '["HAProxy 는 **L4 TCP 포워딩**만 하고, TLS 종단은 Istio Gateway, 도메인별 라우팅은 VirtualService 가 맡는다", "HAProxy 가 TLS 종단과 ACL 라우팅을 모두 계속 한다", "HAProxy 가 Pod 에 직접 접속한다", "HAProxy 는 필요 없어지고 삭제한다"]', 0, '단독 환경에서는 HAProxy 가 L4 + L7(인증서, ACL 도메인 분기)을 했습니다. Istio 환경에서는 그 L7 기능이 Gateway/VirtualService 로 이동하고, HAProxy 는 노드로 들어오는 입구 역할만 합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 70 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 70, 3, 'TLS 패스스루를 쓰는 이유', 'HAProxy 가 HTTPS 를 **복호화하지 않고 그대로** Istio 로 넘기는(TLS passthrough) 구성의 장점은 무엇일까요?', '인증서를 어디에서 관리할지 생각해 보세요.', NULL, NULL, '[]', 'choice', '["HAProxy 가 HTTP 헤더를 보고 더 세밀하게 라우팅할 수 있다", "인증서를 HAProxy 에 둘 필요가 없고 **K8s Secret 한 곳(Istio Gateway)** 에서만 관리하면 된다. 통신도 끝까지 암호화된 채로 간다", "인증서가 필요 없어진다", "속도가 항상 느려진다"]', 1, 'passthrough 는 TCP 모드에서만 가능하고 HAProxy 는 내용을 열어 보지 않습니다. 대신 HAProxy 가 경로·헤더 기반 L7 라우팅은 할 수 없게 되므로 그 역할은 Istio 에 맡깁니다. (HAProxy 에서 종단하는 SSL Termination 과 반대 선택입니다.)', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 70 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 70, 4, 'Gateway 와 VirtualService 의 역할 구분', 'Istio 의 **Gateway** 와 **VirtualService** 에 대한 설명으로 알맞은 것은 무엇일까요?', '하나는 "어떤 입구를 열 것인가", 하나는 "들어온 요청을 어디로 보낼 것인가"입니다.', NULL, NULL, '[]', 'choice', '["Gateway 는 Pod 를 만들고 VirtualService 는 삭제한다", "둘은 같은 리소스의 다른 이름이다", "Gateway 는 입구(포트·호스트·TLS 인증서)를 정의하고, VirtualService 는 그 Gateway 로 들어온 요청을 **호스트/경로 규칙으로 서비스에 라우팅**한다", "VirtualService 는 TLS 인증서를 저장한다"]', 2, '`VirtualService.spec.gateways` 가 어느 Gateway 에 붙을지 가리키고, `hosts` 가 도메인을 나타냅니다. 둘의 이름이나 host 가 어긋나면 라우팅이 되지 않습니다. 가중치 배포(canary)나 경로 분기도 VirtualService 의 `route` 에서 설정합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 70 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 70, 5, '새 서비스를 추가하는 절차 알기', 'Istio 환경에서 **새 도메인의 서비스**를 외부에 노출할 때 기본적으로 해야 할 일은 무엇일까요?', 'HAProxy 설정을 매번 고치지 않아도 된다는 점이 장점입니다.', NULL, NULL, '[]', 'choice', '["도메인마다 HAProxy 에 ACL 과 backend 를 추가하고 재시작한다", "Pod 를 직접 NodePort 로 노출한다", "인증서를 서버마다 복사한다", "그 도메인을 처리하는 **VirtualService 를 추가**하고(필요하면 Gateway 의 host/인증서를 확인), 적용 후 Gateway·VirtualService 상태를 확인한다"]', 3, 'HAProxy 는 TCP 로 넘기기만 하므로 새 서비스 때는 보통 건드리지 않습니다. 와일드카드 인증서를 Gateway 가 들고 있다면 VirtualService 만 만들면 됩니다. 적용 뒤에는 `kubectl get gateway,virtualservice` 로 확인합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 70 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 70, 6, 'HTTP 를 HTTPS 로 리다이렉트하는 곳', 'Istio 환경에서 HTTP(80)로 들어온 요청을 HTTPS 로 **리다이렉트**하는 설정은 어디에 있을까요?', 'HAProxy 는 TCP 로 넘기기만 합니다.', NULL, NULL, '[]', 'choice', '["Istio Gateway 의 80 포트 서버 설정(`tls.httpsRedirect`)에서 처리한다", "HAProxy 가 HTTP 를 직접 파싱해서 처리한다", "Pod 의 애플리케이션만 할 수 있다", "Kubernetes 의 Node 가 자동으로 한다"]', 0, 'HAProxy 가 L4 포워딩만 하므로 HTTP 의 리다이렉트도 L7 을 아는 쪽, 즉 Istio Gateway 에서 정의합니다. 80 포트는 `httpsRedirect: true`, 443 포트는 TLS 종단을 맡습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 70 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 70, 7, '경로 기반 라우팅이 필요한 경우', '같은 도메인에서 `/api` 는 서비스 A, `/` 는 서비스 B 로 나누려면 Istio 에서 어디를 설정할까요?', 'VirtualService 의 라우팅 규칙입니다.', NULL, NULL, '[]', 'choice', '["HAProxy 의 `balance source` 로 나눈다", "VirtualService 의 `http.match` 에 `uri.prefix` 조건을 두고 각각 다른 `route.destination` 으로 보낸다", "Gateway 의 인증서를 둘로 나눈다", "Pod 를 두 번 띄운다"]', 1, 'VirtualService 는 `match`(경로·헤더·메서드 조건)와 `route`(목적지·가중치)로 구성됩니다. 앞서 HAProxy 단독 환경에서 `use_backend … if { path_beg /api }` 로 하던 것과 같은 일을 Istio 에서는 VirtualService 가 합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 70 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 70, 8, 'NodePort 로 연결하는 이유 알기', 'HAProxy 가 Istio ingress 로 트래픽을 넘길 때 **NodePort**(예: 30080, 30443)를 쓰는 이유로 알맞은 것은 무엇일까요?', 'HAProxy 는 클러스터 바깥에 있는 서버입니다.', NULL, NULL, '[]', 'choice', '["NodePort 는 Pod 안에서만 보이는 포트라서이다", "NodePort 를 쓰면 TLS 가 자동으로 켜진다", "클러스터 **바깥**의 HAProxy 가 접근할 수 있도록 모든 워커 노드의 고정 포트로 Istio ingress 서비스를 열어 두는 것이다", "Istio 는 NodePort 만 지원하기 때문이다"]', 2, 'NodePort 는 클러스터 외부에서 접근할 수 있도록 각 노드의 고정 포트(기본 30000~32767)를 여는 Service 타입입니다. HAProxy backend 에는 워커 노드들의 이 포트를 나열하고 헬스체크를 켜 둡니다. (클라우드 환경이면 LoadBalancer 타입을 쓰기도 합니다.)', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 70 AND order_index = 8);

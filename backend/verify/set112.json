@@ -1,0 +1,10 @@
+{
+  "setId": 112,
+  "answers": {
+    "8": "cat /tmp/health.txt\nawk 'NR==2{print $4}' /tmp/health.txt > /tmp/status.txt\ncat /tmp/status.txt\n\n# awk 는 공백으로 열을 나눈다: NR 줄 번호, $4 네 번째 열",
+    "9": "cat /tmp/indices.txt\nawk 'NR>1' /tmp/indices.txt | sort -k7 -nr | head -n 1 | awk '{print $3}' > /tmp/biggest.txt\ncat /tmp/biggest.txt\n\n# sort -k7 -nr : 7번째 열을 숫자 기준 내림차순",
+    "10": "cat /tmp/query.json\nsed -i 's/: error }/: \"error\" }/' /tmp/query.json\ncat /tmp/query.json\n\n# JSON 문자열은 큰따옴표로 감싼다",
+    "11": "cat /tmp/resp.txt\ngrep -o '\"type\":\"[^\"]*\"' /tmp/resp.txt | head -n 1 | cut -d'\"' -f4 > /tmp/type.txt\ncat /tmp/type.txt\n\n# 404 + index_not_found_exception: 인덱스 이름이 없거나 틀림",
+    "12": "cat /tmp/docs.txt\nwhile read n; do\n  echo '{\"index\":{\"_index\":\"shop\"}}'\n  echo \"{\\\"name\\\":\\\"$n\\\"}\"\ndone < /tmp/docs.txt > /tmp/bulk.ndjson\ncat /tmp/bulk.ndjson\n\n# _bulk 은 줄마다 JSON 한 개 (NDJSON). 동작 줄 + 문서 줄이 한 쌍"
+  }
+}

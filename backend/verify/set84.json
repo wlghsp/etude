@@ -1,0 +1,9 @@
+{
+  "setId": 84,
+  "answers": {
+    "8": "sed -i '1i global\\n    log stdout format raw local0 info' /tmp/haproxy.cfg\nsed -i 's/^    mode http/    mode http\\n    log global\\n    option httplog/' /tmp/haproxy.cfg\nnohup haproxy -f /tmp/haproxy.cfg > /tmp/hp.log 2>&1 &\nsleep 1\nfor i in 1 2 3; do curl -s localhost:8080/x >/dev/null; done\nsleep 1\ngrep -c GET /tmp/hp.log > /tmp/cnt.txt\n\n# 로그 한 줄에서 frontend, backend/server, 타이밍, 상태 코드, 요청 줄을 읽을 수 있다",
+    "9": "sed -i 's/^    default_backend app/    acl is_admin path_beg \\/admin\\n    http-request deny deny_status 403 if is_admin\\n    default_backend app/' /tmp/haproxy.cfg\nhaproxy -D -f /tmp/haproxy.cfg\ncurl -s -o /dev/null -w '%{http_code}' localhost:8080/admin/login > /tmp/admin.txt\ncurl -s -o /dev/null -w '%{http_code}' localhost:8080/ > /tmp/root.txt\n\n# path_beg : 경로가 해당 문자열로 시작한다",
+    "10": "sed -i 's/^    default_backend app/    stick-table type ip size 1m expire 10s store http_req_rate(10s)\\n    http-request track-sc0 src\\n    acl too_fast sc_http_req_rate(0) gt 3\\n    http-request deny deny_status 429 if too_fast\\n    default_backend app/' /tmp/haproxy.cfg\nhaproxy -D -f /tmp/haproxy.cfg\nfor i in 1 2 3 4 5 6; do curl -s -o /dev/null -w '%{http_code}\\n' localhost:8080/; done > /tmp/codes.txt\n\n# stick-table 이 IP 별 최근 10초 요청 수를 기억하고, 기준을 넘으면 거부한다",
+    "11": "sed -i 's/balance roundrobin/balance uri/' /tmp/haproxy.cfg\nhaproxy -D -f /tmp/haproxy.cfg\nfor i in 1 2 3 4; do curl -s localhost:8080/a; echo; done > /tmp/a.txt\nfor i in 1 2 3 4; do curl -s localhost:8080/b; echo; done > /tmp/b.txt\n\n# uri 해시 : 같은 경로는 같은 서버로 (캐시 서버 앞단에 유용)"
+  }
+}

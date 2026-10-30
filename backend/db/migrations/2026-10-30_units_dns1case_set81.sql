@@ -1,0 +1,62 @@
+-- 리눅스 세트 81. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set81.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 3, '리눅스', '네트워크와 통신', 30 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 3);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 81, 'DNS 와 이름 해석: 왜 깨지고 어떻게 확인하나', '"서버에 접속이 안 돼요"의 원인이 DNS 인 경우는 많습니다. DNS 가 깨지는 흔한 방식(ndots, 네거티브 캐싱, 시작 시 한 번만 resolve 하는 앱, TCP 53 차단), `/etc/hosts` 와 `dig` 결과가 달라지는 이유, UDP 의 특성, OSI 계층 용어를 개념으로 잡고, 이름 해석 순서와 `/etc/hosts` 를 샌드박스에서 직접 확인합니다.', 'linux', '리눅스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 81);
+UPDATE quest_set SET display_order = 116, unit_id = (SELECT id FROM unit WHERE id = 3), icon = '🔎' WHERE id = 81;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 81, 1, 'ndots 가 일으키는 불필요한 조회', '쿠버네티스 Pod 의 `/etc/resolv.conf` 에 `ndots:5` 가 설정되어 있습니다. `api.example.com`(점 2개)을 조회하면 어떤 일이 생길까요?', '점이 ndots 보다 적으면 먼저 검색 도메인을 붙여 봅니다.', NULL, NULL, '[]', 'choice', '["항상 한 번에 정확히 조회된다", "검색 도메인(search)을 차례로 붙인 이름을 먼저 여러 번 조회해 실패한 뒤에야 원래 이름을 조회한다 (정상 조회 하나에 불필요한 조회가 늘어난다)", "조회가 불가능해진다", "캐시에서만 읽는다"]', 1, '점의 개수가 `ndots` 미만이면 이름을 "상대 이름"으로 보고 search 목록의 접미사를 붙여 먼저 시도합니다. 외부 도메인을 자주 부르는 앱은 끝에 점을 붙인 FQDN(`api.example.com.`)을 쓰거나 `ndots` 를 낮춰 지연을 줄입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 81 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 81, 2, '네거티브 캐싱', '도메인에 레코드를 **추가했는데도** 한동안 "없음"으로 계속 조회됩니다. 가장 가능성 높은 원인은 무엇일까요?', '"없다"는 결과도 캐시됩니다.', NULL, NULL, '[]', 'choice', '["레코드를 추가하기 전에 조회한 \\"없음\\" 결과가 SOA 의 TTL 동안 캐시(네거티브 캐싱)되어 있다", "DNS 는 레코드를 추가하면 영원히 반영하지 않는다", "브라우저 글꼴이 다르다", "UDP 패킷이 항상 유실된다"]', 3, '새 서비스를 띄우기 전에 누군가 먼저 조회해 버리면 "없음"이 캐시됩니다. 레코드를 만든 뒤에도 TTL 이 지나야 보이거나 캐시를 비워야 합니다. 서비스 시작 시 레코드 전파보다 조회가 먼저 일어나는 레이스 컨디션도 같은 원리입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 81 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 81, 3, '앱이 DNS 를 한 번만 조회하는 문제', '어느 날 갑자기 **대상 서버의 IP 가 바뀌었는데** nginx 의 `proxy_pass https://some.domain.com` 이 옛 IP 로만 연결합니다. 원인으로 알맞은 것은 무엇일까요?', '일부 소프트웨어는 이름을 시작할 때 한 번만 해석합니다.', NULL, NULL, '[]', 'choice', '["nginx 는 설정에 쓴 도메인을 **시작 시점에 한 번만** resolve 하고 이후 갱신하지 않기 때문이다 (JVM 도 TTL 을 무시하고 캐시하는 경우가 있다)", "DNS 서버가 IP 를 바꾸지 못해서이다", "브라우저 캐시 때문이다", "방화벽이 IP 를 고정해서이다"]', 0, '대상 IP 가 바뀔 수 있다면 resolver 지시어로 동적 resolve 를 쓰거나, 변경 후 reload/재시작을 합니다. JVM 은 `networkaddress.cache.ttl` 설정이 영향을 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 81 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 81, 4, '/etc/hosts 와 dig 가 다른 이유', '`dig 이름` 으로는 정상 IP 가 나오는데 **앱에서는 다른 IP** 로 접속됩니다. 가능한 원인은 무엇일까요?', '`dig` 는 어디에 질의할까요?', NULL, NULL, '[]', 'choice', '["로컬 `/etc/hosts` 항목이 DNS 결과보다 먼저 적용된다. `dig` 는 DNS 서버에 직접 묻기 때문에 그 override 가 보이지 않는다", "dig 가 항상 틀린 값을 준다", "앱은 DNS 를 쓰지 않는다", "`/etc/hosts` 는 읽기 전용이라 영향이 없다"]', 2, '앱은 보통 libc 의 이름 해석(`getaddrinfo`)을 쓰고, 이는 `/etc/nsswitch.conf` 의 순서(보통 `files dns`)대로 hosts 파일을 먼저 봅니다. 앱이 실제로 보는 값은 `getent hosts 이름` 으로 확인합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 81 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 81, 5, 'TCP 53 포트 차단', '방화벽이 **UDP 53 은 허용하고 TCP 53 은 막아** 두었습니다. 어떤 증상이 생길 수 있을까요?', '응답이 커지면 어떤 프로토콜로 다시 시도할까요?', NULL, NULL, '[]', 'choice', '["대부분의 짧은 응답은 되지만 **응답이 커서 TCP 로 재시도해야 하는 경우에만 간헐적으로 실패**한다", "모든 DNS 조회가 항상 실패한다", "아무 영향이 없다", "DNS 가 TCP 만 쓰게 된다"]', 1, 'DNS 는 기본 UDP 이고, 응답이 잘리면(truncated) TCP 로 다시 질의합니다. 그래서 TCP 53 도 열려 있어야 합니다. 간헐적 장애는 재현이 어려우니 둘 다 열려 있는지 확인합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 81 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 81, 6, 'Alpine 과 DNS', 'Alpine Linux 컨테이너에서만 **큰 DNS 응답이 조용히 실패**하는 경우가 있습니다. 배경으로 알맞은 것은 무엇일까요?', 'Alpine 이 쓰는 libc 가 일반 배포판과 다릅니다.', NULL, NULL, '[]', 'choice', '["Alpine 의 musl libc 는 응답이 잘렸을 때 TCP 로 재시도하는 처리를 지원하지 않아 조용히 실패할 수 있다", "Alpine 은 DNS 를 지원하지 않는다", "Alpine 은 항상 UDP 53 을 차단한다", "Alpine 은 `/etc/hosts` 를 읽지 않는다"]', 3, '이미지가 다르면 이름 해석 동작이 다를 수 있습니다. 같은 앱이 한 이미지에서만 DNS 오류를 낸다면 베이스 이미지(glibc/musl)를 의심해 볼 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 81 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 81, 7, 'UDP 의 특징', 'UDP 가 TCP 와 다른 점으로 알맞은 것은 무엇일까요?', '연결 수립이 없습니다.', NULL, NULL, '[]', 'choice', '["연결 수립(핸드셰이크)과 전달·순서 보장이 없어 가볍다. 유실되면 재시도는 애플리케이션이 해야 한다", "항상 TCP 보다 안전하다", "데이터를 자동으로 여러 패킷으로 나눠 준다", "순서와 재전송을 항상 보장한다"]', 0, 'DNS, 메트릭 보고(statsd), 게임, 실시간 통신처럼 "늦은 데이터보다 유실이 낫거나" 가벼움이 중요할 때 UDP 를 씁니다. 신뢰성이 필요하면 UDP 위에 직접 구현하기보다 TCP 를 쓰는 편이 대체로 쉽습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 81 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 81, 8, 'OSI 계층 용어 알기', '실무에서 "Layer 7 로드밸런서"라고 할 때 가장 가까운 의미는 무엇일까요?', '계층 번호 대신 구체적인 프로토콜 이름을 쓰자는 제안이 있습니다.', NULL, NULL, '[]', 'choice', '["HTTP 같은 애플리케이션 프로토콜을 해석해 경로·헤더로 분산하는 로드밸런서", "물리 케이블을 연결하는 장치", "MAC 주소만으로 전달하는 스위치", "IP 주소만 보는 라우터"]', 2, 'L2 는 Ethernet, L3 는 IP, L4 는 TCP/UDP, L7 은 애플리케이션 데이터에 대응합니다. 다만 L5·L6 은 TCP/IP 와 잘 맞지 않아서, "Layer 7" 대신 "HTTP 로드밸런서"처럼 프로토콜 이름으로 말하면 오해가 줄어듭니다. HAProxy 의 `mode tcp` 는 L4, `mode http` 는 L7 입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 81 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 81, 9, '/etc/hosts 에 이름 등록하기', '`myapp.test` 라는 이름이 `10.9.8.7` 로 해석되도록 **로컬 hosts 파일**에 등록하세요. 등록한 뒤 `getent hosts myapp.test` 의 결과를 `/tmp/resolved.txt` 에 저장하세요.', '`/etc/hosts` 한 줄은 `IP 이름` 형식입니다. 기존 내용을 지우지 않고 **끝에 추가**(`>>`)하세요.
+확인: `getent hosts myapp.test`', 'echo "10.9.8.7 myapp.test" >> /etc/hosts
+getent hosts myapp.test > /tmp/resolved.txt
+
+# hosts 파일은 DNS 보다 먼저 확인되는 로컬 이름표다', '["sh", "-c", "true"]', '["sh", "-c", "( grep -qE \\"^10\\\\.9\\\\.8\\\\.7[[:space:]]+myapp\\\\.test\\" /etc/hosts ) && ( [ -s /tmp/resolved.txt ] ) && ( grep -qE \\"^10\\\\.9\\\\.8\\\\.7[[:space:]]+myapp\\\\.test\\" /tmp/resolved.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "hosts 에 등록되었다", "cmd": ["sh", "-c", "grep -qE \\"^10\\\\.9\\\\.8\\\\.7[[:space:]]+myapp\\\\.test\\" /etc/hosts"]}, {"label": "결과 파일이 있다", "cmd": ["sh", "-c", "[ -s /tmp/resolved.txt ]"]}, {"label": "myapp.test 가 10.9.8.7 로 해석되었다", "cmd": ["sh", "-c", "grep -qE \\"^10\\\\.9\\\\.8\\\\.7[[:space:]]+myapp\\\\.test\\" /tmp/resolved.txt"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 81 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 81, 10, '이름 해석 순서 확인하기', '이 컨테이너는 이름을 해석할 때 **hosts 파일과 DNS 중 어느 것을 먼저** 보는지 설정 파일로 확인하세요. 그 설정 줄(`hosts:` 로 시작하는 줄)을 `/tmp/order.txt` 에 저장하세요.', '이름 해석 순서는 `/etc/nsswitch.conf` 에 있습니다. `grep` 으로 `hosts:` 로 시작하는 줄만 뽑으세요.
+확인: `cat /tmp/order.txt` (`files dns` 면 hosts 파일이 먼저)', 'grep ''^hosts:'' /etc/nsswitch.conf > /tmp/order.txt
+cat /tmp/order.txt
+
+# files = /etc/hosts, dns = DNS 서버 (왼쪽부터 순서대로)', '["sh", "-c", "true"]', '["sh", "-c", "( [ -s /tmp/order.txt ] ) && ( [ \\"$(cat /tmp/order.txt)\\" = \\"$(grep \\"^hosts:\\" /etc/nsswitch.conf)\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일이 있다", "cmd": ["sh", "-c", "[ -s /tmp/order.txt ]"]}, {"label": "nsswitch.conf 의 hosts 줄과 같다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/order.txt)\\" = \\"$(grep \\"^hosts:\\" /etc/nsswitch.conf)\\" ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 81 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 81, 11, '사용 중인 DNS 서버 확인하기', '이 컨테이너가 질의하는 **DNS 서버(nameserver) 줄**만 `/tmp/ns.txt` 에 저장하세요.', 'DNS 서버 목록은 `/etc/resolv.conf` 에 있습니다. `nameserver` 로 시작하는 줄만 뽑으세요.
+확인: `cat /tmp/ns.txt`', 'grep ''^nameserver'' /etc/resolv.conf > /tmp/ns.txt
+cat /tmp/ns.txt
+
+# search, options ndots 같은 줄도 같은 파일에 있다', '["sh", "-c", "true"]', '["sh", "-c", "( [ -s /tmp/ns.txt ] ) && ( [ \\"$(cat /tmp/ns.txt)\\" = \\"$(grep \\"^nameserver\\" /etc/resolv.conf)\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일이 있다", "cmd": ["sh", "-c", "[ -s /tmp/ns.txt ]"]}, {"label": "resolv.conf 의 nameserver 줄과 같다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/ns.txt)\\" = \\"$(grep \\"^nameserver\\" /etc/resolv.conf)\\" ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 81 AND order_index = 11);

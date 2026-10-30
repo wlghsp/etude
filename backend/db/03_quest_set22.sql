@@ -2,7 +2,9 @@
 -- Job, CronJob, DaemonSet, requests/limits, 프로브, nodeSelector, initContainers, downward API, HPA. 채점은 리소스 상태(API 객체)로 보고 Pod 실행 여부에 의존하지 않는다 (서버 자원과 이미지 pull 부담을 줄이기 위해).
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
   (22,  1, 'Job 만들기',
-   '**Job** 은 한 번 실행하고 끝나는 작업(백업, 데이터 처리 등)을 위한 리소스입니다. 계속 떠 있는 Deployment 와 다릅니다.
+   '**Job** 은 한 번 실행하고 끝나는 작업을 위한 리소스입니다. 계속 떠 있어야 하는 서버는 Deployment, 끝나면 종료되는 일은 Job 을 씁니다.
+
+**언제 쓰나요?** DB 백업, 데이터 마이그레이션, 배치 처리, 배포 전 초기화 작업처럼 "한 번 하고 끝나는 일"에 씁니다. 정해진 시간마다 반복하려면 Job 을 주기적으로 만들어 주는 CronJob 을 씁니다.
 
 `$NS` 네임스페이스에 `busybox` 이미지로 `echo hi` 를 한 번 실행하는 Job `hello-job` 을 만드세요.',
    '`kubectl create job <이름> --image=<이미지> -n <네임스페이스> -- <명령>` 입니다. `--` 뒤가 컨테이너에서 실행할 명령입니다.',

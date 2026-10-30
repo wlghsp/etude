@@ -1,0 +1,10 @@
+{
+  "setId": 99,
+  "answers": {
+    "8": "redis-cli type user:1 > /tmp/type.txt\nredis-cli hget user:1 name > /tmp/name.txt\ncat /tmp/type.txt /tmp/name.txt\n\n# 자료형에 맞는 명령을 써야 한다 (hash 는 HGET/HGETALL, string 은 GET)",
+    "9": "redis-cli --scan --pattern 'cache:*' | wc -l | tr -d ' ' > /tmp/n.txt\ncat /tmp/n.txt\n\n# --scan 은 내부적으로 SCAN 을 반복 호출한다 (서비스를 막지 않는다)",
+    "10": "redis-cli --scan --pattern 'cache:*' | xargs redis-cli unlink\nredis-cli dbsize\n\n# 전체 삭제(FLUSH*) 대신 패턴으로 대상만 골라 지운다",
+    "11": "redis-cli get x\nREDISCLI_AUTH=s3cret redis-cli get x > /tmp/x.txt\ncat /tmp/x.txt\n\n# 명령줄에 비밀번호(-a)를 쓰면 이력·프로세스 목록에 노출될 수 있어 환경 변수가 낫다",
+    "12": "redis-cli info keyspace\nredis-cli -n 1 get flag > /tmp/flag.txt\ncat /tmp/flag.txt\n\n# Redis 는 DB 번호(기본 0~15)마다 키 공간이 분리된다"
+  }
+}

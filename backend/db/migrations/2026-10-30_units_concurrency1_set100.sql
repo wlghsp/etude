@@ -1,0 +1,80 @@
+-- 미들웨어 세트 100. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set100.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 27, '미들웨어', '동시성·이벤트', 90 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 27);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 100, '동시성 기본기: 경쟁 상태, 락, 데드락, 멱등성', '여러 작업이 동시에 실행될 때 생기는 문제와 해결법을 익힙니다. 경쟁 상태(lost update)를 재현해 보고 flock 으로 막기, 중복 실행 방지, 데드락과 락 순서 통일, 낙관적·비관적 락, 멱등 키와 중복 이벤트 처리, 재시도와 백오프, 원자적 락(mkdir, SET NX)을 문제와 실습으로 다룹니다.', 'linux', '미들웨어'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 100);
+UPDATE quest_set SET display_order = 560, unit_id = (SELECT id FROM unit WHERE id = 27), icon = '🔀' WHERE id = 100;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 100, 1, 'flock 옵션 채우기', '`flock` 은 파일을 이용해 **한 번에 한 프로세스만** 실행되게 하는 명령입니다. ① 이미 잠겨 있으면 **기다리지 않고 바로 실패**, ② **최대 5초만 기다렸다가** 실패하는 옵션을 채우세요.', '기다리지 않음은 non-blocking 의 n, 시간 제한 기다림은 wait 의 w 입니다.', NULL, NULL, '[]', 'fill', '["n", "w", "x", "u", "s"]', NULL, '`flock -n` 은 락을 못 잡으면 즉시 종료 코드 1 로 실패해, 같은 작업의 **중복 실행 방지**에 알맞습니다. `-w 초` 는 그 시간까지 기다립니다. 옵션이 없으면 락이 풀릴 때까지 무한정 기다립니다.', '[0, 1]', 'flock -{0} /tmp/job.lock ./run.sh
+flock -{1} 5 /tmp/job.lock ./run.sh', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 100 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 100, 2, '재시도를 안전하게 하는 순서', '외부 서비스 호출이 간헐적으로 실패합니다. 서비스에 부담을 주지 않고 **재시도**하는 흐름을 **앞에서 뒤**로 놓으세요.', '바로 다시 때리지 않고, 기다리는 시간을 늘리고, 끝을 정합니다.', NULL, NULL, '[]', 'order', '["최대 재시도 횟수를 넘으면 포기하고 오류를 기록·보고한다", "실패를 감지한다 (일시적 오류인지 확인)", "대기 시간을 늘려 가며(1초, 2초, 4초…) 약간의 무작위 지연을 더해 기다린다", "같은 요청을 다시 보낸다"]', NULL, '**실패 감지 → 지수적 대기 + 지터 → 재시도 → 횟수 초과 시 포기** 입니다. 모든 클라이언트가 같은 간격으로 재시도하면 복구 중인 서비스에 다시 몰려 무너뜨리므로, 간격에 무작위(지터)를 섞습니다. 재시도되는 요청은 **멱등**해야 안전합니다.', '[1, 2, 3, 0]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 100 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 100, 3, '경쟁 상태(race condition)', '두 프로세스가 카운터 파일에서 값 `5` 를 **동시에 읽고** 각자 `+1` 하여 `6` 을 씁니다. 결과는 7 이어야 하는데 6 입니다. 이 현상을 무엇이라 할까요?', '읽고-계산하고-쓰는 사이에 다른 작업이 끼어들었습니다.', NULL, NULL, '[]', 'choice', '["경쟁 상태(race condition) — 여러 작업이 같은 값을 동시에 다뤄 한 쪽 갱신이 사라지는 문제 (lost update)", "메모리 누수", "캐시 만료", "네트워크 분할"]', 0, '"읽기 → 계산 → 쓰기"는 한 덩어리로 실행되지 않아 사이에 다른 작업이 끼어듭니다. 해결은 락으로 한 번에 하나만 실행하게 하거나, `INCR` 처럼 **원자적(atomic)** 연산을 쓰는 것입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 100 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 100, 4, '데드락(교착 상태)', '작업 A 는 락 1 을 잡고 락 2 를 기다리고, 작업 B 는 락 2 를 잡고 락 1 을 기다립니다. 둘 다 영원히 멈춥니다. 가장 기본적인 예방법은 무엇일까요?', '서로 반대 순서로 잡는 것이 문제입니다.', NULL, NULL, '[]', 'choice', '["락 개수를 늘린다", "모든 작업이 락을 **항상 같은 순서**(예: 1 → 2)로 잡게 하고, 대기에 타임아웃을 둔다", "작업을 더 빨리 실행한다", "서버를 재부팅한다"]', 1, '데드락은 "서로 상대의 락을 기다리는 순환"입니다. 순서를 통일하면 순환이 생기지 않습니다. DB 에서는 데드락을 감지해 한쪽 트랜잭션을 롤백하므로, 롤백된 쪽이 재시도하도록 만듭니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 100 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 100, 5, '낙관적 락과 비관적 락', '같은 주문 행을 거의 동시에 고치는 일이 **드물게** 생깁니다. 평소 성능을 해치지 않으면서 충돌만 감지하고 싶을 때 알맞은 방식은 무엇일까요?', '충돌이 드물면 미리 잠그지 않고 나중에 검사합니다.', NULL, NULL, '[]', 'choice', '["비관적 락 — 모든 조회에 `SELECT ... FOR UPDATE` 를 건다", "락을 쓰지 않고 마지막 쓰기가 항상 이긴다고 둔다", "서버를 한 대로 줄인다", "낙관적 락 — 버전 번호를 두고 `UPDATE ... WHERE version = 읽었던값` 으로 갱신해, 다른 쪽이 먼저 바꿨으면(0행 갱신) 재시도한다"]', 3, '충돌이 드물면 낙관적 락이, 같은 행을 자주 놓고 다투면 비관적 락(`FOR UPDATE`)이 낫습니다. 비관적 락은 안전하지만 대기와 데드락 위험이 늘어납니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 100 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 100, 6, '멱등성(idempotency)', '결제 요청이 네트워크 오류로 실패한 것처럼 보여 클라이언트가 **같은 요청을 다시** 보냈습니다. 이중 결제를 막으려면 무엇이 필요할까요?', '같은 요청을 여러 번 받아도 결과가 한 번과 같아야 합니다.', NULL, NULL, '[]', 'choice', '["요청마다 고유한 **멱등 키**를 보내고 서버가 이미 처리한 키는 저장된 결과를 돌려주며 다시 처리하지 않는다", "재시도를 금지한다", "서버를 두 대로 늘린다", "결제 금액을 줄인다"]', 0, '재시도는 필연적이므로 처리 쪽이 중복에 안전해야 합니다. 멱등 키를 DB 의 유니크 제약이나 Redis `SET NX` 로 기록하면 "이미 처리됨"을 원자적으로 판단할 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 100 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 100, 7, '"없으면 만들고 시작" 이 위험한 이유', '스크립트가 `[ ! -f /tmp/run.lock ] && touch /tmp/run.lock && ./work.sh` 로 중복 실행을 막으려 합니다. 이 방식의 문제는 무엇일까요?', '검사와 생성이 따로 실행됩니다.', NULL, NULL, '[]', 'choice', '["`touch` 는 파일을 만들지 못한다", "락 파일은 `/tmp` 에 둘 수 없다", "검사와 생성 사이에 다른 프로세스가 끼어들면 둘 다 \\"락이 없다\\"고 보고 같이 실행된다 (check-then-act). 검사와 획득이 한 번에 되는 `flock`, `mkdir`, `SET NX` 같은 원자적 연산이 필요하다", "문제 없다. 항상 안전하다"]', 2, '"확인하고 나서 행동"은 그 사이에 상태가 바뀔 수 있어 위험합니다(TOCTOU). 또 프로세스가 비정상 종료하면 락 파일이 남아 영원히 막히는 문제도 있어, 종료 시 자동으로 풀리는 `flock` 이 더 안전합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 100 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 100, 8, '락 없이/락으로 병렬 카운터 비교', '`/tmp/inc.sh` 는 카운터 파일 `/tmp/c` 를 **읽고 +1 해서 쓰는** 스크립트입니다. ① 락 없이 **10개를 동시에** 실행하고 결과를 **`/tmp/before.txt`** 에, ② 카운터를 0 으로 되돌리고 `flock` 으로 보호해 같은 방식으로 실행한 결과를 **`/tmp/after.txt`** 에 저장하세요. (②는 10 이어야 합니다)', '`for i in $(seq 10); do sh /tmp/inc.sh & done; wait` 가 동시 실행입니다. 락은 `flock /tmp/c.lock sh /tmp/inc.sh` 로 감쌉니다. 초기화는 `echo 0 > /tmp/c`.', 'for i in $(seq 10); do sh /tmp/inc.sh & done; wait
+cat /tmp/c > /tmp/before.txt
+echo 0 > /tmp/c
+for i in $(seq 10); do flock /tmp/c.lock sh /tmp/inc.sh & done; wait
+cat /tmp/c > /tmp/after.txt
+cat /tmp/before.txt /tmp/after.txt
+
+# 락이 없으면 동시에 읽어 갱신이 사라지고(lost update), 락이 있으면 한 번에 하나씩 실행된다', '["sh", "-c", "echo 0 > /tmp/c && printf ''%s\\\\n'' ''n=$(cat /tmp/c)'' ''sleep 0.05'' ''echo $((n+1)) > /tmp/c'' > /tmp/inc.sh"]', '["sh", "-c", "( [ -s /tmp/before.txt ] && [ -s /tmp/after.txt ] ) && ( [ \\"$(cat /tmp/before.txt)\\" -lt 10 ] ) && ( [ \\"$(cat /tmp/after.txt)\\" = 10 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일이 있다", "cmd": ["sh", "-c", "[ -s /tmp/before.txt ] && [ -s /tmp/after.txt ]"]}, {"label": "락 없이는 10 보다 작다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/before.txt)\\" -lt 10 ]"]}, {"label": "락을 쓰면 정확히 10 이다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/after.txt)\\" = 10 ]"]}]', '[{"title": "Linux flock(1) 매뉴얼", "url": "https://man7.org/linux/man-pages/man1/flock.1.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 100 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 100, 9, '같은 작업 중복 실행 막기', '`/tmp/job.sh` 는 실행될 때마다 `/tmp/runs.log` 에 한 줄을 남기고 2초 동안 일합니다. 이 작업이 **동시에 두 번 시작**되어도 **한 번만 실행**되도록 `flock` 으로 감싸 두 개를 동시에 실행해 보세요. (`runs.log` 는 1줄이어야 합니다)', '이미 실행 중이면 기다리지 않고 포기하는 `flock` 옵션을 쓰세요. 락 파일은 `/tmp/job.lock` 으로 하세요.', 'flock -n /tmp/job.lock sh /tmp/job.sh &
+flock -n /tmp/job.lock sh /tmp/job.sh &
+wait
+cat /tmp/runs.log
+
+# -n : 락을 못 잡으면 기다리지 않고 바로 종료 → 중복 실행 방지', '["sh", "-c", "rm -f /tmp/runs.log /tmp/job.lock && printf ''%s\\\\n'' ''echo run >> /tmp/runs.log'' ''sleep 2'' > /tmp/job.sh"]', '["sh", "-c", "( [ \\"$(wc -l < /tmp/runs.log)\\" -eq 1 ] ) && ( ! [ \\"$(wc -l < /tmp/runs.log)\\" -ge 2 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "runs.log 가 1줄이다", "cmd": ["sh", "-c", "[ \\"$(wc -l < /tmp/runs.log)\\" -eq 1 ]"]}, {"label": "락 없이 실행된 흔적이 없다 (2줄 아님)", "cmd": ["sh", "-c", "! [ \\"$(wc -l < /tmp/runs.log)\\" -ge 2 ]"]}]', '[{"title": "Linux flock(1) 매뉴얼", "url": "https://man7.org/linux/man-pages/man1/flock.1.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 100 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 100, 10, '데드락 풀기: 락 순서 통일', '`/tmp/a.sh` 는 락 A → B 순서로, `/tmp/b.sh` 는 락 B → A 순서로 잡습니다. 둘을 동시에 실행하면 서로 기다리다 **둘 다 실패**해 `/tmp/done.log` 가 비어 있습니다. `b.sh` 를 **A → B 순서**로 고쳐 둘이 동시에 실행되어도 `done.log` 에 **`ok-a` 와 `ok-b` 가 모두** 남게 하세요.', '`cat /tmp/a.sh /tmp/b.sh` 로 두 스크립트의 락 순서를 비교하세요. `b.sh` 의 바깥 락과 안쪽 락(`flock -w 3`)을 서로 바꾸면 됩니다.\\n확인: `sh /tmp/a.sh & sh /tmp/b.sh & wait; cat /tmp/done.log`', 'cat /tmp/a.sh /tmp/b.sh
+printf ''%s\\n'' ''flock /tmp/A.lock sh -c "sleep 1; flock -w 3 /tmp/B.lock echo ok-b >> /tmp/done.log"'' > /tmp/b.sh
+rm -f /tmp/done.log
+sh /tmp/a.sh & sh /tmp/b.sh & wait
+cat /tmp/done.log
+
+# 모든 작업이 같은 순서(A → B)로 락을 잡으면 순환 대기가 생기지 않는다', '["sh", "-c", "rm -f /tmp/done.log /tmp/A.lock /tmp/B.lock && printf ''%s\\\\n'' ''flock /tmp/A.lock sh -c \\"sleep 1; flock -w 3 /tmp/B.lock echo ok-a >> /tmp/done.log\\"'' > /tmp/a.sh && printf ''%s\\\\n'' ''flock /tmp/B.lock sh -c \\"sleep 1; flock -w 3 /tmp/A.lock echo ok-b >> /tmp/done.log\\"'' > /tmp/b.sh"]', '["sh", "-c", "( grep -q ''^flock /tmp/A.lock'' /tmp/b.sh ) && ( grep -qx ok-a /tmp/done.log ) && ( grep -qx ok-b /tmp/done.log )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "b.sh 가 A 락을 먼저 잡는다", "cmd": ["sh", "-c", "grep -q ''^flock /tmp/A.lock'' /tmp/b.sh"]}, {"label": "done.log 에 ok-a 가 있다", "cmd": ["sh", "-c", "grep -qx ok-a /tmp/done.log"]}, {"label": "done.log 에 ok-b 가 있다", "cmd": ["sh", "-c", "grep -qx ok-b /tmp/done.log"]}]', '[{"title": "Linux flock(1) 매뉴얼", "url": "https://man7.org/linux/man-pages/man1/flock.1.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 100 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 100, 11, '멱등 키로 중복 이벤트 걸러 합계 내기', '`/tmp/events.txt` 에는 `이벤트ID,금액` 이 한 줄씩 있는데 **재전송 때문에 같은 ID 가 중복**됩니다. **ID 별로 한 번씩만** 더한 합계를 **`/tmp/total.txt`** 에 저장하세요.', '`awk -F,` 에서 `!seen[$1]++` 는 "처음 본 ID 일 때만 참" 입니다. 합계는 `s+=$2`.\\n확인: `cat /tmp/events.txt`', 'cat /tmp/events.txt
+awk -F, ''!seen[$1]++ {s+=$2} END{print s}'' /tmp/events.txt > /tmp/total.txt
+cat /tmp/total.txt
+
+# 같은 ID 는 한 번만 처리 = 멱등한 처리 (중복 수신에도 결과가 같다)', '["sh", "-c", "printf ''%s\\\\n'' e1,100 e2,50 e1,100 e3,10 e2,50 e1,100 > /tmp/events.txt"]', '["sh", "-c", "( [ -s /tmp/total.txt ] ) && ( [ \\"$(cat /tmp/total.txt)\\" = 160 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일이 있다", "cmd": ["sh", "-c", "[ -s /tmp/total.txt ]"]}, {"label": "합계가 160 이다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/total.txt)\\" = 160 ]"]}]', '[{"title": "Linux flock(1) 매뉴얼", "url": "https://man7.org/linux/man-pages/man1/flock.1.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 100 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 100, 12, 'mkdir 로 원자적 락 잡기', '디렉터리 만들기(`mkdir`)는 **이미 있으면 실패**하는 원자적 동작이라 간단한 락으로 쓸 수 있습니다. `/tmp/mylock` 을 `mkdir` 로 **두 번 연속 시도**하여, 성공하면 `got`, 실패하면 `busy` 를 출력한 결과(`got` 다음 `busy`)를 **`/tmp/r.txt`** 에 저장하세요.', '`mkdir 경로 2>/dev/null && echo got || echo busy` 를 두 번 실행하는 반복문을 만드세요.', 'for i in 1 2; do mkdir /tmp/mylock 2>/dev/null && echo got || echo busy; done > /tmp/r.txt
+cat /tmp/r.txt
+
+# mkdir 은 검사와 생성이 한 번에 일어나므로 "없으면 만들기" 경쟁이 없다', '["sh", "-c", "rm -rf /tmp/mylock /tmp/r.txt"]', '["sh", "-c", "( [ -s /tmp/r.txt ] ) && ( [ \\"$(cat /tmp/r.txt | tr \\"\\\\n\\" \\" \\")\\" = \\"got busy \\" ] ) && ( [ -d /tmp/mylock ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "결과 파일이 있다", "cmd": ["sh", "-c", "[ -s /tmp/r.txt ]"]}, {"label": "첫째 got, 둘째 busy 이다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/r.txt | tr \\"\\\\n\\" \\" \\")\\" = \\"got busy \\" ]"]}, {"label": "락 디렉터리가 남아 있다", "cmd": ["sh", "-c", "[ -d /tmp/mylock ]"]}]', '[{"title": "Linux flock(1) 매뉴얼", "url": "https://man7.org/linux/man-pages/man1/flock.1.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 100 AND order_index = 12);

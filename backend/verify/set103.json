@@ -1,0 +1,9 @@
+{
+  "setId": 103,
+  "answers": {
+    "9": "cat /tmp/rules.yml\nsed -i 's/^        expr: up == 0$/        expr: up == 0\\n        for: 5m/' /tmp/rules.yml\ncat /tmp/rules.yml\n\n# YAML 은 들여쓰기가 구조다: for 는 expr 와 같은 깊이여야 한다",
+    "10": "cat /tmp/up.txt\nawk '$NF==0' /tmp/up.txt | sed 's/.*instance=\"\\([^\"]*\\)\".*/\\1/' > /tmp/down.txt\ncat /tmp/down.txt\n\n# up 0 = 수집 실패, 마지막 필드가 값",
+    "11": "cat /tmp/hist.txt\nawk -F'\"' '{split($3,v,\" \"); if($2==\"+Inf\"){t=v[2]} else {L[n]=$2; V[n++]=v[2]}} END{for(i=0;i<n;i++) if(V[i]>=t*0.95){print L[i]; exit}}' /tmp/hist.txt > /tmp/p95.txt\ncat /tmp/p95.txt\n\n# 전체 100 의 95% = 95 → 누적이 처음 95 이상이 되는 le",
+    "12": "cat /tmp/alertmanager.yml\nsed -i '/severity=\"critical\"/{n;s/team-mail/oncall/;}' /tmp/alertmanager.yml\ncat /tmp/alertmanager.yml\n\n# 자식 route 의 receiver 가 우선하고, 매치되지 않으면 부모의 기본 receiver 로 간다"
+  }
+}

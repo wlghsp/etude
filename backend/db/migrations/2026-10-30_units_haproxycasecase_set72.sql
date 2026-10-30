@@ -1,0 +1,97 @@
+-- HAProxy 세트 72. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set72.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 13, '미들웨어', '로드밸런서', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 13);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 72, 'HAProxy 활용 케이스 실습: TCP 포워딩, 도메인 분기, 이중화', '실무에서 자주 쓰는 HAProxy 구성을 샌드박스에서 직접 만들어 봅니다. Kafka 처럼 HTTP 가 아닌 트래픽을 넘기는 TCP 포워딩(브로커별 포트), 도메인별 ACL 분기, 헬스체크 경로가 틀렸을 때 고치고 reload 하기, 리다이렉트, backup 서버로 이중화하기를 연습합니다.', 'linux', '미들웨어'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 72);
+UPDATE quest_set SET display_order = 513, unit_id = (SELECT id FROM unit WHERE id = 13), icon = '🛠️' WHERE id = 72;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 72, 1, 'Kafka 를 HAProxy 로 넘길 때 mode 고르기', 'Kafka 브로커로 가는 트래픽을 HAProxy 로 포워딩하려고 합니다. Kafka 는 HTTP 가 아닌 **자체 바이너리 프로토콜**을 씁니다. frontend 와 backend 에는 어떤 mode 를 써야 할까요?', 'HAProxy 가 내용을 해석하지 않고 그대로 넘기는 모드입니다.', NULL, NULL, '[]', 'choice', '["mode tcp (L4 로 그대로 전달)", "mode http (요청을 HTTP 로 해석)", "mode udp", "mode kafka"]', 0, 'Kafka 같은 비 HTTP 트래픽은 `mode tcp` 로 L4 포워딩합니다. HAProxy 는 내용을 열지 않고 연결만 이어 줍니다. 일반 웹은 `mode http` 로 헤더·경로를 보고 ACL 로 분기할 수 있지만, tcp 모드에서는 그것이 불가능합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 72 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 72, 2, 'defaults 가 http 일 때 TCP 서비스 주의점', '`defaults` 에 `mode http` 가 있는 설정에 Kafka 포워딩 frontend 를 추가했는데 **mode 를 따로 쓰지 않았습니다.** 어떻게 될까요?', 'frontend/backend 는 mode 를 적지 않으면 defaults 값을 이어받습니다.', NULL, NULL, '[]', 'choice', '["defaults 의 http 를 이어받아 Kafka 의 바이너리 요청을 HTTP 로 해석하려다 실패한다. 그래서 TCP 서비스에는 `mode tcp` 를 명시해야 한다", "자동으로 tcp 로 바뀌어 정상 동작한다", "HAProxy 가 시작되지 않고 설정 오류가 난다", "Kafka 가 http 를 지원하도록 바뀐다"]', 0, '설정 블록의 mode 는 defaults 를 상속합니다. TCP 전용 서버가 아니라면 각 frontend/backend(또는 listen)에서 `mode tcp` 를 명시하는 습관이 안전합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 72 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 72, 3, 'TCP 포워딩 만들기 (mode tcp)', '`/tmp/haproxy.cfg` 에는 `defaults`(mode tcp)만 있습니다. **포트 19092 로 들어오는 트래픽을 `127.0.0.1:9001` 서버(브로커 1 역할)로 넘기는** frontend 와 backend 를 추가하고 HAProxy 를 실행하세요. `curl localhost:19092` 가 `B1` 을 돌려줘야 합니다.', '형태: `frontend 이름` 에 `bind *:포트` 와 `default_backend 이름`, `backend 이름` 에 `server 이름 주소:포트 check`. 설정을 적은 뒤 `haproxy -c -f /tmp/haproxy.cfg` 로 검사하고 `haproxy -D -f /tmp/haproxy.cfg` 로 실행합니다.
+확인: `curl localhost:19092`', 'cat >> /tmp/haproxy.cfg <<''EOF''
+frontend kafka_b1
+    bind *:19092
+    default_backend broker1
+backend broker1
+    server b1 127.0.0.1:9001 check
+EOF
+haproxy -c -f /tmp/haproxy.cfg
+haproxy -D -f /tmp/haproxy.cfg
+
+# mode tcp 는 defaults 에서 이어받는다 (frontend/backend 에도 명시하면 더 안전)', '["sh", "-c", "nohup etude-httpd 9001 B1 >/dev/null 2>&1 & nohup etude-httpd 9002 B2 >/dev/null 2>&1 & nohup etude-httpd 9003 B3 >/dev/null 2>&1 & sleep 1 && printf ''%s\\\\n'' ''defaults'' ''    mode tcp'' ''    timeout connect 5s'' ''    timeout client 30s'' ''    timeout server 30s'' > /tmp/haproxy.cfg"]', '["sh", "-c", "( haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1 ) && ( pgrep haproxy >/dev/null ) && ( grep -q \\"mode tcp\\" /tmp/haproxy.cfg ) && ( [ \\"$(curl -s localhost:19092)\\" = B1 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "설정 파일이 문법 검사를 통과한다", "cmd": ["sh", "-c", "haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1"]}, {"label": "HAProxy 가 실행 중이다", "cmd": ["sh", "-c", "pgrep haproxy >/dev/null"]}, {"label": "mode tcp 로 설정되어 있다", "cmd": ["sh", "-c", "grep -q \\"mode tcp\\" /tmp/haproxy.cfg"]}, {"label": "19092 로 보내면 B1 이 응답한다", "cmd": ["sh", "-c", "[ \\"$(curl -s localhost:19092)\\" = B1 ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 72 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 72, 4, '브로커마다 다른 포트로 포워딩하기', 'Kafka 브로커는 **브로커마다 서로 다른 외부 포트**가 필요합니다. `/tmp/haproxy.cfg` 에 `defaults`(mode tcp)만 있습니다. **19092 → 9001**, **19093 → 9002**, **19094 → 9003** 으로 각각 포워딩하고 HAProxy 를 실행한 뒤, 세 포트에 차례로 요청한 결과(한 줄씩)를 `/tmp/ports.txt` 에 저장하세요.', 'frontend/backend 쌍을 포트마다 하나씩 만듭니다. 이름은 겹치지 않게 하세요(`kafka1`, `kafka2` …).
+확인: `cat /tmp/ports.txt` (B1, B2, B3 순서)', 'cat >> /tmp/haproxy.cfg <<''EOF''
+frontend kafka1
+    bind *:19092
+    default_backend broker1
+backend broker1
+    server b1 127.0.0.1:9001 check
+frontend kafka2
+    bind *:19093
+    default_backend broker2
+backend broker2
+    server b2 127.0.0.1:9002 check
+frontend kafka3
+    bind *:19094
+    default_backend broker3
+backend broker3
+    server b3 127.0.0.1:9003 check
+EOF
+haproxy -D -f /tmp/haproxy.cfg
+for p in 19092 19093 19094; do curl -s localhost:$p; echo; done > /tmp/ports.txt
+
+# 브로커마다 포트를 달리해야 클라이언트가 특정 브로커로 직접 연결할 수 있다', '["sh", "-c", "nohup etude-httpd 9001 B1 >/dev/null 2>&1 & nohup etude-httpd 9002 B2 >/dev/null 2>&1 & nohup etude-httpd 9003 B3 >/dev/null 2>&1 & sleep 1 && printf ''%s\\\\n'' ''defaults'' ''    mode tcp'' ''    timeout connect 5s'' ''    timeout client 30s'' ''    timeout server 30s'' > /tmp/haproxy.cfg"]', '["sh", "-c", "( haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1 ) && ( pgrep haproxy >/dev/null ) && ( [ -s /tmp/ports.txt ] ) && ( [ \\"$(cat /tmp/ports.txt)\\" = ''B1\\nB2\\nB3'' ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "설정 파일이 문법 검사를 통과한다", "cmd": ["sh", "-c", "haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1"]}, {"label": "HAProxy 가 실행 중이다", "cmd": ["sh", "-c", "pgrep haproxy >/dev/null"]}, {"label": "결과 파일 /tmp/ports.txt 가 있다", "cmd": ["sh", "-c", "[ -s /tmp/ports.txt ]"]}, {"label": "세 포트가 B1, B2, B3 순서로 응답했다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/ports.txt)\\" = ''B1\\nB2\\nB3'' ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 72 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 72, 5, '도메인별로 다른 서버로 보내기 (ACL, Host 헤더)', '하나의 포트 8080 으로 여러 도메인을 받습니다. `/tmp/haproxy.cfg` 에는 frontend 가 기본 backend(`c`)로만 보내도록 되어 있습니다. **`a.example.com` 은 backend `a`(B1), `b.example.com` 은 backend `b`(B2)** 로 가게 고치고 실행하세요. 그 외 도메인은 `c`(B3) 로 갑니다. 세 요청의 응답을 `/tmp/a.txt`, `/tmp/b.txt`, `/tmp/c.txt` 에 저장하세요. (`curl -H "Host: 도메인"` 으로 Host 를 바꿔 요청)', '찾는 방법: 공식 문서에서 `hdr(host)` 를 찾아보세요. 형태: `acl 이름 hdr(host) -i 도메인` 과 `use_backend 이름 if acl이름`. 대소문자 무시는 `-i` 입니다.
+확인: `curl -H "Host: a.example.com" localhost:8080`', 'sed -i ''s/^    default_backend c/    acl is_a hdr(host) -i a.example.com\\n    acl is_b hdr(host) -i b.example.com\\n    use_backend a if is_a\\n    use_backend b if is_b\\n    default_backend c/'' /tmp/haproxy.cfg
+haproxy -D -f /tmp/haproxy.cfg
+curl -s -H ''Host: a.example.com'' localhost:8080 > /tmp/a.txt
+curl -s -H ''Host: b.example.com'' localhost:8080 > /tmp/b.txt
+curl -s -H ''Host: other.example.com'' localhost:8080 > /tmp/c.txt
+
+# hdr(host) : 요청의 Host 헤더로 도메인을 구분한다 (443 은 TLS 종단 후, 또는 SNI)', '["sh", "-c", "nohup etude-httpd 9001 B1 >/dev/null 2>&1 & nohup etude-httpd 9002 B2 >/dev/null 2>&1 & nohup etude-httpd 9003 B3 >/dev/null 2>&1 & sleep 1 && printf ''%s\\\\n'' ''defaults'' ''    mode http'' ''    timeout connect 5s'' ''    timeout client 30s'' ''    timeout server 30s'' ''frontend web'' ''    bind *:8080'' ''    default_backend c'' ''backend a'' ''    server a1 127.0.0.1:9001 check'' ''backend b'' ''    server b1 127.0.0.1:9002 check'' ''backend c'' ''    server c1 127.0.0.1:9003 check'' > /tmp/haproxy.cfg"]', '["sh", "-c", "( haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1 ) && ( pgrep haproxy >/dev/null ) && ( [ \\"$(cat /tmp/a.txt)\\" = ''B1'' ] ) && ( [ \\"$(cat /tmp/b.txt)\\" = ''B2'' ] ) && ( [ \\"$(cat /tmp/c.txt)\\" = ''B3'' ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "설정 파일이 문법 검사를 통과한다", "cmd": ["sh", "-c", "haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1"]}, {"label": "HAProxy 가 실행 중이다", "cmd": ["sh", "-c", "pgrep haproxy >/dev/null"]}, {"label": "a.example.com 은 B1", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/a.txt)\\" = ''B1'' ]"]}, {"label": "b.example.com 은 B2", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/b.txt)\\" = ''B2'' ]"]}, {"label": "그 외 도메인은 B3", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/c.txt)\\" = ''B3'' ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 72 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 72, 6, '헬스체크 경로가 틀렸을 때 고치고 reload 하기', 'HAProxy 가 이미 실행 중인데 `curl localhost:8080` 이 **503** 입니다. 서버(`127.0.0.1:9001`)는 살아 있지만, 설정의 `option httpchk` 가 **`/health` 를 확인하는데 이 서버의 `/health` 는 503 을 돌려주기** 때문에 HAProxy 가 서버를 죽은 것으로 판단합니다. 헬스체크 경로를 `/` 로 고치고 **실행 중인 HAProxy 를 끊김 없이 reload** 하세요. 그러면 `curl localhost:8080` 이 `B1` 을 돌려줘야 합니다.', '1) `curl -s -o /dev/null -w "%{http_code}\\n" localhost:9001/health` 로 서버가 직접은 어떤 응답인지 보세요. 2) 설정의 `GET /health` 를 고칩니다. 3) reload 는 새 프로세스를 띄우면서 옛 프로세스를 정리하는 옵션입니다: `haproxy -D -f 설정 -sf 옛_PID`. (`-sf` 가 "finish: 처리 중인 연결을 마치고 종료") 옛 PID 는 `pidof haproxy` 입니다.', 'curl -s -o /dev/null -w ''%{http_code}\\n'' localhost:9001/health   # 503 이다
+sed -i ''s#GET /health#GET /#'' /tmp/haproxy.cfg
+haproxy -D -f /tmp/haproxy.cfg -sf $(pidof haproxy)
+sleep 2
+curl -s localhost:8080
+
+# httpchk 가 서버가 정상으로 응답하는 경로를 봐야 한다
+# -sf : 새 설정으로 새 프로세스를 띄우고, 옛 프로세스는 처리 중인 연결을 마친 뒤 종료 (reload)', '["sh", "-c", "nohup etude-httpd 9001 B1 >/dev/null 2>&1 & sleep 1 && printf ''%s\\\\n'' ''defaults'' ''    mode http'' ''    timeout connect 5s'' ''    timeout client 30s'' ''    timeout server 30s'' ''frontend web'' ''    bind *:8080'' ''    default_backend app'' ''backend app'' ''    option httpchk GET /health'' ''    server s1 127.0.0.1:9001 check inter 1s fall 1 rise 1'' > /tmp/haproxy.cfg && haproxy -D -f /tmp/haproxy.cfg && sleep 3"]', '["sh", "-c", "( haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1 ) && ( pgrep haproxy >/dev/null ) && ( ! grep -q \\"GET /health\\" /tmp/haproxy.cfg ) && ( [ \\"$(curl -s localhost:8080)\\" = B1 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "설정 파일이 문법 검사를 통과한다", "cmd": ["sh", "-c", "haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1"]}, {"label": "HAProxy 가 실행 중이다", "cmd": ["sh", "-c", "pgrep haproxy >/dev/null"]}, {"label": "헬스체크 경로가 /health 가 아니다", "cmd": ["sh", "-c", "! grep -q \\"GET /health\\" /tmp/haproxy.cfg"]}, {"label": "요청이 B1 으로 정상 응답한다", "cmd": ["sh", "-c", "[ \\"$(curl -s localhost:8080)\\" = B1 ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 72 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 72, 7, '루트 경로를 다른 경로로 리다이렉트하기', '`/tmp/haproxy.cfg` 의 frontend 는 모든 요청을 backend 로 보냅니다. **요청 경로가 정확히 `/` 이면 `/app/` 으로 302 리다이렉트**하도록 고치고 HAProxy 를 실행하세요. `/app/` 으로 오는 요청은 그대로 backend(`B1`)로 가야 합니다. 루트 요청의 `상태코드 리다이렉트주소` 를 `/tmp/redir.txt` 에 저장하세요.', '찾는 방법: 공식 문서에서 `http-request redirect` 를 찾아보세요. 형태: `http-request redirect location 주소 if 조건`. 경로가 정확히 `/` 인 조건은 `{ path / }` 입니다.
+확인: `curl -s -o /dev/null -w "%{http_code} %{redirect_url}\\n" localhost:8080/`', 'sed -i ''s/^    default_backend app/    http-request redirect location \\/app\\/ if { path \\/ }\\n    default_backend app/'' /tmp/haproxy.cfg
+haproxy -D -f /tmp/haproxy.cfg
+curl -s -o /dev/null -w ''%{http_code} %{redirect_url}\\n'' localhost:8080/ > /tmp/redir.txt
+
+# http-request redirect location ... : 클라이언트에게 다른 주소로 다시 요청하라고 응답 (기본 302)', '["sh", "-c", "nohup etude-httpd 9001 B1 >/dev/null 2>&1 & sleep 1 && printf ''%s\\\\n'' ''defaults'' ''    mode http'' ''    timeout connect 5s'' ''    timeout client 30s'' ''    timeout server 30s'' ''frontend web'' ''    bind *:8080'' ''    default_backend app'' ''backend app'' ''    server s1 127.0.0.1:9001 check'' > /tmp/haproxy.cfg"]', '["sh", "-c", "( haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1 ) && ( pgrep haproxy >/dev/null ) && ( [ -s /tmp/redir.txt ] ) && ( grep -q \\"^302 .*/app/\\" /tmp/redir.txt ) && ( [ \\"$(curl -s localhost:8080/app/)\\" = B1 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "설정 파일이 문법 검사를 통과한다", "cmd": ["sh", "-c", "haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1"]}, {"label": "HAProxy 가 실행 중이다", "cmd": ["sh", "-c", "pgrep haproxy >/dev/null"]}, {"label": "결과 파일 /tmp/redir.txt 가 있다", "cmd": ["sh", "-c", "[ -s /tmp/redir.txt ]"]}, {"label": "루트 요청이 302 로 /app/ 으로 이동한다", "cmd": ["sh", "-c", "grep -q \\"^302 .*/app/\\" /tmp/redir.txt"]}, {"label": "/app/ 요청은 그대로 backend(B1)로 간다", "cmd": ["sh", "-c", "[ \\"$(curl -s localhost:8080/app/)\\" = B1 ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 72 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 72, 8, '평소엔 대기하는 backup 서버로 이중화하기', '`/tmp/haproxy.cfg` 의 backend `app` 에는 서버 두 대(`s1` 9001=B1, `s2` 9002=B2)가 둘 다 동등하게 들어 있습니다. **`s2` 는 `s1` 이 죽었을 때만 쓰는 대기 서버(backup)** 가 되도록 고치고 실행하세요. ① 평상시 4번 요청한 결과를 `/tmp/before.txt` 에 저장(모두 `B1`) ② `s1`(`etude-httpd 9001`)을 종료하고 몇 초 뒤 2번 요청한 결과를 `/tmp/after.txt` 에 저장(모두 `B2`).', '찾는 방법: 공식 문서에서 `backup` 키워드를 찾아보세요. `server` 줄 뒤에 붙입니다. 헬스체크가 `s1` 의 죽음을 알아채는 데 1~3초 걸리니 `sleep 3` 후에 요청하세요. 종료는 `pkill -f "etude-httpd 900[1]"` 입니다.
+확인: `cat /tmp/before.txt /tmp/after.txt`', 'sed -i ''s/^    server s2 \\(.*\\)$/    server s2 \\1 backup/'' /tmp/haproxy.cfg
+haproxy -D -f /tmp/haproxy.cfg
+for i in 1 2 3 4; do curl -s localhost:8080; echo; done > /tmp/before.txt
+pkill -f ''etude-httpd 900[1]''
+sleep 3
+for i in 1 2; do curl -s localhost:8080; echo; done > /tmp/after.txt
+
+# backup : 일반 서버가 모두 죽었을 때만 쓰는 대기 서버', '["sh", "-c", "nohup etude-httpd 9001 B1 >/dev/null 2>&1 & nohup etude-httpd 9002 B2 >/dev/null 2>&1 & sleep 1 && printf ''%s\\\\n'' ''defaults'' ''    mode http'' ''    timeout connect 5s'' ''    timeout client 30s'' ''    timeout server 30s'' ''frontend web'' ''    bind *:8080'' ''    default_backend app'' ''backend app'' ''    balance roundrobin'' ''    server s1 127.0.0.1:9001 check inter 1s fall 1 rise 1'' ''    server s2 127.0.0.1:9002 check inter 1s fall 1 rise 1'' > /tmp/haproxy.cfg"]', '["sh", "-c", "( haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1 ) && ( pgrep haproxy >/dev/null ) && ( grep -qE \\"server s2 .*backup\\" /tmp/haproxy.cfg ) && ( [ \\"$(cat /tmp/before.txt)\\" = ''B1\\nB1\\nB1\\nB1'' ] ) && ( [ \\"$(cat /tmp/after.txt)\\" = ''B2\\nB2'' ] ) && ( ! curl -s --max-time 1 localhost:9001 >/dev/null )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "설정 파일이 문법 검사를 통과한다", "cmd": ["sh", "-c", "haproxy -c -f /tmp/haproxy.cfg >/dev/null 2>&1"]}, {"label": "HAProxy 가 실행 중이다", "cmd": ["sh", "-c", "pgrep haproxy >/dev/null"]}, {"label": "s2 에 backup 이 붙어 있다", "cmd": ["sh", "-c", "grep -qE \\"server s2 .*backup\\" /tmp/haproxy.cfg"]}, {"label": "평상시 4번 모두 B1 (대기 서버는 쓰이지 않음)", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/before.txt)\\" = ''B1\\nB1\\nB1\\nB1'' ]"]}, {"label": "s1 종료 후에는 B2 가 받는다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/after.txt)\\" = ''B2\\nB2'' ]"]}, {"label": "s1 이 종료되었다", "cmd": ["sh", "-c", "! curl -s --max-time 1 localhost:9001 >/dev/null"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 72 AND order_index = 8);

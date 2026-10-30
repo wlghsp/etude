@@ -1,0 +1,10 @@
+{
+  "setId": 102,
+  "answers": {
+    "8": "redis-cli set probe ok\nredis-cli config get maxmemory-policy\nredis-cli config set maxmemory-policy allkeys-lru\nredis-cli set probe ok > /tmp/r.txt\ncat /tmp/r.txt\n\n# noeviction: 가득 차면 쓰기 거부 / allkeys-lru: 오래 안 쓴 키부터 제거",
+    "9": "redis-cli ping\nss -ltnp | grep redis\nredis-cli -p 6380 get greeting > /tmp/g.txt\ncat /tmp/g.txt\n\n# Connection refused = 그 포트에 듣는 프로세스가 없다 → 실제 포트를 찾는다",
+    "10": "redis-cli slowlog get 1\nredis-cli slowlog get 1 | sed -n 4p | tr A-Z a-z > /tmp/slow.txt\ncat /tmp/slow.txt\n\n# slowlog-log-slower-than(µs) 보다 오래 걸린 명령이 기록된다",
+    "11": "for k in $(redis-cli --scan --pattern 'sess:*'); do\n  if [ \"$(redis-cli ttl $k)\" = -1 ]; then echo $k; redis-cli expire $k 3600 >/dev/null; fi\ndone > /tmp/nottl.txt\nwc -l < /tmp/nottl.txt | tr -d ' ' > /tmp/n.txt\ncat /tmp/n.txt\n\n# TTL 반환값: -1 만료 없음, -2 키 없음, 양수 남은 초",
+    "12": "redis-cli client list | grep -c blpop\nredis-cli client kill type normal skipme yes\nsleep 1\nredis-cli client list | grep -c blpop\n\n# CLIENT KILL TYPE normal SKIPME yes : 일반 클라이언트 연결을 끊되 내 연결은 유지"
+  }
+}

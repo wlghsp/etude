@@ -1,0 +1,10 @@
+{
+  "setId": 96,
+  "answers": {
+    "8": "cd /tmp/lab/proj\necho '.env' > .gitignore\ngit status --short\ngit add .\ngit commit -m init\ngit ls-files\n\n# add 하기 전에 .gitignore 를 먼저 둔다",
+    "9": "cd /tmp/lab/proj\ngit rm -r --cached node_modules\necho 'node_modules/' >> .gitignore\ngit add .gitignore\ngit commit -m 'ignore deps'\ngit ls-files\n\n# -r : 폴더 안까지, --cached : 파일은 남기고 추적만 중단",
+    "10": "cd /tmp/lab/proj\ngit check-ignore -v app.log\ngit check-ignore -v app.log | cut -f1 | cut -d: -f3 > /tmp/lab/rule.txt\ncat /tmp/lab/rule.txt\n\n# 출력: .gitignore:3:*.log<TAB>app.log  → 3번째 필드가 패턴",
+    "11": "cd /tmp/lab/proj\necho '!keep.log' >> .gitignore\ngit add .\ngit commit -m 'track keep'\ngit ls-files\n\n# 예외 규칙은 무시 규칙보다 뒤에 둔다",
+    "12": "cd /tmp/lab/proj\ntouch logs/.gitkeep\necho '!logs/.gitkeep' >> .gitignore\ngit add .\ngit commit -m 'keep logs dir'\ngit ls-tree -r HEAD --name-only\n\n# logs/ 가 아니라 logs/* 로 무시해야 예외가 동작한다"
+  }
+}

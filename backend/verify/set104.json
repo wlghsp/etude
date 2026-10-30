@@ -1,0 +1,10 @@
+{
+  "setId": 104,
+  "answers": {
+    "8": "ss -ltn | grep 91\nsed -i 's/9101/9100/' /tmp/prometheus.yml\ncat /tmp/prometheus.yml\ncurl -s localhost:9100\n\n# connection refused: 설정에 적은 포트에서 듣는 프로세스가 없다",
+    "9": "cat /tmp/prom.log\ngrep -o 'err=\"[^\"]*\"' /tmp/prom.log | sort | uniq -c | sort -rn | head -n 1 | sed 's/.*err=\"\\(.*\\)\"/\\1/' > /tmp/top.txt\ncat /tmp/top.txt\n\n# 가장 흔한 에러부터 원인을 좁힌다",
+    "10": "cat /tmp/metrics.txt\ncat /tmp/query.txt\nsed -i 's/api-server/api/' /tmp/query.txt\ncat /tmp/query.txt\n\n# 셀렉터가 맞는 시계열이 없으면 오류 없이 빈 결과가 나온다",
+    "11": "cat /tmp/rules.yml\ncat /tmp/alertmanager.yml\nsed -i 's/severity=\"page\"/severity=\"critical\"/' /tmp/alertmanager.yml\ncat /tmp/alertmanager.yml\n\n# 알림의 레이블 값과 라우트 matchers 가 일치해야 수신자로 간다",
+    "12": "cat /tmp/check.out\nsed -i 's/expr: up = 0/expr: up == 0/' /tmp/rules.yml\ncat -n /tmp/rules.yml\n\n# PromQL 비교 연산자: ==, !=, >, <, >=, <=  (단일 = 는 문법 오류)"
+  }
+}

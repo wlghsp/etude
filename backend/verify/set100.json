@@ -1,0 +1,10 @@
+{
+  "setId": 100,
+  "answers": {
+    "8": "for i in $(seq 10); do sh /tmp/inc.sh & done; wait\ncat /tmp/c > /tmp/before.txt\necho 0 > /tmp/c\nfor i in $(seq 10); do flock /tmp/c.lock sh /tmp/inc.sh & done; wait\ncat /tmp/c > /tmp/after.txt\ncat /tmp/before.txt /tmp/after.txt\n\n# 락이 없으면 동시에 읽어 갱신이 사라지고(lost update), 락이 있으면 한 번에 하나씩 실행된다",
+    "9": "flock -n /tmp/job.lock sh /tmp/job.sh &\nflock -n /tmp/job.lock sh /tmp/job.sh &\nwait\ncat /tmp/runs.log\n\n# -n : 락을 못 잡으면 기다리지 않고 바로 종료 → 중복 실행 방지",
+    "10": "cat /tmp/a.sh /tmp/b.sh\nprintf '%s\\n' 'flock /tmp/A.lock sh -c \"sleep 1; flock -w 3 /tmp/B.lock echo ok-b >> /tmp/done.log\"' > /tmp/b.sh\nrm -f /tmp/done.log\nsh /tmp/a.sh & sh /tmp/b.sh & wait\ncat /tmp/done.log\n\n# 모든 작업이 같은 순서(A → B)로 락을 잡으면 순환 대기가 생기지 않는다",
+    "11": "cat /tmp/events.txt\nawk -F, '!seen[$1]++ {s+=$2} END{print s}' /tmp/events.txt > /tmp/total.txt\ncat /tmp/total.txt\n\n# 같은 ID 는 한 번만 처리 = 멱등한 처리 (중복 수신에도 결과가 같다)",
+    "12": "for i in 1 2; do mkdir /tmp/mylock 2>/dev/null && echo got || echo busy; done > /tmp/r.txt\ncat /tmp/r.txt\n\n# mkdir 은 검사와 생성이 한 번에 일어나므로 \"없으면 만들기\" 경쟁이 없다"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "setId": 95,
+  "answers": {
+    "9": "cd /tmp/lab/proj\ngit branch feature/login          # 현재 커밋을 붙잡아 둔다\ngit reset --hard origin/main       # main 을 원격과 같게\ngit switch feature/login\ngit log --oneline --all --graph\n\n# 되돌리기(reset --hard) 전에 반드시 커밋을 다른 브랜치로 살려 둔다",
+    "10": "cd /tmp/lab/proj\ngit status | head -n 1\ngit switch -c hotfix\ngit log --oneline\n\n# detached 상태의 커밋은 브랜치를 만들어 붙잡아 두지 않으면 다른 곳으로 옮길 때 사라질 수 있다",
+    "11": "cd /tmp/lab/proj\ngit rm --cached debug.log\ngit commit -m 'untrack log'\ngit ls-files\nls\n\n# --cached : 작업 폴더의 파일은 남기고 추적만 중단",
+    "12": "cd /tmp/lab/proj\ngit status | head -n 3\ngit merge --abort\ngit status -sb\ncat c\n\n# 해결할 자신이 없거나 잘못 병합했을 때 시작 전으로 안전하게 되돌린다",
+    "13": "cd /tmp/lab/proj\ngit log -S'timeout=30' --format=%s > /tmp/lab/culprit.txt\ncat /tmp/lab/culprit.txt\n\n# -S 문자열 : 그 문자열의 개수가 바뀐 커밋(추가·삭제)만 보여 준다",
+    "14": "cd /tmp/lab/proj\ngit reflog\nSHA=$(git reflog | grep 'x work' | head -n 1 | cut -d' ' -f1)\ngit branch feature/x $SHA\ngit log -1 --format=%s feature/x\n\n# 삭제한 브랜치의 커밋도 reflog 에 한동안 남아 있다 (가비지 컬렉션 전까지)"
+  }
+}

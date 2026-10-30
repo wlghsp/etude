@@ -1,0 +1,81 @@
+-- 리눅스 세트 94. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set94.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 15, 'Git', '원격과 협업', 30 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 15);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 94, 'Git 처음부터 올리기: init, remote add, push 와 첫 오류들', 'Git 설정이 하나도 안 된 새 환경에서 `git init` → 사용자 설정 → `git remote add` → `git add` → `git commit` → `git push -u` 까지 처음부터 끝까지 해 보는 흐름을 익힙니다. 현장에서 가장 자주 만나는 첫 오류(사용자 미설정, 브랜치 이름 불일치, remote 중복, 첫 push 거절)와 .gitignore 를 처음 add 전에 정하는 습관까지 다룹니다. 원격은 샌드박스 안의 저장소로 대신합니다.', 'linux', 'Git'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 94);
+UPDATE quest_set SET display_order = 435, unit_id = (SELECT id FROM unit WHERE id = 15), icon = '🚀' WHERE id = 94;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 94, 1, '처음부터 원격에 올리는 전체 순서 놓기', 'Git 설정이 하나도 안 된 새 서버에서, 소스 폴더를 **원격 저장소에 처음 올리는** 순서를 **앞에서 뒤**로 놓으세요.', '저장소를 만들고, 누구인지 알리고, 원격을 연결하고, 기록하고, 올립니다.', NULL, NULL, '[]', 'order', '["`git push -u origin main` 으로 원격에 올리고 추적 연결을 만든다", "`git remote add origin 주소` 로 원격 저장소를 연결한다", "`git init -b main` 으로 저장소를 만든다", "`git add .` 와 `git commit -m \\"initial commit\\"` 으로 첫 커밋을 만든다", "`git config user.name`, `user.email` 로 커밋하는 사람을 정한다"]', NULL, '**init → 사용자 설정 → remote add → add·commit → push -u** 입니다. remote add 는 commit 앞뒤 어디에 와도 되지만, push 전에는 반드시 있어야 하고, commit 전에는 사용자 설정이 있어야 합니다. 첫 push 에는 `-u` 를 붙여 이후 `git push`·`git pull` 만으로 되게 합니다.', '[2, 4, 1, 3, 0]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 94 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 94, 2, '사용자 정보를 전체 설정하기', '새 서버에서 **모든 저장소에 적용되는** 커밋 작성자 이름과 이메일을 설정합니다. 빈칸을 채우세요.', '항목 이름은 `user.` 로 시작합니다. 같은 사람의 이름과 이메일을 각각 설정합니다.', NULL, NULL, '[]', 'fill', '["user.name", "user.email", "core.editor", "init.defaultBranch"]', NULL, '`--global` 은 이 사용자의 모든 저장소에, 옵션 없이 쓰면 현재 저장소에만 적용됩니다. 공용 서버에서는 개인 이름이 남지 않도록 저장소에만(`--local`) 설정하기도 합니다. `init.defaultBranch` 는 `git init` 이 만드는 첫 브랜치 이름(`main`)을 정합니다.', '[0, 1]', 'git config --global {0} "Hong Gildong"
+git config --global {1} "hong@example.com"', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 94 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 94, 3, '처음 올리는 명령 채우기', '새 폴더를 저장소로 만들고 **원격을 연결해 처음 올리는** 명령입니다. 빈칸을 채우세요.', '첫 브랜치 이름은 `init` 과 `push` 에서 같아야 합니다. 원격을 연결하는 하위 명령은 `remote` 뒤에 옵니다.', NULL, NULL, '[]', 'fill', '["main", "add", "remove", "set-url", "master"]', NULL, '`origin` 은 원격의 별명일 뿐이고 관례입니다. `remote add` 로 연결하고, 이미 있으면 `set-url`(주소 변경)이나 `remove` 를 씁니다. 브랜치 이름이 `init` 때와 `push` 때 다르면 `src refspec ... does not match any` 오류가 납니다.', '[0, 1]', 'git init -b {0}
+git remote {1} origin https://git.example.com/team/app.git
+git push -u origin {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 94 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 94, 4, '"Please tell me who you are" 오류', '첫 `git commit` 에서 `Author identity unknown *** Please tell me who you are.` 가 나왔습니다. 원인과 해결로 알맞은 것은 무엇일까요?', 'Git 은 커밋에 작성자를 남깁니다.', NULL, NULL, '[]', 'choice', '["커밋 작성자인 `user.name` 과 `user.email` 이 설정되지 않아서이다. 둘을 설정한 뒤 다시 commit 한다", "원격 저장소가 없어서이다. `git remote add` 를 한다", "Git 이 설치되지 않아서이다", "브랜치 이름이 main 이 아니라서이다"]', 0, '새 서버·새 컨테이너의 첫 commit 에서 가장 흔한 오류입니다. 설정은 한 번만 하면 됩니다(`--global`). 컨테이너를 매번 새로 띄우는 환경이라면 매번 필요합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 94 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 94, 5, '"src refspec main does not match any" 오류', '`git push -u origin main` 에서 `error: src refspec main does not match any` 가 나왔습니다. 가장 가능성 높은 원인은 무엇일까요?', '"main 이라는 이름으로 올릴 것이 로컬에 없다"는 뜻입니다.', NULL, NULL, '[]', 'choice', '["아직 커밋이 하나도 없거나, 로컬 브랜치 이름이 `master` 등 다른 이름이라 `main` 이 존재하지 않는다 (`git branch` 로 확인)", "인터넷이 끊겼다", "원격 저장소의 비밀번호가 틀렸다", "파일이 너무 커서이다"]', 0, '`git branch` 로 현재 브랜치 이름을 확인하고, 커밋이 없다면 먼저 commit 합니다. 이름이 다르면 `git branch -M main` 으로 바꾸거나 이름에 맞춰 `git push -u origin master` 로 올립니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 94 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 94, 6, '"remote origin already exists" 오류', '`git remote add origin 주소` 에서 `error: remote origin already exists.` 가 나왔습니다. 올바른 대응은 무엇일까요?', '이미 같은 이름의 원격이 연결되어 있습니다.', NULL, NULL, '[]', 'choice', '["`git init` 을 다시 실행한다", "`git remote -v` 로 현재 주소를 확인하고, 주소가 틀렸으면 `git remote set-url origin 새주소` 로 바꾼다", "저장소 폴더를 지우고 처음부터 다시 만든다", "`git push --force` 로 덮어쓴다"]', 1, '복제(clone)한 저장소는 이미 `origin` 이 있습니다. 주소만 바꾸면 되므로 `set-url` 을 쓰고, 연결을 없애려면 `git remote remove origin` 입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 94 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 94, 7, '첫 push 가 거절될 때', '새 저장소에 처음 `git push -u origin main` 을 했는데 `! [rejected] main -> main (fetch first)` 입니다. 원격에 이미 README 같은 커밋이 있는 경우의 올바른 해결은 무엇일까요?', '원격의 커밋을 먼저 받아서 내 커밋을 그 위에 얹어야 합니다.', NULL, NULL, '[]', 'choice', '["`git pull --rebase origin main` 으로 원격 커밋을 받아 그 위에 내 커밋을 얹은 뒤 다시 push 한다", "`git push --force` 로 원격을 덮어쓴다", "원격 저장소를 삭제하고 새로 만든다", "push 를 여러 번 반복하면 언젠가 성공한다"]', 0, '`--force` 는 팀원이 올린 커밋을 지울 수 있어 위험합니다. 새로 만든 저장소의 첫 push 라도 원격에 커밋이 있다면 먼저 합쳐야 합니다. 합치는 방식은 rebase 와 merge 중 팀의 규칙을 따릅니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 94 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 94, 8, '처음부터 끝까지 올려 보기', '이 서버에는 Git 설정이 **전혀 없습니다.** `/tmp/lab/app` 폴더의 소스를 **`main` 브랜치**의 새 저장소로 만들어 원격 `/tmp/lab/remote.git`(비어 있는 원격 저장소)에 올리세요. 첫 커밋 메시지는 `initial commit` 이고, `push -u` 로 추적 연결까지 하세요. 사용자 이름과 이메일은 아무 값이나 괜찮습니다.', '순서: `cd` → `git init -b main` → 사용자 설정(`user.name`, `user.email`) → `git remote add origin /tmp/lab/remote.git` → `git add .` → `git commit -m "initial commit"` → `git push -u origin main`.\\n확인: `git status -sb` 와 `git log --oneline`', 'cd /tmp/lab/app
+git init -b main
+git config user.name tester
+git config user.email tester@example.com
+git remote add origin /tmp/lab/remote.git
+git add .
+git commit -m ''initial commit''
+git push -u origin main
+git status -sb
+
+# 설정 → 연결 → 기록 → 올리기. -u 로 추적 연결을 만들면 이후 git push 만으로 올라간다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab && mkdir -p /tmp/lab/app && cd /tmp/lab && git init -q --bare -b main remote.git && printf ''print(1)\\\\n'' > app/main.py && printf ''# demo\\\\n'' > app/README.md"]', '["sh", "-c", "( [ \\"$(git --git-dir=/tmp/lab/remote.git log -1 --format=%s main)\\" = \\"initial commit\\" ] ) && ( git --git-dir=/tmp/lab/remote.git ls-tree --name-only main | grep -qx main.py ) && ( [ \\"$(git -C /tmp/lab/app rev-parse --abbrev-ref main@{upstream})\\" = origin/main ] ) && ( [ \\"$(git -C /tmp/lab/app rev-parse HEAD)\\" = \\"$(git --git-dir=/tmp/lab/remote.git rev-parse main)\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "원격 main 에 initial commit 이 올라갔다", "cmd": ["sh", "-c", "[ \\"$(git --git-dir=/tmp/lab/remote.git log -1 --format=%s main)\\" = \\"initial commit\\" ]"]}, {"label": "원격에 소스 파일이 올라갔다", "cmd": ["sh", "-c", "git --git-dir=/tmp/lab/remote.git ls-tree --name-only main | grep -qx main.py"]}, {"label": "로컬이 origin/main 을 추적한다", "cmd": ["sh", "-c", "[ \\"$(git -C /tmp/lab/app rev-parse --abbrev-ref main@{upstream})\\" = origin/main ]"]}, {"label": "로컬과 원격이 같다 (올릴 것이 없다)", "cmd": ["sh", "-c", "[ \\"$(git -C /tmp/lab/app rev-parse HEAD)\\" = \\"$(git --git-dir=/tmp/lab/remote.git rev-parse main)\\" ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 94 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 94, 9, '사용자 미설정 오류 고치고 커밋하기', '`/tmp/lab/proj` 에는 이미 `git add` 까지 한 파일이 있는데, `git commit` 이 **`Please tell me who you are`** 오류로 막힙니다. 이 저장소에만 적용되게 사용자 이름과 이메일을 설정하고 **`first`** 라는 메시지로 커밋하세요.', '오류 메시지가 알려 주는 두 설정을 `--global` 없이(이 저장소에만) 설정하세요. 먼저 `git commit -m first` 로 오류를 한 번 확인해 보세요.', 'cd /tmp/lab/proj
+git commit -m first             # 오류
+git config user.name tester
+git config user.email tester@example.com
+git commit -m first
+git log --oneline
+
+# --global 없이 설정하면 이 저장소에만 적용된다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab && mkdir -p /tmp/lab/proj && cd /tmp/lab/proj && git init -q -b main && echo a > a.txt && git add ."]', '["sh", "-c", "( [ \\"$(git -C /tmp/lab/proj rev-list --count HEAD 2>/dev/null)\\" = 1 ] ) && ( [ \\"$(git -C /tmp/lab/proj log -1 --format=%s)\\" = first ] ) && ( [ -n \\"$(git -C /tmp/lab/proj config --local user.name)\\" ] && ! git config --global user.name >/dev/null 2>&1 )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "커밋이 1개 만들어졌다", "cmd": ["sh", "-c", "[ \\"$(git -C /tmp/lab/proj rev-list --count HEAD 2>/dev/null)\\" = 1 ]"]}, {"label": "커밋 메시지가 first 이다", "cmd": ["sh", "-c", "[ \\"$(git -C /tmp/lab/proj log -1 --format=%s)\\" = first ]"]}, {"label": "저장소에만 설정되었다 (전역 설정 아님)", "cmd": ["sh", "-c", "[ -n \\"$(git -C /tmp/lab/proj config --local user.name)\\" ] && ! git config --global user.name >/dev/null 2>&1"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 94 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 94, 10, '잘못 연결한 원격 주소 고치기', '`/tmp/lab/proj` 의 `origin` 이 **잘못된 주소**(`/tmp/lab/wrong.git`)로 연결되어 push 가 실패합니다. 올바른 원격 `/tmp/lab/remote.git` 로 **주소를 바꾸고** `main` 을 push 하세요.', '`git remote -v` 로 현재 주소를 확인하세요. 이미 `origin` 이 있으므로 `remote add` 가 아니라 주소를 바꾸는 하위 명령을 씁니다.', 'cd /tmp/lab/proj
+git remote -v
+git remote set-url origin /tmp/lab/remote.git
+git push -u origin main
+
+# origin 이 이미 있을 때는 add 가 아니라 set-url', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab && mkdir -p /tmp/lab && cd /tmp/lab && git init -q --bare -b main remote.git && mkdir proj && cd proj && git init -q -b main && git config user.name tester && git config user.email t@example.com && echo a > a.txt && git add . && git commit -qm init && git remote add origin /tmp/lab/wrong.git"]', '["sh", "-c", "( [ \\"$(git -C /tmp/lab/proj remote get-url origin)\\" = /tmp/lab/remote.git ] ) && ( [ \\"$(git --git-dir=/tmp/lab/remote.git log -1 --format=%s main)\\" = init ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "origin 이 올바른 주소다", "cmd": ["sh", "-c", "[ \\"$(git -C /tmp/lab/proj remote get-url origin)\\" = /tmp/lab/remote.git ]"]}, {"label": "원격 main 에 커밋이 올라갔다", "cmd": ["sh", "-c", "[ \\"$(git --git-dir=/tmp/lab/remote.git log -1 --format=%s main)\\" = init ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 94 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 94, 11, '첫 push 가 거절될 때 합치고 올리기', '로컬 `/tmp/lab/proj` 의 커밋 `local work` 를 원격 `origin/main` 에 처음 push 했더니 **거절**됩니다. 원격에는 다른 사람이 먼저 올린 `add readme` 커밋이 있습니다. **원격 커밋을 먼저 받아서 내 커밋을 그 위에 얹고** 다시 push 해서, 원격에 **두 커밋이 모두** 있게 하세요. (강제 push 는 하지 않습니다)', '`git push` 를 먼저 해서 거절 메시지를 확인하세요. 해결은 `git pull` 에 합치는 방식을 정하는 옵션(`--rebase`)을 붙이는 것입니다.', 'cd /tmp/lab/proj
+git push -u origin main                 # 거절
+git pull --rebase origin main
+git push -u origin main
+git log --oneline
+
+# --force 는 쓰지 않는다. 원격 커밋을 먼저 받아서 그 위에 내 커밋을 얹는다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab && mkdir -p /tmp/lab && cd /tmp/lab && git init -q --bare -b main remote.git && git clone -q remote.git other 2>/dev/null; cd other && git config user.name o && git config user.email o@example.com && git checkout -q -b main && echo readme > README.md && git add . && git commit -qm ''add readme'' && git push -q origin main; cd /tmp/lab && mkdir proj && cd proj && git init -q -b main && git config user.name tester && git config user.email t@example.com && echo a > a.txt && git add . && git commit -qm ''local work'' && git remote add origin /tmp/lab/remote.git"]', '["sh", "-c", "( git --git-dir=/tmp/lab/remote.git log --format=%s main | grep -qx \\"add readme\\" ) && ( git --git-dir=/tmp/lab/remote.git log --format=%s main | grep -qx \\"local work\\" ) && ( [ \\"$(git --git-dir=/tmp/lab/remote.git log --format=%s main | head -n 1)\\" = \\"local work\\" ] && [ \\"$(git --git-dir=/tmp/lab/remote.git rev-list --merges --count main)\\" = 0 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "원격에 add readme 가 그대로 있다", "cmd": ["sh", "-c", "git --git-dir=/tmp/lab/remote.git log --format=%s main | grep -qx \\"add readme\\""]}, {"label": "원격에 local work 도 올라갔다", "cmd": ["sh", "-c", "git --git-dir=/tmp/lab/remote.git log --format=%s main | grep -qx \\"local work\\""]}, {"label": "내 커밋이 원격 커밋 위에 있다 (이력이 한 줄)", "cmd": ["sh", "-c", "[ \\"$(git --git-dir=/tmp/lab/remote.git log --format=%s main | head -n 1)\\" = \\"local work\\" ] && [ \\"$(git --git-dir=/tmp/lab/remote.git rev-list --merges --count main)\\" = 0 ]"]}]', '[{"title": "HAProxy 공식 문서", "url": "https://docs.haproxy.org/2.4/configuration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 94 AND order_index = 11);
