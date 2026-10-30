@@ -9,6 +9,8 @@ const execAsync = promisify(exec)
 
 const POOL_SIZE = Number(process.env.VCLUSTER_POOL_SIZE ?? 2)
 const NODE_NAME = 'k3d-etude-server-0'
+// 느린 서버에서 vcluster 컨트롤 플레인이 뜨는 시간이 60초를 넘길 수 있어 환경변수로 늘릴 수 있게 한다
+const READY_TIMEOUT_SEC = Number(process.env.VCLUSTER_READY_TIMEOUT_SEC ?? 60)
 
 // Colima(macOS) 환경에서 /tmp는 VM과 공유되지 않아 dockerode가 마운트할 파일을 찾지 못하고
 // 빈 디렉토리를 생성해버린다. $HOME 하위는 Colima 기본 공유 대상이라 여기에 저장한다.
@@ -21,18 +23,29 @@ interface PooledVCluster {
 
 const pool: PooledVCluster[] = []
 
-async function createVcluster(): Promise<PooledVCluster> {
+export async function createVcluster(): Promise<PooledVCluster> {
     const id = `pool-${crypto.randomUUID().slice(0, 8)}`
     const ns = `vcluster-${id}`
 
     await execAsync(`vcluster create ${id} --connect=false --set "controlPlane.proxy.extraSANs={${NODE_NAME}}"`)
+
+    // 이후 단계(준비 대기, 포트, kubeconfig)에서 실패하면 만들다 만 vcluster 가 남아 자원을 차지하므로 지우고 오류를 그대로 던진다
+    try {
+        return await finishVcluster(id, ns)
+    } catch (err) {
+        await execAsync(`vcluster delete ${id} --namespace ${ns}`).catch(() => {})
+        throw err
+    }
+}
+
+async function finishVcluster(id: string, ns: string): Promise<PooledVCluster> {
 
     // vcluster create --connect=false는 Pod가 Ready 될 때까지 기다리지 않고 바로 반환된다.
     // 컨트롤 플레인이 뜨기 전에 kubeconfig Secret을 조회하면 빈 값이 나오므로, Ready까지 명시적으로 대기한다.
     // 반환 직후에는 Pod 리소스 자체가 아직 없을 수 있어(없으면 wait가 즉시 "no matching resources found"로 실패),
     // 생성을 먼저 기다린 뒤 Ready를 확인한다. 복수 --for 지원 여부에 의존하지 않도록 명령을 나눈다.
     await execAsync(`kubectl wait --for=create pod -l app=vcluster -n ${ns} --timeout=30s`)
-    await execAsync(`kubectl wait --for=condition=ready pod -l app=vcluster -n ${ns} --timeout=60s`)
+    await execAsync(`kubectl wait --for=condition=ready pod -l app=vcluster -n ${ns} --timeout=${READY_TIMEOUT_SEC}s`)
 
     // NodePort 전환 - 랜덤 포트가 이미 다른 vcluster에 할당되어 있으면 재시도한다
     // (동시에 여러 vcluster를 생성할 때 겹칠 확률이 있어 재시도가 필요)

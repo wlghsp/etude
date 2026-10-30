@@ -1,6 +1,6 @@
 FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y \
-    vim iproute2 zip unzip curl netcat-openbsd \
+    vim iproute2 zip unzip curl netcat-openbsd iputils-ping traceroute \
     && rm -rf /var/lib/apt/lists/*
 # 퀘스트 세트 15(로그와 텍스트 처리)용 고정 샘플 데이터
 COPY docker/samples/var-log-app/ /var/log/app/

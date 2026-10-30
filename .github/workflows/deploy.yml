@@ -19,6 +19,7 @@ jobs:
             git pull
             docker build -q -f backend/docker/Dockerfile.linux -t etude-linux:latest backend
             docker build -q -f backend/docker/Dockerfile.k8s -t etude-k8s:latest backend
+            docker build -q -f backend/docker/Dockerfile.ssh -t etude-ssh:latest backend
             scripts/migrate.sh
             cd frontend
             npm ci
