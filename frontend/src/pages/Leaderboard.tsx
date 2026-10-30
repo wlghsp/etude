@@ -24,6 +24,18 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
         )
     }, [])
 
+    // 내 줄은 이름으로 찾는다 (랭킹 응답에는 이름만 있다)
+    const meIndex = rows.findIndex((u) => u.userName === userName)
+    const pctOf = (u: MemberProgress) => (u.total > 0 ? Math.round((u.completed / u.total) * 100) : 0)
+    const MEDALS = ['🥇', '🥈', '🥉']
+    // 시상대는 2등 · 1등 · 3등 순서로 놓고, 1등을 가장 높게 세운다
+    const podium = [1, 0, 2].map((i) => ({ u: rows[i], rank: i })).filter((p) => p.u)
+    const podiumStyle = [
+        { h: 'h-28', text: 'text-gold', ring: 'border-gold/60', bg: 'from-gold/25 to-gold/5' },
+        { h: 'h-20', text: 'text-on-surface', ring: 'border-outline', bg: 'from-on-surface/15 to-on-surface/5' },
+        { h: 'h-16', text: 'text-warning', ring: 'border-warning/60', bg: 'from-warning/25 to-warning/5' },
+    ]
+
     function toggleUser(userId: number) {
         setOpenUsers(prev => {
             const next = new Set(prev)
@@ -39,7 +51,7 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
             <div className="flex flex-1 pt-14">
                 <SideNav activePage="leaderboard" userName={userName} userEmail={userEmail} userRole={userRole} onHome={onBack} onProgress={onProgress} onLeaderboard={() => {}} onAdmin={onAdmin} onLogout={onLogout} onChangePassword={onChangePassword} />
 
-                <main className="flex-1 md:ml-60 p-margin-page bg-surface overflow-y-auto">
+                <main className="fx-page flex-1 md:ml-60 p-margin-page bg-surface overflow-y-auto">
                     <div className="flex flex-col gap-2 mb-8">
                         <div className="flex items-center gap-2 text-on-surface-variant font-sans text-label-caps">
                             <span className="text-primary">root</span>
@@ -51,6 +63,32 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
                         <h1 className="font-sans text-headline-lg text-on-surface">랭킹</h1>
                     </div>
 
+                    {meIndex >= 0 && (
+                        <div className="mb-6 flex items-center gap-4 rounded-xl border border-info/40 bg-gradient-to-r from-info/15 via-accent/10 to-transparent px-6 py-4">
+                            <span className="text-[34px] leading-none">{MEDALS[meIndex] ?? '🏃'}</span>
+                            <div className="min-w-0">
+                                <p className="font-sans text-label-caps text-on-surface-variant">내 순위</p>
+                                <p className="font-sans text-headline-md text-on-surface">{rows.length}명 중 {meIndex + 1}위 · 완료 {rows[meIndex]!.completed}/{rows[meIndex]!.total} 세트</p>
+                            </div>
+                            <p className="ml-auto hidden md:block font-sans text-body-md text-on-surface-variant">{meIndex === 0 ? '1등이에요! 👑' : '한 세트만 더 끝내면 순위가 올라가요'}</p>
+                        </div>
+                    )}
+
+                    {podium.length > 0 && (
+                        <div className="mb-8 flex items-end justify-center gap-4" aria-label="상위 3명">
+                            {podium.map(({ u, rank }) => (
+                                <div key={u!.userId} className="flex flex-col items-center w-40">
+                                    <span className={`fx-pop text-[34px] leading-none mb-1 ${rank === 0 ? 'fx-bounce' : ''}`}>{MEDALS[rank]}</span>
+                                    <span className={`font-sans text-body-md font-bold truncate max-w-full ${podiumStyle[rank]!.text}`}>{u!.userName}</span>
+                                    <span className="font-sans text-code-sm text-on-surface-variant mb-2">{u!.completed}세트 · {pctOf(u!)}%</span>
+                                    <div className={`w-full ${podiumStyle[rank]!.h} rounded-t-lg border border-b-0 ${podiumStyle[rank]!.ring} bg-gradient-to-b ${podiumStyle[rank]!.bg} flex items-start justify-center pt-2`}>
+                                        <span className={`font-sans text-headline-lg font-extrabold ${podiumStyle[rank]!.text}`}>{rank + 1}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
                     <div className="bg-surface-container border border-outline-variant overflow-hidden">
                         <div className="p-4 border-b border-outline-variant bg-surface-container-high flex justify-between items-center">
                             <h3 className="font-sans text-label-caps uppercase tracking-widest text-on-surface">팀원 랭킹</h3>
@@ -60,20 +98,20 @@ export function Leaderboard({ onBack, onProgress, onAdmin, onLogout, onChangePas
                             const pct = u.total > 0 ? Math.round((u.completed / u.total) * 100) : 0
                             const isOpen = openUsers.has(u.userId)
                             return (
-                                <div key={u.userId} className="border-b border-outline-variant last:border-0">
+                                <div key={u.userId} className={`border-b border-outline-variant last:border-0 ${idx === meIndex ? 'bg-info/10 border-l-4 border-l-info' : ''}`}>
                                     <button
                                         onClick={() => toggleUser(u.userId)}
                                         className="w-full flex items-center gap-4 px-4 py-4 hover:bg-surface-container-high transition-colors text-left"
                                     >
                                         <span className="font-sans text-headline-md text-on-surface-variant w-8 shrink-0">
-                                            {idx + 1}
+                                            {MEDALS[idx] ?? idx + 1}
                                         </span>
                                         <span className="font-sans text-body-md font-semibold text-on-surface w-32 shrink-0">
-                                            {u.userName}
+                                            {u.userName}{idx === meIndex && <span className="ml-2 px-1.5 py-0.5 rounded-full bg-info/20 text-info font-sans text-[11px]">나</span>}
                                         </span>
                                         <div className="flex-1 h-2 bg-surface-container-highest">
                                             <div
-                                                className={`h-full ${pct === 100 ? 'bg-success' : 'bg-primary'}`}
+                                                className={`h-full bg-gradient-to-r ${pct === 100 ? 'from-success to-gold' : 'from-info to-accent'} transition-all duration-700`}
                                                 style={{ width: `${pct}%` }}
                                             />
                                         </div>

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { groupByUnit } from "../units"
+import { weekActivity, type DayActivity } from "../activity"
+import { WeekStrip } from "../components/WeekStrip"
 import { fetchProgress, type CompletionRecord, type SetProgress } from "../api/user"
 import { TopNav } from "../components/TopNav"
 import { SideNav } from "../components/SideNav"
@@ -28,12 +30,13 @@ const formatDate = (iso: string) => {
 export function Progress({ onBack, onLeaderboard, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
     const [sets, setSets] = useState<SetProgress[] | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [activity, setActivity] = useState<DayActivity[] | null>(null)
     const [filter, setFilter] = useState<Filter>({ kind: 'all' })
     const [openSets, setOpenSets] = useState<Set<number>>(new Set())
     const [openRecords, setOpenRecords] = useState<Set<number>>(new Set())
 
     useEffect(() => {
-        fetchProgress().then(setSets).catch((e) => setError(e instanceof Error ? e.message : '진행현황을 불러오지 못했습니다.'))
+        fetchProgress().then((rows) => { setSets(rows); setActivity(weekActivity(rows, new Date())) }).catch((e) => setError(e instanceof Error ? e.message : '진행현황을 불러오지 못했습니다.'))
     }, [])
 
     const list = sets ?? []
@@ -111,7 +114,7 @@ export function Progress({ onBack, onLeaderboard, onAdmin, onLogout, onChangePas
             <div className="flex flex-1 pt-14">
                 <SideNav activePage="progress" userName={userName} userEmail={userEmail} userRole={userRole} onHome={onBack} onProgress={() => {}} onLeaderboard={onLeaderboard} onAdmin={onAdmin} onLogout={onLogout} onChangePassword={onChangePassword} />
 
-                <main className="flex-1 md:ml-60 flex flex-col items-center px-gutter py-8 bg-surface">
+                <main className="fx-page flex-1 md:ml-60 flex flex-col items-center px-gutter py-8 bg-surface">
                     <div className="w-full max-w-[900px] flex flex-col gap-8">
                         <div className="flex flex-col gap-2">
                             <div className="flex items-center gap-2 text-on-surface-variant font-sans text-label-caps">
@@ -122,7 +125,12 @@ export function Progress({ onBack, onLeaderboard, onAdmin, onLogout, onChangePas
                         </div>
 
                         {error && <p className="font-sans text-body-md text-error">{error}</p>}
-                        {!sets && !error && <p className="font-sans text-body-md text-on-surface-variant">불러오는 중...</p>}
+                        {!sets && !error && (
+                            <div className="space-y-3 animate-pulse" aria-label="불러오는 중">
+                                <div className="h-24 rounded-xl bg-surface-container" />
+                                <div className="h-40 rounded-xl bg-surface-container" />
+                            </div>
+                        )}
 
                         {sets && <>
                             <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -131,6 +139,16 @@ export function Progress({ onBack, onLeaderboard, onAdmin, onLogout, onChangePas
                                 {card('timer', 'text-primary', '총 학습 시간', totalSeconds > 0 ? formatDuration(totalSeconds) : '-')}
                                 {card('calendar_month', 'text-primary', '이번 주 완료', `${weekCount}`, '회')}
                             </section>
+
+                            {activity && (
+                                <section className="rounded-xl border border-outline-variant bg-gradient-to-r from-gold/10 via-transparent to-transparent p-5 flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+                                    <div className="min-w-0">
+                                        <h2 className="font-sans text-headline-md text-on-surface">최근 7일</h2>
+                                        <p className="font-sans text-body-md text-on-surface-variant">세트를 끝낸 날은 불이 켜져요. 숫자는 그날 끝낸 세트 수예요.</p>
+                                    </div>
+                                    <div className="md:ml-auto"><WeekStrip days={activity} /></div>
+                                </section>
+                            )}
 
                             <section className="flex flex-col gap-4">
                                 <h2 className="font-sans text-headline-md text-on-surface">단원별 진행</h2>
