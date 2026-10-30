@@ -48,18 +48,18 @@ find /var/log/old-app -name ''*.log'' -mtime +7 -delete
    '["sh", "-c", "[ -f /var/log/old-app/recent.log ] && [ ! -e /var/log/old-app/old1.log ] && [ ! -e /var/log/old-app/old2.log ] && [ ! -e /var/log/old-app/old3.log ]"]'),
 
   (16,  4, 'CPU 를 가장 많이 쓰는 프로세스 찾기',
-   '서버가 갑자기 느려졌습니다. 범인은 보통 CPU 를 독점하는 프로세스 하나입니다.
+   '서버가 갑자기 느려졌습니다. 범인은 보통 **CPU 를 독점하는 프로세스 하나**입니다. 지금 그런 프로세스가 돌고 있습니다.
 
-지금 CPU 를 **가장 많이 쓰는 프로세스의 PID** 를 `/tmp/hog_pid.txt` 에 저장하세요. (PID 는 프로세스 번호입니다)',
-   '`ps -eo pid,pcpu,args --sort=-pcpu` 는 CPU 사용률(pcpu)이 높은 순서로 프로세스를 보여 줍니다. 1번째 줄은 제목이고 2번째 줄이 1등입니다. 첫 번째 칸이 PID 입니다.
-먼저 화면으로 확인한 뒤 `sed -n 2p` 와 `awk ''{print $1}''` 로 뽑아 저장하세요. `top` 으로도 볼 수 있습니다.',
-   'ps -eo pid,pcpu --sort=-pcpu | sed -n 2p | awk ''{print $1}'' > /tmp/hog_pid.txt
+`PID, CPU 사용률, 명령` 세 열을 **CPU 사용률이 큰 순서**로 정렬해서 `/tmp/cpu_top.txt` 에 저장하세요. (제목 줄 포함)
 
-# --sort=-pcpu : CPU 사용률 내림차순
-# sed -n 2p    : 2번째 줄(1등)만
-# awk ''{print $1}'' : 첫 칸(PID)만',
+완료 조건: 제목 바로 아래(2번째 줄)가 CPU 를 가장 많이 쓰는 프로세스여야 합니다.',
+   '`ps -eo pid,pcpu,args --sort=-pcpu` 는 CPU 사용률(`pcpu`)이 큰 순서로 프로세스를 보여 줍니다. (`-eo` 는 모든 프로세스를 보여 줄 열을 지정, `--sort=-열이름` 은 큰 값이 먼저 오는 정렬) 결과를 `>` 로 파일에 저장하세요. `top` 으로도 확인할 수 있습니다.',
+   'ps -eo pid,pcpu,args --sort=-pcpu > /tmp/cpu_top.txt
+
+# --sort=-pcpu : CPU 사용률 내림차순. 2번째 줄이 1등입니다
+# 확인: head -n 3 /tmp/cpu_top.txt',
    '["sh", "-c", "nohup sh -c ''while :; do :; done'' >/dev/null 2>&1 & sleep 2"]',
-   '["sh", "-c", "[ -n \\"$(cat /tmp/hog_pid.txt)\\" ] && [ \\"$(tr -d ''[:space:]'' < /tmp/hog_pid.txt)\\" = \\"$(pgrep -f ''[w]hile :; do'' | head -n 1)\\" ]"]'),
+   '["sh", "-c", "[ \\"$(awk ''NR==2 {print $1}'' /tmp/cpu_top.txt)\\" = \\"$(pgrep -f ''[w]hile :; do'' | head -n 1)\\" ]"]'),
 
   (16,  5, 'CPU 를 독점하는 프로세스 종료하기',
    '원인 프로세스를 찾았으면 종료해서 서버를 살립니다.

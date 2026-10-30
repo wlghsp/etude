@@ -1,7 +1,7 @@
 {
   "setId": 27,
   "answers": {
-    "1": "ps -eo pid,rss --sort=-rss | sed -n 2p | awk '{print $1}' > /tmp/mem_pid.txt\n",
+    "1": "ps -eo pid,rss,args --sort=-rss | head -n 4 > /tmp/mem_top3.txt",
     "2": "free -m | awk '/^Mem:/ {print $7}' > /tmp/avail.txt\n",
     "3": "awk '/MemTotal/ {printf \"%d\", $2/1024}' /proc/meminfo > /tmp/mem_total.txt\n",
     "4": "nproc > /tmp/cores.txt\n",

@@ -8,6 +8,9 @@
     "5": "df -h > /tmp/df_result.txt",
     "6": "free -h > /tmp/mem_result.txt",
     "7": "export MY_NAME=etude; echo $MY_NAME > /tmp/env_result.txt",
-    "8": "env > /tmp/all_env.txt"
+    "8": "env > /tmp/all_env.txt",
+    "9": "ps -eo pid,rss,args > /tmp/ps_cols.txt",
+    "10": "ps -eo pid,rss,args --sort=-rss > /tmp/ps_by_mem.txt",
+    "11": "pkill worker"
   }
 }

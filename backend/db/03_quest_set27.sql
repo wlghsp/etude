@@ -1,20 +1,19 @@
 -- 세트 27: 리눅스 성능과 스토리지(NFS) 점검 (order 1~14)
 -- 메모리·CPU·로드 점검과 df 계열 출력 읽기, NFS 설정(fstab, exports)과 출력 해석. 컨테이너에서는 실제 NFS 마운트를 할 수 없어 설정 파일 작성과 샘플 출력 읽기로 다룬다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd) VALUES
-  (27,  1, '메모리를 가장 많이 쓰는 프로세스 찾기',
-   '서버의 메모리가 계속 부족해집니다. 원인은 보통 메모리를 크게 점유한 프로세스 하나입니다. 메모리는 `RSS`(실제로 물리 메모리에 올라가 있는 크기) 열로 비교합니다.
+  (27,  1, '메모리를 가장 많이 쓰는 프로세스 3개 저장하기',
+   '서버의 메모리가 계속 부족해집니다. 원인은 보통 메모리를 크게 점유한 프로세스입니다. 메모리는 `RSS`(실제로 물리 메모리에 올라가 있는 크기) 열로 비교합니다.
 
-지금 메모리를 **가장 많이 쓰는 프로세스의 PID** 를 `/tmp/mem_pid.txt` 에 저장하세요.',
-   '`ps -eo pid,rss,args --sort=-rss` 는 `RSS` 가 큰 순서로 프로세스를 보여 줍니다.
-- `-e` : 모든 프로세스, `-o pid,rss,args` : 보여 줄 열 지정
-- `--sort=-rss` : RSS 내림차순 (`-` 가 내림차순)
-1번째 줄은 제목이고 2번째 줄이 1등이라, `sed -n 2p` 와 `awk ''{print $1}''` 로 PID(첫 칸)만 뽑을 수 있습니다.',
-   'ps -eo pid,rss --sort=-rss | sed -n 2p | awk ''{print $1}'' > /tmp/mem_pid.txt
+`PID, RSS, 명령` 세 열을 **RSS 가 큰 순서**로 정렬하고, **제목 줄과 상위 3개 프로세스**(모두 4줄)만 `/tmp/mem_top3.txt` 에 저장하세요.
 
-# --sort=-rss : 실제 메모리 사용량(RSS) 내림차순
-# sed -n 2p : 2번째 줄(1등)만, awk ''{print $1}'' : 첫 칸(PID)만',
+완료 조건: 파일이 4줄이고, 제목 바로 아래(2번째 줄)가 메모리를 가장 많이 쓰는 프로세스여야 합니다.',
+   '`ps -eo pid,rss,args --sort=-rss` 는 `RSS` 가 큰 순서로 프로세스를 보여 줍니다. (`-e` 모든 프로세스, `-o` 보여 줄 열, `--sort=-rss` 큰 값이 먼저) 앞에서부터 몇 줄만 남기려면 `| head -n 4` 를 붙입니다. (`head -n 4` 는 맨 앞 4줄만 출력, 제목 1줄 + 프로세스 3개)',
+   'ps -eo pid,rss,args --sort=-rss | head -n 4 > /tmp/mem_top3.txt
+
+# --sort=-rss : 실제 메모리(RSS) 내림차순
+# head -n 4 : 맨 앞 4줄(제목 + 상위 3개)만',
    '["sh", "-c", "nohup perl -e ''$x = \\\"a\\\" x (80*1024*1024); sleep 3600'' memhog >/dev/null 2>&1 & sleep 2"]',
-   '["sh", "-c", "[ -n \\\"$(cat /tmp/mem_pid.txt)\\\" ] && [ \\\"$(tr -d ''[:space:]'' < /tmp/mem_pid.txt)\\\" = \\\"$(pgrep -x perl | head -n 1)\\\" ]"]'),
+   '["sh", "-c", "[ \\"$(wc -l < /tmp/mem_top3.txt)\\" -eq 4 ] && [ \\"$(awk ''NR==2 {print $1}'' /tmp/mem_top3.txt)\\" = \\"$(pgrep -x perl | head -n 1)\\" ]"]'),
 
   (27,  2, 'free 출력에서 실제 쓸 수 있는 메모리(available) 읽기',
    '`free` 에는 `free`, `buff/cache`, `available` 열이 있습니다. 리눅스는 남는 메모리를 디스크 캐시로 쓰기 때문에 `free` 가 작아 보여도 문제가 아닌 경우가 많고, **실제로 새 프로그램이 쓸 수 있는 양은 `available`** 입니다. 메모리가 부족한지는 이 열로 판단합니다.
