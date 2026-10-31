@@ -24,5 +24,6 @@
 
 - 적용 현황: `docker exec etude-db sh -c 'mariadb -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE" -e "SELECT * FROM schema_migrations"'`
 - 로컬 실행: `scripts/migrate.sh` (로컬 DB 컨테이너도 `etude-db`)
+- 새 DB(초기화 SQL 로 이미 최신)에서는 `scripts/migrate.sh --baseline` 을 한 번 실행해 기존 파일을 "적용됨"으로만 기록한다. 그냥 실행하면 가드가 없는 옛 마이그레이션이 일부 세트(19, 20, 25, 26, 33)의 문제를 중복 삽입한다.
 - 어떤 파일이 실패하면 배포가 그 지점에서 멈춘다(`set -e`). 파일을 고쳐 다시 배포하면 된다. 기록은 성공한 뒤에만 남는다.
 - 이미 적용한 파일의 내용을 고쳐도 다시 실행되지 않는다. 고치려면 새 마이그레이션 파일을 추가한다.

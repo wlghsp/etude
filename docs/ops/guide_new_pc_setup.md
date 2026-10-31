@@ -51,11 +51,13 @@ docker build -q -f backend/docker/Dockerfile.ssh      -t etude-ssh:latest      b
 ## 5. 기동
 
 ```bash
-scripts/dev-up.sh            # MariaDB(etude-db) + k3d 클러스터(etude). k8s 를 안 쓰면 --no-k8s
-scripts/migrate.sh           # 아직 적용 안 한 마이그레이션 적용 (새 DB 에도 안전하다)
+scripts/dev-up.sh              # MariaDB(etude-db) + k3d 클러스터(etude). k8s 를 안 쓰면 --no-k8s
+scripts/migrate.sh --baseline  # 새 DB 에서 딱 한 번. 마이그레이션을 실행하지 않고 "적용됨"으로만 기록한다
 ```
 
-`etude-db` 가 처음 만들어질 때 `backend/db/00~09_*.sql` 이 자동 실행돼 스키마와 세트가 들어간다. 그 뒤에 추가된 변경은 `migrate.sh` 가 이름순으로 적용한다.
+`etude-db` 가 처음 만들어질 때 `backend/db/00~09_*.sql` 이 자동 실행돼 스키마와 세트가 **이미 최신으로** 들어간다 (세트 132개, 문제 1,562개, 이 PC 의 DB 와 세트별 문제 수가 모두 같음을 확인했다). 그러므로 **새 DB 에는 `scripts/migrate.sh` 를 그냥 실행하지 않는다.** 가드가 없는 옛 마이그레이션이 같은 문제를 중복 삽입해서 일부 세트(19, 20, 25, 26, 33)의 문제 수가 두 배가 된다 (실제로 확인함). 새 DB 에서는 `--baseline` 으로 기록만 남기고, 그 **뒤에 새로 추가되는** 마이그레이션부터 `scripts/migrate.sh` 로 적용한다.
+
+로컬 DB 데이터(덤프)를 따로 전달할 필요는 없다. 세트와 문제는 레포의 SQL 에서 그대로 만들어지고, DB 안의 나머지는 이 PC 에서만 의미 있는 테스트 데이터(테스트 계정, 학습 기록)다.
 
 k8s 실습을 쓰려면 컨테이너 안에서 닿는 kubeconfig 가 필요하다. 클러스터 `etude` 를 만든 뒤 서버 주소만 바꿔 `~/.kube/config-etude` 로 저장한다. 서버 주소가 `https://k3d-etude-server-0:6443` 이어야 한다 (생성 절차는 [../specs/spec_phase8_deploy.md](../specs/spec_phase8_deploy.md) 의 "kubeconfig 생성" 절 참고. 아래는 추정 명령이며 `미검증`).
 
