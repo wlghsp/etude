@@ -26,6 +26,7 @@ export const GEAR: Record<string, { icon: string; name: string }> = {
   'k8s': { icon: '⛑️', name: '투구' },
   'Git': { icon: '🧣', name: '망토' },
   '미들웨어': { icon: '🎒', name: '도구 가방' },
+  '데이터베이스': { icon: '📚', name: '지식 서고' },
   '인프라': { icon: '🔨', name: '망치' },
 }
 

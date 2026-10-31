@@ -5,7 +5,7 @@ import { avatarTone } from '../avatar'
 import { fetchReport, type Report } from '../api/user'
 import { ConfirmModal } from '../components/ConfirmModal'
 
-const CATEGORY_TEXT: Record<string, string> = { '리눅스': 'text-warning', '도커': 'text-sky', 'k8s': 'text-accent', 'Git': 'text-lime', '미들웨어': 'text-teal', '인프라': 'text-coral' }
+const CATEGORY_TEXT: Record<string, string> = { '리눅스': 'text-warning', '도커': 'text-sky', 'k8s': 'text-accent', 'Git': 'text-lime', '미들웨어': 'text-teal', '데이터베이스': 'text-rose', '인프라': 'text-coral' }
 const COMMENT_MAX = 300
 
 // 축하마다 다른 색. 키(서버가 내려 준 cheer.key)별로 고르고, 없으면 종류별 색을 쓴다.

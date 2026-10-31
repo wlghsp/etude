@@ -23,6 +23,25 @@ function RichText({ text }: { text: string }) {
     )
 }
 
+// 설명 속 "완료 조건:" 문장은 본문과 떼어 박스로 보여 준다 (무엇을 하면 끝인지 한눈에 보이게)
+const DONE_MARK = /완료 조건[:：]\s*/
+function Description({ text }: { text: string }) {
+    const m = DONE_MARK.exec(text)
+    const body = m ? text.slice(0, m.index).trimEnd() : text
+    const done = m ? text.slice(m.index + m[0].length).trim() : ''
+    return (
+        <>
+            {body && <p className="font-sans text-body-lg text-on-surface leading-7 break-words whitespace-pre-wrap"><RichText text={body} /></p>}
+            {done && (
+                <div className={`${body ? 'mt-3 ' : ''}rounded-lg border border-success/40 bg-success/10 px-3 py-2.5`}>
+                    <span className="font-sans text-label-caps text-success flex items-center gap-1.5 mb-1"><span className="material-symbols-outlined text-[16px]">flag</span>완료 조건</span>
+                    <p className="font-sans text-body-md text-on-surface leading-6 break-words whitespace-pre-wrap"><RichText text={done} /></p>
+                </div>
+            )}
+        </>
+    )
+}
+
 // 정답을 맞혔을 때 박스 위에서 한 번 떨어지는 색종이 (고정된 값이라 다시 그려도 모양이 바뀌지 않는다)
 const CONFETTI_COLORS = ['bg-success', 'bg-primary', 'bg-info', 'bg-on-surface']
 function Confetti() {
@@ -265,7 +284,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                         </div>
                     )}
                     <div className="rounded-xl border border-outline-variant bg-surface-container p-4">
-                        <p className="font-sans text-body-lg text-on-surface leading-7 break-words whitespace-pre-wrap"><RichText text={resolve(quest.description)} /></p>
+                        <Description text={resolve(quest.description)} />
                     </div>
 
                     {isChoice && quest.choices && (
