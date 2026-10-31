@@ -142,19 +142,56 @@
 | 리눅스 | 16, 18 | 권한 거부, 포트 사용 중 프로세스 찾기, 디스크 가득(inode) |
 | HAProxy | 98 (완료) | 503, 백엔드 DOWN, 포트 충돌, 설정 오타, soft reload |
 | Redis | 60(자료구조), 99(접속·키 관리), 83(심화) | 상황집 102(OOM·연결 거부·느린 명령·TTL 누락·연결 한도) 완료 (redis-server 있음) |
-| Kafka | 73, 88, 89 | consumer lag, under-replicated, advertised listener 오류 (읽기 위주, 실습은 설정 고치기) |
+| Kafka | 73, 88, 89, 114 | consumer lag, under-replicated, advertised listener 오류 (읽기 위주, 실습은 설정 고치기) |
 | Elasticsearch | 62·71·76(개념), 88, 112(REST 기본기), 113(상황집) | 완료 (파일·응답 읽기형) |
 | MariaDB/Galera | 59, 73, 91, 109(백업·복원 실습) | 연결 수 초과, 느린 쿼리, deadlock, 복제 설정 실습 |
 | Prometheus/Loki | 57, 90, 103(알림 기본기), 104(상황집) | Loki/LogQL 상황집 (로그가 안 들어옴, 레이블 폭증) |
-| Jenkins/Nexus/Harbor | 93 | 빌드 실패 읽기, agent 연결 실패, 디스크 가득 |
-| 인프라 | 2개 세트 | 네트워크·DNS·시간 동기화 장애 |
+| Jenkins/Nexus/Harbor | 93, 116 | 빌드 실패 읽기, agent 연결 실패, 디스크 가득 |
+| 인프라 | 55, 61, 117 | 117 완료: 층별 점검, refused/timeout, DNS 지연, 시간 오류, MTU |
 
 ### 동시성·이벤트 묶음 (미들웨어 단원 27, 2026-10-30)
 
 기본기 먼저: 100(동시성), 101(이벤트 스트리밍) 완료. 다음 상황집 후보:
-- 동시성 상황집: 락 파일이 남아 영원히 막힘(stale lock), 데드락 로그 읽기, 중복 요청으로 이중 처리, 재시도 폭주.
-- 이벤트 스트리밍 상황집: consumer lag 증가, 리밸런싱 폭주, 중복 처리, 순서 뒤바뀜, 컨슈머가 같은 메시지를 계속 재처리(poison pill). Kafka 가 샌드박스에 없어 출력 해석·순서·빈칸 위주.
+- 동시성 상황집: **완료 (세트 115)** — stale lock, 데드락 로그 읽기, 이중 처리, 재시도 폭주.
+- 이벤트 스트리밍 상황집: **완료 (세트 114, Kafka 문제 해결 상황집)** — consumer lag 증가, 리밸런싱 폭주, 중복 처리, 순서 뒤바뀜, 컨슈머가 같은 메시지를 계속 재처리(poison pill). Kafka 가 샌드박스에 없어 출력 해석·순서·빈칸 위주.
 
 ### 필수 과정: 백업·복원 (사용자 방향 2026-10-31)
 
 "MariaDB, Vault 덤프 복원 등은 필수 과정." 109(MariaDB 덤프·복원)는 실제로 해 본다. 일반 리눅스 이미지(`etude-linux`, 319MB)는 그대로 두고, 그 위에 MariaDB 층만 더한 별도 이미지 `etude-linux-db`(샌드박스 타입 `linux-db`, `Dockerfile.linux-db`)를 DB 세트에서만 쓴다. 층을 공유해 추가 디스크는 약 280MB, 기동·덤프·복원은 512MiB 제한에서 약 2초, 메모리 약 85MB. 부담이 크면 109 를 텍스트 기반으로 되돌리고 `linux-db` 를 제거한다. HashiCorp Vault(110 입문, 111 스냅샷 백업·복원)는 바이너리가 커서(수백 MB) 이미지에 넣지 않고 읽기·판단형으로 만들었다 (사용자 결정 2026-10-31). 그 외 백업·복원 후보: Redis(RDB/AOF 복원), Elasticsearch 스냅샷, etcd 스냅샷(k8s), Git 저장소 백업.
+
+- **Redis 백업·복원 (세트 118, 2026-10-31):** 기본 이미지의 `redis-server`·`redis-check-rdb` 만으로 실습한다(추가 이미지 없음). SAVE/BGSAVE, RDB·AOF 손실 범위, "저장 없이 내리고(`shutdown nosave`) 파일 교체 후 시작" 복원 순서, AOF 가 켜져 있으면 RDB 복원이 무시되는 함정, 백업 파일 검사. 이미지의 Redis 는 6.x 라 AOF 가 `appendonly.aof` 한 파일이다(7 이상은 `appendonlydir`).
+- 남은 백업·복원 후보: etcd 스냅샷, Elasticsearch 스냅샷, Git 저장소 백업.
+
+### k8s 클러스터 운영 영역 채우기 (CKA 범위 모음의 선행 작업, 2026-10-31)
+
+CKA 영역 중 클러스터 아키텍처·운영(25%)과 트러블슈팅의 노드·컨트롤 플레인 부분이 비어 있었다. 샌드박스 학습자 권한(자기 네임스페이스 edit)과 도구(`etcdctl`·`kubeadm` 없음) 한계로 직접 실행은 어려워 **읽기·순서·빈칸형**으로 채운다. 새 단원 29 `클러스터 운영·보안`(k8s).
+
+| 세트 | 내용 |
+|---|---|
+| 119 | RBAC 읽기: Role·RoleBinding·ServiceAccount, ClusterRole, forbidden 오류, can-i, 최소 권한 |
+| 120 | 클러스터 관리: etcd snapshot save/restore, kubeadm 업그레이드 순서, 인증서 만료, static Pod |
+| 123 | 리눅스 cron(단원 4): 다섯 칸, 환경 차이(PATH), %, 로그, flock 겹침 방지 — 실습 3 |
+| 124 | 리눅스 SSH 문제 해결(단원 4): publickey, 호스트 키 변경, 권한 700/600, ssh config — 실습 3 |
+| 122 | 스토리지 개념(단원 8): PV·PVC·StorageClass, 접근 모드, reclaimPolicy, 동적 프로비저닝, 볼륨 확장 |
+| 121 | 노드·컨트롤 플레인 장애: describe node Conditions, kubelet, apiserver 연결 거부, 스케줄러, DiskPressure, crictl |
+
+다음 단계(콘텐츠 이후): `quest_set` 의 CKA 영역 컬럼과 "CKA 범위 모음" 화면.
+
+- **방향 (2026-10-31):** 쉬운 문제를 대량으로 두어 매일 반복하게 한다. 심화 후보는 데이터베이스, 리눅스, OS, k8s, 컴퓨터 원리. 자료 후보(dev-notes): csapp, modern-os, database-internals, mysql-internals, db-internals.
+
+### 쉬운 문제 대량 세트 (2026-10-31)
+
+쉬운 문제를 많이 두어 매일 반복하게 한다. 세트당 20~30문제, 한 문제는 한 개념, 퀴즈형(컨테이너 없음) 우선.
+
+| 세트 | 내용 |
+|---|---|
+| 125 | DB 기초 1 개념(퀴즈 23): 행·열, SHOW/USE/DESC, SELECT, LIMIT, AS |
+| 126 | DB 기초 1 실습(linux-db 8): 직접 쳐 보며 구경하기 |
+| 127 | 리눅스 쉬운 문제 1(퀴즈 31): pwd·ls·cd·mkdir·touch·cp·mv·rm·cat, 옵션, >·>> |
+| 132 | k8s 쉬운 문제 3(퀴즈 31, 단원 7): Namespace, ConfigMap·Secret, base64 는 암호화가 아님, 환경 변수·파일 마운트, CreateContainerConfigError, label |
+| 131 | 리눅스 쉬운 문제 3(퀴즈 31): IP·포트·DNS, ping·curl·ss·nc, refused, grep 옵션, sort·uniq, sed·awk, tee |
+| 130 | k8s 쉬운 문제 2(퀴즈 30): YAML 들여쓰기·뼈대, selector·라벨, requests/limits, Service 포트, OOMKilled·Evicted·FailedScheduling, explain·dry-run |
+| 129 | 리눅스 쉬운 문제 2(퀴즈 31): rwx·숫자 권한, chown·sudo, PID·kill, df·du·free, 파이프, wc·sort·uniq·cut |
+| 128 | k8s 쉬운 문제 1(퀴즈 31): Pod·Deployment·Service·Namespace, READY·Pending·ImagePullBackOff, kubectl 기본 명령 |
+
+다음: 리눅스·k8s 쉬운 문제 세트를 계속 늘린다(리눅스 2~5: 권한·프로세스·텍스트 도구·네트워크 기본, k8s 1~4: 용어·kubectl·YAML·상태 읽기).
