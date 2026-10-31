@@ -1,0 +1,52 @@
+-- 미들웨어 세트 120. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set120.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 29, 'k8s', '클러스터 운영·보안', 45 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 29);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 120, 'k8s 클러스터 관리 읽기: etcd 백업·복원, 업그레이드, 인증서', '클러스터 관리자가 알아야 하는 작업의 절차와 판단을 읽기·순서·빈칸으로 익힙니다. etcd 가 중요한 이유, snapshot save/restore 와 인증 옵션, 복원 순서, kubeadm 업그레이드 규칙(마이너 한 단계씩, 컨트롤 플레인 먼저), 워커 노드 업그레이드 순서, 인증서 만료 확인과 갱신, static Pod 매니페스트 수정, etcd 외에 함께 보관할 것을 다룹니다. 샌드박스에 etcdctl 과 kubeadm 이 없어 직접 실행하지는 않습니다.', 'quiz', 'k8s'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 120);
+UPDATE quest_set SET display_order = 340, unit_id = (SELECT id FROM unit WHERE id = 29), icon = '🧱' WHERE id = 120;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 120, 1, 'etcd 를 왜 백업할까?', 'k8s 클러스터에서 etcd 데이터를 잃으면 어떤 일이 생길까요? (워커 노드의 컨테이너 자체는 한동안 계속 돌 수 있습니다)', 'etcd 는 클러스터의 "기억"이 저장되는 곳이에요.', NULL, NULL, '[]', 'choice', '["컨테이너 이미지가 모두 사라진다", "노드의 운영체제가 지워진다", "클러스터의 모든 오브젝트(Deployment, Service, Secret 등)의 정의와 상태 기록이 사라져, 클러스터를 관리·복구할 수 없게 된다", "아무 일도 생기지 않는다"]', 2, 'etcd 는 API 서버가 읽고 쓰는 **클러스터 상태의 유일한 저장소**입니다. 사라지면 "어떤 Pod 를 어디에 몇 개 띄워야 하는지"를 아는 곳이 없어져요. 그래서 정기 스냅샷이 필수입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 120 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 120, 2, 'etcd 스냅샷 저장과 복원', 'etcd 를 파일로 **저장**하고, 그 파일에서 새 디렉터리로 **복원**하는 명령입니다. 서브명령 빈칸을 채우세요. (인증 옵션은 생략했습니다)', '저장은 save, 되살리기는 restore 예요.', NULL, NULL, '[]', 'fill', '["save", "restore", "status", "delete"]', NULL, '`snapshot save` 는 실행 중인 etcd 에서 스냅샷 파일을 만들고, `snapshot restore` 는 그 파일로 **새 data-dir** 을 만듭니다. 복원은 기존 data-dir 을 덮어쓰지 않으므로, 이후 etcd 가 새 경로를 보도록 설정을 바꿔야 해요.', '[0, 1]', 'ETCDCTL_API=3 etcdctl snapshot {0} /backup/etcd.db
+ETCDCTL_API=3 etcdctl snapshot {1} /backup/etcd.db --data-dir=/var/lib/etcd-restore', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 120 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 120, 3, 'etcdctl 인증 옵션', 'etcd 는 클라이언트 인증서를 요구합니다. `kubeadm` 클러스터의 컨트롤 플레인 노드에서 스냅샷을 만들 때 **CA 인증서** 경로를 지정하는 옵션의 이름을 채우세요.', 'CA 인증서는 영어로 CA certificate 예요.', NULL, NULL, '[]', 'fill', '["cacert", "password", "token", "insecure"]', NULL, '`--cacert`, `--cert`, `--key` 세 가지를 함께 줘야 etcd 에 접속됩니다. 인증서는 보통 `/etc/kubernetes/pki/etcd/` 에 있어요. 경로를 모를 때는 etcd static Pod 매니페스트(`/etc/kubernetes/manifests/etcd.yaml`)의 옵션을 보면 나옵니다.', '[0]', 'etcdctl snapshot save /backup/etcd.db \\
+  --endpoints=https://127.0.0.1:2379 \\
+  --{0}=/etc/kubernetes/pki/etcd/ca.crt \\
+  --cert=/etc/kubernetes/pki/etcd/server.crt \\
+  --key=/etc/kubernetes/pki/etcd/server.key', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 120 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 120, 4, 'etcd 복원 순서 (kubeadm 클러스터)', '스냅샷 파일로 etcd 를 복원합니다. 순서에 맞게 놓아 보세요.', '파일 확인 → 복원 → 설정 바꾸기 → 재기동 → 확인 순이에요.', NULL, NULL, '[]', 'order', '["스냅샷 파일이 정상인지 확인한다 (`snapshot status`)", "`snapshot restore` 로 새 data-dir 에 복원한다", "etcd static Pod 매니페스트의 data-dir 경로를 새 경로로 바꾼다", "kubelet 이 etcd Pod 를 다시 띄울 때까지 기다린다", "`kubectl get nodes`, `get pods -A` 로 클러스터가 돌아왔는지 확인한다"]', NULL, '복원은 새 디렉터리를 만들 뿐이라 etcd 가 그 디렉터리를 보게 해야 합니다. 마지막에 오브젝트가 되살아났는지 눈으로 확인하세요.', '[0, 1, 2, 3, 4]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 120 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 120, 5, '업그레이드 한 번에 건너뛰어도 될까?', '쿠버네티스 1.28 클러스터를 kubeadm 으로 1.30 까지 올려야 합니다. 올바른 방법은 무엇일까요?', 'kubeadm 은 마이너 버전을 건너뛰는 것을 지원하지 않아요.', NULL, NULL, '[]', 'choice', '["마이너 버전을 한 단계씩 올린다 (1.28 → 1.29 → 1.30)", "한 번에 1.30 으로 바로 올린다", "워커 노드만 먼저 1.30 으로 올린다", "컨트롤 플레인을 지우고 새로 만든다"]', 0, 'kubeadm 업그레이드는 **한 번에 마이너 버전 하나씩**이 규칙입니다. 또 컨트롤 플레인을 먼저, 워커 노드를 나중에 올립니다. 워커가 컨트롤 플레인보다 높은 버전이 되면 안 돼요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 120 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 120, 6, '워커 노드 한 대 업그레이드 순서', '워커 노드 한 대를 안전하게 업그레이드하는 순서에 맞게 놓아 보세요.', '먼저 비우고, 올리고, 다시 열어요.', NULL, NULL, '[]', 'order', '["`kubectl drain` 으로 노드의 Pod 를 다른 노드로 옮긴다", "kubeadm 패키지를 올리고 `kubeadm upgrade node` 를 실행한다", "kubelet, kubectl 패키지를 올리고 kubelet 을 재시작한다", "`kubectl uncordon` 으로 다시 스케줄링을 허용한다"]', NULL, '노드를 비운 상태에서 올리면 서비스 중단을 줄일 수 있습니다. 마지막 `uncordon` 을 잊으면 노드가 `SchedulingDisabled` 로 남아 새 Pod 를 못 받아요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 120 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 120, 7, 'x509: certificate has expired', '어느 날 컨트롤 플레인 노드에서 `kubectl get nodes` 가 `x509: certificate has expired or is not yet valid` 로 실패합니다. kubeadm 으로 설치한 지 1년이 넘었습니다. 가장 알맞은 조치는 무엇일까요?', 'kubeadm 이 만든 클러스터 인증서에는 유효기간이 있어요. 서버 시계도 같이 의심해 볼 수 있습니다.', NULL, NULL, '[]', 'choice', '["클러스터를 처음부터 다시 설치한다", "kubectl 을 재설치한다", "노드의 디스크를 정리한다", "`kubeadm certs check-expiration` 으로 만료 여부를 보고, 만료됐다면 `kubeadm certs renew all` 로 갱신한 뒤 컨트롤 플레인 Pod 를 재시작한다. 서버 시간이 맞는지도 함께 확인한다"]', 3, 'kubeadm 이 만든 인증서는 기본 **1년**이 지나면 만료됩니다(업그레이드 시 갱신되기도 해요). 갱신 후에는 static Pod(apiserver 등)가 새 인증서를 쓰도록 재시작해야 합니다. 시계가 틀어져도 같은 오류가 나니 `date` 도 확인하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 120 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 120, 8, 'kubeadm 인증서 명령', '인증서의 **만료일을 확인**하고, 모든 인증서를 한꺼번에 **갱신**하는 명령입니다. 빈칸을 채우세요.', '확인은 check-expiration, 갱신은 renew 예요.', NULL, NULL, '[]', 'fill', '["check-expiration", "renew", "delete", "upgrade"]', NULL, '`check-expiration` 은 각 인증서의 만료일과 남은 기간을 보여 줍니다. 정기적으로 확인해 두면 갑작스러운 장애를 막을 수 있어요. `renew all` 뒤에는 컨트롤 플레인 구성요소를 재시작해야 적용됩니다.', '[0, 1]', 'kubeadm certs {0}
+kubeadm certs {1} all', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 120 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 120, 9, 'apiserver 옵션을 바꾸려면', 'kubeadm 으로 설치한 클러스터에서 kube-apiserver 의 실행 옵션 하나를 바꾸려 합니다. 올바른 방법은 무엇일까요?', 'kube-apiserver 는 일반 Deployment 가 아니라 kubelet 이 직접 띄우는 Pod 예요.', NULL, NULL, '[]', 'choice', '["`kubectl edit deployment kube-apiserver` 로 수정한다", "컨트롤 플레인 노드의 `/etc/kubernetes/manifests/kube-apiserver.yaml`(static Pod 매니페스트)을 수정하면 kubelet 이 감지해 다시 띄운다", "`kubectl delete pod kube-apiserver` 후 새로 만든다", "워커 노드에서 `systemctl restart kube-apiserver` 를 실행한다"]', 1, 'kubeadm 클러스터의 apiserver, controller-manager, scheduler, etcd 는 **static Pod** 입니다. 매니페스트 파일을 고치면 kubelet 이 자동으로 재생성해요. 문법 오타가 있으면 apiserver 가 안 떠서 `kubectl` 도 안 되니 수정 전 백업이 필수입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 120 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 120, 10, 'etcd 백업만 하면 충분할까?', '매일 etcd 스냅샷은 잘 받고 있습니다. 컨트롤 플레인 노드가 통째로 사라진 뒤 복구하려면, etcd 스냅샷 외에 **함께 보관해 두면 좋은 것**으로 알맞은 것은 무엇일까요?', 'etcd 는 클러스터의 설정과 상태일 뿐이에요. 데이터와 인증서는 별개예요.', NULL, NULL, '[]', 'choice', '["아무것도 필요 없다. etcd 스냅샷에 PV 데이터까지 모두 들어 있다", "컨테이너 이미지 캐시만", "`/etc/kubernetes/pki` 의 인증서·키와 앱의 영구 데이터(PV 의 내용). etcd 에는 PV 안의 데이터가 들어 있지 않다", "워커 노드의 임시 파일"]', 2, 'etcd 스냅샷은 PV **정의**를 담지만 **내용(데이터)** 은 담지 않습니다. 앱 데이터는 별도 백업이 필요하고, 컨트롤 플레인을 새로 세울 때 쓰는 인증서도 보관해야 해요. 복구 절차를 가끔 연습해 보세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 120 AND order_index = 10);

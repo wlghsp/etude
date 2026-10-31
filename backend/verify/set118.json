@@ -1,0 +1,8 @@
+{
+  "setId": 118,
+  "answers": {
+    "4": "redis-cli save\ncp /tmp/r1/dump.rdb /tmp/backup.rdb\nredis-check-rdb /tmp/backup.rdb\n\n# 스냅샷은 임시 파일에 쓴 뒤 이름을 바꾸므로 dump.rdb 를 복사해도 반쪽 파일이 되지 않는다. 그래도 복사본은 꼭 검사한다",
+    "6": "redis-cli shutdown nosave\ncp /tmp/backup2.rdb /tmp/r2/dump.rdb\nredis-server --daemonize yes --dir /tmp/r2 --save '' >/dev/null\nsleep 1\nredis-cli dbsize\nredis-cli get user:3\n\n# 저장 없이(nosave) 내려야 비어 있는 현재 상태가 dump.rdb 를 덮어쓰지 않는다",
+    "8": "redis-cli config set appendonly yes\nsleep 2\nredis-cli set b 2\nsleep 1\nls /tmp/r3\ngrep -a b /tmp/r3/appendonly.aof > /tmp/aof.txt\ncat /tmp/aof.txt\n\n# CONFIG SET 은 재시작하면 사라진다. 계속 쓰려면 redis.conf 에도 appendonly yes 를 적는다 (Redis 7 이상은 appendonlydir 폴더에 만들어진다)"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "setId": 124,
+  "answers": {
+    "4": "ls -ld /tmp/sshhome/.ssh; ls -l /tmp/sshhome/.ssh\nchmod 700 /tmp/sshhome/.ssh\nchmod 600 /tmp/sshhome/.ssh/id_ed25519 /tmp/sshhome/.ssh/authorized_keys\nls -ld /tmp/sshhome/.ssh; ls -l /tmp/sshhome/.ssh\n\n# 그룹·타인이 쓰거나 읽을 수 있으면 sshd 가 \"bad ownership or modes\" 로 키를 무시한다",
+    "6": "cat /tmp/known_hosts\nssh-keygen -R hostb -f /tmp/known_hosts\ncat /tmp/known_hosts\n\n# 파일 전체를 지우면 다른 서버의 확인 기록까지 사라진다. 바뀐 서버의 항목만 지운다",
+    "10": "printf '%s\\n' 'Host dev' '  HostName server.example.com' '  User deploy' '  IdentityFile ~/.ssh/id_ed25519' > /tmp/ssh_config\nssh -G -F /tmp/ssh_config dev | grep -iE '^(hostname|user|identityfile) '\n\n# ssh -G 는 접속하지 않고 \"이 설정이면 실제로 이렇게 적용된다\"를 보여 준다"
+  }
+}

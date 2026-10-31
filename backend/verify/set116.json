@@ -1,0 +1,8 @@
+{
+  "setId": 116,
+  "answers": {
+    "4": "cat /tmp/build.log\ngrep -m1 ERROR /tmp/build.log > /tmp/cause.txt\nawk '/stage/{s=$0} /ERROR/{print s; exit}' /tmp/build.log > /tmp/stage.txt\ncat /tmp/cause.txt /tmp/stage.txt\n\n# 뒤에 나온 ERROR 는 앞 실패의 결과인 경우가 많다. 가장 먼저 나온 ERROR 가 원인이다",
+    "7": ". /tmp/info.txt\necho \"$REGISTRY/$PROJECT/$IMAGE\" > /tmp/tag.txt\ncat /tmp/tag.txt\n\n# docker tag 나 push 에 이 이름을 그대로 쓴다. 주소·프로젝트·이름·태그가 한 줄에 모인다",
+    "11": "grep -v '^latest$' /tmp/tags.txt | sort -V | head -n -3 > /tmp/delete.txt\ncat /tmp/delete.txt\n\n# 지우기 전에 목록부터 만들어 눈으로 확인한다. latest 와 최신 몇 개는 남긴다"
+  }
+}

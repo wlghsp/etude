@@ -1,0 +1,8 @@
+{
+  "setId": 117,
+  "answers": {
+    "4": "cat /tmp/net.log\ngrep -o '([0-9]*)' /tmp/net.log | sort | uniq -c > /tmp/count.txt\ncat /tmp/count.txt\n\n# (6) 이름 해석, (7) 연결 거절, (28) 시간 초과. 어느 코드가 많은지 보면 원인 층이 좁혀진다",
+    "6": "cat /tmp/ss.txt\nawk 'NR>1{n=split($4,a,\":\"); print a[n]}' /tmp/ss.txt | sort -n > /tmp/ports.txt\ncat /tmp/ports.txt\n\n# 서비스가 떠 있는지는 \"그 포트가 LISTEN 인가\"로 확인한다. 목록에 없으면 서비스가 안 떠 있는 것",
+    "8": "cat /tmp/resolv.conf\ngrep -vF 'nameserver 192.0.2.1' /tmp/resolv.conf > /tmp/resolv.fixed\ncat /tmp/resolv.fixed\n\n# 실제 /etc/resolv.conf 는 바꾸기 전에 반드시 백업한다. 여기서는 새 파일에 먼저 만들어 확인했다"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "setId": 126,
+  "answers": {
+    "1": "mariadb -e 'SHOW DATABASES;' > /tmp/dbs.txt\ncat /tmp/dbs.txt\n\n# mariadb -e 'SQL' 은 접속해서 문장 하나를 실행하고 나온다. 스크립트에서 자주 쓴다",
+    "2": "mariadb shop -e 'SHOW TABLES;' > /tmp/tables.txt\ncat /tmp/tables.txt\n\n# mariadb 데이터베이스이름 -e 'SQL' : USE 를 따로 안 써도 그 DB 에서 실행된다",
+    "3": "mariadb shop -e 'DESC customers;' > /tmp/desc.txt\ncat /tmp/desc.txt\n\n# Field(컬럼), Type(타입), Null(NULL 허용), Key(PRI=기본키)를 읽는다",
+    "4": "mariadb shop -e 'SELECT * FROM customers LIMIT 3;' > /tmp/first3.txt\ncat /tmp/first3.txt\n\n# 결과의 첫 줄은 컬럼 이름(제목)이다. LIMIT 3 이라 데이터는 3행이다",
+    "5": "mariadb shop -e 'SELECT name, email FROM customers;' > /tmp/ne.txt\ncat /tmp/ne.txt\n\n# 필요한 열만 고르면 결과가 읽기 쉽고 가져오는 양도 줄어든다",
+    "6": "mariadb shop -e 'SELECT name AS customer_name FROM customers;' > /tmp/alias.txt\ncat /tmp/alias.txt\n\n# AS 는 결과에서 보이는 이름만 바꾼다. 테이블 컬럼 이름은 그대로다",
+    "7": "mariadb -N shop -e 'SELECT name FROM customers LIMIT 2;' > /tmp/plain.txt\ncat /tmp/plain.txt\n\n# -N 은 제목 줄을 뺀다. 결과를 다른 명령으로 넘기거나 변수에 담을 때 쓴다",
+    "8": "mariadb -N shop -e 'SELECT DATABASE();' > /tmp/curdb.txt\ncat /tmp/curdb.txt\n\n# 운영 서버에서 데이터를 바꾸기 전에 어느 DB 인지 확인하는 습관"
+  }
+}

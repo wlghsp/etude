@@ -1,0 +1,143 @@
+-- 미들웨어 세트 132. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set132.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크로드와 설정', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 7);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 132, 'k8s 쉬운 문제 3: 네임스페이스, ConfigMap, Secret 한 줄씩', 'k8s 의 구역과 설정 분리를 한 개념씩 쉬운 문제로 반복합니다. Namespace 의 쓰임과 -n·기본 네임스페이스·다른 네임스페이스의 Service 부르기, ConfigMap 과 Secret 의 차이와 base64 가 암호화가 아닌 이유, 환경 변수 주입(configMapKeyRef·secretKeyRef)과 파일 마운트, CreateContainerConfigError, label 과 annotation, 안전하게 정리하는 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', 'k8s'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 132);
+UPDATE quest_set SET display_order = 249, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '🗝️' WHERE id = 132;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 1, 'Namespace 는 왜 쓸까', '한 클러스터에서 팀과 환경(dev, prod)이 함께 일할 때 Namespace 를 쓰는 가장 큰 이유는 무엇일까요?', '구역을 나누면 이름이 겹쳐도 괜찮아요.', NULL, NULL, '[]', 'choice', '["Pod 를 더 빠르게 만들기 위해", "이미지를 압축하기 위해", "리소스를 구역별로 나눠 이름 충돌을 막고 권한·자원 제한을 구역 단위로 줄 수 있다", "노드를 더 만들기 위해"]', 2, 'Namespace 마다 같은 이름의 `web` 이 따로 있을 수 있습니다. 쿼터와 접근 권한도 구역 단위로 줄 수 있어요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 2, '기본 네임스페이스', '`kubectl get pods` 를 `-n` 없이 실행하면 어느 네임스페이스를 보여 줄까요?', '아무 지정이 없을 때의 기본값이에요.', NULL, NULL, '[]', 'choice', '["모든 네임스페이스", "현재 컨텍스트에 설정된 네임스페이스(따로 바꾸지 않았다면 default)", "kube-system", "이름이 가장 빠른 네임스페이스"]', 1, '`-A` 를 쓰면 전체를 보고, `kubectl config set-context --current --namespace=이름` 으로 기본 네임스페이스를 바꿀 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 3, '다른 네임스페이스의 Service 부르기', 'Pod 가 다른 네임스페이스 `db` 의 Service `mysql` 에 접속하려면 어떤 이름을 쓰는 것이 알맞을까요?', '같은 네임스페이스면 이름만, 다르면 네임스페이스를 붙여요.', NULL, NULL, '[]', 'choice', '["`mysql.db` (또는 `mysql.db.svc.cluster.local`)", "`mysql` 만", "`db/mysql`", "`mysql:db`"]', 0, '같은 네임스페이스에서는 `mysql` 만으로 충분하지만 다른 네임스페이스는 `서비스.네임스페이스` 형식을 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 4, 'ConfigMap 은 무엇일까', 'ConfigMap 은 무엇을 담는 리소스일까요?', '설정을 이미지 밖에 두는 방법이에요.', NULL, NULL, '[]', 'choice', '["비밀번호를 암호화해 저장하는 리소스", "컨테이너 이미지를 저장하는 리소스", "노드를 관리하는 리소스", "앱 설정 값(환경 변수, 설정 파일 내용)을 이미지와 분리해 담는 리소스"]', 3, '설정이 바뀔 때마다 이미지를 다시 빌드하지 않아도 됩니다. 민감한 값은 ConfigMap 이 아니라 Secret 에 두세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 5, 'Secret 은 암호화일까', 'Secret 의 값은 YAML 에서 base64 로 보입니다. 이것은 암호화일까요?', 'base64 는 누구나 되돌릴 수 있는 변환이에요.', NULL, NULL, '[]', 'choice', '["예, 강력하게 암호화된다", "예, 키 없이는 못 읽는다", "아니다. base64 는 인코딩일 뿐 누구나 디코딩할 수 있다. 접근 권한과 암호화 설정으로 보호해야 한다", "아니다, 아무 보호도 필요 없다"]', 2, 'Secret 은 "민감한 값을 따로 다루기 위한" 리소스이지 자동 암호화가 아닙니다. 누가 읽을 수 있는지 RBAC 로 막고, etcd 암호화도 고려해요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 6, 'ConfigMap 과 Secret 중 고르기', 'DB 비밀번호와 로그 레벨(`info`) 중 **Secret** 에 두어야 하는 것은 무엇일까요?', '노출되면 곤란한 값은 어느 쪽일까요?', NULL, NULL, '[]', 'choice', '["로그 레벨", "DB 비밀번호", "둘 다 ConfigMap", "둘 다 상관없다"]', 1, '비밀번호, 토큰, 인증서 키는 Secret, 일반 설정은 ConfigMap 입니다. YAML 파일을 저장소에 올릴 때 Secret 값이 노출되지 않게도 조심해야 해요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 7, '환경 변수와 파일 마운트의 차이', 'ConfigMap 을 환경 변수로 주입하는 것과 볼륨으로 마운트하는 것의 차이로 알맞은 것은 무엇일까요?', '파일로 마운트하면 ConfigMap 이 바뀔 때 반영될 수 있어요.', NULL, NULL, '[]', 'choice', '["환경 변수는 Pod 시작 때 한 번 정해지고, 마운트한 파일은 ConfigMap 이 바뀌면 잠시 뒤 갱신될 수 있다", "둘은 완전히 같다", "환경 변수만 쓸 수 있다", "마운트는 읽기가 안 된다"]', 0, '환경 변수로 넣은 값을 바꾸려면 Pod 를 다시 시작해야 합니다. 파일로 마운트하면 자동 갱신되지만 앱이 다시 읽어야 해요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 8, '키 이름을 틀리면', 'Pod 가 `secretKeyRef` 로 Secret 의 키 `password` 를 쓰려는데 실제 키 이름은 `db-password` 입니다. 무슨 일이 생길까요?', '없는 것을 참조하면 시작하지 못해요.', NULL, NULL, '[]', 'choice', '["아무 문제 없이 빈 값으로 시작한다", "다른 키를 자동으로 찾아 준다", "Secret 이 자동 수정된다", "컨테이너가 시작되지 못하고 `CreateContainerConfigError` 가 난다"]', 3, '`kubectl describe pod` 의 Events 에 `couldn''t find key password` 같은 메시지가 보입니다. 이름 오타는 흔한 원인이에요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 9, 'label 과 annotation', 'label(라벨)과 annotation(주석)의 차이로 알맞은 것은 무엇일까요?', '골라내는 데 쓰는 것과 참고용 메모예요.', NULL, NULL, '[]', 'choice', '["둘은 완전히 같다", "annotation 으로 Service 가 Pod 를 찾는다", "label 은 selector 로 리소스를 골라내는 데 쓰고, annotation 은 선택에 쓰이지 않는 부가 정보(메모)다", "label 은 읽을 수 없다"]', 2, '라벨은 `-l app=web` 으로 골라내고, 주석은 설명·도구용 메타데이터(배포 시각, 담당자)를 담습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 10, 'Namespace 를 지우면', '`kubectl delete namespace test` 를 실행하면 어떻게 될까요?', '구역 전체를 허무는 것과 같아요.', NULL, NULL, '[]', 'choice', '["네임스페이스 이름만 삭제된다", "그 네임스페이스 안의 Pod, Service, ConfigMap 등 리소스가 모두 함께 삭제된다", "아무것도 삭제되지 않는다", "default 로 옮겨진다"]', 1, '매우 강력한 명령이라 실수하면 큰 사고가 납니다. 지우기 전에 `kubectl get all -n test` 로 내용을 확인하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 11, 'Secret 을 YAML 로 올리면', 'Secret YAML 을 Git 저장소에 그대로 올리면 어떤 위험이 있을까요?', 'base64 는 누구나 풀 수 있어요.', NULL, NULL, '[]', 'choice', '["저장소를 보는 누구나 값을 디코딩해 비밀번호를 알 수 있다. 별도 도구(봉인, 외부 시크릿 저장소)나 저장소 제외가 필요하다", "base64 라서 안전하다", "문제없다. 저장소는 항상 비공개다", "kubectl 이 자동으로 막아 준다"]', 0, '값이 들어 있는 Secret YAML 은 저장소에 올리지 않는 것이 기본입니다. 필요하면 sealed 방식이나 시크릿 매니저를 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 12, '이미지에 설정을 박아 넣으면', '설정 값(DB 주소 등)을 이미지 안에 직접 넣어 두면 어떤 불편이 생길까요?', '환경마다 값이 달라요.', NULL, NULL, '[]', 'choice', '["이미지가 더 가벼워진다", "설정을 바꿀 필요가 없어진다", "아무 문제 없다", "환경(dev, prod)이 바뀔 때마다 이미지를 다시 빌드해야 하고, 값이 이미지에 남아 노출될 수 있다"]', 3, '"이미지는 하나, 설정은 환경별로"가 쿠버네티스의 기본 원칙입니다. 그래서 ConfigMap 과 Secret 이 있어요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 13, '기본값이 없는 환경 변수', 'ConfigMap 을 환경 변수로 쓰는 컨테이너에서, 참조한 ConfigMap 자체가 없으면 Pod 는 어떻게 될까요?', '없는 것을 참조하면 시작하지 못해요.', NULL, NULL, '[]', 'choice', '["빈 환경 변수로 정상 시작한다", "ConfigMap 을 자동으로 만든다", "컨테이너가 시작되지 못하고 `CreateContainerConfigError` 상태가 된다", "이미지를 다시 받는다"]', 2, '설정 리소스는 Pod 보다 먼저 만들어져 있어야 합니다. 배포 순서(ConfigMap, Secret → Deployment)를 지키세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 14, 'kubectl config 의 컨텍스트', '`kubectl config get-contexts` 가 보여 주는 것은 무엇일까요?', '어느 클러스터에 어떤 사용자로 접속할지의 조합이에요.', NULL, NULL, '[]', 'choice', '["클러스터의 Pod 목록", "접속할 수 있는 클러스터·사용자·기본 네임스페이스 조합 목록", "노드의 CPU 사용률", "이미지 목록"]', 1, '컨텍스트를 헷갈려 엉뚱한 클러스터에 명령을 치는 사고가 흔합니다. 위험한 명령 전에 현재 컨텍스트를 확인하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 15, '네임스페이스 만들기', '`dev` 네임스페이스를 만드는 명령입니다. 빈칸을 채우세요.', '리소스 종류 이름이 들어가요.', NULL, NULL, '[]', 'fill', '["namespace", "ns-new", "project", "space"]', NULL, '`kubectl create namespace dev`(줄여서 `ns`)로 만듭니다. 이후 리소스 명령에 `-n dev` 를 붙여요.', '[0]', 'kubectl create {0} dev', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 16, '네임스페이스 지정하기', '`dev` 네임스페이스의 Pod 목록을 보는 옵션을 채우세요.', 'namespace 의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-n", "-p", "-a", "-d"]', NULL, '`-n` 이 없으면 기본(default)이 대상입니다. 어느 네임스페이스인지 항상 확인하는 습관이 중요해요.', '[0]', 'kubectl get pods {0} dev', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 17, '기본 네임스페이스 바꾸기', '지금 컨텍스트의 **기본 네임스페이스를 `dev` 로 바꾸는** 옵션을 채우세요.', '"현재(current)"를 뜻하는 옵션이에요.', NULL, NULL, '[]', 'fill', '["--current", "--all", "--new", "--default"]', NULL, '한 번 바꿔 두면 `-n` 을 매번 쓰지 않아도 됩니다. 반대로 현재 네임스페이스를 잊어 사고 나기 쉬우니 주의하세요.', '[0]', 'kubectl config set-context {0} --namespace=dev', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 18, 'ConfigMap 만들기', '`mode=prod` 값을 가진 ConfigMap `app-config` 를 명령으로 만드는 빈칸을 채우세요.', '값을 직접 적는 옵션은 from-literal 이에요.', NULL, NULL, '[]', 'fill', '["from-literal", "from-env", "from-set", "value"]', NULL, '`--from-literal=키=값` 으로 한 줄에 만들 수 있고, 파일 내용은 `--from-file=파일` 로 넣어요.', '[0]', 'kubectl create configmap app-config --{0}=mode=prod', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 19, 'Secret 만들기', '`password=1234` 값을 가진 Secret `db-secret` 을 만드는 빈칸을 채우세요. (연습용 값)', '일반(generic) 종류의 Secret 이에요.', NULL, NULL, '[]', 'fill', '["generic", "basic", "plain", "text"]', NULL, '`generic` 은 키-값 형태의 일반 Secret 입니다. 실제 비밀번호를 명령에 직접 적으면 셸 기록에 남으니 파일이나 도구를 쓰세요.', '[0]', 'kubectl create secret {0} db-secret --from-literal=password=1234', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 20, 'ConfigMap 내용 보기', 'ConfigMap `app-config` 의 내용을 YAML 로 보는 옵션을 채우세요.', '출력 형식을 고르는 옵션이에요.', NULL, NULL, '[]', 'fill', '["yaml", "text", "full", "raw"]', NULL, '`-o yaml` 로 data 를 볼 수 있습니다. 한 값만 뽑으려면 `-o jsonpath=''{.data.mode}''` 를 써요.', '[0]', 'kubectl get configmap app-config -o {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 21, 'base64 로 풀어 보기', 'Secret 에 보이는 값 `MTIzNA==` 를 **원래 값으로 되돌리는** 명령입니다. 빈칸을 채우세요.', '해독(decode)을 뜻하는 옵션이에요.', NULL, NULL, '[]', 'fill', '["-d", "-e", "-c", "-r"]', NULL, '`base64 -d` 로 누구나 되돌릴 수 있습니다. 그래서 Secret 은 암호화가 아니라는 점을 기억해야 해요. 결과는 `1234` 입니다.', '[0]', 'echo ''MTIzNA=='' | base64 {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 22, '환경 변수로 주입하기', 'ConfigMap `app-config` 의 키 `mode` 값을 환경 변수 `MODE` 로 넣는 YAML 의 빈칸을 채우세요.', '"~에서 가져온다"는 뜻의 이름이에요.', NULL, NULL, '[]', 'fill', '["configMapKeyRef", "secretKeyRef", "fieldRef", "envRef"]', NULL, 'ConfigMap 이면 `configMapKeyRef`, Secret 이면 `secretKeyRef` 입니다. 이름과 키가 모두 맞아야 해요.', '[0]', 'env:
+- name: MODE
+  valueFrom:
+    {0}:
+      name: app-config
+      key: mode', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 23, 'Secret 에서 가져오기', 'Secret `db-secret` 의 키 `password` 를 환경 변수 `DB_PASS` 로 넣는 YAML 의 빈칸을 채우세요.', 'Secret 을 가리키는 이름이에요.', NULL, NULL, '[]', 'fill', '["secretKeyRef", "configMapKeyRef", "fieldRef", "passRef"]', NULL, '`secretKeyRef` 로 Secret 의 값을 가져옵니다. 환경 변수는 프로세스 정보에 노출될 수 있어 민감할 땐 파일 마운트를 선호하기도 해요.', '[0]', 'env:
+- name: DB_PASS
+  valueFrom:
+    {0}:
+      name: db-secret
+      key: password', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 24, '파일로 마운트하기', 'ConfigMap `app-config` 를 `/etc/app` 에 **파일로** 붙이는 YAML 의 빈칸을 채우세요.', '볼륨의 종류 이름이에요.', NULL, NULL, '[]', 'fill', '["configMap", "secret", "emptyDir", "hostPath"]', NULL, '`volumes` 에 `configMap` 을 쓰고 `volumeMounts` 로 경로에 붙이면, 각 키가 파일 이름이 되고 값이 내용이 됩니다.', '[0]', 'volumes:
+- name: cfg
+  {0}:
+    name: app-config', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 25, '라벨로 골라보기', '`app=web` 라벨을 가진 Pod 만 보는 옵션을 채우세요.', 'label 의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-l", "-n", "-o", "-a"]', NULL, '`-l` 은 라벨 selector 입니다. `-l app=web,tier=front` 처럼 여러 조건을 쉼표로 이을 수 있어요.', '[0]', 'kubectl get pods {0} app=web', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 26, '라벨 붙이기', 'Pod `web-1` 에 라벨 `env=dev` 를 붙이는 명령입니다. 빈칸을 채우세요.', '"라벨을 붙이다"를 뜻하는 영어 단어예요.', NULL, NULL, '[]', 'fill', '["label", "tag", "mark", "set"]', NULL, '`kubectl label` 로 라벨을 더하거나 바꿉니다. 이미 있는 라벨을 바꾸려면 `--overwrite` 가 필요해요.', '[0]', 'kubectl {0} pod web-1 env=dev', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 27, '네임스페이스 전체 리소스', '`dev` 네임스페이스의 Pod, Service, Deployment 등을 **한꺼번에** 보는 명령의 빈칸을 채우세요.', '"전부"를 뜻하는 영어 단어예요.', NULL, NULL, '[]', 'fill', '["all", "every", "any", "full"]', NULL, '`get all` 은 주요 리소스를 한 번에 보여 줍니다. ConfigMap, Secret 같은 일부는 포함되지 않으니 따로 `get cm,secret` 으로 봐요.', '[0]', 'kubectl get {0} -n dev', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 28, '설정을 분리해 배포하는 순서', 'ConfigMap 과 Secret 을 쓰는 앱을 배포하는 순서입니다. 순서에 맞게 놓아 보세요.', '설정 먼저, 앱은 나중에 순서예요.', NULL, NULL, '[]', 'order', '["ConfigMap 을 만든다", "Secret 을 만든다", "Deployment 를 만든다", "Pod 의 환경 변수가 잘 들어갔는지 확인한다"]', NULL, '앱이 참조하는 설정이 먼저 있어야 Pod 가 시작됩니다. 마지막에 `kubectl exec` 로 환경 변수를 확인하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 29, 'CreateContainerConfigError 조사', 'Pod 가 `CreateContainerConfigError` 입니다. 원인을 찾는 순서입니다. 순서에 맞게 놓아 보세요.', '상태 → Events → 참조 대상 확인 → 수정 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl get pods` 로 상태를 본다", "`kubectl describe pod` 의 Events 에서 누락된 키·리소스를 본다", "참조한 ConfigMap·Secret 과 키 이름이 있는지 `get` 으로 확인한다", "이름을 고치고 다시 확인한다"]', NULL, '이 오류는 거의 항상 "없는 ConfigMap·Secret 이나 틀린 키 이름"입니다. Events 메시지가 정확한 단서를 줘요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 29);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 30, '안전하게 네임스페이스 정리하기', '테스트용 네임스페이스를 정리하는 순서입니다. 순서에 맞게 놓아 보세요.', '확인 → 삭제 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl config current-context` 로 올바른 클러스터인지 확인한다", "`kubectl get all -n test` 로 안에 무엇이 있는지 본다", "`kubectl delete namespace test` 를 실행한다", "`kubectl get ns` 로 사라졌는지 확인한다"]', NULL, '삭제 전에 어디서(클러스터), 무엇을(내용) 지우는지 확인하는 습관이 사고를 막아요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 30);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 132, 31, 'Secret 값을 확인하는 순서', 'Secret 에 저장된 값을 점검하려는 순서입니다. 순서에 맞게 놓아 보세요.', '보기 → 한 값 뽑기 → 풀기 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl get secret db-secret -o yaml` 로 구조를 본다", "`-o jsonpath` 로 필요한 키의 값만 뽑는다", "`base64 -d` 로 원래 값으로 되돌려 확인한다", "확인한 값이 화면·기록에 남지 않도록 정리한다"]', NULL, '값은 누구나 풀 수 있으므로 확인 후 터미널 기록과 화면 공유에 주의하세요. 운영 비밀번호는 더욱 신중해야 해요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 132 AND order_index = 31);

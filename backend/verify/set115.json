@@ -1,0 +1,8 @@
+{
+  "setId": 115,
+  "answers": {
+    "3": "cat /tmp/app.pid\nkill -0 $(cat /tmp/app.pid) 2>/dev/null && echo alive || echo dead\nrm -f /tmp/app.pid\nsh /tmp/start.sh\ncat /tmp/status.txt\n\n# 죽은 PID 일 때만 stale 파일을 지운다. 살아 있다면 지우지 말고 원인을 먼저 본다",
+    "7": "i=1\nwhile [ $i -le 5 ]; do\n  echo \"attempt $i\" >> /tmp/retry.log\n  sh /tmp/flaky.sh && { echo success > /tmp/result.txt; break; }\n  i=$((i+1)); sleep 1\ndone\ncat /tmp/retry.log /tmp/result.txt\n\n# 횟수 상한이 없는 재시도는 장애를 키운다. 상한과 대기를 꼭 둔다",
+    "10": "for run in 1 2; do\n  while read id; do\n    grep -qx \"$id\" /tmp/done.ids 2>/dev/null && continue\n    echo \"$id\" >> /tmp/out.log\n    echo \"$id\" >> /tmp/done.ids\n  done < /tmp/queue.txt\ndone\ncat /tmp/out.log\n\n# 처리한 ID 를 기록해 두면 재실행·중복 수신에도 결과가 같다 (멱등)"
+  }
+}
