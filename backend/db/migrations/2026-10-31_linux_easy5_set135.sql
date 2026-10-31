@@ -1,0 +1,122 @@
+-- 리눅스 세트 135. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set135.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 135, '리눅스 쉬운 문제 5: 사용자와 그룹, 환경 변수, 패키지, 마운트 한 줄씩', '리눅스 서버 관리의 기본을 한 개념씩 쉬운 문제로 반복합니다. id·/etc/passwd·UID 0·useradd·passwd·usermod -aG 와 su·sudo, 환경 변수 PATH 와 command not found·export·~/.bashrc·source, dnf·apt 의 install·search·update, lsblk·/etc/fstab·mount -a 를 짧은 객관식·빈칸·순서 문제로 익히고, 사용자 만들기, PATH 문제 풀기, 패키지 설치, fstab 안전하게 고치기의 순서를 연습합니다.', 'quiz', '리눅스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 135);
+UPDATE quest_set SET display_order = 9, unit_id = (SELECT id FROM unit WHERE id = 1), icon = '👥' WHERE id = 135;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 1, 'id 가 보여 주는 것', '`id` 명령은 무엇을 보여 줄까요?', '"나는 누구이고 어느 모임에 속해 있나"를 알려 줘요.', NULL, NULL, '[]', 'choice', '["현재 컴퓨터의 IP 주소", "실행 중인 프로세스 목록", "현재 사용자의 UID, 기본 그룹, 속한 모든 그룹", "디스크 남은 용량"]', 2, '`whoami` 는 이름만, `id` 는 숫자(UID, GID)와 그룹까지 보여 줍니다. 권한 문제를 볼 때 내가 어느 그룹인지가 중요해요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 2, '/etc/passwd 는 무엇일까', '`/etc/passwd` 파일에는 무엇이 들어 있을까요?', '이름과 달리 비밀번호 자체는 들어 있지 않아요.', NULL, NULL, '[]', 'choice', '["모든 사용자의 비밀번호 원문", "계정 목록(이름, UID, 홈 폴더, 로그인 쉘 등)", "설치된 패키지 목록", "네트워크 접속 기록"]', 1, '이름은 passwd 지만 지금은 계정 정보만 있고, 암호화된 비밀번호는 root 만 읽는 `/etc/shadow` 에 따로 있습니다. 누구나 읽을 수 있어서 계정 이름 확인에 써요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 3, 'UID 0 은 누구일까', 'UID 가 `0` 인 계정은 무엇일까요?', '가장 강한 권한을 가진 관리자 계정이에요.', NULL, NULL, '[]', 'choice', '["root (모든 권한을 가진 관리자)", "처음 가입한 일반 사용자", "게스트 계정", "아직 사용되지 않은 계정"]', 0, '리눅스는 이름이 아니라 UID 0 을 관리자로 봅니다. 그래서 root 로 오래 작업하지 말고 필요한 명령만 `sudo` 로 실행하는 것이 안전해요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 4, 'useradd 와 passwd', '`useradd kim` 만 실행한 직후의 계정 상태로 알맞은 것은 무엇일까요?', '계정을 만드는 일과 비밀번호를 정하는 일은 별개예요.', NULL, NULL, '[]', 'choice', '["계정과 비밀번호가 함께 만들어진다", "계정이 만들어지지 않는다", "kim 이 바로 sudo 를 쓸 수 있다", "계정은 만들어졌지만 비밀번호는 아직 설정되지 않았다 (`passwd kim` 으로 정한다)"]', 3, '`useradd` 는 계정을, `passwd` 는 비밀번호를 정합니다. 홈 폴더가 필요하면 `useradd -m kim` 처럼 `-m` 도 함께 쓰세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 5, 'usermod -aG 에서 a 의 역할', '`usermod -G docker kim` 처럼 `-a` 없이 쓰면 어떤 문제가 생길까요?', '`-a` 는 append(덧붙이기)예요.', NULL, NULL, '[]', 'choice', '["아무 문제 없이 docker 가 추가된다", "명령이 오류로 거부된다", "kim 의 기존 보조 그룹이 모두 사라지고 docker 만 남는다", "kim 계정이 삭제된다"]', 2, '그룹을 더하려면 항상 `-aG` 를 한 세트로 외우세요. `-G` 만 쓰면 지정한 그룹으로 목록이 통째로 바뀌어 권한을 잃을 수 있어요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 6, '그룹에 넣었는데 적용이 안 돼요', '`usermod -aG docker kim` 후에도 kim 이 지금 열어 둔 터미널에서는 여전히 권한이 없습니다. 이유는 무엇일까요?', '그룹 목록은 로그인할 때 정해져요.', NULL, NULL, '[]', 'choice', '["명령이 실패했기 때문에", "그룹 정보는 로그인할 때 읽혀서, 다시 로그인해야 반영된다", "서버를 재부팅해야만 반영되기 때문에", "docker 그룹은 원래 적용되지 않기 때문에"]', 1, '이미 열려 있는 세션은 옛 그룹 정보를 갖고 있습니다. 로그아웃 후 다시 들어가거나 `newgrp 그룹` 으로 확인하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 7, 'su 와 sudo 의 차이', '`su - kim` 과 `sudo ls /root` 의 차이로 알맞은 것은 무엇일까요?', '하나는 사용자를 바꾸고, 하나는 한 명령만 빌려요.', NULL, NULL, '[]', 'choice', '["`su` 는 다른 사용자로 전환하고, `sudo` 는 한 명령만 관리자 권한으로 실행한다", "둘은 완전히 같은 명령이다", "`su` 는 한 명령만, `sudo` 는 계속 전환한다", "`sudo` 는 비밀번호를 지운다"]', 0, '`sudo` 는 기록이 남고 필요한 명령에만 권한을 쓰게 해 줘서 더 안전합니다. 서버에서는 root 로 직접 로그인하기보다 `sudo` 를 쓰는 것이 일반적이에요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 8, 'PATH 는 무엇일까', '환경 변수 `PATH` 는 무엇일까요?', '`ls` 라고만 쳐도 실행되는 이유와 관련 있어요.', NULL, NULL, '[]', 'choice', '["현재 폴더의 전체 경로", "파일을 저장하는 기본 위치", "로그인한 사용자의 홈 폴더", "명령을 찾을 폴더들의 목록 (콜론 `:` 으로 구분)"]', 3, '쉘은 `PATH` 에 적힌 폴더를 앞에서부터 차례로 뒤져 명령 파일을 찾습니다. 목록에 없으면 설치돼 있어도 `command not found` 가 나요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 9, 'command not found 의 원인', '설치했다고 생각한 `mytool` 을 쳤더니 `command not found` 가 나옵니다. 가능한 원인으로 알맞은 것은 무엇일까요?', '두 가지를 의심해 보세요. 설치와 PATH 예요.', NULL, NULL, '[]', 'choice', '["컴퓨터의 시간이 틀렸다", "디스크 용량이 너무 크다", "설치되지 않았거나, 설치된 폴더가 `PATH` 에 없다", "Caps Lock 이 켜져 있다"]', 2, '`which mytool` 로 위치를 찾고, 위치를 알면 `/절대/경로/mytool` 로 직접 실행해 보세요. 실행되면 PATH 문제라는 뜻이에요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 10, 'export 가 하는 일', '`NAME=etude` 와 `export NAME=etude` 의 차이로 알맞은 것은 무엇일까요?', '내가 실행한 프로그램에도 값이 전달되는지가 달라요.', NULL, NULL, '[]', 'choice', '["`export` 가 있으면 변수가 파일에 저장된다", "`export` 를 해야 내가 실행하는 다른 프로그램(자식 프로세스)에도 변수가 전달된다", "둘은 항상 똑같다", "`export` 가 없으면 변수가 만들어지지 않는다"]', 1, '`export` 없이 만든 변수는 현재 쉘 안에서만 보입니다. 스크립트나 프로그램이 값을 읽어야 한다면 `export` 로 내보내세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 11, '설정을 계속 유지하려면', '`export PATH=$PATH:/opt/tools/bin` 을 터미널에서 실행했는데, 새 터미널을 열면 사라집니다. 계속 유지하려면 어떻게 할까요?', '새 쉘이 시작할 때 읽는 파일이 있어요.', NULL, NULL, '[]', 'choice', '["`~/.bashrc` 같은 쉘 시작 파일에 적어 둔다", "`/etc/passwd` 에 적어 둔다", "명령을 두 번 실행한다", "컴퓨터를 재부팅한다"]', 0, '터미널에서 입력한 값은 그 쉘이 끝나면 사라집니다. 시작 파일에 적고 `source ~/.bashrc` 를 하면 지금 쉘에도 바로 적용돼요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 12, 'apt update 와 upgrade', '`sudo apt update` 와 `sudo apt upgrade` 의 차이로 알맞은 것은 무엇일까요?', '하나는 "목록"을, 하나는 "실제 패키지"를 바꿔요.', NULL, NULL, '[]', 'choice', '["`update` 가 패키지를 업그레이드하고 `upgrade` 는 목록을 받는다", "둘은 같은 명령이다", "`update` 는 패키지를 삭제한다", "`update` 는 설치 가능한 패키지 목록을 새로 받고, `upgrade` 는 설치된 패키지를 실제로 올린다"]', 3, '설치 전에는 `update` 로 최신 목록을 받는 것이 첫 단계입니다. 운영 서버에서는 `upgrade` 전에 무엇이 바뀌는지 확인하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 13, '/etc/fstab 은 무엇일까', '`/etc/fstab` 은 무엇을 정해 두는 파일일까요?', '재부팅해도 디스크가 자동으로 연결되려면 필요해요.', NULL, NULL, '[]', 'choice', '["설치된 프로그램의 목록", "로그인할 수 있는 사용자 목록", "부팅할 때 자동으로 마운트할 디스크(파일시스템) 목록", "예약 작업(cron) 목록"]', 2, '여기에 잘못 적으면 부팅이 멈출 수 있습니다. 고친 뒤에는 재부팅하기 전에 `sudo mount -a` 로 먼저 시험하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 14, 'lsblk 는 무엇을 보여 줄까', '`lsblk` 는 무엇을 보여 줄까요?', 'block 장치(디스크)의 목록이에요.', NULL, NULL, '[]', 'choice', '["실행 중인 프로세스", "디스크와 파티션의 구조, 크기, 마운트 위치", "네트워크 포트 목록", "파일 권한"]', 1, '디스크를 새로 붙였을 때 가장 먼저 `lsblk` 로 이름(`sdb` 등)을 확인합니다. `df -h` 는 마운트된 곳의 사용량을 보여 줘요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 15, '홈 폴더와 함께 만들기', '사용자 `kim` 을 **홈 폴더와 함께** 만드는 명령입니다. 옵션을 채우세요.', 'make 의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-m", "-r", "-x", "-q"]', NULL, '`-m` 이 없으면 홈 폴더가 만들어지지 않을 수 있습니다. 로그인할 사용자에게는 보통 `-m` 을 씁니다.', '[0]', 'sudo useradd {0} kim', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 16, '비밀번호 정하기', '사용자 `kim` 의 **비밀번호를 정하는** 명령입니다. 빈칸을 채우세요.', '이름이 곧 password 의 줄임말이에요.', NULL, NULL, '[]', 'fill', '["passwd", "chpass", "setpw", "pwd"]', NULL, '`passwd` 를 실행하면 새 비밀번호를 두 번 입력하게 합니다. 입력한 글자는 화면에 보이지 않는 것이 정상이에요.', '[0]', 'sudo {0} kim', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 17, '그룹에 더하기', '`kim` 의 기존 그룹은 유지하면서 `docker` 그룹을 **더하는** 옵션입니다. 빈칸을 채우세요.', 'append 와 Group 의 첫 글자를 붙여요.', NULL, NULL, '[]', 'fill', '["-aG", "-G", "-a", "-g"]', NULL, '`-aG` 는 덧붙이기입니다. `-G` 만 쓰면 지정한 그룹으로 목록이 통째로 바뀌니 주의하세요.', '[0]', 'sudo usermod {0} docker kim', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 18, 'PATH 값 확인', '`PATH` 의 **현재 값을 출력하는** 명령입니다. 빈칸을 채우세요.', '변수 앞에는 달러 표시가 필요해요.', NULL, NULL, '[]', 'fill', '["PATH", "path", "(PATH)", "[PATH]"]', NULL, '`echo $PATH` 로 명령을 찾는 폴더 목록을 볼 수 있습니다. 앞에서부터 차례로 찾으니 순서도 중요해요.', '[0]', 'echo ${0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 19, 'PATH 에 폴더 더하기', '기존 `PATH` 를 유지하면서 `/opt/tools/bin` 을 **뒤에 더하는** 명령입니다. 빈칸을 채우세요.', '절대 경로는 슬래시로 시작해요.', NULL, NULL, '[]', 'fill', '["/opt/tools/bin", "opt/tools/bin", "PATH/opt/tools/bin", "$/opt/tools/bin"]', NULL, '`$PATH:` 로 기존 값을 먼저 쓰고 콜론 뒤에 새 폴더를 붙입니다. `PATH=폴더` 처럼 덮어쓰면 `ls` 같은 기본 명령도 못 찾게 돼요.', '[0]', 'export PATH=$PATH:{0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 20, '명령의 위치 찾기', '`python3` 명령 파일이 **어느 경로에 있는지** 찾는 명령입니다. 빈칸을 채우세요.', '"어느 것?"이라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["which", "where", "whoami", "whatis-all"]', NULL, '`which` 는 PATH 에서 처음 찾은 경로를 보여 줍니다. 아무것도 나오지 않으면 설치되지 않았거나 PATH 에 없다는 뜻이에요.', '[0]', '{0} python3', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 21, '설정 파일 바로 적용', '`~/.bashrc` 의 변경을 **새 터미널을 열지 않고 바로** 적용하는 명령입니다. 빈칸을 채우세요.', '파일을 현재 쉘에서 읽어 들이는 명령이에요.', NULL, NULL, '[]', 'fill', '["source", "run", "load", "apply"]', NULL, '`source` 는 파일의 내용을 현재 쉘에서 실행합니다. 그래서 파일에 적은 변수와 PATH 가 지금 쉘에 반영돼요.', '[0]', '{0} ~/.bashrc', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 22, '패키지 설치하기', '`dnf` 로 `nginx` 를 **설치하는** 명령입니다. 빈칸을 채우세요.', '영어로 설치하다예요.', NULL, NULL, '[]', 'fill', '["install", "get", "add-pkg", "run"]', NULL, '`dnf` 는 RHEL 계열, `apt` 는 Ubuntu 계열의 패키지 관리자입니다. 설치와 삭제는 관리자 권한이 필요해 `sudo` 를 붙여요.', '[0]', 'sudo dnf {0} nginx', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 23, '패키지 목록 갱신', 'Ubuntu 에서 설치 가능한 **패키지 목록을 새로 받는** 명령입니다. 빈칸을 채우세요.', '"갱신하다"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["update", "refresh", "sync", "renew"]', NULL, '`update` 는 목록만 갱신하고 패키지는 바꾸지 않습니다. 설치하기 전에 먼저 실행하는 습관이 좋아요.', '[0]', 'sudo apt {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 24, '패키지 찾아보기', '`dnf` 로 이름에 `nginx` 가 들어간 패키지를 **찾아보는** 명령입니다. 빈칸을 채우세요.', '검색은 영어로 search 예요.', NULL, NULL, '[]', 'fill', '["search", "look", "seek", "scan"]', NULL, '설치하기 전에 정확한 패키지 이름을 확인할 때 씁니다. 이미 설치됐는지는 `dnf list installed` 로 볼 수 있어요.', '[0]', 'dnf {0} nginx', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 25, 'fstab 시험하기', '`/etc/fstab` 을 고친 뒤 재부팅하기 전에 **적힌 대로 마운트해 보는** 명령입니다. 빈칸을 채우세요.', '연결하다(mount)에 모두(-a) 를 붙여요.', NULL, NULL, '[]', 'fill', '["mount", "umount", "fsck", "format"]', NULL, '`mount -a` 에서 오류가 나면 fstab 에 틀린 줄이 있다는 뜻입니다. 재부팅 전에 고치지 않으면 부팅이 멈출 수 있어요.', '[0]', 'sudo {0} -a', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 26, '새 사용자 만들고 확인', '새 사용자를 만들고 그룹에 넣은 뒤 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '계정 → 비밀번호 → 그룹 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`sudo useradd -m kim` 으로 계정을 만든다", "`sudo passwd kim` 으로 비밀번호를 정한다", "`sudo usermod -aG docker kim` 으로 그룹에 더한다", "`id kim` 으로 그룹이 제대로 들어갔는지 확인한다"]', NULL, '만든 뒤에는 꼭 `id` 로 확인하세요. 그룹이 반영되려면 kim 이 다시 로그인해야 한다는 점도 알려 주면 좋아요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 27, 'command not found 풀기', '`mytool` 을 쳤더니 command not found 가 날 때의 점검 순서입니다. 순서에 맞게 놓아 보세요.', '현재 PATH → 실제 위치 → 더하기 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`echo $PATH` 로 현재 PATH 를 본다", "`find / -name mytool` 로 실제 설치 위치를 찾는다", "`export PATH=$PATH:폴더` 로 그 폴더를 PATH 에 더한다", "`mytool` 을 다시 실행하고, 계속 쓰려면 `~/.bashrc` 에 적는다"]', NULL, '위치를 찾았다면 PATH 에 더하기 전에 절대 경로로 먼저 실행해 보면 확실합니다. 영구 설정은 마지막에 하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 28, '패키지 설치하고 확인', 'Ubuntu 에서 nginx 를 설치하고 실행되는지 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '목록 갱신 → 설치 → 실행 → 상태 확인 순서예요.', NULL, NULL, '[]', 'order', '["`sudo apt update` 로 패키지 목록을 갱신한다", "`sudo apt install nginx` 로 설치한다", "`sudo systemctl enable --now nginx` 로 실행하고 자동 시작을 등록한다", "`systemctl status nginx` 로 실행 중인지 확인한다"]', NULL, '설치가 곧 실행은 아닙니다. 패키지에 따라 설치 직후 자동으로 켜지기도 하고 아닌 경우도 있어 상태를 꼭 확인해요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 135, 29, 'fstab 안전하게 고치기', '`/etc/fstab` 을 안전하게 고치는 순서입니다. 순서에 맞게 놓아 보세요.', '백업 → 편집 → 시험 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`sudo cp /etc/fstab /etc/fstab.bak` 으로 백업한다", "`sudo vi /etc/fstab` 으로 줄을 추가하거나 고친다", "`sudo mount -a` 로 오류 없이 마운트되는지 시험한다", "`df -h` 로 마운트된 것을 확인한다"]', NULL, '백업과 `mount -a` 시험이 부팅 불능 사고를 막는 안전장치입니다. 둘 다 생략하면 재부팅 때 한 번에 터져요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 135 AND order_index = 29);

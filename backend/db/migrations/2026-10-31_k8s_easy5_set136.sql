@@ -1,0 +1,122 @@
+-- k8s 세트 136. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set136.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크로드와 설정', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 7);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 136, 'k8s 쉬운 문제 5: Service 종류, 헬스 체크, 스케줄링, 스토리지 읽기 한 줄씩', 'k8s 네트워크·점검·배치·저장소의 기본을 한 개념씩 쉬운 문제로 반복합니다. Service 의 ClusterIP·NodePort·LoadBalancer 와 Endpoints 읽기, Ingress 와 Controller, readinessProbe 와 livenessProbe 의 차이, nodeSelector·Insufficient cpu·cordon·uncordon 으로 Pending 읽기, PV·PVC·StorageClass 와 accessModes 를 짧은 객관식·빈칸·순서 문제로 익히고, Endpoints 가 빈 경우, READY 0/1, Pending Pod, Pending PVC 의 조사 순서를 연습합니다.', 'quiz', 'k8s'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 136);
+UPDATE quest_set SET display_order = 249, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '🧩' WHERE id = 136;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 1, 'ClusterIP 는 어디서 쓸까', 'Service 유형이 `ClusterIP` 일 때, 이 Service 에 접속할 수 있는 곳은 어디일까요?', '이름 그대로 클러스터 안의 IP 예요.', NULL, NULL, '[]', 'choice', '["인터넷 어디서나 접속할 수 있다", "노드 컴퓨터의 외부 포트로 접속할 수 있다", "클러스터 안의 Pod 에서만 접속할 수 있다 (기본값)", "다른 클러스터에서만 접속할 수 있다"]', 2, '`ClusterIP` 는 기본 유형이고 클러스터 내부 통신용입니다. DB 처럼 밖에 열면 안 되는 서비스는 보통 ClusterIP 로 둡니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 2, 'NodePort 는 무엇일까', 'Service 유형이 `NodePort` 이면 어떻게 접속할 수 있을까요?', '모든 노드가 같은 번호의 문을 열어요.', NULL, NULL, '[]', 'choice', '["Pod 의 이름으로만 접속할 수 있다", "모든 노드의 같은 포트(기본 30000~32767 범위)로 접속할 수 있다", "클러스터 안에서만 접속할 수 있다", "포트 번호 없이 접속할 수 있다"]', 1, '`노드IP:nodePort` 로 밖에서 들어옵니다. 테스트와 소규모 환경에서는 편하지만, 운영에서는 보통 LoadBalancer 나 Ingress 를 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 3, 'LoadBalancer 가 Pending', 'Service 유형을 `LoadBalancer` 로 만들었는데 EXTERNAL-IP 가 계속 `<pending>` 입니다. 흔한 이유는 무엇일까요?', '외부 주소를 만들어 주는 쪽이 필요해요.', NULL, NULL, '[]', 'choice', '["외부 로드 밸런서를 만들어 줄 환경(클라우드 등)이 연결되어 있지 않아서", "Pod 가 너무 많아서", "YAML 들여쓰기가 틀려서", "Service 이름이 길어서"]', 0, '클라우드는 LoadBalancer 를 자동으로 만들어 주지만, 직접 만든 클러스터는 별도 구성이 없으면 Pending 으로 남습니다. 오류가 아니라 기다리는 상태예요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 4, 'Endpoints 가 비어 있다면', '`kubectl get endpoints web` 의 ENDPOINTS 가 `<none>` 입니다. 가장 먼저 의심할 것은 무엇일까요?', 'Service 가 Pod 를 찾는 방법을 떠올려 보세요.', NULL, NULL, '[]', 'choice', '["노드의 시간이 어긋났다", "이미지가 너무 크다", "kubectl 의 버전이 낮다", "Service 의 selector 가 Pod 라벨과 맞지 않거나, Ready 상태인 Pod 가 없다"]', 3, 'Endpoints 는 Service 가 실제로 보내는 Pod 의 목록입니다. 비어 있으면 연결이 될 수 없으니 selector, 라벨, Pod 의 READY 를 차례로 확인하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 5, 'Ingress 는 무엇일까', 'Ingress 는 어떤 일을 하는 리소스일까요?', '들어온 HTTP 요청을 보고 어디로 보낼지 정해요.', NULL, NULL, '[]', 'choice', '["Pod 를 자동으로 늘려 주는 규칙", "이미지를 내려받는 규칙", "호스트 이름이나 경로에 따라 요청을 알맞은 Service 로 나눠 주는 규칙", "노드를 추가하는 규칙"]', 2, '예를 들어 `/api` 는 api Service 로, `/` 는 web Service 로 보내도록 한곳에서 정합니다. HTTP 와 HTTPS 요청에 쓰여요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 6, 'Ingress 만 만들면 될까', 'Ingress 리소스를 만들었는데 아무 동작이 없습니다. 빠진 것은 무엇일까요?', '규칙을 읽고 실제로 일해 주는 프로그램이 필요해요.', NULL, NULL, '[]', 'choice', '["Pod 를 10개 이상 띄워야 한다", "Ingress Controller (규칙을 실제로 처리하는 프로그램)가 클러스터에 설치되어 있어야 한다", "Service 를 삭제해야 한다", "Namespace 를 default 로 바꿔야 한다"]', 1, 'Ingress 는 규칙을 적은 종이일 뿐이고, 처리는 Controller 가 합니다. k3s 에는 Traefik 이 기본 포함되는 것처럼 환경마다 달라요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 7, 'readinessProbe 가 실패하면', '컨테이너가 떠 있지만 `readinessProbe` 가 실패하고 있습니다. 어떻게 될까요?', 'readiness 는 "손님을 받을 준비가 됐나"예요.', NULL, NULL, '[]', 'choice', '["Pod 는 Service 의 대상(Endpoints)에서 빠지고, 재시작은 하지 않는다", "컨테이너가 즉시 재시작된다", "Pod 가 삭제된다", "아무 영향이 없다"]', 0, 'READY 가 `0/1` 로 보이고 Service 가 그 Pod 로 요청을 보내지 않습니다. 시작이 느린 앱이 준비되기 전에 요청을 받지 않게 해 줘요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 8, 'livenessProbe 가 실패하면', '`livenessProbe` 가 계속 실패하면 어떻게 될까요?', 'liveness 는 "살아 있나"예요. 죽었다고 보면 어떻게 할까요?', NULL, NULL, '[]', 'choice', '["Service 대상에서만 빠진다", "Pod 가 다른 네임스페이스로 이동한다", "로그만 남기고 아무것도 하지 않는다", "컨테이너를 재시작한다 (RESTARTS 숫자가 늘어난다)"]', 3, '멈춰 버린 앱을 다시 시작시켜 주는 장치입니다. 점검이 너무 빡빡하면 정상인 앱도 재시작시키니 initialDelaySeconds 를 넉넉히 두세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 9, 'initialDelaySeconds', '`initialDelaySeconds: 30` 은 무엇을 뜻할까요?', 'initial 은 "처음"이에요.', NULL, NULL, '[]', 'choice', '["점검을 30번만 한다", "점검 결과를 30초 동안 보관한다", "컨테이너가 시작한 뒤 첫 점검까지 기다리는 시간(30초)", "30초마다 컨테이너를 재시작한다"]', 2, '앱이 뜨는 데 시간이 걸리면 첫 점검이 너무 일러서 실패할 수 있습니다. 시작 시간보다 조금 넉넉하게 정하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 10, 'nodeSelector 는 무엇일까', 'Pod 스펙의 `nodeSelector: disk: ssd` 는 무슨 뜻일까요?', '노드에도 라벨이 붙어 있어요.', NULL, NULL, '[]', 'choice', '["Pod 에 `disk=ssd` 라벨을 붙인다", "`disk=ssd` 라벨이 붙은 노드에만 이 Pod 를 배치한다", "ssd 디스크를 자동으로 만든다", "모든 노드에 Pod 를 하나씩 띄운다"]', 1, '조건에 맞는 노드가 없으면 Pod 는 `Pending` 으로 남습니다. 노드에 라벨이 있는지 `kubectl get nodes --show-labels` 로 확인하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 11, 'Insufficient cpu', 'Pod 가 Pending 이고 이벤트에 `0/3 nodes are available: Insufficient cpu` 가 있습니다. 무슨 뜻일까요?', '요청한 양을 남겨 둔 노드가 없다는 뜻이에요.', NULL, NULL, '[]', 'choice', '["이 Pod 의 CPU requests 를 감당할 만큼 여유가 있는 노드가 없다", "이미지를 받지 못했다", "CPU 라는 이름의 Pod 가 없다", "노드가 3대라서 오류가 났다"]', 0, 'Pod 의 `requests` 를 줄이거나, 다른 Pod 를 줄이거나, 노드를 늘려야 합니다. 실제 사용량이 아니라 "요청한 양"의 합으로 계산하는 점이 중요해요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 12, 'cordon 은 무엇을 할까', '`kubectl cordon worker1` 을 하면 어떻게 될까요?', 'cordon 은 "출입을 막는 줄"이에요.', NULL, NULL, '[]', 'choice', '["worker1 의 Pod 가 모두 즉시 삭제된다", "worker1 이 클러스터에서 제거된다", "worker1 의 컨테이너가 재시작된다", "새 Pod 는 worker1 에 배치되지 않지만, 이미 떠 있는 Pod 는 그대로 둔다"]', 3, '상태에 `SchedulingDisabled` 가 보입니다. 점검 전에 새 Pod 가 들어오는 것만 막고 싶을 때 쓰고, 다시 열려면 `uncordon` 이에요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 13, 'PV 와 PVC', 'PV 와 PVC 의 관계로 알맞은 것은 무엇일까요?', '하나는 실제 공간, 하나는 사용자의 요청서예요.', NULL, NULL, '[]', 'choice', '["PV 는 요청이고 PVC 는 실제 공간이다", "둘은 같은 것이다", "PV 는 실제 저장 공간이고, PVC 는 그 공간을 쓰겠다는 요청이다", "PV 는 Pod 이고 PVC 는 Service 다"]', 2, '사용자는 PVC 에 "10Gi, 읽기쓰기"처럼 필요한 조건을 적고, 클러스터가 알맞은 PV 를 찾아 연결합니다. 연결되면 `Bound` 가 돼요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 14, 'PVC 가 Pending 일 때', 'PVC 의 상태가 계속 `Pending` 입니다. 흔한 이유로 알맞은 것은 무엇일까요?', '연결할 저장소를 못 찾았다는 뜻이에요.', NULL, NULL, '[]', 'choice', '["Pod 의 이미지가 너무 커서", "조건에 맞는 PV 가 없거나, 지정한 StorageClass 가 없어서 새 저장소를 만들지 못했다", "노드가 재부팅되어서", "Service 가 삭제되어서"]', 1, '`kubectl describe pvc` 의 Events 에 이유가 적힙니다. `kubectl get storageclass` 로 사용할 수 있는 클래스 이름이 맞는지도 확인하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 15, 'Service 의 대상 보기', 'Service `web` 이 **실제로 보내는 Pod 목록**을 보는 명령입니다. 빈칸을 채우세요.', '"끝점들"이라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["endpoints", "endpoint-list", "links", "backends"]', NULL, '연결이 안 될 때 selector 문제인지 가려내는 가장 빠른 방법입니다. 목록이 비어 있으면 Pod 를 찾지 못한 거예요.', '[0]', 'kubectl get {0} web', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 16, 'Service 유형 정하기', '노드의 포트로 접속할 수 있게 하려면 Service 의 유형을 무엇으로 할까요? 빈칸을 채우세요.', '노드(Node)와 포트(Port)를 합친 이름이에요.', NULL, NULL, '[]', 'fill', '["NodePort", "NodeIP", "HostPort", "PortNode"]', NULL, '`NodePort` 를 쓰면 `nodePort` 값(30000~32767)이 자동으로 정해지거나 직접 정할 수 있습니다.', '[0]', 'type: {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 17, 'nodePort 번호 정하기', 'NodePort Service 의 외부 포트를 직접 정하려고 합니다. 허용 범위(30000~32767)에 맞는 값을 채우세요.', '범위 안의 숫자여야 해요.', NULL, NULL, '[]', 'fill', '["30080", "8080", "80", "3080"]', NULL, '`80`, `8080` 같은 값은 범위 밖이라 거부됩니다. 범위는 API 서버 설정으로 바뀔 수 있지만 기본은 30000~32767 이에요.', '[0]', 'nodePort: {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 18, '준비 상태 점검', '준비가 됐는지 확인해 **Service 대상에서 뺄지 정하는** 점검 이름입니다. 빈칸을 채우세요.', '"준비된"이라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["readiness", "ready", "health", "traffic"]', NULL, '`readinessProbe` 는 트래픽을 받을 준비를 확인합니다. 실패하면 재시작은 하지 않고 대상에서만 빠져요.', '[0]', '{0}Probe:', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 19, '생존 점검', '실패하면 컨테이너를 **재시작시키는** 점검 이름입니다. 빈칸을 채우세요.', '"살아 있는"이라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["liveness", "living", "restart", "alive"]', NULL, '`livenessProbe` 는 앱이 멈췄는지 확인합니다. readiness 와 이름이 비슷하니 "준비 = 트래픽, 생존 = 재시작"으로 외우세요.', '[0]', '{0}Probe:', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 20, '노드에 라벨 붙이기', '노드 `worker1` 에 `disk=ssd` 라벨을 **붙이는** 명령입니다. 빈칸을 채우세요.', '라벨은 키=값 모양이에요.', NULL, NULL, '[]', 'fill', '["disk=ssd", "disk:ssd", "disk ssd", "-disk=ssd"]', NULL, '붙인 뒤 `kubectl get nodes --show-labels` 로 확인합니다. 라벨을 지우려면 `disk-` 처럼 키 뒤에 하이픈을 써요.', '[0]', 'kubectl label node worker1 {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 21, '새 Pod 받지 않기', '노드 `worker1` 에 **새 Pod 가 배치되지 않게** 막는 명령입니다. 빈칸을 채우세요.', '"출입 통제선을 친다"는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["cordon", "lock", "stop", "pause"]', NULL, '이미 떠 있는 Pod 는 그대로입니다. 점검이 끝나면 다시 열어 줘야 해요.', '[0]', 'kubectl {0} worker1', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 22, '노드 다시 열기', '`cordon` 으로 막아 둔 노드 `worker1` 을 **다시 받게 하는** 명령입니다. 빈칸을 채우세요.', 'cordon 의 반대말이에요.', NULL, NULL, '[]', 'fill', '["uncordon", "unlock", "start", "resume"]', NULL, '막아 두고 잊으면 그 노드는 계속 놀게 됩니다. `kubectl get nodes` 에서 `SchedulingDisabled` 가 없어졌는지 확인하세요.', '[0]', 'kubectl {0} worker1', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 23, 'PVC 목록 보기', 'PersistentVolumeClaim 목록과 상태(Bound, Pending)를 보는 명령입니다. 줄임말을 채우세요.', 'persistent volume claim 의 앞글자예요.', NULL, NULL, '[]', 'fill', '["pvc", "pv-claim", "volume-req", "disk"]', NULL, '`pvc` 는 `persistentvolumeclaim` 의 줄임말입니다. STATUS 가 `Bound` 면 연결된 것이고 `Pending` 이면 이유를 찾아봐야 해요.', '[0]', 'kubectl get {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 24, '저장소 종류 보기', '클러스터에서 쓸 수 있는 **StorageClass 목록**을 보는 명령입니다. 빈칸을 채우세요.', '리소스 이름은 storage 와 class 를 붙인 거예요.', NULL, NULL, '[]', 'fill', '["storageclass", "storagetype", "volumeclass", "diskclass"]', NULL, '`(default)` 표시가 있는 클래스는 PVC 에 이름을 쓰지 않았을 때 자동으로 쓰입니다. 줄임말 `sc` 도 돼요.', '[0]', 'kubectl get {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 25, '접근 방식 정하기', '한 번에 **한 노드에서만 읽고 쓰는** 접근 방식을 PVC 에 적으려고 합니다. 빈칸을 채우세요.', '"읽기쓰기 한 번"이라는 뜻이에요.', NULL, NULL, '[]', 'fill', '["ReadWriteOnce", "ReadOnlyOnce", "WriteOnce", "ReadWriteAll"]', NULL, '`ReadWriteOnce` 는 가장 흔한 방식입니다. 여러 노드에서 동시에 쓰려면 `ReadWriteMany` 를 지원하는 저장소가 필요해요.', '[0]', 'accessModes: ["{0}"]', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 26, 'Service 연결이 안 될 때 (Endpoints)', 'Service 로 접속이 안 될 때 Endpoints 부터 보는 점검 순서입니다. 순서에 맞게 놓아 보세요.', 'selector 확인 → 목록 확인 → 라벨 확인 → 고치고 재확인 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl get svc web -o wide` 로 selector 를 확인한다", "`kubectl get endpoints web` 으로 대상 Pod 가 있는지 본다", "`kubectl get pods --show-labels` 로 Pod 의 라벨을 본다", "selector 나 라벨을 맞추고 `get endpoints` 로 다시 확인한다"]', NULL, '목록이 비어 있으면 Pod 쪽 문제가 아니라 Service 와 Pod 가 서로를 못 찾는 문제일 가능성이 큽니다. 고친 뒤에는 목록이 채워졌는지 꼭 확인하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 27, 'Running 인데 READY 0/1 일 때', 'Pod 가 Running 인데 READY 가 `0/1` 일 때의 조사 순서입니다. 순서에 맞게 놓아 보세요.', '상태 → 이벤트 → 앱 확인 → 고친 뒤 확인 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl get pods` 로 READY 와 RESTARTS 를 본다", "`kubectl describe pod` 의 Events 에서 `Readiness probe failed` 를 찾는다", "점검하는 경로와 포트가 앱의 실제 설정과 맞는지 확인한다", "고친 뒤 `kubectl rollout restart` 로 다시 띄우고 READY `1/1` 을 확인한다"]', NULL, 'Running 은 프로세스가 떠 있다는 뜻이고 READY 는 트래픽을 받을 준비가 됐다는 뜻입니다. 둘은 다른 신호예요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 28, 'Pending Pod 조사', 'Pod 가 Pending 으로 멈춰 있을 때의 조사 순서입니다. 순서에 맞게 놓아 보세요.', '상태 → 이벤트 → 이유 확인 → 고치기 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl get pods` 로 Pending 인 Pod 를 확인한다", "`kubectl describe pod` 의 Events 에서 `FailedScheduling` 이유를 읽는다", "Insufficient 자원, nodeSelector 불일치, taint 중 이유를 가려낸다", "조건을 고치고 Pod 가 `Running` 이 되는지 확인한다"]', NULL, '`FailedScheduling` 이벤트의 한 줄이 이유를 거의 다 알려 줍니다. 추측하기 전에 그 줄부터 읽으세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 136, 29, 'PVC Pending 조사', 'PVC 가 Pending 일 때의 조사 순서입니다. 순서에 맞게 놓아 보세요.', '상태 → 이벤트 → 저장소 종류 → 고친 뒤 확인 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl get pvc` 로 STATUS 를 확인한다", "`kubectl describe pvc` 의 Events 에서 이유를 읽는다", "`kubectl get storageclass` 로 지정한 클래스가 있는지 확인한다", "클래스 이름이나 조건을 고치고 STATUS 가 `Bound` 인지 확인한다"]', NULL, 'PVC 는 만든 뒤에는 대부분의 필드를 고칠 수 없어서, 지우고 다시 만들어야 할 때가 많습니다. 데이터가 있는지 먼저 확인하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 136 AND order_index = 29);

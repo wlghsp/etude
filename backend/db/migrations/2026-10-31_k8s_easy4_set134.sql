@@ -1,0 +1,122 @@
+-- k8s 세트 134. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set134.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크로드와 설정', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 7);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 134, 'k8s 쉬운 문제 4: Deployment 업데이트, Job, 상태 읽기 한 줄씩', 'k8s 워크로드 운영의 기본을 한 개념씩 쉬운 문제로 반복합니다. Deployment 롤링 업데이트(maxSurge·maxUnavailable)와 rollout status·history·undo·restart, 멈춘 업데이트 읽기, Job·backoffLimit·restartPolicy·Completed, CronJob 과 cron 5칸, describe 의 Events·logs --previous·get -o wide/yaml/-w 로 상태 읽기, 그리고 업데이트와 롤백, Job 실행, 재시작 조사, CronJob 확인의 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', 'k8s'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 134);
+UPDATE quest_set SET display_order = 249, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '🔄' WHERE id = 134;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 1, '롤링 업데이트란', 'Deployment 의 이미지를 새 버전으로 바꾸면 기본으로 어떤 방식으로 교체될까요?', '한꺼번에 바꾸지 않고 조금씩 바꿔요.', NULL, NULL, '[]', 'choice', '["옛 Pod 를 모두 지운 뒤 새 Pod 를 만든다", "새 Pod 를 만들지 않고 옛 Pod 의 이미지만 바꿔 치기한다", "새 Pod 를 하나씩 띄우고 옛 Pod 를 하나씩 줄여, 서비스가 끊기지 않게 교체한다", "사람이 Pod 를 하나씩 직접 지워야 교체된다"]', 2, '기본 전략인 RollingUpdate 는 새 버전이 Ready 가 되는 것을 보면서 옛 버전을 줄입니다. 그래서 업데이트 중에도 서비스가 이어져요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 2, 'maxUnavailable 은 무엇일까', '롤링 업데이트 설정의 `maxUnavailable: 1` 은 무슨 뜻일까요?', '"사용할 수 없는 상태"를 몇 개까지 허용하는지 봐요.', NULL, NULL, '[]', 'choice', '["업데이트를 최대 1번만 시도한다", "업데이트 중에 동시에 내려가 있어도 되는 Pod 의 최대 개수가 1개", "새 Pod 를 최대 1개까지만 만든다", "Pod 가 1개 줄면 업데이트를 취소한다"]', 1, '`maxUnavailable` 은 줄여도 되는 수, `maxSurge` 는 평소보다 더 띄워도 되는 수입니다. 둘을 조절해 속도와 안정성의 균형을 맞춰요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 3, 'maxSurge 는 무엇일까', '롤링 업데이트 설정의 `maxSurge: 1` 은 무슨 뜻일까요?', 'surge 는 "넘쳐 오른다"는 뜻이에요.', NULL, NULL, '[]', 'choice', '["업데이트 중에 원래 replicas 수보다 Pod 를 1개 더 띄워도 된다", "업데이트 속도를 1배로 고정한다", "실패한 Pod 를 1번 다시 시도한다", "노드를 1대 더 추가한다"]', 0, '새 Pod 를 먼저 띄우고 나서 옛 Pod 를 내리려면 잠깐 여유 공간이 필요합니다. 그 여유가 `maxSurge` 예요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 4, 'rollout undo 의 쓰임', '새 버전으로 업데이트했더니 오류가 납니다. `kubectl rollout undo deployment/web` 은 무엇을 할까요?', 'undo 는 되돌리기예요.', NULL, NULL, '[]', 'choice', '["Deployment 를 삭제한다", "모든 Pod 의 로그를 지운다", "이미지를 최신 버전으로 올린다", "직전 버전의 설정으로 되돌려 다시 롤링 업데이트한다"]', 3, '`rollout undo` 는 직전 리비전으로 돌아갑니다. 특정 버전으로 가려면 `--to-revision=번호` 를 쓰고, 번호는 `rollout history` 로 볼 수 있어요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 5, '업데이트가 멈춘 것 같을 때', '이미지를 바꿨는데 `rollout status` 가 계속 기다리는 중입니다. 새 Pod 는 `ImagePullBackOff` 입니다. 서비스는 어떻게 될까요?', '옛 Pod 는 새 Pod 가 Ready 가 될 때까지 남아 있어요.', NULL, NULL, '[]', 'choice', '["모든 Pod 가 즉시 삭제되어 서비스가 중단된다", "k8s 가 자동으로 다른 이미지를 찾아 준다", "옛 Pod 가 일부 남아 서비스는 이어지지만, 업데이트는 끝나지 못하고 멈춰 있다", "업데이트가 성공으로 처리된다"]', 2, '새 Pod 가 Ready 가 되지 않으면 롤링 업데이트는 옛 Pod 를 더 줄이지 않습니다. 이미지 이름과 태그를 고치거나 `rollout undo` 로 되돌리세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 6, 'Job 은 무엇일까', 'Job 은 어떤 일에 알맞을까요?', '한 번 하고 끝나는 일(백업, 데이터 이전)을 떠올려 보세요.', NULL, NULL, '[]', 'choice', '["항상 떠 있어야 하는 웹 서버", "끝까지 한 번 실행하고 정상 종료되면 완료로 보는 작업", "외부에서 들어오는 접속을 나눠 주는 일", "클러스터에 노드를 추가하는 일"]', 1, 'Job 은 Pod 를 성공적으로 끝날 때까지 실행합니다. 웹 서버처럼 계속 떠 있는 일은 Deployment 가 맡아요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 7, 'Job 과 Deployment 의 차이', '컨테이너가 정상 종료(exit 0)하면 Job 과 Deployment 는 각각 어떻게 할까요?', 'Deployment 는 항상 replicas 수를 유지하려고 해요.', NULL, NULL, '[]', 'choice', '["Job 은 완료로 두고, Deployment 는 replicas 를 맞추려고 Pod 를 다시 만든다", "둘 다 완료로 두고 아무것도 하지 않는다", "둘 다 Pod 를 다시 만든다", "Job 은 다시 만들고, Deployment 는 완료로 둔다"]', 0, 'Deployment 의 Pod 는 끝나면 안 되는 것이 기본입니다. 끝나는 일은 Job 으로 만들어야 `CrashLoopBackOff` 같은 반복을 피해요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 8, 'Job 의 restartPolicy', 'Job 의 Pod 템플릿에서 `restartPolicy: Always` 를 쓰면 어떻게 될까요?', 'Job 은 끝나는 일이라 "항상 재시작"과 맞지 않아요.', NULL, NULL, '[]', 'choice', '["아무 문제 없이 만들어진다", "Job 이 무한히 실행된다", "Pod 가 자동으로 삭제된다", "Job 은 `Never` 나 `OnFailure` 만 허용하므로 만들 때 오류가 난다"]', 3, 'Job 에서는 `OnFailure`(실패하면 같은 Pod 에서 재시도) 또는 `Never`(실패하면 새 Pod) 를 고릅니다. `Always` 는 Deployment 용 값이에요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 9, 'backoffLimit 은 무엇일까', 'Job 의 `backoffLimit: 3` 은 무엇을 정할까요?', 'back-off 는 "물러났다 다시 시도"를 뜻해요.', NULL, NULL, '[]', 'choice', '["동시에 실행할 Pod 의 수", "Job 이 한 번에 쓸 수 있는 CPU 의 양", "실패했을 때 다시 시도하는 최대 횟수", "Job 을 보관하는 날 수"]', 2, '횟수를 넘겨도 계속 실패하면 Job 은 Failed 가 됩니다. 시도 사이의 간격은 점점 길어져요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 10, 'CronJob 이란', 'CronJob 은 무엇을 할까요?', '리눅스의 cron 을 k8s 로 옮긴 거예요.', NULL, NULL, '[]', 'choice', '["Pod 가 죽으면 정해진 시간에 한 번만 다시 만든다", "정해진 시간마다 Job 을 새로 만들어 실행한다", "노드의 시간을 맞춘다", "Pod 의 로그를 정해진 시간마다 지운다"]', 1, 'CronJob 은 일정에 맞춰 Job 을 만들고, 그 Job 이 Pod 를 만듭니다. 매일 밤 백업 같은 반복 작업에 써요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 11, 'cron 5칸 읽기', '`schedule: "0 3 * * *"` 은 언제 실행될까요?', '왼쪽부터 분, 시, 일, 월, 요일 순서예요.', NULL, NULL, '[]', 'choice', '["매일 새벽 3시 0분", "3분마다", "매시간 3분에", "매월 3일 0시에"]', 0, '칸은 `분 시 일 월 요일` 입니다. `*/5 * * * *` 는 5분마다, `0 * * * *` 는 매시 정각이에요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 12, 'Completed 는 정상일까', 'Job 이 만든 Pod 의 상태가 `Completed`, READY 는 `0/1` 입니다. 문제일까요?', '끝난 Pod 는 더 이상 Ready 일 이유가 없어요.', NULL, NULL, '[]', 'choice', '["문제다. 컨테이너가 시작하지 못했다", "문제다. 이미지를 받지 못했다", "문제다. 노드에 자원이 모자라다", "문제가 아니다. 작업이 정상 종료되어 끝난 Pod 의 모습이다"]', 3, 'Job 의 Pod 는 끝나면 `Completed` 로 남아 로그를 볼 수 있습니다. 실패라면 `Error` 가 보여요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 13, 'describe 는 아래부터', '`kubectl describe pod` 의 출력이 길 때, 원인을 찾으려면 어디부터 볼까요?', '무슨 일이 있었는지 시간 순서로 적혀 있어요.', NULL, NULL, '[]', 'choice', '["맨 위의 Name 항목", "중간의 Labels 항목", "맨 아래 `Events` 항목", "어디든 상관없다"]', 2, '스케줄링 실패, 이미지 받기 실패, 프로브 실패 같은 사건이 `Events` 에 적힙니다. 이유가 한 줄로 나올 때가 많아요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 14, 'logs --previous', '컨테이너가 계속 재시작합니다. 재시작 **전** 컨테이너가 남긴 로그를 보려면 어떤 옵션을 쓸까요?', '"이전"이라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'choice', '["`kubectl logs Pod이름 --old-all`", "`kubectl logs Pod이름 --previous`", "`kubectl logs Pod이름 --restart`", "`kubectl describe Pod이름 --logs`"]', 1, '지금 컨테이너는 막 시작해서 로그가 비어 있을 수 있습니다. `--previous` 는 직전에 죽은 컨테이너의 마지막 로그를 보여 줘요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 15, '이미지 바꾸기', 'Deployment `web` 의 컨테이너 `web` 이미지를 `nginx:1.27` 로 **바꾸는** 명령입니다. 빈칸을 채우세요.', '바꾸는 동작은 set 이에요.', NULL, NULL, '[]', 'fill', '["set", "get", "run", "scale"]', NULL, '`kubectl set image` 는 YAML 파일을 고치지 않고 이미지만 바꿉니다. 실제 운영에서는 YAML 을 고쳐 `apply` 하는 것을 권해요.', '[0]', 'kubectl {0} image deployment/web web=nginx:1.27', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 16, '이전 버전으로 되돌리기', 'Deployment `web` 을 **직전 버전으로 되돌리는** 명령입니다. 빈칸을 채우세요.', '되돌리기는 undo 예요.', NULL, NULL, '[]', 'fill', '["undo", "back", "revert", "rewind"]', NULL, '`rollout undo` 는 Deployment 의 이전 리비전으로 돌아갑니다. 번호를 정하려면 `--to-revision=2` 처럼 써요.', '[0]', 'kubectl rollout {0} deployment/web', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 17, '업데이트 이력 보기', 'Deployment `web` 의 **업데이트 이력(리비전 목록)** 을 보는 명령입니다. 빈칸을 채우세요.', '"역사"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["history", "log", "list", "past"]', NULL, '`history` 는 리비전 번호와 변경 사유를 보여 줍니다. 되돌릴 번호를 고르기 전에 먼저 확인하세요.', '[0]', 'kubectl rollout {0} deployment/web', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 18, 'Pod 다시 띄우기', '이미지는 그대로 두고 Deployment `web` 의 Pod 를 **하나씩 새로 띄우는** 명령입니다. 빈칸을 채우세요.', '다시 시작하기는 restart 예요.', NULL, NULL, '[]', 'fill', '["restart", "reboot", "reset", "reapply"]', NULL, '설정(ConfigMap) 을 바꾼 뒤 Pod 가 새 값을 읽게 할 때 자주 씁니다. 롤링 방식이라 서비스는 끊기지 않아요.', '[0]', 'kubectl rollout {0} deployment/web', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 19, 'Job 만들어 보기', '`busybox` 이미지로 `hello` 라는 Job 을 만들고 `hi` 를 **출력하는** 명령입니다. 빈칸을 채우세요.', '글자를 출력하는 쉘 명령이에요.', NULL, NULL, '[]', 'fill', '["echo", "get", "apply", "delete"]', NULL, '`--` 뒤는 컨테이너 안에서 실행할 명령입니다. 만든 뒤 `kubectl get jobs` 로 완료됐는지 확인해요.', '[0]', 'kubectl create job hello --image=busybox -- {0} hi', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 20, 'Job 의 로그 보기', 'Job `hello` 가 만든 Pod 의 로그를 Job 이름으로 보는 명령입니다. 빈칸을 채우세요.', '리소스 종류 이름은 job 이에요.', NULL, NULL, '[]', 'fill', '["job", "pod-job", "task", "batch"]', NULL, '`종류/이름` 으로 쓰면 Pod 이름을 몰라도 로그를 볼 수 있습니다. Deployment 도 `deployment/web` 으로 같은 식이에요.', '[0]', 'kubectl logs {0}/hello', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 21, '5분마다 실행하기', 'CronJob 을 **5분마다** 실행하려고 합니다. 첫 칸을 채우세요.', '"~마다" 는 슬래시를 써요.', NULL, NULL, '[]', 'fill', '["*/5", "5", "*5", "5/*"]', NULL, '`*/5` 는 "5분마다" 입니다. 그냥 `5` 라고 쓰면 매시 5분에 한 번만 실행돼요.', '[0]', 'schedule: "{0} * * * *"', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 22, '노드와 IP 까지 보기', 'Pod 목록에 **노드 이름과 IP** 까지 함께 보는 옵션입니다. 빈칸을 채우세요.', 'output 의 첫 글자와 wide 예요.', NULL, NULL, '[]', 'fill', '["-o", "-w", "-n", "-l"]', NULL, '`-o wide` 는 어느 노드에서 돌고 있는지와 Pod IP 를 보여 줍니다. 노드 문제를 의심할 때 첫 확인이에요.', '[0]', 'kubectl get pods {0} wide', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 23, 'YAML 전체 보기', '실행 중인 Pod `web` 의 **현재 상태를 YAML 전체**로 보는 옵션입니다. 빈칸을 채우세요.', '출력 형식 이름은 파일 형식과 같아요.', NULL, NULL, '[]', 'fill', '["yaml", "pods", "wide-all", "text"]', NULL, '`-o yaml` 은 spec 뿐 아니라 status 도 보여 줍니다. 파일에 없던 기본값이 어떻게 채워졌는지도 볼 수 있어요.', '[0]', 'kubectl get pod web -o {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 24, '이전 컨테이너 로그', '재시작하기 전 컨테이너의 로그를 보는 옵션을 채우세요.', '"이전" 이라는 뜻이에요.', NULL, NULL, '[]', 'fill', '["--previous", "--before", "--old", "--restart"]', NULL, '재시작을 반복하는 Pod 는 지금 컨테이너가 로그를 남기기 전에 죽을 수 있습니다. 이때 `--previous` 가 원인을 알려 줘요.', '[0]', 'kubectl logs web {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 25, '변화를 계속 지켜보기', 'Pod 목록이 바뀔 때마다 **계속 갱신해서** 보여 주는 옵션입니다. 빈칸을 채우세요.', 'watch 의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-w", "-o", "-n", "-A"]', NULL, '`-w` 로 롤링 업데이트가 진행되는 모습(Pending, ContainerCreating, Running, Terminating)을 눈으로 볼 수 있어요. 끝내려면 Ctrl+C 를 누릅니다.', '[0]', 'kubectl get pods {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 26, '업데이트하고 확인, 문제면 되돌리기', 'Deployment 이미지를 바꾸고 결과를 확인한 뒤 문제가 있으면 되돌리는 순서입니다. 순서에 맞게 놓아 보세요.', '바꾸기 → 진행 확인 → 상태 확인 → 되돌리기 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl set image deployment/web web=nginx:1.27` 로 이미지를 바꾼다", "`kubectl rollout status deployment/web` 으로 진행을 지켜본다", "`kubectl get pods` 로 새 Pod 의 상태를 본다", "문제가 있으면 `kubectl rollout undo deployment/web` 으로 되돌린다"]', NULL, '업데이트 직후에는 항상 `rollout status` 와 `get pods` 로 결과를 확인하세요. 그래야 문제를 빨리 알고 되돌릴 수 있어요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 27, 'Job 실행하고 결과 확인', 'Job 을 만들고 결과를 확인한 뒤 정리하는 순서입니다. 순서에 맞게 놓아 보세요.', '만들기 → 완료 확인 → 로그 → 정리 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl create job hello --image=busybox -- echo hi` 로 Job 을 만든다", "`kubectl get jobs` 로 완료됐는지 확인한다", "`kubectl logs job/hello` 로 출력을 확인한다", "`kubectl delete job hello` 로 정리한다"]', NULL, '끝난 Job 은 자동으로 사라지지 않고 남습니다. 확인이 끝나면 직접 지우거나 `ttlSecondsAfterFinished` 로 자동 정리하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 28, '계속 재시작하는 Pod 조사', 'Pod 가 계속 재시작될 때의 조사 순서입니다. 순서에 맞게 놓아 보세요.', '재시작 횟수 → 이전 로그 → 이벤트 → 고친 뒤 확인 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl get pods` 로 RESTARTS 숫자와 상태를 본다", "`kubectl logs Pod이름 --previous` 로 죽기 전 로그를 본다", "`kubectl describe pod Pod이름` 의 Events 와 Last State 를 본다", "원인을 고치고 `kubectl rollout restart` 로 다시 띄워 확인한다"]', NULL, '증상(재시작 횟수) → 로그 → 이벤트 순으로 보면 원인 범위가 빠르게 좁혀집니다. 고친 뒤에는 RESTARTS 가 더 늘지 않는지 확인하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 134, 29, 'CronJob 만들고 확인', 'CronJob 을 만들고 실제로 실행됐는지 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '만들기 → 등록 확인 → Job 생성 확인 → 로그 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl create cronjob tick --image=busybox --schedule=\\"*/1 * * * *\\" -- date` 로 만든다", "`kubectl get cronjob` 으로 등록된 일정을 확인한다", "1분 뒤 `kubectl get jobs` 로 Job 이 만들어졌는지 확인한다", "`kubectl logs job/Job이름` 으로 실행 결과를 확인한다"]', NULL, 'CronJob 은 일정이 되어야 Job 을 만들기 때문에 바로는 아무것도 보이지 않습니다. 시험 삼아 1분마다로 만들어 본 뒤 정리하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 134 AND order_index = 29);
