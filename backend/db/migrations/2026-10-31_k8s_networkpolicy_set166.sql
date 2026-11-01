@@ -1,0 +1,122 @@
+-- k8s 세트 166. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set166.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크로드와 설정', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 7);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 166, 'NetworkPolicy 기초: 모두 막고 필요한 것만 열기, from 규칙 읽기', 'Pod 사이의 접속을 제어하는 기본기를 한 개념씩 반복합니다. 정책이 없을 때의 기본(모두 열림), podSelector 가 빈 default-deny 와 Ingress·Egress 의 차이, 허용 정책을 더하는 방식과 정책을 지웠을 때의 동작, from 의 podSelector·namespaceSelector 와 한 항목(AND)·두 항목(OR) 차이, ports 로 포트 제한하기, egress 를 막았을 때 DNS 가 함께 막히는 것과 53 포트 허용, 빈 규칙과 규칙 없음의 차이, get netpol 의 POD-SELECTOR 와 describe 읽기를 짧은 객관식·빈칸·순서 문제로 익히고, 모두 막고 필요한 것만 열기, 접속이 막힌 원인 찾기, egress 를 막고 DNS 열기, 다른 네임스페이스 허용의 순서를 연습합니다.', 'quiz', 'k8s'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 166);
+UPDATE quest_set SET display_order = 249, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '🚧' WHERE id = 166;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 1, '기본은 모두 열려 있다', 'NetworkPolicy 를 하나도 만들지 않은 네임스페이스에서 Pod 사이의 접속은 어떨까요?', '막는 규칙이 없으면 어떻게 될까요?', NULL, NULL, '[]', 'choice', '["같은 네임스페이스의 Pod 끼리만 접속된다", "Service 를 거칠 때만 접속된다", "모든 Pod 가 서로 접속할 수 있다 (다른 네임스페이스의 Pod 에도 접속된다)", "기본으로 모두 막혀 있다"]', 2, '쿠버네티스의 기본은 열려 있는 네트워크입니다. 막고 싶으면 NetworkPolicy 로 직접 정해야 해요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 2, 'default-deny', '다음 정책을 적용하면 어떻게 될까요? `podSelector: {}`, `policyTypes: [Ingress]` 이고 `ingress` 규칙은 없다.', '빈 selector 는 모든 Pod 를 고르고, 허용 규칙이 없어요.', NULL, NULL, '[]', 'choice', '["아무 효과가 없다", "그 네임스페이스의 모든 Pod 로 들어오는 접속이 막힌다 (나가는 접속은 영향이 없다)", "모든 Pod 의 나가는 접속도 막힌다", "정책을 만든 Pod 하나만 막힌다"]', 1, '''모두 막고 필요한 것만 허용''하는 출발점입니다. `describe` 에는 `Not affecting egress traffic` 이라고 나와요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 3, '허용 정책의 효과', 'default-deny 가 있는 상태에서 `app=web` Pod 에 대해 `role=frontend` Pod 의 80 포트 접속을 허용하는 정책을 추가했습니다. 결과는 무엇일까요?', '허용한 쪽만 열려요.', NULL, NULL, '[]', 'choice', '["`role=frontend` 인 Pod 는 접속에 성공하고, 라벨이 다른 Pod 는 여전히 막힌다", "모든 Pod 의 접속이 다시 허용된다", "default-deny 가 삭제된다", "`role=frontend` 인 Pod 도 막힌다"]', 0, '허용 규칙은 막힌 것 중 일부를 다시 여는 것입니다. 라벨이 맞는지가 핵심이에요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 4, '정책은 합쳐진다', '같은 Pod 에 정책 A(8080 포트 허용)와 정책 B(80 포트 허용)가 함께 적용되어 있습니다. 80 포트 접속은 어떻게 될까요?', '여러 정책은 허용을 더하는 방식이에요.', NULL, NULL, '[]', 'choice', '["A 가 80 을 허용하지 않으므로 막힌다", "나중에 만든 정책 하나만 적용된다", "두 정책이 충돌해 둘 다 무효가 된다", "허용된다 (적용된 정책의 허용 규칙이 합쳐지고, 하나라도 허용하면 접속된다)"]', 3, 'NetworkPolicy 는 ''허용 목록''만 있고 ''거부 규칙''이 없습니다. 막는 방법은 허용하지 않는 것뿐이에요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 5, '정책을 지우면', 'default-deny 와 allow 정책이 둘 다 있을 때, allow 정책만 지우면 접속은 어떻게 될까요? 이어서 default-deny 까지 지우면요?', '남은 정책에 따라 달라져요.', NULL, NULL, '[]', 'choice', '["allow 만 지워도 계속 접속된다", "default-deny 를 지워도 계속 막혀 있다", "allow 만 지우면 default-deny 가 남아 다시 막히고, default-deny 까지 지우면 모두 열린다", "정책은 한 번 만들면 지울 수 없다"]', 2, '정책이 하나도 선택하지 않은 Pod 는 기본(열림)으로 돌아갑니다. 롤백할 때 어떤 정책이 남았는지 꼭 확인하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 6, 'podSelector 만 쓴 from', '`from` 에 `podSelector` 로 `role=frontend` 라벨만 고르고 `namespaceSelector` 는 쓰지 않았습니다. 다른 네임스페이스에 있는 `role=frontend` Pod 는 접속할 수 있을까요?', 'podSelector 는 정책이 있는 네임스페이스 안에서만 골라요.', NULL, NULL, '[]', 'choice', '["라벨이 같으면 어느 네임스페이스든 접속할 수 있다", "접속할 수 없다 (`podSelector` 만 쓰면 정책이 있는 같은 네임스페이스의 Pod 만 고른다)", "라벨과 상관없이 모두 접속할 수 있다", "정책 자체가 거부된다"]', 1, '다른 네임스페이스를 허용하려면 `namespaceSelector` 를 써야 합니다. 라벨이 같아도 네임스페이스가 다르면 다른 Pod 예요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 7, 'namespaceSelector 만 쓴 from', '`from` 에 `namespaceSelector` 로 `team=ops` 라벨만 고르면 누가 접속할 수 있을까요?', '네임스페이스를 라벨로 고르고, Pod 는 가리지 않아요.', NULL, NULL, '[]', 'choice', '["`team=ops` 라벨이 붙은 네임스페이스의 모든 Pod 가 접속할 수 있고, 라벨이 없는 같은 네임스페이스의 Pod 는 막힌다", "같은 네임스페이스의 모든 Pod", "`team=ops` 라벨이 붙은 Pod", "클러스터의 모든 Pod"]', 0, '네임스페이스에 라벨을 붙이는 일(`kubectl label ns`)이 먼저 필요합니다. Pod 의 라벨은 보지 않아요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 8, '한 항목 AND, 두 항목 OR', '`from` 에서 `namespaceSelector` 와 `podSelector` 를 같은 항목(`-` 하나) 안에 같이 쓴 경우와, 항목 두 개로 나눠 쓴 경우는 어떻게 다를까요?', '하이픈이 몇 개인지가 중요해요.', NULL, NULL, '[]', 'choice', '["한 항목이면 OR, 두 항목이면 AND 이다", "둘 다 AND 이다", "둘 다 OR 이다", "한 항목 안에 같이 쓰면 AND (그 네임스페이스 안의 그 라벨 Pod 만), 항목을 나누면 OR (둘 중 하나만 맞아도 허용)이다"]', 3, '들여쓰기와 `-` 하나 차이로 허용 범위가 크게 달라집니다. 의도보다 넓게 열리는 실수가 많으니 `describe` 로 확인하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 9, 'ports 의 효과', '허용 규칙의 `ports` 에 TCP 8080 만 적었습니다. 같은 Pod 의 80 포트로 접속하면 어떻게 될까요?', '허용한 포트만 열려요.', NULL, NULL, '[]', 'choice', '["허용된다", "포트와 상관없이 막히지도 열리지도 않는다", "막힌다 (규칙에 적은 8080 포트만 허용되고 다른 포트는 허용되지 않는다)", "8080 으로 자동 연결된다"]', 2, '허용할 포트가 컨테이너가 실제로 듣는 포트와 맞는지 확인하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 10, 'egress 를 막으면 이름 조회도', '`role=frontend` Pod 에 `policyTypes: [Egress]` 만 있고 egress 규칙이 없는 정책을 적용했습니다. 그 Pod 에서 `wget http://web` 을 하면 어떤 일이 생길까요?', '나가는 접속에는 DNS 조회도 포함돼요.', NULL, NULL, '[]', 'choice', '["이름은 풀리고 접속만 실패한다", "서비스 이름을 풀지 못해 실패한다 (`bad address`). 이름 조회(DNS)도 나가는 접속이라 함께 막히고, IP 로 접속해도 막힌다", "아무 영향이 없다", "Pod 가 삭제된다"]', 1, 'egress 를 막을 때는 DNS(53 포트) 허용을 함께 생각해야 합니다. 이름 조회가 안 되면 원인을 찾기 어려워요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 11, 'DNS 만 열면', 'egress 를 막은 Pod 에 `kube-system` 네임스페이스로 가는 53 포트(UDP·TCP)만 허용하는 정책을 추가했습니다. `nslookup web` 과 `wget http://web` 은 어떻게 될까요?', 'DNS 만 허용하고 서비스는 허용하지 않았어요.', NULL, NULL, '[]', 'choice', '["`nslookup` 은 성공하지만 `wget` 은 여전히 실패한다 (서비스로 가는 접속은 따로 허용해야 한다)", "둘 다 성공한다", "둘 다 실패한다", "`wget` 만 성공한다"]', 0, '이름은 풀리는데 접속이 안 되는 상황이 이렇게 만들어집니다. egress 허용 대상을 하나씩 늘려 가세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 12, '빈 규칙과 규칙 없음', '`policyTypes: [Ingress]` 정책에서 `ingress` 를 아예 쓰지 않은 경우와 `ingress: [{}]` (빈 규칙 하나)를 쓴 경우는 어떻게 다를까요?', '규칙이 없으면 허용도 없어요.', NULL, NULL, '[]', 'choice', '["둘 다 모든 접속을 막는다", "둘 다 모든 접속을 허용한다", "`ingress: [{}]` 는 오류가 난다", "`ingress` 가 없으면 모든 접속이 막히고, `ingress: [{}]` 는 모든 접속을 허용한다"]', 3, '모양이 비슷해서 헷갈리기 쉽습니다. 막으려는 정책에 실수로 `- {}` 를 넣으면 전부 열려요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 13, 'POD-SELECTOR 가 <none>', '`kubectl get netpol` 에서 `default-deny-ingress` 의 `POD-SELECTOR` 열이 `<none>` 입니다. 무엇을 뜻할까요?', '빈 selector 가 어떤 Pod 를 고르는지 떠올려 보세요.', NULL, NULL, '[]', 'choice', '["적용되는 Pod 가 하나도 없다", "정책이 비활성 상태이다", "`podSelector: {}` 처럼 selector 가 비어 있다는 뜻으로, 그 네임스페이스의 모든 Pod 에 적용된다", "정책에 오류가 있다"]', 2, '`app=web` 처럼 표시되면 그 라벨의 Pod 에만 적용됩니다. `<none>` 을 ''대상 없음''으로 읽지 마세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 14, 'describe 로 정책 읽기', '`kubectl describe netpol allow-frontend` 결과에 `PodSelector: app=web`, `Allowing ingress traffic: To Port: 80/TCP, From: PodSelector: role=frontend`, `Not affecting egress traffic` 이 있습니다. 이 정책의 뜻은 무엇일까요?', '누구에게, 누가, 어느 포트로 접속할 수 있는지 읽어요.', NULL, NULL, '[]', 'choice', '["`role=frontend` Pod 에 `app=web` Pod 가 접속하는 것을 허용한다", "`app=web` Pod 에 `role=frontend` Pod 가 80 포트로 접속하는 것을 허용한다 (나가는 접속은 건드리지 않는다)", "`app=web` Pod 의 나가는 접속을 80 포트만 허용한다", "모든 Pod 의 모든 접속을 허용한다"]', 1, '`PodSelector` 가 보호받는 쪽(받는 Pod), `From` 이 접속하는 쪽입니다. 방향을 거꾸로 읽는 실수가 많아요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 15, '리소스 종류', '접속 규칙을 정하는 리소스 종류를 채우세요.', '"네트워크"와 "정책"을 이어 붙인 이름이에요.', NULL, NULL, '[]', 'fill', '["NetworkPolicy", "NetPolicy", "TrafficRule", "IngressRule"]', NULL, 'apiVersion 은 `networking.k8s.io/v1` 입니다. Pod 의 라벨을 보고 접속을 허용하거나 막아요.', '[0]', 'kind: {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 16, '모든 Pod 선택', '그 네임스페이스의 **모든 Pod 를 고르는** `podSelector` 의 값을 채우세요.', '아무 조건도 없는 빈 모양이에요.', NULL, NULL, '[]', 'fill', '["{}", "*", "all", "null"]', NULL, '비어 있는 selector 는 모든 Pod 를 고릅니다. `*` 나 `all` 은 쓰지 않아요.', '[0]', 'podSelector: {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 17, '들어오는 접속', '**들어오는 접속**에 대한 정책이라는 값을 채우세요.', '"들어오는 입구"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["Ingress", "Inbound", "Incoming", "Enter"]', NULL, '`Ingress` 는 이 Pod 로 들어오는 접속입니다. HTTP 경로를 정하는 Ingress 리소스와는 다른 개념이에요.', '[0]', 'policyTypes: [{0}]', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 18, '나가는 접속', '**나가는 접속**에 대한 정책이라는 값을 채우세요.', '"나가는 출구"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["Egress", "Outbound", "Outgoing", "Exit"]', NULL, '`Egress` 는 이 Pod 에서 나가는 접속입니다. 막으면 DNS 조회도 함께 막혀요.', '[0]', 'policyTypes: [{0}]', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 19, 'Pod 를 라벨로 고르기', '`from` 항목에서 **Pod 를 라벨로 고르는** 필드 이름을 채우세요.', '"Pod"와 "선택자"를 이어 붙인 이름이에요.', NULL, NULL, '[]', 'fill', '["podSelector", "podLabel", "selectPod", "labelSelector"]', NULL, '그 아래에 `matchLabels` 로 라벨을 적습니다. 같은 네임스페이스의 Pod 만 고르는 점을 기억하세요.', '[0]', '- {0}:', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 20, '네임스페이스를 라벨로 고르기', '`from` 항목에서 **네임스페이스를 라벨로 고르는** 필드 이름을 채우세요.', '"네임스페이스"와 "선택자"를 이어 붙인 이름이에요.', NULL, NULL, '[]', 'fill', '["namespaceSelector", "nsSelector", "namespaceLabel", "selectNamespace"]', NULL, '네임스페이스에 라벨이 붙어 있어야 고를 수 있습니다. `kubernetes.io/metadata.name` 라벨은 자동으로 붙어 있어요.', '[0]', '- {0}:', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 21, '정책 목록 보기', 'NetworkPolicy 목록을 보는 줄임말을 채우세요.', '"네트워크 정책"을 줄인 이름이에요.', NULL, NULL, '[]', 'fill', '["netpol", "np", "netpolicy", "npol"]', NULL, '전체 이름은 `networkpolicy` 입니다. `np` 는 줄임말로 등록되어 있지 않아 오류가 나요.', '[0]', 'kubectl get {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 22, '정책 자세히 읽기', '정책이 **누구에게 무엇을 허용하는지** 풀어서 보여 주는 명령어를 채우세요.', '"설명하다"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["describe", "explain", "inspect", "show"]', NULL, '`describe` 는 `Allowing ingress traffic` 처럼 사람이 읽기 쉬운 문장으로 보여 줍니다.', '[0]', 'kubectl {0} netpol allow-frontend', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 23, '허용할 포트', '웹 서버의 **80 포트 접속만 허용**하려고 합니다. 포트 번호를 채우세요.', 'HTTP 의 기본 포트예요.', NULL, NULL, '[]', 'fill', '["80", "8080", "443", "22"]', NULL, '`protocol` 을 생략하면 TCP 로 취급됩니다. 컨테이너가 실제로 듣는 포트와 맞아야 해요.', '[0]', 'port: {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 24, 'DNS 포트', 'egress 를 막으면서도 **이름 조회를 허용**하려면 어떤 포트를 열어야 할까요? 포트 번호를 채우세요.', 'DNS 의 기본 포트예요.', NULL, NULL, '[]', 'fill', '["53", "80", "443", "5353"]', NULL, 'DNS 는 UDP 53 을 주로 쓰고 TCP 53 도 함께 허용해 두는 것이 안전합니다.', '[0]', 'protocol: UDP, port: {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 25, '자동으로 붙는 네임스페이스 라벨', '`kube-system` 네임스페이스를 **자동으로 붙는 라벨**로 고르려고 합니다. 값을 채우세요.', '라벨의 값은 네임스페이스 이름이에요.', NULL, NULL, '[]', 'fill', '["kube-system", "system", "kube", "default"]', NULL, '직접 라벨을 붙이지 않아도 모든 네임스페이스에 이 라벨이 있어 이름으로 고를 수 있습니다.', '[0]', 'kubernetes.io/metadata.name: {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 26, '모두 막고 필요한 것만 열기', '웹 서버를 default-deny 로 막고 `role=frontend` 에게만 여는 순서입니다. 순서에 맞게 놓아 보세요.', '현재 상태 확인 → 모두 막기 → 막힘 확인 → 허용 → 결과 확인 순서예요.', NULL, NULL, '[]', 'order', '["허용할 Pod 와 다른 Pod 모두에서 웹 서버에 접속되는 것을 먼저 확인한다", "`podSelector: {}` 로 default-deny 정책을 적용한다", "두 Pod 모두 접속에 실패하는 것을 확인한다", "`role=frontend` 를 허용하는 정책을 적용하고, frontend 는 성공 · 다른 Pod 는 실패하는지 확인한다"]', NULL, '막기 전에 정상 상태를 먼저 확인해 두면 문제가 생겼을 때 비교할 수 있습니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 27, '접속이 막힌 원인 찾기', 'Pod 와 Service 는 정상인데 특정 Pod 에서만 접속이 안 될 때 NetworkPolicy 를 의심하며 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '정상 확인 → 정책 목록 → 정책 읽기 → 라벨 비교 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl get pods`, `kubectl get svc` 로 대상 Pod 와 Service 가 정상인지 확인한다", "`kubectl get netpol` 로 그 네임스페이스에 적용된 정책 목록을 본다", "`kubectl describe netpol` 로 어떤 Pod 에 누구를 허용하는지 읽는다", "`kubectl get pods --show-labels` 로 접속하는 Pod 의 라벨이 허용 조건과 맞는지 비교한다"]', NULL, '라벨 오타나 네임스페이스 차이가 흔한 원인입니다. 정책을 고친 뒤에는 다시 접속해서 확인하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 28, 'egress 를 막고 DNS 열기', 'Pod 의 나가는 접속을 막고 이름 조회만 다시 여는 순서입니다. 순서에 맞게 놓아 보세요.', '막기 → 증상 확인 → DNS 허용 → 남은 문제 확인 순서예요.', NULL, NULL, '[]', 'order', '["`policyTypes: [Egress]` 이고 규칙이 없는 정책을 Pod 에 적용한다", "`nslookup web` 이 실패하는 것을 확인한다", "`kube-system` 으로 가는 53 포트(UDP·TCP)를 허용하는 정책을 추가한다", "`nslookup` 은 되지만 서비스 접속은 여전히 막혀 있어 서비스로 가는 egress 도 따로 허용해야 함을 확인한다"]', NULL, 'egress 는 필요한 목적지를 하나씩 여는 방식입니다. DNS 를 빼먹으면 이름이 안 풀려 원인 찾기가 어려워요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 166, 29, '다른 네임스페이스에서 오는 접속 허용', '`team=ops` 네임스페이스의 Pod 만 웹 서버에 접속하게 허용하는 순서입니다. 순서에 맞게 놓아 보세요.', '라벨 붙이기 → 정책 작성 → 적용 → 결과 확인 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl label ns` 로 허용할 네임스페이스에 `team=ops` 라벨을 붙인다", "`from` 에 `namespaceSelector` 로 `team=ops` 라벨을 고르는 정책을 작성한다", "`kubectl apply -f` 로 웹 서버가 있는 네임스페이스에 정책을 적용한다", "ops 네임스페이스의 Pod 는 접속되고 같은 네임스페이스의 라벨 없는 Pod 는 막히는지 확인한다"]', NULL, '라벨을 붙이기 전에 정책을 적용하면 아무도 허용되지 않은 상태가 됩니다. 순서를 지켜 확인하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 166 AND order_index = 29);

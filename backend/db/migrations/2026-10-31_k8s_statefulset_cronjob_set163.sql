@@ -1,0 +1,122 @@
+-- k8s 세트 163. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set163.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크로드와 설정', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 7);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 163, 'StatefulSet 과 CronJob 운영: 번호가 붙는 Pod, 일정 작업 다루기', '이름·저장소·순서가 중요한 앱과 일정 작업을 다루는 기본기를 한 개념씩 반복합니다. StatefulSet 의 번호 붙은 Pod 이름과 시작·롤링 업데이트 순서, volumeClaimTemplates 의 Pod 별 PVC, Pod 를 지워도 데이터가 남는 이유, 스케일 다운과 삭제 뒤에 PVC 가 남는 것, Headless Service 와 serviceName, Deployment 와 StatefulSet 고르기, CronJob 의 기본값과 concurrencyPolicy(Allow·Forbid)·suspend·create job --from 과 get cronjob 읽기를 짧은 객관식·빈칸·순서 문제로 익히고, StatefulSet 배포 확인, 데이터 유지 확인, CronJob 멈췄다 재개, 겹쳐 실행 막기의 순서를 연습합니다.', 'quiz', 'k8s'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 163);
+UPDATE quest_set SET display_order = 249, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '🗃️' WHERE id = 163;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 1, 'StatefulSet 의 Pod 이름', 'StatefulSet `db` 의 Pod 는 어떤 이름을 가질까요?', 'Deployment 의 Pod 처럼 무작위 문자가 붙을까요, 번호가 붙을까요?', NULL, NULL, '[]', 'choice', '["`db-5d8f7b9c4-x2k9p` 처럼 매번 바뀌는 무작위 이름", "이름이 없다", "`db-0`, `db-1`, `db-2` 처럼 번호가 붙은 고정된 이름 (Pod 를 지워 다시 만들어도 같은 이름이다)", "이름은 노드 이름을 따른다"]', 2, '이름이 고정되어 있어 다른 서버가 `db-0` 을 정확히 가리킬 수 있습니다. 컨테이너 안의 hostname 도 Pod 이름과 같아요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 2, 'StatefulSet 의 시작 순서', 'StatefulSet 의 기본 설정(`podManagementPolicy: OrderedReady`)에서 Pod 3개는 어떤 순서로 만들어질까요?', '번호가 작은 것부터 하나씩이에요.', NULL, NULL, '[]', 'choice', '["세 개가 동시에 만들어진다", "`db-0` → `db-1` → `db-2` 순서로 하나씩 만들어지며, 앞의 Pod 가 준비된 뒤에 다음 Pod 를 만든다", "`db-2` 부터 만들어진다", "무작위 순서로 만들어진다"]', 1, '순서가 중요한 앱(예: 대표 노드가 먼저 떠야 하는 복제 구성)에 알맞습니다. 순서가 필요 없다면 `Parallel` 로 바꿀 수 있어요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 3, 'volumeClaimTemplates', 'StatefulSet 의 `volumeClaimTemplates` 는 무엇을 할까요?', '복제본마다 저장소가 따로 필요해요.', NULL, NULL, '[]', 'choice', '["복제본(Pod)마다 PVC 를 하나씩 자동으로 만든다 (`data-db-0`, `data-db-1`, `data-db-2`)", "모든 Pod 가 하나의 PVC 를 공유하게 한다", "PVC 를 삭제한다", "Pod 의 이미지를 정한다"]', 0, '각 Pod 가 자기 전용 저장소를 갖기 때문에 데이터베이스처럼 복제본마다 데이터가 다른 앱에 알맞습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 4, 'Pod 를 지워도 데이터는', '`db-1` 의 `/data` 에 파일을 쓴 뒤 `kubectl delete pod db-1` 을 했습니다. 다시 만들어진 `db-1` 은 어떨까요?', '이름도 저장소도 이어져요.', NULL, NULL, '[]', 'choice', '["새 이름으로 만들어지고 파일은 사라진다", "다른 PVC 에 붙어 파일이 사라진다", "다시 만들어지지 않는다", "같은 이름 `db-1` 로 다시 만들어지고 같은 PVC(`data-db-1`)에 다시 붙어서 파일이 그대로 남아 있다"]', 3, 'Deployment 의 Pod 는 새 이름과 새 임시 저장소를 받지만, StatefulSet 은 이름과 PVC 를 이어 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 5, '스케일 다운과 PVC', 'StatefulSet `db` 를 `replicas: 3` 에서 `1` 로 줄이면 어떻게 될까요?', '번호가 큰 쪽이 먼저 사라지고, 저장소는 남아요.', NULL, NULL, '[]', 'choice', '["`db-0` 부터 삭제된다", "PVC 도 모두 함께 삭제된다", "번호가 큰 `db-2`, `db-1` 이 삭제되고 `db-0` 만 남는다. 그 PVC(`data-db-1`, `data-db-2`)는 삭제되지 않고 남으며, 다시 늘리면 같은 PVC 와 데이터를 그대로 쓴다", "줄이기가 거부된다"]', 2, '데이터를 지키기 위한 동작입니다. 저장소를 정리하려면 PVC 를 직접 삭제해야 해요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 6, 'StatefulSet 을 지우면', '`kubectl delete sts db` 로 StatefulSet 을 지웠습니다. PVC 는 어떻게 될까요?', '데이터를 지키려고 남겨 둬요.', NULL, NULL, '[]', 'choice', '["PVC 도 항상 함께 삭제된다", "Pod 는 사라지지만 PVC(`data-db-0` 등)는 남는다. 필요 없으면 `kubectl delete pvc` 로 직접 지워야 한다", "PVC 가 읽기 전용으로 바뀐다", "Pod 가 남는다"]', 1, '저장소가 남아 있으면 용량을 계속 차지합니다. 정리할 때 PVC 도 확인하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 7, 'Headless Service', 'StatefulSet 과 함께 쓰는 Headless Service(`clusterIP: None`)는 일반 Service 와 무엇이 다를까요?', '하나의 가상 IP 가 없어요.', NULL, NULL, '[]', 'choice', '["하나의 가상 IP 를 주지 않고, 서비스 이름을 조회하면 모든 Pod 의 IP 가 나오며 `db-0.db` 처럼 Pod 하나를 이름으로 직접 가리킬 수 있다", "일반 Service 와 완전히 같다", "외부에서 접속할 수 있는 로드 밸런서이다", "Pod 를 삭제하는 Service 이다"]', 0, '`nslookup db` 는 Pod 3개의 주소를, `nslookup db-0.db` 는 `db-0` 의 주소를 알려 줍니다. 복제 구성에서 특정 Pod 를 지정해 접속할 때 필요해요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 8, 'serviceName 의 역할', 'StatefulSet 의 `serviceName: db` 는 무엇을 뜻할까요?', 'Pod 의 DNS 이름을 만들 때 쓰는 Service 예요.', NULL, NULL, '[]', 'choice', '["StatefulSet 의 이름을 정한다", "Pod 의 이미지를 정한다", "접속할 외부 포트를 정한다", "Pod 의 DNS 이름(`Pod이름.서비스이름`)을 만드는 데 쓰는 Headless Service 의 이름"]', 3, '그 이름의 Headless Service 를 먼저 만들어 둬야 합니다. 없으면 `db-0.db` 같은 이름이 풀리지 않아요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 9, 'Deployment 와 StatefulSet 고르기', '다음 중 StatefulSet 이 알맞은 경우는 무엇일까요?', '이름, 저장소, 순서가 중요한 앱이에요.', NULL, NULL, '[]', 'choice', '["상태가 없고 어느 Pod 가 요청을 받아도 같은 웹 서버", "한 번 실행하고 끝나는 배치 작업", "Pod 마다 고정된 이름과 전용 저장소가 필요하고 시작·종료 순서가 중요한 앱 (데이터베이스, 복제 구성의 저장소 등)", "노드마다 하나씩 띄우는 로그 수집기"]', 2, '상태가 없는 서비스는 Deployment, 끝나는 일은 Job, 노드마다는 DaemonSet 입니다. 상태가 있으면 StatefulSet 을 검토하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 10, 'StatefulSet 의 롤링 업데이트', 'StatefulSet 의 이미지를 바꾸면(기본 `RollingUpdate`) Pod 는 어떤 순서로 교체될까요?', '번호가 큰 쪽부터 하나씩이에요.', NULL, NULL, '[]', 'choice', '["`db-0` 부터 동시에 교체한다", "번호가 큰 Pod 부터 하나씩 교체한다 (`db-2` → `db-1` → `db-0`). 각 Pod 가 준비된 뒤 다음으로 넘어간다", "모든 Pod 를 한꺼번에 삭제하고 새로 만든다", "교체하지 않고 기존 Pod 를 유지한다"]', 1, 'Deployment 보다 느리지만 순서와 안정성을 지킵니다. 업데이트 중 문제가 생기면 번호가 큰 Pod 쪽에서 멈춰요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 11, 'CronJob 의 기본값', 'CronJob 을 만들고 아무것도 정하지 않았을 때 `concurrencyPolicy`, `successfulJobsHistoryLimit`, `failedJobsHistoryLimit`, `suspend` 의 기본값은 무엇일까요?', '겹쳐 실행은 허용되고, 기록은 성공 3개와 실패 1개를 남겨요.', NULL, NULL, '[]', 'choice', '["`concurrencyPolicy: Allow`, 성공 기록 3개, 실패 기록 1개, `suspend: false`", "`Forbid`, 성공 기록 0개, 실패 기록 0개, `suspend: true`", "`Replace`, 성공 기록 10개, 실패 기록 10개, `suspend: false`", "모두 정해진 기본값이 없다"]', 0, '`kubectl get cronjob 이름 -o yaml` 로 기본값이 채워진 것을 볼 수 있습니다. 기록이 쌓이지 않게 정리하는 장치예요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 12, 'concurrencyPolicy', 'CronJob 의 `concurrencyPolicy` 가 `Allow` 와 `Forbid` 일 때 이전 실행이 아직 안 끝난 상태에서 다음 시각이 되면 각각 어떻게 될까요?', '하나는 겹쳐서 실행하고 하나는 건너뛰어요.', NULL, NULL, '[]', 'choice', '["`Allow` 는 건너뛰고 `Forbid` 는 겹쳐 실행한다", "둘 다 이전 Job 을 즉시 종료하고 새로 시작한다", "둘 다 오류로 CronJob 이 삭제된다", "`Allow` 는 새 Job 을 겹쳐서 실행해 동시에 여러 개가 활성이 되고, `Forbid` 는 이전 실행이 끝나기 전까지 새 실행을 건너뛴다 (`JobAlreadyActive` 이벤트)"]', 3, '`Replace` 는 이전 Job 을 끄고 새로 실행하는 방식입니다. 작업이 겹치면 안 되는 백업 같은 일에는 `Forbid` 를 쓰세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 13, 'suspend 와 수동 실행', 'CronJob 을 잠시 멈추고 싶을 때와 지금 한 번 바로 실행해 보고 싶을 때 각각 어떻게 할까요?', '하나는 spec 값, 하나는 --from 옵션이에요.', NULL, NULL, '[]', 'choice', '["멈추려면 CronJob 을 삭제해야 하고 수동 실행은 불가능하다", "멈추려면 `replicas: 0` 을 쓰고 수동 실행은 `kubectl run` 만 가능하다", "멈추려면 `spec.suspend: true` 로 바꾸고(새 Job 이 만들어지지 않는다), 한 번 바로 실행하려면 `kubectl create job 이름 --from=cronjob/이름` 을 쓴다", "두 방법 모두 CronJob 을 다시 만들어야 한다"]', 2, '`suspend` 를 `false` 로 되돌리면 다음 시각부터 다시 실행됩니다. 점검이나 배포 중에 일정 작업을 잠시 멈출 때 유용해요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 14, 'get cronjob 읽기', '`kubectl get cronjob` 의 `SUSPEND`, `ACTIVE`, `LAST SCHEDULE` 열은 각각 무엇을 알려 줄까요?', '멈춤 여부, 지금 실행 중인 개수, 마지막으로 만든 때예요.', NULL, NULL, '[]', 'choice', '["`SUSPEND` 는 실패 횟수, `ACTIVE` 는 성공 횟수, `LAST SCHEDULE` 은 다음 실행 시각", "`SUSPEND` 는 일시 중지 여부, `ACTIVE` 는 지금 실행 중인 Job 의 수, `LAST SCHEDULE` 은 마지막으로 Job 을 만든 시각이다", "`ACTIVE` 는 CPU 사용률이다", "세 열 모두 Pod 의 상태이다"]', 1, '`ACTIVE` 가 2 이상이면 작업이 겹쳐 실행되고 있다는 신호입니다. `LAST SCHEDULE` 이 오래전이면 멈췄거나 일정이 의도와 다른지 확인하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 15, '번호가 붙는 워크로드', 'Pod 에 `db-0`, `db-1` 처럼 **번호가 붙은 고정 이름**을 주는 리소스 종류를 채우세요.', '"상태를 가진 묶음"이라는 뜻의 이름이에요.', NULL, NULL, '[]', 'fill', '["StatefulSet", "StatefulPod", "OrderedSet", "PodSet"]', NULL, '상태가 있는 앱에 씁니다. 상태가 없는 서비스에는 Deployment 가 더 단순해요.', '[0]', 'kind: {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 16, '가상 IP 없는 Service', 'Headless Service 를 만드는 `clusterIP` 값을 채우세요.', '"없음"을 뜻하는 영어 단어예요.', NULL, NULL, '[]', 'fill', '["None", "null", "0", "Headless"]', NULL, '`None` 이면 가상 IP 가 없고 DNS 가 Pod 의 IP 를 직접 돌려줍니다.', '[0]', 'clusterIP: {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 17, 'Pod 마다 PVC 만들기', '복제본마다 **PVC 를 자동으로 만드는** StatefulSet 필드 이름을 채우세요.', '"볼륨 클레임 템플릿"을 이어 붙인 이름이에요.', NULL, NULL, '[]', 'fill', '["volumeClaimTemplates", "claimTemplates", "storageTemplates", "pvcTemplates"]', NULL, '각 템플릿의 `metadata.name` 이 `data` 라면 PVC 이름은 `data-Pod이름` 이 됩니다.', '[0]', '{0}:', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 18, 'Pod 이름을 만드는 Service', 'StatefulSet 이 **Pod 의 DNS 이름을 만드는 데 쓰는 Service** 를 가리키는 필드와 값을 채우세요.', '서비스 이름을 적는 필드예요.', NULL, NULL, '[]', 'fill', '["db", "None", "statefulset", "svc"]', NULL, '값은 미리 만들어 둔 Headless Service 의 이름입니다. 오타가 나면 Pod 이름으로 접속이 안 돼요.', '[0]', 'serviceName: {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 19, '개수 줄이기', 'StatefulSet `db` 를 **1개로 줄이는** 옵션 이름을 채우세요.', '"복제본"을 뜻하는 영어 단어예요.', NULL, NULL, '[]', 'fill', '["replicas", "count", "size", "pods"]', NULL, '번호가 큰 Pod 부터 삭제되고 PVC 는 남습니다.', '[0]', 'kubectl scale sts db --{0}=1', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 20, 'Pod 를 이름으로 조회', 'Headless Service `db` 아래 **첫 번째 Pod 의 DNS 이름**을 조회하려고 합니다. 이름 앞부분을 채우세요.', 'Pod 이름 뒤에 서비스 이름이 붙어요.', NULL, NULL, '[]', 'fill', '["db-0", "db0", "db_0", "0.db"]', NULL, '`Pod이름.서비스이름` 모양입니다. 서비스 이름만 조회하면 모든 Pod 의 주소가 나와요.', '[0]', 'nslookup {0}.db', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 21, 'PVC 목록 보기', 'StatefulSet 이 만든 **저장소 요청 목록**을 보는 대상을 채우세요.', 'persistentvolumeclaim 의 줄임말이에요.', NULL, NULL, '[]', 'fill', '["pvc", "pv-claim", "volume", "disk"]', NULL, 'StatefulSet 을 지운 뒤에도 남아 있는지 확인할 때 씁니다.', '[0]', 'kubectl get {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 22, '1분마다 실행', 'CronJob 을 **1분마다** 실행하려고 합니다. 첫 칸을 채우세요.', '"~마다"는 슬래시를 써요.', NULL, NULL, '[]', 'fill', '["*/1", "1", "*1", "1/*"]', NULL, '`*/1` 은 매분입니다. 그냥 `1` 이라고 쓰면 매시 1분에 한 번만 실행돼요.', '[0]', 'schedule: "{0} * * * *"', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 23, '겹치면 건너뛰기', '이전 실행이 안 끝났으면 **새 실행을 건너뛰는** `concurrencyPolicy` 값을 채우세요.', '"금지하다"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["Forbid", "Block", "Skip", "Deny"]', NULL, '건너뛴 일은 `JobAlreadyActive` 이벤트로 남습니다. `Replace` 는 이전 것을 끄고 새로 시작해요.', '[0]', 'concurrencyPolicy: {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 24, '일정 작업 멈추기', 'CronJob 이 **새 Job 을 만들지 않게** 일시 중지하는 값을 채우세요.', '"참"이라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["true", "pause", "stop", "hold"]', NULL, '`false` 로 되돌리면 다음 시각부터 다시 실행됩니다. 이미 실행 중인 Job 은 멈추지 않아요.', '[0]', 'suspend: {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 25, '지금 한 번 실행', 'CronJob 의 템플릿으로 **지금 바로 한 번** Job 을 만드는 옵션을 채우세요.', '"~로부터"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["from", "copy", "like", "template"]', NULL, '일정을 기다리지 않고 동작을 시험해 볼 수 있습니다. 만들어진 Job 의 소유자는 CronJob 으로 표시돼요.', '[0]', 'kubectl create job manual --{0}=cronjob/tick', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 26, 'StatefulSet 배포하고 확인하기', 'StatefulSet 을 배포하고 순서와 저장소를 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', 'Service → StatefulSet → 순서 확인 → 저장소 확인 순서예요.', NULL, NULL, '[]', 'order', '["`clusterIP: None` 인 Headless Service 를 먼저 적용한다", "StatefulSet 을 적용한다", "`kubectl get pods` 로 `db-0` → `db-1` → `db-2` 순서로 `Running` 이 되는지 본다", "`kubectl get pvc` 로 Pod 마다 `data-db-N` 이 `Bound` 인지 확인한다"]', NULL, 'Headless Service 가 없으면 Pod 의 DNS 이름이 만들어지지 않으니 항상 먼저 만드세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 27, 'Pod 를 지워도 데이터가 남는지 확인', 'StatefulSet 의 Pod 를 지워도 데이터가 남는지 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '쓰기 → 삭제 → 재생성 대기 → 읽기 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl exec db-1 -- sh -c ''echo hi > /data/f''` 로 파일을 쓴다", "`kubectl delete pod db-1` 로 Pod 를 지운다", "같은 이름 `db-1` 이 다시 `Running` 이 될 때까지 기다린다", "`kubectl exec db-1 -- cat /data/f` 로 파일이 그대로 있는지 확인한다"]', NULL, '같은 PVC 에 다시 붙는 것이 StatefulSet 의 핵심입니다. Deployment 의 Pod 라면 파일이 사라졌을 거예요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 28, 'CronJob 을 잠시 멈췄다 재개하기', '점검 동안 CronJob 을 멈췄다가 재개하는 순서입니다. 순서에 맞게 놓아 보세요.', '상태 확인 → 멈춤 → 확인 → 재개 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl get cronjob` 으로 현재 상태를 본다", "`suspend` 를 `true` 로 바꾼다", "`lastScheduleTime` 이 더 이상 바뀌지 않고 새 Job 이 생기지 않는 것을 확인한다", "점검이 끝나면 `suspend` 를 `false` 로 되돌려 다음 시각부터 실행되게 한다"]', NULL, '멈추는 것은 새 실행만 막습니다. 이미 실행 중인 Job 은 끝날 때까지 계속됩니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 163, 29, '겹쳐 실행되는 CronJob 막기', '오래 걸리는 작업이 겹쳐 실행될 때 막는 순서입니다. 순서에 맞게 놓아 보세요.', '증상 확인 → 원인 파악 → 정책 변경 → 결과 확인 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl get cronjob`, `kubectl get jobs` 로 Active 가 2 이상인 것을 확인한다", "작업 시간이 실행 주기보다 길어서 겹친다는 것을 파악한다", "`concurrencyPolicy` 를 `Forbid` 로 바꾼다", "다음 주기에 `JobAlreadyActive` 이벤트가 생기고 겹치지 않는지 확인한다"]', NULL, '근본 해결은 작업을 빠르게 하거나 주기를 늘리는 것입니다. 건너뛴 실행이 있어도 되는지 업무적으로 판단하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 163 AND order_index = 29);

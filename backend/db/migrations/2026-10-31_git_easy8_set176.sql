@@ -1,0 +1,122 @@
+-- Git 세트 176. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set176.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 12, 'Git', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 12);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 176, 'rebase --onto, cherry-pick 옵션, 덩어리 선택(-p), log 필터와 형식, 개인 무시 목록', '이력을 옮기고 골라 보는 도구를 한 개념씩 반복합니다. rebase --onto 로 일부 커밋만 새 기준 위로 옮기는 것과 일반 rebase 와의 차이, cherry-pick 의 -n·-x 와 충돌 시 --continue·--abort, restore -p 와 commit -p 로 덩어리만 되돌리거나 커밋하는 것, log 의 --first-parent·--merges·--no-merges, branch --contains 와 --no-contains, diff --word-diff, log --format 의 자리표시자, --diff-filter 로 삭제·추가·수정·이름 변경 걸러내기, .git/info/exclude 와 .gitignore 의 차이, revert -n, add -N 을 짧은 객관식·빈칸·순서 문제로 익히고, 일부 커밋만 새 기준으로 옮기기, cherry-pick 충돌 해결, 파일의 일부 변경만 버리기, 삭제된 파일 되살리기의 순서를 연습합니다.', 'quiz', 'Git'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 176);
+UPDATE quest_set SET display_order = 405, unit_id = (SELECT id FROM unit WHERE id = 12), icon = '🔀' WHERE id = 176;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 1, 'rebase --onto', '`main` 에서 `feat1`(커밋 C, D)이 갈라졌고, `feat1` 에서 `feat2`(커밋 E, F)가 갈라졌습니다. `git rebase --onto main feat1 feat2` 와 그냥 `git rebase main feat2` 의 결과는 어떻게 다를까요?', '--onto 는 옮길 범위의 시작을 따로 정해요.', NULL, NULL, '[]', 'choice', '["둘 다 `F E D C M B A` 가 된다", "둘 다 `F E M B A` 가 된다", "`--onto main feat1 feat2` 는 `feat1` 이후의 커밋(E, F)만 `main` 위로 옮겨 `F E M B A` 가 되고, 그냥 `rebase main` 은 `feat1` 의 커밋(C, D)까지 모두 가져가 `F E D C M B A` 가 된다", "`--onto` 는 `main` 을 삭제한다"]', 2, '형식은 `git rebase --onto 새기준 옛기준 브랜치` 입니다. 옛기준 이후부터 브랜치 끝까지의 커밋만 새기준 위로 옮겨요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 2, '--onto 뒤의 브랜치들', '`git rebase --onto main feat1 feat2` 를 실행한 뒤 `feat1` 브랜치와 `feat2` 의 파일은 어떻게 될까요?', '옮겨진 것은 feat2 뿐이에요.', NULL, NULL, '[]', 'choice', '["`feat1` 도 함께 `main` 위로 옮겨진다", "`feat1` 은 그대로(`D C B A`)이고, `feat2` 는 `main` 위로 옮겨져 C, D 의 파일(`c.txt`, `d.txt`)이 없고 E, F 의 파일만 더해진 상태가 된다", "`feat2` 가 삭제된다", "`feat2` 에 C, D 의 파일이 그대로 있다"]', 1, '옮기기 전에 `git branch 백업이름 feat2` 처럼 백업 브랜치를 만들어 두면 실수해도 되돌리기 쉽습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 3, 'cherry-pick -n', '`git cherry-pick -n 커밋` 을 실행하면 어떻게 될까요?', '-n 은 커밋하지 말라는 뜻이에요.', NULL, NULL, '[]', 'choice', '["커밋을 만들지 않고 그 커밋의 변경만 작업 폴더와 스테이징 영역에 가져온다 (`git status` 에 `A  D.txt` 처럼 스테이징된 변경으로 보이고 `HEAD` 는 그대로이다)", "자동으로 새 커밋이 만들어진다", "원래 커밋이 삭제된다", "충돌이 항상 난다"]', 0, '여러 커밋의 변경을 하나의 커밋으로 모아서 만들고 싶을 때 씁니다. 취소하려면 `git reset --hard` 로 되돌릴 수 있어요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 4, 'cherry-pick -x', '`git cherry-pick -x 커밋` 으로 만든 커밋의 메시지는 어떻게 달라질까요?', '원본이 어디인지 남겨 줘요.', NULL, NULL, '[]', 'choice', '["메시지가 비어 있게 된다", "`fixup!` 이 앞에 붙는다", "작성자가 바뀐다", "원래 메시지 끝에 `(cherry picked from commit 원본해시)` 줄이 덧붙는다"]', 3, '여러 브랜치로 같은 수정을 가져갈 때 출처를 추적하기 쉬워집니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 5, 'cherry-pick 충돌', '`main` 과 `b1` 이 모두 `conf.txt` 를 새로 만든 상태에서 `git cherry-pick b1` 을 하면 충돌이 납니다. 상태를 어떻게 읽고 어떻게 이어 가거나 취소할까요?', '충돌 해결 후 --continue, 포기는 --abort 예요.', NULL, NULL, '[]', 'choice', '["`--continue` 는 충돌 파일을 자동으로 합친다", "`--abort` 를 해도 충돌 표시가 남는다", "`git status --short` 에 `AA conf.txt` (양쪽에서 추가)처럼 나온다. 파일을 고치고 `git add` 한 뒤 `git cherry-pick --continue` 로 원래 메시지(`b1 conf`)의 커밋을 만들고, 포기하려면 `git cherry-pick --abort` 로 시작 전 상태로 돌아간다", "충돌이 나면 `cherry-pick` 은 사용할 수 없다"]', 2, '`--abort` 를 하면 변경이 하나도 남지 않고 `HEAD` 도 처음 위치로 돌아옵니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 6, 'restore -p', '한 파일에서 서로 떨어진 두 곳을 고친 뒤 `git restore -p 파일` 에서 첫 덩어리는 `y`, 두 번째는 `n` 이라고 답했습니다. 결과는?', 'y 한 덩어리만 되돌려요.', NULL, NULL, '[]', 'choice', '["두 변경이 모두 되돌려진다", "첫 번째 변경만 되돌려져(작업 폴더에서 원래 값으로 복원) 사라지고, 두 번째 변경은 그대로 남아 `git diff` 에 보인다", "두 변경이 모두 그대로 남는다", "파일이 삭제된다"]', 1, '`git add -p` 와 같은 방식의 대화형 선택입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 7, 'commit -p', '수정한 두 덩어리 중 첫 번째에 `y`, 두 번째에 `n` 으로 답하며 `git commit -p -m "메시지"` 를 실행하면 어떻게 될까요?', '고른 덩어리만 커밋돼요.', NULL, NULL, '[]', 'choice', '["첫 번째 덩어리만 커밋에 들어가고, 두 번째 변경은 커밋되지 않은 채 작업 폴더의 수정으로 남는다", "두 덩어리가 모두 커밋된다", "아무것도 커밋되지 않는다", "두 번째 덩어리가 삭제된다"]', 0, '`git add -p` 후 `git commit` 을 한 번에 하는 방법입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 8, 'log --first-parent', '`side` 브랜치를 병합 커밋으로 합친 `main` 에서 `git log --first-parent` 는 기본 `git log` 와 무엇이 다를까요?', '병합 커밋의 첫 번째 부모만 따라가요.', NULL, NULL, '[]', 'choice', '["기본 log 와 항상 똑같다", "`side` 의 커밋만 보여 준다", "병합 커밋만 보여 준다", "병합 커밋의 첫 번째 부모(`main` 쪽)만 따라가므로 `side` 에서 만든 개별 커밋(`S1`)은 건너뛰고 `main` 의 줄기(병합 커밋 포함)만 보여 준다"]', 3, '병합 방식으로 협업하는 저장소에서 ''무엇이 main 에 들어왔는가''를 볼 때 유용합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 9, '--merges 와 --no-merges', '병합 커밋이 하나 있는 이력(전체 8개 커밋)에서 `git log --merges` 와 `git log --no-merges` 는 각각 몇 개를 보여 줄까요?', '병합 커밋이냐 아니냐로 나눠요.', NULL, NULL, '[]', 'choice', '["`--merges` 는 7개, `--no-merges` 는 1개이다", "둘 다 8개를 보여 준다", "`--merges` 는 병합 커밋만(1개), `--no-merges` 는 병합 커밋을 뺀 나머지(7개)를 보여 준다", "`--merges` 는 브랜치 병합을 실행한다"]', 2, '`--merges` 는 이름과 달리 병합을 실행하지 않고 병합 커밋만 골라 보여 줄 뿐입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 10, 'branch --contains', '`git branch --contains 커밋` 과 `git branch --no-contains 커밋` 은 각각 무엇을 보여 줄까요?', '그 커밋이 브랜치의 이력에 있는지로 걸러요.', NULL, NULL, '[]', 'choice', '["`--contains` 는 이름에 그 글자가 든 브랜치이다", "`--contains` 는 그 커밋을 이력에 포함한 브랜치(병합된 브랜치 포함), `--no-contains` 는 포함하지 않은 브랜치를 보여 준다", "둘 다 원격 브랜치만 보여 준다", "`--no-contains` 는 브랜치를 삭제한다"]', 1, '`git tag --contains 커밋` 으로 어느 릴리스에 이 수정이 들어갔는지 확인할 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 11, 'diff --word-diff', '`the quick brown fox` 를 `the slow brown fox` 로 바꾼 뒤 `git diff --word-diff` 를 하면 어떻게 보일까요?', '줄이 아니라 단어 단위로 보여 줘요.', NULL, NULL, '[]', 'choice', '["`the [-quick-]{+slow+} brown fox` 처럼 한 줄 안에서 지워진 단어는 `[-...-]`, 더해진 단어는 `{+...+}` 로 보여 준다", "`-the quick brown fox` 와 `+the slow brown fox` 두 줄로만 보여 준다", "바뀐 글자 수만 보여 준다", "아무것도 보여 주지 않는다"]', 0, '긴 문장이나 문서에서 바뀐 단어를 찾기 쉽습니다. 기본 `git diff` 는 줄 단위예요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 12, 'log --format 자리표시자', '`git log -1 --format=''%H %h %s %an <%ae> %d''` 의 각 자리표시자는 무엇을 뜻할까요?', '해시, 제목, 작성자, 이메일이에요.', NULL, NULL, '[]', 'choice', '["`%H` 는 줄인 해시이고 `%h` 는 전체 해시이다", "`%s` 는 커밋 본문 전체이다", "`%an` 은 커밋 개수이다", "`%H` 는 전체 해시(40자), `%h` 는 줄인 해시, `%s` 는 커밋 제목, `%an` 은 작성자 이름, `%ae` 는 작성자 이메일, `%d` 는 `(HEAD -> main)` 같은 브랜치·태그 표시이다"]', 3, '`--oneline` 은 `%h %s` 와 비슷한 형식입니다. 스크립트에서 값을 뽑을 때 `--format=%H` 처럼 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 13, '--diff-filter', '`git log --diff-filter=D --name-only --format=` 은 무엇을 보여 줄까요? `A`, `M`, `R` 은 각각 무엇을 뜻할까요?', '변경의 종류로 걸러요.', NULL, NULL, '[]', 'choice', '["`D` 는 diff 를 끄는 옵션이다", "`--diff-filter` 는 파일 내용으로 거른다", "이력에서 삭제된 파일 이름만 보여 준다. `A` 는 추가, `M` 은 수정, `R` 은 이름 변경(`R100 옛이름 새이름` 처럼 유사도와 함께 표시)이다", "`A` 는 모든 파일을 뜻한다"]', 2, '`git log --diff-filter=D --format=%s -- 파일` 로 그 파일을 삭제한 커밋의 제목을 찾을 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 14, '.git/info/exclude', '`.gitignore` 와 `.git/info/exclude` 의 차이는 무엇일까요?', '하나는 저장소에 올라가고, 하나는 내 컴퓨터에만 있어요.', NULL, NULL, '[]', 'choice', '["둘 다 커밋되어 팀과 공유된다", "`.gitignore` 는 커밋되어 팀과 공유되고, `.git/info/exclude` 는 `.git` 안에 있어 커밋되지 않는 개인용 무시 목록이다. `git check-ignore -v 파일` 로 어느 파일의 몇 번째 줄 규칙이 적용됐는지 볼 수 있다", "`.git/info/exclude` 는 원격 저장소에서만 쓰인다", "`.gitignore` 는 개인용이고 `exclude` 는 팀용이다"]', 1, '내 편집기 설정 파일처럼 팀과 공유할 필요 없는 무시 규칙을 둘 때 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 15, '옮길 범위 정하기', '`feat1` 이후의 `feat2` 커밋만 `main` 위로 옮기는 `rebase` 옵션을 채우세요.', '"~ 위로"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["--onto", "--into", "--over", "--above"]', NULL, '형식은 `--onto 새기준 옛기준 브랜치` 입니다.', '[0]', 'git rebase {0} main feat1 feat2', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 16, '커밋 없이 가져오기', '다른 커밋의 변경을 **커밋하지 않고** 가져오는 `cherry-pick` 옵션을 채우세요.', '"no commit"의 n 이에요.', NULL, NULL, '[]', 'fill', '["-n", "-x", "-e", "-s"]', NULL, '스테이징 영역에 변경이 쌓입니다.', '[0]', 'git cherry-pick {0} 커밋', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 17, '출처 남기기', '`cherry-pick` 한 커밋의 메시지에 **원본 해시를 덧붙이는** 옵션을 채우세요.', '"x"예요.', NULL, NULL, '[]', 'fill', '["-x", "-n", "-m", "-a"]', NULL, '`(cherry picked from commit ...)` 줄이 붙습니다.', '[0]', 'git cherry-pick {0} 커밋', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 18, '일부만 되돌리기', '변경을 **덩어리 단위로 골라** 되돌리는 `restore` 옵션을 채우세요.', '"patch"의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-p", "-s", "-w", "-i"]', NULL, 'y(되돌리기)와 n(건너뛰기)으로 덩어리마다 고릅니다.', '[0]', 'git restore {0} big.txt', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 19, '줄기만 따라가기', '병합 커밋의 **첫 번째 부모만** 따라가며 이력을 보는 `log` 옵션을 채우세요.', '"첫 번째 부모"를 이어 붙인 이름이에요.', NULL, NULL, '[]', 'fill', '["--first-parent", "--main-only", "--no-branches", "--trunk"]', NULL, '병합된 브랜치의 개별 커밋은 건너뜁니다.', '[0]', 'git log {0} --format=%s', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 20, '병합 커밋만 보기', '**병합 커밋만** 골라 보는 `log` 옵션을 채우세요.', '"병합들"이라는 뜻이에요.', NULL, NULL, '[]', 'fill', '["--merges", "--joined", "--only-merge", "--merged"]', NULL, '반대로 병합 커밋을 빼려면 `--no-merges` 를 씁니다.', '[0]', 'git log {0} --format=%s', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 21, '포함하는 브랜치 찾기', '특정 커밋을 **이력에 포함한 브랜치**를 찾는 `branch` 옵션을 채우세요.', '"포함하다"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["--contains", "--has", "--includes", "--with"]', NULL, '`git tag --contains 커밋` 으로 태그도 찾을 수 있습니다.', '[0]', 'git branch {0} 커밋', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 22, '단어 단위로 비교', '변경을 **단어 단위**로 보여 주는 `diff` 옵션을 채우세요.', '"단어 diff"를 이어 붙인 이름이에요.', NULL, NULL, '[]', 'fill', '["--word-diff", "--words", "--by-word", "--token-diff"]', NULL, '`[-지워진-]{+더해진+}` 형식으로 보입니다.', '[0]', 'git diff {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 23, '삭제된 파일 찾기', '이력에서 **삭제된 파일**만 걸러 내는 `--diff-filter` 값을 채우세요.', '"Deleted"의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["D", "A", "M", "R"]', NULL, '`A` 는 추가, `M` 은 수정, `R` 은 이름 변경입니다.', '[0]', 'git log --diff-filter={0} --name-only --format=', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 24, '커밋 없이 되돌리기', '커밋을 만들지 않고 **변경만 되돌려 놓는** `revert` 옵션을 채우세요.', '"no commit"의 n 이에요.', NULL, NULL, '[]', 'fill', '["-n", "-m", "-e", "-s"]', NULL, '되돌린 변경이 스테이징되고 커밋은 직접 만듭니다.', '[0]', 'git revert {0} HEAD', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 25, '추적 예정으로 표시', '새 파일을 내용 없이 **추적 대상으로만 표시**해 `git diff` 에 나타나게 하는 `add` 옵션을 채우세요.', '"intent to add"의 줄임이에요.', NULL, NULL, '[]', 'fill', '["-N", "-n", "-p", "-u"]', NULL, '`git status --short` 에 ` A new.txt` 로 보입니다.', '[0]', 'git add {0} new.txt', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 26, '일부 커밋만 새 기준으로 옮기기', '`feat2` 에서 `feat1` 의 커밋을 빼고 자기 커밋만 `main` 위로 옮기는 순서입니다. 순서에 맞게 놓아 보세요.', '범위 확인 → 기준 확인 → 옮기기 → 결과 확인 순서예요.', NULL, NULL, '[]', 'order', '["`git log --oneline main..feat2` 로 `feat1` 의 커밋까지 섞여 있는 것을 확인한다", "옮기지 않을 아래쪽 브랜치가 `feat1` 인 것을 확인한다", "`git rebase --onto main feat1 feat2` 로 옮긴다", "`git log --format=%s feat2` 로 `feat1` 의 커밋이 빠지고 `feat2` 의 커밋만 `main` 위에 있는지 확인한다"]', NULL, '옮기기 전에 백업 브랜치를 만들어 두면 안전합니다. 이미 공유한 브랜치는 이력이 바뀌니 주의하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 27, 'cherry-pick 충돌 해결하기', '`cherry-pick` 중 충돌이 났을 때 해결하고 마무리하는 순서입니다. 순서에 맞게 놓아 보세요.', '시도 → 수정 → 담기 → 이어 가기 순서예요.', NULL, NULL, '[]', 'order', '["`git cherry-pick 커밋` 을 하고 `git status --short` 에서 충돌(`AA` 등)을 확인한다", "충돌 파일을 열어 원하는 내용으로 고친다", "`git add 파일` 로 해결했음을 알린다", "`git cherry-pick --continue` 로 원래 메시지의 커밋을 만든다"]', NULL, '중간에 포기하려면 `git cherry-pick --abort` 로 시작 전 상태로 돌아갑니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 28, '파일의 일부 변경만 버리기', '한 파일의 여러 변경 중 일부만 골라 버리는 순서입니다. 순서에 맞게 놓아 보세요.', '확인 → 선택 시작 → 고르기 → 남은 것 확인 순서예요.', NULL, NULL, '[]', 'order', '["`git diff` 로 어떤 덩어리들이 있는지 확인한다", "`git restore -p 파일` 을 실행한다", "버릴 덩어리에는 `y`, 남길 덩어리에는 `n` 으로 답한다", "`git diff` 로 남기기로 한 변경만 남았는지 확인한다"]', NULL, '버린 변경은 되돌릴 수 없으니 먼저 `git stash` 나 임시 커밋으로 백업해 둘 수도 있습니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 176, 29, '삭제된 파일 되살리기', '이력 어딘가에서 삭제된 파일을 찾아 되살리는 순서입니다. 순서에 맞게 놓아 보세요.', '삭제 목록 → 삭제한 커밋 → 내용 확인 → 복원 순서예요.', NULL, NULL, '[]', 'order', '["`git log --diff-filter=D --name-only --format=` 로 삭제된 파일 목록을 본다", "`git log --diff-filter=D --format=%s -- 파일` 로 삭제한 커밋을 찾는다", "`git show 삭제커밋~1:파일` 로 삭제되기 전 내용을 확인한다", "`git restore --source=삭제커밋~1 파일` 로 작업 폴더에 되살린다"]', NULL, '되살린 파일은 새 변경이므로 `git add`, `git commit` 으로 기록하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 176 AND order_index = 29);
