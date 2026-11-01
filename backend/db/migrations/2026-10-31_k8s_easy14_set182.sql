@@ -1,0 +1,122 @@
+-- k8s 세트 182. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set182.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크로드와 설정', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 7);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 182, 'kubectl 로그와 디버깅 도구: logs 옵션, exec, cp, port-forward, events, debug', 'Pod 안을 들여다보는 kubectl 도구를 한 개념씩 반복합니다. logs 의 컨테이너 선택과 Defaulted container 안내, --tail·--limit-bytes·--since·--timestamps, --all-containers 와 --prefix, logs deploy/이름 과 라벨 셀렉터(-l)로 여러 Pod 보기와 Pod 당 기본 10줄, -f 와 --previous 가 실패할 때, exec 의 -- 표기와 종료 코드 전달·-i·-c, cp 의 업로드·다운로드 방향과 오류, port-forward 의 대상 형식과 실패, events 의 --sort-by·--field-selector·-A·--watch, kubectl debug 의 임시 컨테이너와 --target·--copy-to 를 짧은 객관식·빈칸·순서 문제로 익히고, 재시작하는 Pod 의 원인 로그 보기, 여러 Pod 의 로그 한꺼번에 보기, Pod 와 파일 주고받기, port-forward 로 Pod 서비스 확인하기의 순서를 연습합니다.', 'quiz', 'k8s'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 182);
+UPDATE quest_set SET display_order = 249, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '🔍' WHERE id = 182;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 1, 'logs 와 컨테이너 선택', '컨테이너가 하나인 Pod 에 `kubectl logs` 를 하면 표준 출력과 표준 오류가 어떻게 나올까요? 컨테이너가 둘(`app`, `side`)인 Pod 에 `-c` 없이 하면요? 없는 이름을 `-c` 로 주면요?', '컨테이너가 둘이면 하나를 골라 줘요.', NULL, NULL, '[]', 'choice', '["표준 오류는 `logs` 에 나오지 않는다", "컨테이너가 둘이면 두 컨테이너 로그가 합쳐져 나온다", "표준 출력과 표준 오류가 함께 나온다. 컨테이너가 둘이면 `Defaulted container \\"app\\" out of: app, side` 안내와 함께 첫 컨테이너의 로그가 나오고, 없는 이름은 `container nosuch is not valid for pod ... out of: app, side` 오류이다", "없는 컨테이너 이름은 조용히 무시된다"]', 2, '`-c 이름` 으로 컨테이너를 정하고, 컨테이너 이름은 `kubectl get pod 이름 -o jsonpath` 나 `describe` 로 확인합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 2, '--tail 과 --limit-bytes', '`kubectl logs Pod -c app --tail=3`, `--tail=0`, `--limit-bytes=20` 은 각각 무엇을 보여 줄까요?', '개수와 바이트로 줄여요.', NULL, NULL, '[]', 'choice', '["`--tail=0` 은 모든 줄을 보여 준다", "`--tail=3` 은 마지막 3줄, `--tail=0` 은 아무것도 보여 주지 않고(새 줄을 기다릴 때 `-f` 와 함께 쓴다), `--limit-bytes=20` 은 처음 20바이트까지만 보여 준다", "`--limit-bytes=20` 은 마지막 20바이트를 보여 준다", "`--tail=3` 은 처음 3줄을 보여 준다"]', 1, '로그가 매우 많은 Pod 에서는 `--tail` 로 줄여 보는 것이 편합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 3, '--since 와 --timestamps', '`kubectl logs Pod --since=5s` 와 `--timestamps` 는 각각 무엇을 할까요?', '시간으로 거르고, 시각을 붙여요.', NULL, NULL, '[]', 'choice', '["`--since=5s` 는 최근 5초 동안의 로그만 보여 주고(`5m`, `1h` 도 쓴다), `--timestamps` 는 각 줄 앞에 `2026-11-01T...` 형식의 시각을 붙인다", "`--since=5s` 는 5초 뒤의 로그를 기다린다", "`--timestamps` 는 로그를 시간순으로 정렬해 저장한다", "`--since` 는 `kubectl logs` 에서 쓸 수 없다"]', 0, '문제가 생긴 시각 근처만 보고 싶을 때 `--since` 와 `--timestamps` 를 함께 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 4, '--all-containers 와 --prefix', '컨테이너가 둘인 Pod 에서 `kubectl logs Pod --all-containers --prefix --tail=1` 은 무엇을 보여 줄까요?', '컨테이너마다 한 줄씩, 이름을 앞에 붙여요.', NULL, NULL, '[]', 'choice', '["첫 컨테이너의 로그만 보여 준다", "`--prefix` 는 로그 파일 이름을 정한다", "`--all-containers` 는 오류가 난다", "모든 컨테이너의 로그를 함께 보여 주고, `--prefix` 가 각 줄 앞에 `[pod/Pod이름/컨테이너이름]` 을 붙여 어느 컨테이너의 로그인지 알 수 있게 한다"]', 3, '사이드카가 있는 Pod 에서 두 로그를 한꺼번에 볼 때 편합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 5, 'logs deploy/이름', '`kubectl logs deploy/web` 은 Pod 가 2개일 때 어떻게 동작할까요? 모든 Pod 의 로그를 보려면?', 'Deployment 의 Pod 중 하나를 골라요.', NULL, NULL, '[]', 'choice', '["모든 Pod 의 로그를 합쳐 보여 준다", "Deployment 에는 `logs` 를 쓸 수 없다", "Pod 하나를 골라 `Found 2 pods, using pod/...` 안내와 함께 그 로그를 보여 준다. 모든 Pod 의 로그는 `-l app=web` 처럼 라벨 셀렉터로 본다", "항상 가장 오래된 Pod 의 로그를 보여 준다"]', 2, '특정 Pod 의 로그가 필요하면 `kubectl get pods -l app=web` 으로 이름을 찾아 `logs Pod이름` 을 쓰세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 6, '라벨 셀렉터로 여러 Pod 로그 보기', '`kubectl logs -l app=web -c app` 으로 Pod 2개의 로그를 볼 때 `--tail` 을 정하지 않으면 몇 줄이 나올까요? 어느 Pod 의 줄인지 어떻게 구분할까요?', '셀렉터를 쓰면 기본 줄 수가 줄어요.', NULL, NULL, '[]', 'choice', '["모든 로그가 처음부터 끝까지 나온다", "셀렉터를 쓰면 기본으로 Pod 마다 최근 10줄씩만 나온다(2개 Pod 에서 20줄). `--prefix` 를 붙이면 `[pod/이름/app]` 로 구분되고, 컨테이너가 여럿이면 `-c` 로 정해야 한다", "Pod 와 상관없이 총 10줄만 나온다", "`--prefix` 는 셀렉터와 함께 쓸 수 없다"]', 1, '더 보고 싶으면 `--tail=100` 처럼 줄 수를 직접 정하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 7, 'logs -f', '`kubectl logs -f Pod -c app --tail=0` 은 무엇을 할까요?', '끝없이 따라가요.', NULL, NULL, '[]', 'choice', '["기존 로그는 보여 주지 않고, 명령이 실행되는 동안 새로 생기는 줄을 계속 출력한다 (4초 동안 새 줄이 4줄 나온다). 멈추려면 `Ctrl+C` 를 누른다", "기존 로그를 모두 출력하고 바로 종료한다", "Pod 를 재시작한다", "로그를 파일로 저장한다"]', 0, '`-f` 는 follow 의 약자입니다. 새 배포가 잘 도는지 지켜볼 때 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 8, '--previous 가 실패할 때', '재시작한 적이 없는 컨테이너에 `kubectl logs Pod --previous` 를 하면 어떻게 될까요?', '이전 컨테이너가 있어야 해요.', NULL, NULL, '[]', 'choice', '["현재 컨테이너의 로그를 대신 보여 준다", "빈 출력으로 성공한다", "Pod 가 삭제된다", "`previous terminated container \\"c\\" in pod \\"solo\\" not found` 라는 BadRequest 오류가 난다 (`--previous` 는 직전에 종료된 컨테이너의 로그를 보는 옵션이라 그런 컨테이너가 있을 때만 동작한다)"]', 3, '`CrashLoopBackOff` 처럼 재시작이 반복될 때 직전 실행의 로그를 보는 데 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 9, 'kubectl exec 쓰는 법', '`kubectl exec solo -- echo hi`, `kubectl exec solo echo a`, `kubectl exec solo -- sh -c ''exit 7''` 는 각각 어떻게 될까요?', '-- 앞은 kubectl 옵션, 뒤는 컨테이너 안의 명령이에요.', NULL, NULL, '[]', 'choice', '["둘째도 `a` 를 출력한다", "셋째의 종료 코드는 항상 0 이다", "첫째는 `hi` 를 출력한다. 둘째는 `exec [POD] [COMMAND] is not supported anymore. Use exec [POD] -- [COMMAND]` 오류이고, 셋째는 컨테이너 안 명령의 종료 코드 7 이 `kubectl exec` 의 종료 코드로 그대로 전달된다", "`--` 는 쓰면 오류가 난다"]', 2, '컨테이너가 둘 이상이면 `-c 이름` 으로 고르고, 없으면 `Defaulted container ...` 안내와 함께 첫 컨테이너가 선택됩니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 10, 'exec 로 컨테이너 안 확인하기', '`kubectl exec solo -- hostname`, `echo piped | kubectl exec -i solo -- cat`, `kubectl exec solo -- ps` 에서 무엇을 알 수 있을까요? 없는 명령을 실행하면요?', '-i 는 입력을 넘겨요.', NULL, NULL, '[]', 'choice', '["`hostname` 은 노드 이름과 같다", "`hostname` 은 Pod 이름과 같고, `-i` 를 쓰면 표준 입력(`piped`)이 컨테이너의 명령으로 전달되며, `ps` 의 PID 1 은 컨테이너를 시작한 명령(`sh -c ...`)이다. 없는 명령은 `error executing command in container` 오류와 0 이 아닌 종료 코드(여기서는 1)로 끝난다", "`-i` 없이도 표준 입력이 전달된다", "없는 명령도 종료 코드 0 으로 끝난다"]', 1, '대화형 셸이 필요하면 `-it` 를 쓰지만, 스크립트에서는 `-i` 만 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 11, 'kubectl cp', '`kubectl cp /tmp/up.txt solo:/tmp/up.txt` 와 `kubectl cp solo:/tmp/down.txt /tmp/down.txt` 는 각각 어느 방향으로 복사할까요? 컨테이너 지정, 디렉터리, 네임스페이스 지정은 어떻게 쓸까요?', 'Pod 쪽은 `Pod이름:경로` 로 써요.', NULL, NULL, '[]', 'choice', '["첫째는 로컬에서 Pod 로(업로드), 둘째는 Pod 에서 로컬로(다운로드) 복사한다. `-c 컨테이너` 로 컨테이너를 정하고, 디렉터리도 복사되며, 네임스페이스는 `ns/Pod:경로` 형식으로 쓴다. 없는 원격 경로는 `tar: ... No such file or directory` 오류가 난다", "Pod 쪽 경로는 `/Pod이름/경로` 로 쓴다", "`kubectl cp` 는 디렉터리를 복사할 수 없다", "항상 로컬에서 Pod 로만 복사된다"]', 0, '`tar: removing leading ''/'' from member names` 안내는 정상입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 12, 'kubectl port-forward', '`kubectl port-forward pod/solo 18083:8080` 을 실행해 두면 무엇이 가능해질까요? 어떤 대상 형식을 쓸 수 있고, 실패는 어떤 경우일까요?', '로컬 포트가 Pod 포트로 이어져요.', NULL, NULL, '[]', 'choice', '["클러스터 밖에서 누구나 접속할 수 있는 영구 포트가 열린다", "Pod 의 포트가 바뀐다", "로컬 포트는 항상 Pod 포트와 같아야 한다", "`localhost:18083` 으로 보낸 요청이 Pod 의 8080 포트로 전달되고(예: `wget http://localhost:18083`), 명령이 실행되는 동안에만 유지된다. `pod/이름`, `svc/이름`, `deploy/이름` 형식을 쓸 수 있고, 없는 Pod 는 `NotFound`, 로컬 포트가 이미 쓰이면 `Unable to listen on port` 오류가 난다"]', 3, '`Forwarding from ... -> 8080` 줄이 나오면 연결된 것입니다. 디버깅용이라 운영 노출에는 쓰지 않습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 13, '이벤트 거르기', '`kubectl get events --sort-by=.lastTimestamp`, `--field-selector type=Warning`, `-A`, `--watch` 는 각각 무엇을 할까요? `describe` 에서는 어디에 보일까요?', '필드로 거르고 시간으로 정렬해요.', NULL, NULL, '[]', 'choice', '["`--field-selector` 는 이벤트에는 쓸 수 없다", "`-A` 는 현재 네임스페이스만 보여 준다", "`--sort-by=.lastTimestamp` 는 마지막 발생 시각 순으로 정렬하고, `type=Warning`(또는 `reason=Failed`)은 그 이벤트만 보여 주며, `-A` 는 모든 네임스페이스, `--watch` 는 기존 이벤트를 출력한 뒤 새 이벤트를 계속 기다린다. `kubectl describe` 의 `Events:` 부분에도 보인다", "이벤트는 `describe` 에 나오지 않는다"]', 2, '컬럼은 `LAST SEEN`, `TYPE`, `REASON`, `OBJECT`, `MESSAGE` 입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 14, 'kubectl debug', '`kubectl debug solo --image=busybox:1.36 -c dbg --target=c -- sleep 600` 은 무엇을 할까요? 실행 후 Pod 의 `READY` 와 `containers` 는 어떻게 될까요? `--copy-to` 는요?', '원래 컨테이너는 건드리지 않고 도구 컨테이너를 붙여요.', NULL, NULL, '[]', 'choice', '["원래 컨테이너를 재시작한다", "실행 중인 Pod 에 임시(ephemeral) 컨테이너 `dbg` 를 추가한다. `spec.ephemeralContainers` 에 나타나고 `READY` 는 `1/1` 그대로이며 `spec.containers` 도 바뀌지 않는다. `--target=c` 를 주면 대상 컨테이너의 프로세스(`sleep 3600`)가 `ps` 에 보이고, `--copy-to=이름` 은 복사본 Pod 를 만든다(이때 라벨은 복사되지 않는다)", "`--target` 없이도 항상 대상 프로세스가 보인다", "`--copy-to` 는 라벨까지 모두 복사한다"]', 1, '`kubectl exec Pod -c dbg -- ...` 로 임시 컨테이너 안에서 명령을 실행합니다. 셸이나 도구가 없는 이미지를 점검할 때 유용합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 15, '컨테이너 고르기', '`kubectl logs` 에서 **컨테이너를 고르는** 옵션을 채우세요.', '"container"의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-c", "-n", "-l", "-p"]', NULL, '컨테이너가 하나뿐인 Pod 는 `-c` 를 생략해도 됩니다.', '[0]', 'kubectl logs web-pod {0} app', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 16, '마지막 몇 줄', '로그의 **마지막 5줄**만 보는 옵션 이름을 채우세요.', '"꼬리"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["tail", "last", "lines", "head"]', NULL, '`--tail=0` 은 아무것도 보여 주지 않습니다.', '[0]', 'kubectl logs web-pod --{0}=5', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 17, '최근 시간만', '**최근 5분**의 로그만 보는 옵션 이름을 채우세요.', '"~ 이후"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["since", "after", "from", "recent"]', NULL, '`5s`, `5m`, `1h` 처럼 단위를 씁니다.', '[0]', 'kubectl logs web-pod --{0}=5m', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 18, '시각 붙이기', '로그 각 줄 앞에 **시각을 붙이는** 옵션 이름을 채우세요.', '"timestamp"의 복수형이에요.', NULL, NULL, '[]', 'fill', '["timestamps", "time", "date", "clock"]', NULL, '`2026-11-01T...` 형식의 시각이 붙습니다.', '[0]', 'kubectl logs web-pod --{0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 19, '모든 컨테이너', 'Pod 의 **모든 컨테이너** 로그를 함께 보는 옵션을 채우세요.', '"all"과 "containers"를 이어요.', NULL, NULL, '[]', 'fill', '["--all-containers", "--all", "-a", "--every"]', NULL, '`--prefix` 와 함께 쓰면 컨테이너를 구분할 수 있습니다.', '[0]', 'kubectl logs {0} web-pod', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 20, '계속 따라가기', '로그를 **계속 따라가며** 새 줄을 출력하는 옵션을 채우세요.', '"follow"의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["f", "w", "t", "r"]', NULL, '멈추려면 `Ctrl+C` 입니다.', '[0]', 'kubectl logs -{0} web-pod', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 21, '이전 컨테이너 로그', '재시작되기 전 **직전 컨테이너의 로그**를 보는 옵션을 채우세요.', '"이전의"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["previous", "before", "last", "old"]', NULL, '재시작한 적이 없으면 BadRequest 오류가 납니다.', '[0]', 'kubectl logs web-pod --{0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 22, '명령 구분자', '`kubectl exec` 에서 **kubectl 옵션과 컨테이너 안의 명령을 나누는** 표기를 채우세요.', '하이픈 두 개예요.', NULL, NULL, '[]', 'fill', '["--", "-c", "-i", ":"]', NULL, '생략하면 `is not supported anymore` 오류가 납니다.', '[0]', 'kubectl exec web-pod {0} echo hi', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 23, '파일 복사', '로컬 파일을 Pod 로, 또는 Pod 의 파일을 로컬로 **복사하는** `kubectl` 하위 명령을 채우세요.', '"copy"의 줄임이에요.', NULL, NULL, '[]', 'fill', '["cp", "copy", "scp", "push"]', NULL, 'Pod 쪽은 `Pod이름:경로` 로 씁니다.', '[0]', 'kubectl {0} local.txt web-pod:/tmp/local.txt', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 24, '포트 연결', '로컬 8080 을 Pod 의 80 으로 **연결하는** 포트 표기를 채우세요.', '로컬 포트가 앞에 와요.', NULL, NULL, '[]', 'fill', '["8080:80", "80:8080", "8080-80", "8080>80"]', NULL, '`Forwarding from ... -> 80` 줄이 나오면 연결된 것입니다.', '[0]', 'kubectl port-forward pod/web {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 25, '임시 컨테이너의 대상', '`kubectl debug` 의 임시 컨테이너가 **대상 컨테이너의 프로세스를 볼 수 있게** 하는 옵션을 채우세요.', '"목표"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["target", "attach", "share", "with"]', NULL, '이 옵션이 없으면 대상 프로세스가 `ps` 에 보이지 않을 수 있습니다.', '[0]', 'kubectl debug web-pod --image=busybox -c dbg --{0}=app', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 26, '재시작하는 Pod 의 원인 로그 보기', 'Pod 가 계속 재시작될 때 직전 실행의 로그로 원인을 찾는 순서입니다. 순서에 맞게 놓아 보세요.', '증상 → 직전 로그 → 상세 정보 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl get pods` 의 `RESTARTS` 가 늘어나는 것을 확인한다", "`kubectl logs Pod --previous` 로 직전에 종료된 컨테이너의 로그를 본다", "`kubectl describe pod Pod` 의 `Last State` 와 Events 로 종료 이유를 확인한다", "고친 뒤 `kubectl logs -f Pod` 로 새 컨테이너가 정상인지 따라가며 본다"]', NULL, '`--previous` 는 재시작 이력이 있을 때만 동작합니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 27, '여러 Pod 의 로그 한꺼번에 보기', '같은 Deployment 의 Pod 로그를 한꺼번에 보고 한 Pod 로 좁히는 순서입니다. 순서에 맞게 놓아 보세요.', 'Pod 목록 → 합쳐 보기 → 구분 → 한 Pod 따라가기 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl get pods -l app=web` 으로 대상 Pod 를 확인한다", "`kubectl logs -l app=web -c app --prefix --tail=20` 으로 모든 Pod 의 최근 로그를 함께 본다", "`[pod/이름/app]` 접두로 이상한 줄이 어느 Pod 의 것인지 찾는다", "그 Pod 를 `kubectl logs -f Pod이름 -c app` 으로 계속 따라가며 본다"]', NULL, '셀렉터를 쓰면 `--tail` 기본값이 줄어드니 필요하면 직접 정하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 28, 'Pod 와 파일 주고받기', '로컬 파일을 Pod 에 올리고, Pod 에서 만든 파일을 내려받아 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '올리기 → 확인 → 만들기 → 내려받기 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl cp up.txt solo:/tmp/up.txt` 로 Pod 에 업로드한다", "`kubectl exec solo -- cat /tmp/up.txt` 로 내용이 같은지 확인한다", "`kubectl exec solo -- sh -c ''echo from-pod > /tmp/down.txt''` 로 Pod 안에 파일을 만든다", "`kubectl cp solo:/tmp/down.txt down.txt` 로 내려받고 `cat down.txt` 로 확인한다"]', NULL, '`tar: removing leading ''/'' from member names` 안내는 정상입니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 182, 29, 'port-forward 로 Pod 서비스 확인하기', 'Pod 안에서 열린 포트를 로컬에서 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '서버 확인 → 연결 → 요청 → 정리 순서예요.', NULL, NULL, '[]', 'order', '["Pod 안의 프로세스가 8080 포트를 열고 있는지 확인한다", "`kubectl port-forward pod/solo 18083:8080` 을 실행하고 `Forwarding from ... -> 8080` 줄을 확인한다", "다른 터미널에서 `wget -qO- http://localhost:18083` 으로 응답이 오는지 확인한다", "`Ctrl+C` 로 `port-forward` 를 종료해 연결을 닫는다"]', NULL, '`port-forward` 는 실행되는 동안에만 연결이 유지되는 디버깅 도구입니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 182 AND order_index = 29);
