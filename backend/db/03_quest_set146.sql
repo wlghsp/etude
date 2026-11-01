@@ -1,4 +1,4 @@
--- 세트 146: 리눅스 쉬운 문제 7: vi 편집기, ssh·scp, 날짜 형식, 방화벽, 서버 정보 한 줄씩
+-- 세트 146: vi 편집기, ssh·scp, 날짜 형식, 방화벽, 서버 정보 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (146, 1, 'vi 의 두 가지 모드', '`vi app.conf` 로 파일을 열었더니 글자를 입력해도 아무것도 써지지 않고 이상하게 동작합니다. 이유는 무엇일까요?', 'vi 는 처음 열면 "입력"이 아니라 다른 모드로 시작해요.', NULL, NULL, '[]', 'choice', '["파일이 읽기 전용이라서 절대 쓸 수 없다", "키보드가 고장 났다", "처음에는 명령 모드라서 글자가 입력되지 않는다. `i` 를 눌러 입력 모드로 바꿔야 쓸 수 있다", "vi 는 입력을 지원하지 않는다"]', 2, '`Esc` 는 명령 모드로, `i` 는 입력 모드로 돌아가는 키입니다. 헷갈리면 일단 `Esc` 를 두세 번 눌러 보세요.', NULL, NULL, NULL, NULL),

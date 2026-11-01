@@ -1,4 +1,4 @@
--- 세트 128: k8s 쉬운 문제 1: 용어와 kubectl 기본 명령 한 줄씩
+-- 세트 128: 용어와 kubectl 기본 명령 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (128, 1, 'Pod 는 무엇일까', 'k8s 에서 컨테이너를 실행하는 가장 작은 단위를 무엇이라고 부를까요?', '컨테이너를 감싸는 껍데기예요.', NULL, NULL, '[]', 'choice', '["Node", "Namespace", "Pod", "Service"]', 2, 'Pod 는 하나 이상의 컨테이너를 담는 k8s 의 최소 실행 단위입니다. 컨테이너를 직접 다루지 않고 Pod 를 통해 다뤄요.', NULL, NULL, NULL, NULL),

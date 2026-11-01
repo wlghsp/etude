@@ -1,7 +1,7 @@
 -- 도커 세트 142. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set142.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 5, '도커', 'Docker 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 5);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 142, '도커 쉬운 문제 2: 볼륨, 네트워크, 이미지 만들기, 정리 한 줄씩', '도커 운영에 자주 쓰는 명령을 한 개념씩 쉬운 문제로 반복합니다. 볼륨과 바인드 마운트의 차이, 컨테이너를 지워도 남는 데이터, 사용자 정의 네트워크에서 이름으로 통신하기와 기본 네트워크의 한계, 컨테이너 안의 localhost, docker build 의 빌드 컨텍스트와 Dockerfile 줄 순서(캐시), tag·push, --restart unless-stopped, inspect·cp·logs --tail·system df, system prune 의 주의점을 짧은 객관식·빈칸·순서 문제로 익히고, 볼륨으로 데이터 지키기, 네트워크 연결, 이미지 빌드, 디스크 정리의 순서를 연습합니다.', 'quiz', '도커'
+SELECT 142, '볼륨, 네트워크, 이미지 만들기, 정리 한 줄씩', '도커 운영에 자주 쓰는 명령을 한 개념씩 쉬운 문제로 반복합니다. 볼륨과 바인드 마운트의 차이, 컨테이너를 지워도 남는 데이터, 사용자 정의 네트워크에서 이름으로 통신하기와 기본 네트워크의 한계, 컨테이너 안의 localhost, docker build 의 빌드 컨텍스트와 Dockerfile 줄 순서(캐시), tag·push, --restart unless-stopped, inspect·cp·logs --tail·system df, system prune 의 주의점을 짧은 객관식·빈칸·순서 문제로 익히고, 볼륨으로 데이터 지키기, 네트워크 연결, 이미지 빌드, 디스크 정리의 순서를 연습합니다.', 'quiz', '도커'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 142);
 UPDATE quest_set SET display_order = 178, unit_id = (SELECT id FROM unit WHERE id = 5), icon = '🚢' WHERE id = 142;
 

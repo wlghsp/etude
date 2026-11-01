@@ -1,7 +1,7 @@
 -- 미들웨어 세트 129. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set129.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 129, '리눅스 쉬운 문제 2: 권한, 프로세스, 용량, 텍스트 도구 한 줄씩', '리눅스 운영의 기본 개념을 한 개념씩 쉬운 문제로 반복합니다. rwx 와 숫자 권한(755, 644), 실행 권한과 Permission denied, chown 과 sudo, PID·ps·kill·kill -9, Ctrl+C 와 &, df 와 du 와 free, 파이프, wc·sort·uniq -c·cut·head 와 로그 에러 개수 세기, 문제 해결 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', '리눅스'
+SELECT 129, '권한, 프로세스, 용량, 텍스트 도구 한 줄씩', '리눅스 운영의 기본 개념을 한 개념씩 쉬운 문제로 반복합니다. rwx 와 숫자 권한(755, 644), 실행 권한과 Permission denied, chown 과 sudo, PID·ps·kill·kill -9, Ctrl+C 와 &, df 와 du 와 free, 파이프, wc·sort·uniq -c·cut·head 와 로그 에러 개수 세기, 문제 해결 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', '리눅스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 129);
 UPDATE quest_set SET display_order = 8, unit_id = (SELECT id FROM unit WHERE id = 1), icon = '🧰' WHERE id = 129;
 

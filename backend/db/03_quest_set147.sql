@@ -1,4 +1,4 @@
--- 세트 147: k8s 쉬운 문제 7: Helm 기본, 오토스케일(HPA), 이벤트·로그 읽기 한 줄씩
+-- 세트 147: Helm 기본, 오토스케일(HPA), 이벤트·로그 읽기 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (147, 1, 'Helm 은 무엇일까', 'Helm 은 어떤 도구일까요?', '앱을 한 묶음으로 설치하고 관리해 줘요.', NULL, NULL, '[]', 'choice', '["컨테이너 이미지를 만드는 도구", "노드를 추가하는 도구", "쿠버네티스 앱을 chart(묶음)로 설치, 업그레이드, 삭제하게 해 주는 패키지 관리 도구", "로그를 모아서 보여 주는 도구"]', 2, '여러 개의 YAML(Deployment, Service, ConfigMap 등)을 하나로 묶어 두고 값만 바꿔 설치할 수 있습니다. 리눅스의 `apt` 와 비슷한 역할이에요.', NULL, NULL, NULL, NULL),

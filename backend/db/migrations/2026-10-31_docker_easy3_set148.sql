@@ -1,7 +1,7 @@
 -- 도커 세트 148. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set148.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 5, '도커', 'Docker 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 5);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 148, '도커 쉬운 문제 3: compose 운영 명령, Dockerfile 한 줄, 자원 제한, 상태 점검 한 줄씩', '도커를 운영하며 자주 쓰는 명령과 Dockerfile 줄을 한 개념씩 쉬운 문제로 반복합니다. docker compose 의 ps·logs·stop 과 down 의 차이·down -v 의 위험·restart·exec·config, .dockerignore 와 .gitignore 의 차이, Dockerfile 의 ENV·WORKDIR·USER, --memory 한도와 OOMKilled(종료 코드 137), docker stats --no-stream, healthcheck 와 (healthy) 를 짧은 객관식·빈칸·순서 문제로 익히고, compose 서비스 점검, 볼륨은 남기고 내렸다 올리기, 메모리 부족 컨테이너 조사, .dockerignore 로 빌드 정리의 순서를 연습합니다.', 'quiz', '도커'
+SELECT 148, 'compose 운영 명령, Dockerfile 한 줄, 자원 제한, 상태 점검 한 줄씩', '도커를 운영하며 자주 쓰는 명령과 Dockerfile 줄을 한 개념씩 쉬운 문제로 반복합니다. docker compose 의 ps·logs·stop 과 down 의 차이·down -v 의 위험·restart·exec·config, .dockerignore 와 .gitignore 의 차이, Dockerfile 의 ENV·WORKDIR·USER, --memory 한도와 OOMKilled(종료 코드 137), docker stats --no-stream, healthcheck 와 (healthy) 를 짧은 객관식·빈칸·순서 문제로 익히고, compose 서비스 점검, 볼륨은 남기고 내렸다 올리기, 메모리 부족 컨테이너 조사, .dockerignore 로 빌드 정리의 순서를 연습합니다.', 'quiz', '도커'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 148);
 UPDATE quest_set SET display_order = 178, unit_id = (SELECT id FROM unit WHERE id = 5), icon = '🧯' WHERE id = 148;
 

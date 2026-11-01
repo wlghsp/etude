@@ -1,4 +1,4 @@
--- 세트 136: k8s 쉬운 문제 5: Service 종류, 헬스 체크, 스케줄링, 스토리지 읽기 한 줄씩
+-- 세트 136: Service 종류, 헬스 체크, 스케줄링, 스토리지 읽기 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (136, 1, 'ClusterIP 는 어디서 쓸까', 'Service 유형이 `ClusterIP` 일 때, 이 Service 에 접속할 수 있는 곳은 어디일까요?', '이름 그대로 클러스터 안의 IP 예요.', NULL, NULL, '[]', 'choice', '["인터넷 어디서나 접속할 수 있다", "노드 컴퓨터의 외부 포트로 접속할 수 있다", "클러스터 안의 Pod 에서만 접속할 수 있다 (기본값)", "다른 클러스터에서만 접속할 수 있다"]', 2, '`ClusterIP` 는 기본 유형이고 클러스터 내부 통신용입니다. DB 처럼 밖에 열면 안 되는 서비스는 보통 ClusterIP 로 둡니다.', NULL, NULL, NULL, NULL),

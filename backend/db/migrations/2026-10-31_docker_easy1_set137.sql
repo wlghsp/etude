@@ -1,7 +1,7 @@
 -- 도커 세트 137. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set137.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 5, '도커', 'Docker 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 5);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 137, '도커 쉬운 문제 1: 이미지, 컨테이너, docker run 옵션 한 줄씩', '도커의 가장 기본 명령을 한 개념씩 쉬운 문제로 반복합니다. docker run 이 하는 일, -d·--name·-p·-e·-v·--rm·-it 옵션의 뜻과 호스트:컨테이너 순서, 이미지 태그와 latest, pull·ps -a·logs -f·exec·stop·rm·rmi 의 쓰임, run 과 exec 의 차이를 짧은 객관식·빈칸·순서 문제로 익히고, 실행과 확인, 정리, 안 뜨는 컨테이너 조사, 폴더와 환경 변수를 붙여 실행하는 순서를 연습합니다.', 'quiz', '도커'
+SELECT 137, '이미지, 컨테이너, docker run 옵션 한 줄씩', '도커의 가장 기본 명령을 한 개념씩 쉬운 문제로 반복합니다. docker run 이 하는 일, -d·--name·-p·-e·-v·--rm·-it 옵션의 뜻과 호스트:컨테이너 순서, 이미지 태그와 latest, pull·ps -a·logs -f·exec·stop·rm·rmi 의 쓰임, run 과 exec 의 차이를 짧은 객관식·빈칸·순서 문제로 익히고, 실행과 확인, 정리, 안 뜨는 컨테이너 조사, 폴더와 환경 변수를 붙여 실행하는 순서를 연습합니다.', 'quiz', '도커'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 137);
 UPDATE quest_set SET display_order = 178, unit_id = (SELECT id FROM unit WHERE id = 5), icon = '🧱' WHERE id = 137;
 

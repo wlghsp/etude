@@ -1,4 +1,4 @@
--- 세트 135: 리눅스 쉬운 문제 5: 사용자와 그룹, 환경 변수, 패키지, 마운트 한 줄씩
+-- 세트 135: 사용자와 그룹, 환경 변수, 패키지, 마운트 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (135, 1, 'id 가 보여 주는 것', '`id` 명령은 무엇을 보여 줄까요?', '"나는 누구이고 어느 모임에 속해 있나"를 알려 줘요.', NULL, NULL, '[]', 'choice', '["현재 컴퓨터의 IP 주소", "실행 중인 프로세스 목록", "현재 사용자의 UID, 기본 그룹, 속한 모든 그룹", "디스크 남은 용량"]', 2, '`whoami` 는 이름만, `id` 는 숫자(UID, GID)와 그룹까지 보여 줍니다. 권한 문제를 볼 때 내가 어느 그룹인지가 중요해요.', NULL, NULL, NULL, NULL),

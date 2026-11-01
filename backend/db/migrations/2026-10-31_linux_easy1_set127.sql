@@ -1,7 +1,7 @@
 -- 미들웨어 세트 127. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set127.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 127, '리눅스 쉬운 문제 1: 파일과 폴더 명령 한 줄씩', '리눅스의 가장 기본 명령을 한 줄 개념씩 쉬운 문제로 반복합니다. pwd·ls·cd·mkdir·touch·cp·mv·rm·cat·less·head 의 뜻, ls -l 첫 글자와 숨김 파일, ~ 와 ., .., 자주 쓰는 옵션(-p, -r, -l, -a, -h, -f), 덮어쓰기(>)와 덧붙이기(>>), find -name 과 grep -i, 파일 다루는 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', '리눅스'
+SELECT 127, '파일과 폴더 명령 한 줄씩', '리눅스의 가장 기본 명령을 한 줄 개념씩 쉬운 문제로 반복합니다. pwd·ls·cd·mkdir·touch·cp·mv·rm·cat·less·head 의 뜻, ls -l 첫 글자와 숨김 파일, ~ 와 ., .., 자주 쓰는 옵션(-p, -r, -l, -a, -h, -f), 덮어쓰기(>)와 덧붙이기(>>), find -name 과 grep -i, 파일 다루는 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', '리눅스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 127);
 UPDATE quest_set SET display_order = 7, unit_id = (SELECT id FROM unit WHERE id = 1), icon = '🌱' WHERE id = 127;
 

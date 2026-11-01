@@ -1,4 +1,4 @@
--- 세트 138: Git 쉬운 문제 1: 기록하고, 갈라지고, 합치고, 되돌리기 한 줄씩
+-- 세트 138: 기록하고, 갈라지고, 합치고, 되돌리기 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (138, 1, 'Git 은 무엇일까', 'Git 은 무엇을 하는 도구일까요?', '파일이 언제, 어떻게 바뀌었는지를 기억해요.', NULL, NULL, '[]', 'choice', '["파일을 자동으로 압축해 주는 도구", "서버를 만들어 주는 도구", "파일의 변경 이력을 저장하고, 원하는 시점으로 되돌릴 수 있게 해 주는 버전 관리 도구", "컴퓨터의 속도를 높여 주는 도구"]', 2, 'Git 은 내 컴퓨터에서 동작하는 도구이고, 원격 저장소 서비스는 그 이력을 인터넷에 올려 함께 쓰는 곳입니다. 둘은 다른 것이에요.', NULL, NULL, NULL, NULL),

@@ -1,4 +1,4 @@
--- 세트 144: 리눅스 쉬운 문제 6: 로그 읽기, 파일 찾기, 링크, inode, 신호 한 줄씩
+-- 세트 144: 로그 읽기, 파일 찾기, 링크, inode, 신호 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (144, 1, '/var/log 는 어떤 곳일까', '리눅스 서버에서 `/var/log` 폴더에는 보통 무엇이 있을까요?', '"기록"을 뜻하는 log 예요.', NULL, NULL, '[]', 'choice', '["설치된 프로그램의 실행 파일", "사용자의 홈 폴더", "시스템과 서비스가 남긴 로그 파일들", "임시로 쓰고 지우는 파일"]', 2, '문제가 생기면 이 폴더에서 시간과 서비스 이름으로 로그를 찾는 것이 첫걸음입니다. 서비스마다 하위 폴더나 파일이 따로 있는 경우도 많아요.', NULL, NULL, NULL, NULL),

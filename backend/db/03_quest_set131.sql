@@ -1,4 +1,4 @@
--- 세트 131: 리눅스 쉬운 문제 3: 네트워크 기본과 텍스트 도구 한 줄씩
+-- 세트 131: 네트워크 기본과 텍스트 도구 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (131, 1, 'IP 주소는 무엇일까', '네트워크에서 IP 주소는 무엇을 가리킬까요?', '집 주소처럼 컴퓨터를 찾는 번호예요.', NULL, NULL, '[]', 'choice', '["프로그램을 구분하는 번호", "파일의 위치", "네트워크에서 컴퓨터(장치)를 구분하는 주소", "사용자의 비밀번호"]', 2, 'IP 는 "어느 컴퓨터"를 가리키고, 포트는 그 컴퓨터 안의 "어느 프로그램(문)"을 가리킵니다.', NULL, NULL, NULL, NULL),

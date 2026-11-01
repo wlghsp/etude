@@ -1,4 +1,4 @@
--- 세트 149: Git 쉬운 문제 3: 이력 비교, 변경 정리, stash, 원격 연결 한 줄씩
+-- 세트 149: 이력 비교, 변경 정리, stash, 원격 연결 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (149, 1, 'main..feature 읽기', '`git log --oneline main..feature` 는 어떤 커밋을 보여 줄까요?', '점 두 개는 "왼쪽에는 없고 오른쪽에는 있는"을 뜻해요.', NULL, NULL, '[]', 'choice', '["`main` 에는 있고 `feature` 에는 없는 커밋", "두 브랜치에 모두 있는 커밋", "`feature` 에는 있고 `main` 에는 없는 커밋", "두 브랜치의 모든 커밋"]', 2, '합치기 전에 "이 브랜치가 무엇을 더하는지" 확인할 때 씁니다. 방향을 바꿔 `feature..main` 으로 쓰면 반대로 보여 줘요.', NULL, NULL, NULL, NULL),

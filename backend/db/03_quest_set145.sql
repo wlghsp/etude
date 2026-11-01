@@ -1,4 +1,4 @@
--- 세트 145: k8s 쉬운 문제 6: 워크로드 관계, 리소스 단위, kubectl 작업 도구 한 줄씩
+-- 세트 145: 워크로드 관계, 리소스 단위, kubectl 작업 도구 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (145, 1, 'Deployment 와 ReplicaSet 과 Pod', 'Deployment, ReplicaSet, Pod 의 관계로 알맞은 것은 무엇일까요?', '위에서 아래로 관리하는 구조예요.', NULL, NULL, '[]', 'choice', '["Pod 가 Deployment 를 만들고 ReplicaSet 이 이를 지킨다", "셋은 서로 아무 관계가 없다", "Deployment 가 ReplicaSet 을 만들어 관리하고, ReplicaSet 이 Pod 의 개수를 유지한다", "ReplicaSet 이 Deployment 를 관리한다"]', 2, '사용자는 Deployment 만 다루면 되고 ReplicaSet 은 자동으로 생깁니다. Pod 의 `Controlled By` 를 보면 소유자를 알 수 있어요.', NULL, NULL, NULL, NULL),

@@ -1,4 +1,4 @@
--- 세트 132: k8s 쉬운 문제 3: 네임스페이스, ConfigMap, Secret 한 줄씩
+-- 세트 132: 네임스페이스, ConfigMap, Secret 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (132, 1, 'Namespace 는 왜 쓸까', '한 클러스터에서 팀과 환경(dev, prod)이 함께 일할 때 Namespace 를 쓰는 가장 큰 이유는 무엇일까요?', '구역을 나누면 이름이 겹쳐도 괜찮아요.', NULL, NULL, '[]', 'choice', '["Pod 를 더 빠르게 만들기 위해", "이미지를 압축하기 위해", "리소스를 구역별로 나눠 이름 충돌을 막고 권한·자원 제한을 구역 단위로 줄 수 있다", "노드를 더 만들기 위해"]', 2, 'Namespace 마다 같은 이름의 `web` 이 따로 있을 수 있습니다. 쿼터와 접근 권한도 구역 단위로 줄 수 있어요.', NULL, NULL, NULL, NULL),

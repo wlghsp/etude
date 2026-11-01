@@ -1,4 +1,4 @@
--- 세트 129: 리눅스 쉬운 문제 2: 권한, 프로세스, 용량, 텍스트 도구 한 줄씩
+-- 세트 129: 권한, 프로세스, 용량, 텍스트 도구 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (129, 1, 'rwx 는 무엇일까', '파일 권한 `rwx` 에서 r, w, x 는 각각 무엇을 뜻할까요?', '읽기, 쓰기, 실행의 영어 첫 글자예요.', NULL, NULL, '[]', 'choice', '["r=삭제, w=이동, x=복사", "r=루트, w=사용자, x=그룹", "r=읽기(read), w=쓰기(write), x=실행(execute)", "r=재시작, w=대기, x=종료"]', 2, '세 글자가 한 묶음이고, 소유자·그룹·그 밖의 사람 세 묶음이 이어져 총 9글자(`rwxr-xr-x`)가 됩니다.', NULL, NULL, NULL, NULL),

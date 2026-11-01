@@ -1,7 +1,7 @@
 -- 미들웨어 세트 130. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set130.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 6, 'k8s', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 6);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 130, 'k8s 쉬운 문제 2: YAML 필드와 Pod 상태 읽기', 'k8s YAML 과 상태 표시를 한 개념씩 쉬운 문제로 반복합니다. 들여쓰기와 목록, apiVersion·kind·metadata·spec, selector 와 라벨 일치, replicas·image·containerPort·env, requests 와 limits, Service 의 selector·port·targetPort·type, OOMKilled·Evicted·Completed·RESTARTS·FailedScheduling 읽기, kubectl explain 과 dry-run, 점검 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', 'k8s'
+SELECT 130, 'YAML 필드와 Pod 상태 읽기', 'k8s YAML 과 상태 표시를 한 개념씩 쉬운 문제로 반복합니다. 들여쓰기와 목록, apiVersion·kind·metadata·spec, selector 와 라벨 일치, replicas·image·containerPort·env, requests 와 limits, Service 의 selector·port·targetPort·type, OOMKilled·Evicted·Completed·RESTARTS·FailedScheduling 읽기, kubectl explain 과 dry-run, 점검 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', 'k8s'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 130);
 UPDATE quest_set SET display_order = 204, unit_id = (SELECT id FROM unit WHERE id = 6), icon = '🔬' WHERE id = 130;
 

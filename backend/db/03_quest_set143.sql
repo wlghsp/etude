@@ -1,4 +1,4 @@
--- 세트 143: Git 쉬운 문제 2: 설정, 복제, 이력 다루기 한 줄씩
+-- 세트 143: 설정, 복제, 이력 다루기 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (143, 1, 'user.name 과 user.email', '`git config --global user.name "kim"` 와 `user.email` 을 설정하는 이유는 무엇일까요?', '커밋에 "누가 만들었는지"가 적혀요.', NULL, NULL, '[]', 'choice', '["Git 이 설치되려면 꼭 필요하기 때문이다", "원격 저장소의 비밀번호를 정하기 때문이다", "커밋마다 작성자 이름과 이메일이 기록되기 때문이다", "브랜치 이름을 정하기 때문이다"]', 2, '설정하지 않으면 커밋할 때 경고나 오류가 납니다. `--global` 은 이 컴퓨터의 모든 저장소에 적용한다는 뜻이에요.', NULL, NULL, NULL, NULL),

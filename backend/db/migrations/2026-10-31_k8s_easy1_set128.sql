@@ -1,7 +1,7 @@
 -- 미들웨어 세트 128. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set128.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 6, 'k8s', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 6);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 128, 'k8s 쉬운 문제 1: 용어와 kubectl 기본 명령 한 줄씩', 'k8s 의 기본 용어와 kubectl 명령을 한 개념씩 쉬운 문제로 반복합니다. Pod·Deployment·Service·Namespace·Node 의 역할, READY 와 Pending·ImagePullBackOff·CrashLoopBackOff 읽기, label 과 replicas, get·describe·logs·apply·create·scale·exec·expose·rollout·delete 명령과 -n·-o wide·-A 옵션, 배포하고 확인하는 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', 'k8s'
+SELECT 128, '용어와 kubectl 기본 명령 한 줄씩', 'k8s 의 기본 용어와 kubectl 명령을 한 개념씩 쉬운 문제로 반복합니다. Pod·Deployment·Service·Namespace·Node 의 역할, READY 와 Pending·ImagePullBackOff·CrashLoopBackOff 읽기, label 과 replicas, get·describe·logs·apply·create·scale·exec·expose·rollout·delete 명령과 -n·-o wide·-A 옵션, 배포하고 확인하는 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', 'k8s'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 128);
 UPDATE quest_set SET display_order = 204, unit_id = (SELECT id FROM unit WHERE id = 6), icon = '🐣' WHERE id = 128;
 

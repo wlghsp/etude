@@ -1,4 +1,4 @@
--- 세트 137: 도커 쉬운 문제 1: 이미지, 컨테이너, docker run 옵션 한 줄씩
+-- 세트 137: 이미지, 컨테이너, docker run 옵션 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (137, 1, 'docker run 은 무엇을 할까', '`docker run nginx` 를 처음 실행하면 무슨 일이 일어날까요?', '이미지가 내 컴퓨터에 없으면 어떻게 될지 생각해 보세요.', NULL, NULL, '[]', 'choice', '["이미지만 내려받고 아무것도 실행하지 않는다", "기존 컨테이너를 찾아서 다시 시작한다", "이미지가 없으면 내려받고, 그 이미지로 새 컨테이너를 만들어 실행한다", "이미지를 삭제한다"]', 2, '`docker run` 은 "받기(pull) + 만들기(create) + 시작하기(start)"를 한 번에 합니다. 실행할 때마다 새 컨테이너가 하나 더 만들어져요.', NULL, NULL, NULL, NULL),

@@ -1,4 +1,4 @@
--- 세트 134: k8s 쉬운 문제 4: Deployment 업데이트, Job, 상태 읽기 한 줄씩
+-- 세트 134: Deployment 업데이트, Job, 상태 읽기 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (134, 1, '롤링 업데이트란', 'Deployment 의 이미지를 새 버전으로 바꾸면 기본으로 어떤 방식으로 교체될까요?', '한꺼번에 바꾸지 않고 조금씩 바꿔요.', NULL, NULL, '[]', 'choice', '["옛 Pod 를 모두 지운 뒤 새 Pod 를 만든다", "새 Pod 를 만들지 않고 옛 Pod 의 이미지만 바꿔 치기한다", "새 Pod 를 하나씩 띄우고 옛 Pod 를 하나씩 줄여, 서비스가 끊기지 않게 교체한다", "사람이 Pod 를 하나씩 직접 지워야 교체된다"]', 2, '기본 전략인 RollingUpdate 는 새 버전이 Ready 가 되는 것을 보면서 옛 버전을 줄입니다. 그래서 업데이트 중에도 서비스가 이어져요.', NULL, NULL, NULL, NULL),

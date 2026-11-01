@@ -1,7 +1,7 @@
 -- Git 세트 149. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set149.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 12, 'Git', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 12);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 149, 'Git 쉬운 문제 3: 이력 비교, 변경 정리, stash, 원격 연결 한 줄씩', 'Git 으로 작업을 정리하고 문제를 추적하는 방법을 한 개념씩 쉬운 문제로 반복합니다. log main..feature 와 --author·--stat·-- 경로, diff 와 diff --staged·diff HEAD 의 차이, restore 로 변경 버리기, clean -n 시험 실행, rm 과 rm --cached, mv, stash 가 담는 것과 -u·pop 과 apply 의 차이, push -u 와 branch -vv, bisect 를 짧은 객관식·빈칸·순서 문제로 익히고, 급한 수정 때 stash 하기, 새 브랜치를 원격에 연결하기, 추적하지 않는 파일 안전하게 정리하기, bisect 로 문제 커밋 찾기의 순서를 연습합니다.', 'quiz', 'Git'
+SELECT 149, '이력 비교, 변경 정리, stash, 원격 연결 한 줄씩', 'Git 으로 작업을 정리하고 문제를 추적하는 방법을 한 개념씩 쉬운 문제로 반복합니다. log main..feature 와 --author·--stat·-- 경로, diff 와 diff --staged·diff HEAD 의 차이, restore 로 변경 버리기, clean -n 시험 실행, rm 과 rm --cached, mv, stash 가 담는 것과 -u·pop 과 apply 의 차이, push -u 와 branch -vv, bisect 를 짧은 객관식·빈칸·순서 문제로 익히고, 급한 수정 때 stash 하기, 새 브랜치를 원격에 연결하기, 추적하지 않는 파일 안전하게 정리하기, bisect 로 문제 커밋 찾기의 순서를 연습합니다.', 'quiz', 'Git'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 149);
 UPDATE quest_set SET display_order = 405, unit_id = (SELECT id FROM unit WHERE id = 12), icon = '🔍' WHERE id = 149;
 

@@ -1,4 +1,4 @@
--- 세트 133: 리눅스 쉬운 문제 4: 쉘 스크립트, 서비스, 압축 한 줄씩
+-- 세트 133: 쉘 스크립트, 서비스, 압축 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (133, 1, '쉘 스크립트 첫 줄', '쉘 스크립트 파일 맨 윗줄의 `#!/bin/bash` 는 무슨 일을 할까요?', '이 파일을 누가 읽고 실행할지 알려 줘요.', NULL, NULL, '[]', 'choice', '["이 줄은 주석이라 아무 의미가 없다", "스크립트를 자동으로 백업한다", "이 파일을 `/bin/bash` 로 실행하라고 알려 준다", "스크립트를 관리자 권한으로 바꾼다"]', 2, '`#!` 로 시작하는 첫 줄을 shebang 이라고 부릅니다. 어떤 해석기로 실행할지 정해 주며, 이 줄이 있어야 `./run.sh` 로 바로 실행할 수 있어요.', NULL, NULL, NULL, NULL),

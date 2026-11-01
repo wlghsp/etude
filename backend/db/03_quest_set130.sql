@@ -1,4 +1,4 @@
--- 세트 130: k8s 쉬운 문제 2: YAML 필드와 Pod 상태 읽기
+-- 세트 130: YAML 필드와 Pod 상태 읽기
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (130, 1, 'YAML 들여쓰기', 'YAML 에서 항목의 상하 관계(어느 항목 아래에 속하는지)는 무엇으로 정해질까요?', '눈에 보이는 공백이 의미를 가져요.', NULL, NULL, '[]', 'choice', '["중괄호 { }", "세미콜론 ;", "들여쓰기(공백 개수)", "줄 번호"]', 2, 'YAML 은 공백 두 칸 정도로 계층을 나타냅니다. 탭을 쓰면 안 되고, 칸이 하나만 어긋나도 의미나 오류가 달라져요.', NULL, NULL, NULL, NULL),

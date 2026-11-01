@@ -1,7 +1,7 @@
 -- 리눅스 세트 144. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set144.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 144, '리눅스 쉬운 문제 6: 로그 읽기, 파일 찾기, 링크, inode, 신호 한 줄씩', '리눅스 서버에서 문제를 찾을 때 자주 쓰는 도구를 한 개념씩 쉬운 문제로 반복합니다. /var/log, journalctl -p·--since, dmesg, 압축된 로그(zcat·zgrep), less 안의 검색, find 의 -name 따옴표·-type·-mtime·-size 부호, 심볼릭 링크와 하드 링크의 차이, df -i 와 inode, kill 과 kill -9 의 차이와 종료 코드, uptime 의 load average 읽기를 짧은 객관식·빈칸·순서 문제로 익히고, 로그로 서비스 오류 찾기, 큰 파일 정리, 용량이 남는데 파일이 안 만들어질 때, 멈춘 프로세스 종료의 순서를 연습합니다.', 'quiz', '리눅스'
+SELECT 144, '로그 읽기, 파일 찾기, 링크, inode, 신호 한 줄씩', '리눅스 서버에서 문제를 찾을 때 자주 쓰는 도구를 한 개념씩 쉬운 문제로 반복합니다. /var/log, journalctl -p·--since, dmesg, 압축된 로그(zcat·zgrep), less 안의 검색, find 의 -name 따옴표·-type·-mtime·-size 부호, 심볼릭 링크와 하드 링크의 차이, df -i 와 inode, kill 과 kill -9 의 차이와 종료 코드, uptime 의 load average 읽기를 짧은 객관식·빈칸·순서 문제로 익히고, 로그로 서비스 오류 찾기, 큰 파일 정리, 용량이 남는데 파일이 안 만들어질 때, 멈춘 프로세스 종료의 순서를 연습합니다.', 'quiz', '리눅스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 144);
 UPDATE quest_set SET display_order = 9, unit_id = (SELECT id FROM unit WHERE id = 1), icon = '📜' WHERE id = 144;
 

@@ -1,4 +1,4 @@
--- 세트 142: 도커 쉬운 문제 2: 볼륨, 네트워크, 이미지 만들기, 정리 한 줄씩
+-- 세트 142: 볼륨, 네트워크, 이미지 만들기, 정리 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (142, 1, '볼륨은 무엇일까', '도커의 볼륨(volume)은 무엇일까요?', '컨테이너가 사라져도 남겨 두고 싶은 데이터를 보관하는 곳이에요.', NULL, NULL, '[]', 'choice', '["컨테이너 안의 임시 메모리", "이미지를 내려받는 레지스트리", "컨테이너와 별개로 도커가 관리하는 저장 공간", "컨테이너의 CPU 사용량"]', 2, '볼륨에 쓴 데이터는 컨테이너를 지워도 남습니다. `docker volume ls` 로 목록을 볼 수 있어요.', NULL, NULL, NULL, NULL),

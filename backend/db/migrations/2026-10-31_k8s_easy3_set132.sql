@@ -1,7 +1,7 @@
 -- 미들웨어 세트 132. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set132.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크로드와 설정', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 7);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 132, 'k8s 쉬운 문제 3: 네임스페이스, ConfigMap, Secret 한 줄씩', 'k8s 의 구역과 설정 분리를 한 개념씩 쉬운 문제로 반복합니다. Namespace 의 쓰임과 -n·기본 네임스페이스·다른 네임스페이스의 Service 부르기, ConfigMap 과 Secret 의 차이와 base64 가 암호화가 아닌 이유, 환경 변수 주입(configMapKeyRef·secretKeyRef)과 파일 마운트, CreateContainerConfigError, label 과 annotation, 안전하게 정리하는 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', 'k8s'
+SELECT 132, '네임스페이스, ConfigMap, Secret 한 줄씩', 'k8s 의 구역과 설정 분리를 한 개념씩 쉬운 문제로 반복합니다. Namespace 의 쓰임과 -n·기본 네임스페이스·다른 네임스페이스의 Service 부르기, ConfigMap 과 Secret 의 차이와 base64 가 암호화가 아닌 이유, 환경 변수 주입(configMapKeyRef·secretKeyRef)과 파일 마운트, CreateContainerConfigError, label 과 annotation, 안전하게 정리하는 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', 'k8s'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 132);
 UPDATE quest_set SET display_order = 249, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '🗝️' WHERE id = 132;
 

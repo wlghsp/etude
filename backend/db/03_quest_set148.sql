@@ -1,4 +1,4 @@
--- 세트 148: 도커 쉬운 문제 3: compose 운영 명령, Dockerfile 한 줄, 자원 제한, 상태 점검 한 줄씩
+-- 세트 148: compose 운영 명령, Dockerfile 한 줄, 자원 제한, 상태 점검 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (148, 1, 'compose ps', '`docker compose ps` 는 `docker ps` 와 무엇이 다를까요?', 'compose 로 띄운 묶음만 따로 봐요.', NULL, NULL, '[]', 'choice', '["내 컴퓨터의 모든 컨테이너를 보여 준다", "이미지 목록을 보여 준다", "현재 compose 프로젝트의 서비스 컨테이너만 서비스 이름과 상태로 보여 준다", "볼륨 목록을 보여 준다"]', 2, '여러 컨테이너로 이루어진 앱의 상태를 한눈에 볼 때 씁니다. 멈춘 것까지 보려면 `-a` 를 붙여요.', NULL, NULL, NULL, NULL),

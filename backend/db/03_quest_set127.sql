@@ -1,4 +1,4 @@
--- 세트 127: 리눅스 쉬운 문제 1: 파일과 폴더 명령 한 줄씩
+-- 세트 127: 파일과 폴더 명령 한 줄씩
 -- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
   (127, 1, 'pwd 는 무엇을 할까', '터미널에서 `pwd` 를 입력하면 무엇이 나올까요?', '"지금 내가 어디 있지?"를 알려 줘요.', NULL, NULL, '[]', 'choice', '["현재 로그인한 사용자 이름", "비밀번호", "지금 있는 위치(현재 디렉터리의 경로)", "현재 시각"]', 2, '`pwd` 는 print working directory 의 줄임말로 현재 위치를 보여 줍니다. 길을 잃으면 가장 먼저 쳐 보세요.', NULL, NULL, NULL, NULL),
