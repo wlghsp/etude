@@ -1,0 +1,122 @@
+-- Git 세트 184. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set184.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 12, 'Git', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 12);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 184, '병합 전략과 충돌 도구: --ff-only, -X·-s, --ours·--theirs, rerere, 추적 브랜치', '병합과 충돌을 다루는 도구와 원격 추적을 한 개념씩 반복합니다. merge --ff-only 와 --no-ff, 충돌 때의 CONFLICT 메시지와 UU 상태와 마커, 충돌 파일 목록과 ls-files -u 의 단계 번호, 병합에서의 --ours·--theirs 와 rebase 에서의 반대 방향, --continue·--abort 와 충돌 중 commit 오류, -X ours·theirs 와 -s ours 의 차이, merge.conflictstyle 의 diff3, rerere 의 기록과 재사용, status -sb 의 ahead·behind 와 git cherry, pull --ff-only 와 pull.ff, branch -u 와 push -u 와 @{u}, ls-remote 와 remote show 를 짧은 객관식·빈칸·순서 문제로 익히고, 충돌 해결하고 병합 마치기, 한쪽 버전으로 충돌 정리하기, 갈라진 브랜치 정리하고 push 하기, rerere 로 반복 충돌 줄이기의 순서를 연습합니다.', 'quiz', 'Git'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 184);
+UPDATE quest_set SET display_order = 405, unit_id = (SELECT id FROM unit WHERE id = 12), icon = '🧭' WHERE id = 184;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 1, '--ff-only 와 --no-ff', '`git merge --ff-only feat` 는 `feat` 가 `main` 에서 앞서 가기만 한 경우와 `main` 에도 새 커밋이 생겨 갈라진 경우에 각각 어떻게 될까요? `--no-ff` 는요?', '빨리감기(fast-forward)가 가능한지가 기준이에요.', NULL, NULL, '[]', 'choice', '["갈라져도 `--ff-only` 는 병합 커밋을 만든다", "`--no-ff` 는 빨리감기가 가능하면 항상 빨리감기한다", "앞서 가기만 했으면 `Fast-forward` 로 합쳐지고, 갈라졌으면 `fatal: Not possible to fast-forward, aborting.`(종료 코드 128)으로 거부된다. `--no-ff` 는 빨리감기가 가능해도 부모가 둘인 병합 커밋을 만든다", "`--ff-only` 는 충돌을 자동으로 해결한다"]', 2, '`--ff-only` 는 의도하지 않은 병합 커밋이 생기는 것을 막아 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 2, '충돌이 났을 때의 모습', '같은 줄을 `main` 과 `feat` 에서 다르게 고친 뒤 `git merge feat` 를 하면 어떤 메시지와 상태가 나올까요? 파일에는 무엇이 들어갈까요?', '충돌한 파일에 표시가 들어가요.', NULL, NULL, '[]', 'choice', '["충돌하면 병합이 자동으로 취소되고 파일은 그대로이다", "`CONFLICT (content): Merge conflict in f.txt` 가 나오고 `git status --short` 에 `UU f.txt` 로 보인다(충돌 없이 합쳐진 새 파일은 `A ` 로 스테이징된다). 파일에는 `<<<<<<< HEAD`, `=======`, `>>>>>>> feat` 마커가 들어가 두 쪽의 내용이 나뉘어 보인다", "충돌한 파일은 `A ` 로 스테이징된다", "마커는 `.orig` 파일에만 들어간다"]', 1, '충돌 없이 합쳐진 새 파일은 `A ` 로 스테이징되어 함께 보입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 3, '충돌 목록 보기', '병합 중 충돌 난 파일만 어떻게 모아 볼 수 있을까요? `git ls-files -u` 의 단계 번호 1, 2, 3 은 각각 무엇일까요?', '세 가지 버전이 인덱스에 담겨요.', NULL, NULL, '[]', 'choice', '["`git diff --name-only --diff-filter=U` 로 충돌(unmerged)한 파일 이름만 볼 수 있다. `git ls-files -u` 의 1 은 공통 조상, 2 는 현재 브랜치(ours), 3 은 합치려는 브랜치(theirs)의 버전이다", "1 은 현재 브랜치, 2 는 공통 조상, 3 은 합치려는 브랜치이다", "`-u` 는 변경 없는 파일만 보여 준다", "충돌 파일은 `git ls-files -u` 로는 볼 수 없다"]', 0, '`git ls-files -u` 는 충돌한 파일마다 단계 1, 2, 3 이 세 줄로 나옵니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 4, '병합에서의 --ours 와 --theirs', '`git merge feat` 로 충돌이 난 상태에서 `git checkout --ours f.txt` 와 `git checkout --theirs f.txt` 는 각각 어떤 내용을 가져올까요?', 'ours 는 지금 내가 서 있는 브랜치예요.', NULL, NULL, '[]', 'choice', '["`--ours` 는 `feat` 의 버전이고 `--theirs` 는 `main` 의 버전이다", "두 옵션 모두 충돌 마커를 지우고 양쪽 내용을 합친다", "`--ours` 는 공통 조상의 버전이다", "`--ours` 는 현재 브랜치(`main`)의 버전(`MAIN-l2`), `--theirs` 는 합치려는 브랜치(`feat`)의 버전(`FEAT-l2`)을 작업 폴더로 가져온다. 이어서 `git add` 로 해결했음을 알린다"]', 3, '파일 하나만 한쪽 내용으로 정하고 싶을 때 쓰는 가장 빠른 방법입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 5, 'rebase 에서는 반대', '`feat` 브랜치에서 `git rebase main` 을 하다 충돌이 났습니다. 이때 `git checkout --ours f.txt` 와 `--theirs` 는 각각 무엇일까요?', 'rebase 는 내 커밋을 하나씩 다시 얹어요.', NULL, NULL, '[]', 'choice', '["병합과 똑같이 `--ours` 는 내 `feat` 커밋 쪽이다", "rebase 에서는 `--ours` 를 쓸 수 없다", "rebase 중에는 `--ours` 가 위에 올리는 기준인 `main` 쪽(`MAIN-l2`), `--theirs` 가 지금 다시 적용 중인 내 `feat` 커밋 쪽(`FEAT-l2`)이다. 병합과는 의미가 반대이다", "`--theirs` 는 항상 공통 조상이다"]', 2, '`git rebase --abort` 로 rebase 를 시작하기 전 상태로 돌아갈 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 6, '충돌 해결 마무리와 취소', '병합 충돌을 해결한 뒤 어떻게 마무리할까요? 충돌이 남은 채 `git commit` 을 하면요? `git merge --abort` 는요?', '해결했다고 알린 뒤 이어 가요.', NULL, NULL, '[]', 'choice', '["충돌이 남아도 `git commit` 이 병합 커밋을 만든다", "파일을 고치고 `git add 파일` 한 뒤 `git merge --continue` 를 하면 `Merge branch ''feat''` 병합 커밋(부모 2개)이 만들어진다. 충돌이 남은 채 `git commit` 을 하면 `Committing is not possible because you have unmerged files` 오류가 나고, `git merge --abort` 는 병합을 시작하기 전 상태로 되돌린다(변경이 남지 않는다)", "`git merge --abort` 는 충돌 파일을 삭제한다", "`git add` 없이도 `--continue` 가 된다"]', 1, '취소하려면 `--abort`, 이어 가려면 `--continue` 입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 7, '-X ours / -X theirs', '`git merge -X ours feat` 와 `-X theirs` 는 충돌이 난 줄과 충돌이 없는 변경(예: 양쪽이 각각 추가한 새 파일)을 각각 어떻게 처리할까요?', '충돌난 부분에서만 한쪽을 골라요.', NULL, NULL, '[]', 'choice', '["충돌이 난 부분만 `ours`(또는 `theirs`) 쪽 내용으로 자동 해결하고, 충돌이 없는 변경은 양쪽 모두 반영한다(`feat.txt` 와 `main.txt` 가 둘 다 남는다)", "두 옵션 모두 상대 브랜치의 변경을 전부 버린다", "충돌이 없는 변경도 한쪽 것만 남긴다", "`-X` 는 충돌을 해결하지 않고 건너뛴다"]', 0, '`-X` 는 전략 옵션이라 병합 전략(`-s`)과 다릅니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 8, '-s ours', '`git merge -s ours feat` 는 `-X ours` 와 어떻게 다를까요? `-s theirs` 는 쓸 수 있을까요?', '내용은 그대로 두고 이력만 합쳐요.', NULL, NULL, '[]', 'choice', '["`-s ours` 도 `feat` 의 새 파일을 모두 가져온다", "`-s theirs` 는 `-X theirs` 와 같다", "`-s ours` 는 병합 커밋을 만들지 않는다", "`-s ours` 는 병합 커밋(부모 2개)을 만들어 `feat` 를 이력에는 조상으로 기록하지만 내용은 우리 쪽 그대로 둬서 `feat` 의 변경(`feat.txt`)이 반영되지 않는다. `-s theirs` 라는 전략은 없어 `Could not find merge strategy ''theirs''` 오류가 난다"]', 3, '이미 다른 방식으로 반영한 브랜치를 이력상 ''병합됨''으로 표시할 때 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 9, 'merge.conflictstyle', '충돌 마커에 공통 조상의 내용을 함께 보려면 어떻게 설정할까요? 기본 마커와 무엇이 다를까요?', 'base 구간이 마커에 추가돼요.', NULL, NULL, '[]', 'choice', '["기본 마커에도 `|||||||` 구간이 항상 있다", "`diff3` 는 마커를 모두 없앤다", "`git config merge.conflictstyle diff3`(또는 `zdiff3`)로 설정하면 `<<<<<<<`, `|||||||`, `=======`, `>>>>>>>` 마커가 나오고 `|||||||` 아래에 공통 조상의 내용(`l2`)이 보인다. 기본 마커에는 공통 조상 구간이 없다", "`conflictstyle` 은 병합 결과를 자동으로 고른다"]', 2, '어느 쪽이 무엇을 바꿨는지 알 수 있어 충돌 해결이 쉬워집니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 10, 'rerere', '`git config rerere.enabled true` 를 켜면 같은 충돌을 두 번째 만났을 때 어떻게 달라질까요?', '해결 방법을 기억해 둬요.', NULL, NULL, '[]', 'choice', '["두 번째에는 충돌이 아예 발생하지 않는다", "처음 충돌을 해결하고 커밋하면 `Recorded resolution` 으로 `.git/rr-cache` 에 기록된다. 같은 충돌을 다시 만나면 `Resolved ''f.txt'' using previous resolution.` 으로 해결된 내용이 자동 반영된다(마커 없음). 다만 `git status` 는 여전히 `UU` 라서 `git add` 를 해야 한다", "자동으로 `git add` 와 커밋까지 해 준다", "해결 기록은 원격 저장소에 자동으로 올라간다"]', 1, '기록은 `.git/rr-cache` 폴더에 저장됩니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 11, '앞섬·뒤처짐 읽기', '`git status -sb` 가 `## main...origin/main [ahead 1, behind 1]` 이라고 합니다. 무슨 뜻일까요? `git cherry -v origin/main` 과 `git log origin/main..HEAD`, `HEAD..origin/main` 은 각각 무엇을 보여 줄까요?', '내 로컬과 원격 추적 브랜치를 비교해요.', NULL, NULL, '[]', 'choice', '["내 `main` 에 원격에 없는 커밋이 1개(ahead), 원격에 있지만 내게 없는 커밋이 1개(behind)라는 뜻이다. `git cherry -v origin/main` 은 업스트림에 없는 내 커밋을 `+ 해시 메시지` 로, `log origin/main..HEAD` 는 내가 앞선 커밋, `log HEAD..origin/main` 은 내가 뒤처진 커밋을 보여 준다", "`ahead` 는 원격에만 있는 커밋이다", "업스트림이 없는 브랜치도 `[ahead 0]` 이 표시된다", "`git cherry` 는 커밋을 합쳐 주는 명령이다"]', 0, 'push 하고 나면 괄호가 사라져 `## main...origin/main` 만 보입니다. 업스트림이 없는 브랜치는 `## topic` 만 나옵니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 12, 'pull --ff-only', '로컬과 원격이 갈라진 상태에서 `git pull --ff-only` 는 어떻게 될까요? `git config pull.ff only` 로 설정하고 `git pull` 만 해도 같을까요? 갈라진 것을 정리하려면?', '빨리감기가 안 되면 거부해요.', NULL, NULL, '[]', 'choice', '["갈라져 있어도 `--ff-only` 는 병합 커밋을 만든다", "`pull.ff only` 설정은 `git pull` 에 영향이 없다", "`pull --rebase` 는 로컬 커밋을 삭제한다", "`fatal: Not possible to fast-forward, aborting.`(종료 코드 128)으로 거부되고, `pull.ff only` 설정을 하면 그냥 `git pull` 도 같은 결과이다. `git pull --rebase` 로 내 커밋을 원격 위에 다시 얹으면 `[ahead 1]` 이 되고 push 할 수 있다"]', 3, '`pull --rebase` 뒤에는 `git status -sb` 에 `[ahead 1]` 이 보이고 `git push` 할 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 13, '업스트림 설정', '새로 만든 `topic` 브랜치에 `git branch -u origin/main` 을 하면 무엇이 달라질까요? `--unset-upstream` 은요? `git push -u origin topic` 은요? `@{u}` 는 무엇일까요?', '추적할 원격 브랜치를 정하는 일이에요.', NULL, NULL, '[]', 'choice', '["`-u` 는 브랜치를 삭제한다", "업스트림은 브랜치를 만들 때만 정할 수 있다", "`branch ''topic'' set up to track ''origin/main''` 이 나오고 `git branch -vv` 에 `[origin/main]`, `git status -sb` 에 `## topic...origin/main` 이 표시된다. `--unset-upstream` 은 이를 지우고, `git push -u origin topic` 은 `origin/topic` 을 만들며 업스트림을 `[origin/topic]` 으로 정한다. `@{u}` 는 현재 브랜치의 업스트림을 가리킨다", "`@{u}` 는 마지막 커밋을 가리킨다"]', 2, '`git rev-parse --abbrev-ref @{u}` 로 업스트림 이름을 알 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 14, 'ls-remote 와 remote show', '`git ls-remote ../remote.git`, `--heads`, `git remote show origin` 은 각각 무엇을 보여 줄까요?', '원격에 어떤 참조가 있는지 물어봐요.', NULL, NULL, '[]', 'choice', '["`ls-remote` 는 원격의 파일 내용을 내려받는다", "`ls-remote` 는 원격의 참조(`HEAD`, `refs/heads/main` 등)를 가져오지 않고 보여 주고, `--heads` 는 브랜치(`refs/heads/...`)만 보여 준다. `git remote show origin` 은 `Fetch URL`, `Push URL`, `HEAD branch`, 추적 중인 원격 브랜치와 `git pull`·`git push` 가 연결된 로컬 브랜치를 요약한다", "`--heads` 는 태그만 보여 준다", "`remote show` 는 원격 주소를 바꾼다"]', 1, '`git remote -v` 는 주소만 간단히 보여 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 15, '빨리감기만 허용', '빨리감기가 가능할 때만 병합하고 아니면 **거부**하는 옵션을 채우세요.', '"fast-forward"만 허용한다는 뜻이에요.', NULL, NULL, '[]', 'fill', '["--ff-only", "--ff", "--only-ff", "--no-ff"]', NULL, '갈라졌으면 `Not possible to fast-forward` 로 거부됩니다.', '[0]', 'git merge {0} feat', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 16, '항상 병합 커밋', '빨리감기가 가능해도 **항상 병합 커밋**을 만들게 하는 옵션을 채우세요.', '"빨리감기 없음"이라는 뜻이에요.', NULL, NULL, '[]', 'fill', '["--no-ff", "--ff-only", "--squash", "--commit-all"]', NULL, '부모가 둘인 병합 커밋이 만들어집니다.', '[0]', 'git merge {0} feat', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 17, '내 쪽 선택', '병합 충돌 때 **현재 브랜치(내 쪽)의 버전**을 가져오는 `checkout` 옵션을 채우세요.', '"우리의"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["--ours", "--theirs", "--mine", "--head"]', NULL, 'rebase 중에는 의미가 반대입니다.', '[0]', 'git checkout {0} f.txt', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 18, '상대 쪽 선택', '병합 충돌 때 **합치려는 브랜치의 버전**을 가져오는 `checkout` 옵션을 채우세요.', '"그들의"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["--theirs", "--ours", "--other", "--feat"]', NULL, '고른 뒤에는 `git add f.txt` 로 해결했음을 알립니다.', '[0]', 'git checkout {0} f.txt', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 19, '충돌만 내 쪽으로', '충돌 난 부분만 **내 쪽**으로 자동 해결하는 전략 옵션의 값을 채우세요.', '"우리의"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["ours", "mine", "head", "local"]', NULL, '충돌이 없는 변경은 양쪽 모두 반영됩니다.', '[0]', 'git merge -X {0} feat', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 20, '내용은 그대로, 이력만', '병합 커밋은 만들되 **내용은 우리 쪽 그대로** 두는 전략(`-s`)의 값을 채우세요.', '"우리의"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["ours", "theirs", "resolve", "keep"]', NULL, '`theirs` 라는 전략은 없습니다.', '[0]', 'git merge -s {0} feat', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 21, 'base 도 보이는 마커', '충돌 마커에 **공통 조상 구간**(`|||||||`)을 넣는 `merge.conflictstyle` 값을 채우세요.', '"diff"와 숫자 3 이에요.', NULL, NULL, '[]', 'fill', '["diff3", "base", "full", "verbose"]', NULL, '`zdiff3` 도 같은 구간을 보여 줍니다.', '[0]', 'git config merge.conflictstyle {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 22, '충돌 해결 기억', '같은 충돌의 해결 방법을 **기억해 두는** 설정 키를 채우세요.', '"reuse recorded resolution"의 앞 글자들이에요.', NULL, NULL, '[]', 'fill', '["rerere.enabled", "merge.remember", "rerere.keep", "conflict.cache"]', NULL, '기록은 `.git/rr-cache` 에 저장됩니다.', '[0]', 'git config {0} true', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 23, '충돌 단계 보기', '충돌한 파일의 **단계(1, 2, 3)별 버전**을 보는 `ls-files` 옵션을 채우세요.', '"unmerged"의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-u", "-m", "-o", "-s"]', NULL, '1 은 공통 조상, 2 는 ours, 3 은 theirs 입니다.', '[0]', 'git ls-files {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 24, '업스트림 정하기', '현재 브랜치가 **추적할 원격 브랜치**를 정하는 `branch` 옵션을 채우세요.', '"upstream"의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-u", "-r", "-a", "-m"]', NULL, '`git push -u origin 브랜치` 로도 정할 수 있습니다.', '[0]', 'git branch {0} origin/main', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 25, '브랜치만 조회', '원격의 **브랜치 참조만** 조회하는 `ls-remote` 옵션을 채우세요.', '"머리들"이라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["--heads", "--branches", "--refs-only", "--all"]', NULL, '태그만 보려면 `--tags` 를 씁니다.', '[0]', 'git ls-remote {0} origin', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 26, '충돌 해결하고 병합 마치기', '병합 충돌을 해결하고 병합 커밋을 만드는 순서입니다. 순서에 맞게 놓아 보세요.', '병합 시도 → 상태 확인 → 해결 → 마무리 순서예요.', NULL, NULL, '[]', 'order', '["`git merge feat` 를 하고 `CONFLICT` 메시지를 확인한다", "`git status --short` 의 `UU` 와 파일의 `<<<<<<<` 마커로 충돌 위치를 확인한다", "파일을 고쳐 마커를 지우고 `git add 파일` 로 해결했음을 알린다", "`git merge --continue` 로 병합 커밋을 만든다"]', NULL, '중간에 포기하려면 `git merge --abort` 로 병합 전 상태로 돌아갑니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 27, '한쪽 버전으로 충돌 정리하기', '충돌 난 파일을 상대 브랜치 버전으로 정하고 병합을 마치는 순서입니다. 순서에 맞게 놓아 보세요.', '목록 확인 → 한쪽 선택 → 알림 → 마무리 순서예요.', NULL, NULL, '[]', 'order', '["`git diff --name-only --diff-filter=U` 로 충돌 난 파일을 확인한다", "`git checkout --theirs f.txt` 로 합치려는 브랜치의 버전을 가져온다", "`git add f.txt` 로 해결했음을 알린다", "`git merge --continue` 로 병합을 마친다"]', NULL, '병합과 rebase 에서 `--ours`, `--theirs` 의 방향이 반대임을 기억하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 28, '갈라진 브랜치 정리하고 push 하기', '로컬과 원격이 갈라졌을 때 확인하고 정리해서 올리는 순서입니다. 순서에 맞게 놓아 보세요.', '가져오기 → 상태 확인 → 실패 확인 → 정리 후 push 순서예요.', NULL, NULL, '[]', 'order', '["`git fetch origin` 으로 원격의 최신 상태를 가져온다", "`git status -sb` 에서 `[ahead 1, behind 1]` 처럼 갈라진 것을 확인한다", "`git pull --ff-only` 가 `Not possible to fast-forward` 로 거부되는 것을 확인한다", "`git pull --rebase` 로 내 커밋을 원격 위에 얹고 `[ahead 1]` 을 확인한 뒤 `git push` 한다"]', NULL, 'push 하고 나면 `git status -sb` 에 `## main...origin/main` 만 보입니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 184, 29, 'rerere 로 반복 충돌 줄이기', '같은 충돌이 반복될 때 해결 방법을 기억시켜 재사용하는 순서입니다. 순서에 맞게 놓아 보세요.', '켜기 → 한 번 해결 → 되돌리기 → 재사용 순서예요.', NULL, NULL, '[]', 'order', '["`git config rerere.enabled true` 로 기능을 켠다", "처음 충돌을 직접 해결해 커밋하고 `Recorded resolution` 이 나오는지 확인한다", "병합 커밋을 되돌리고(`git reset --hard HEAD~1`) 같은 병합을 다시 시도한다", "`Resolved ''파일'' using previous resolution.` 으로 해결된 내용을 확인하고 `git add` 로 마무리한다"]', NULL, '자동으로 해결된 내용이 맞는지 항상 눈으로 확인하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 184 AND order_index = 29);
