@@ -1,0 +1,122 @@
+-- 도커 세트 183. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set183.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 5, '도커', 'Docker 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 5);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 183, '이미지 관리와 로그: untag·삭제, 필터, export·import, prune, system df, 로그 로테이션', '이미지와 컨테이너를 관리하고 정리하는 방법을 한 개념씩 반복합니다. 태그가 이름표라는 것과 Untagged·Deleted 의 차이, 마지막 태그와 ID 로 삭제할 때의 충돌, 컨테이너가 쓰는 이미지를 지울 때의 거부, images 의 reference·label 필터와 -q·--no-trunc, image inspect, export 와 import(CMD 가 비는 것과 --change, 레이어가 하나로 합쳐지는 것), prune 의 범위와 label 필터, system df, 기본 hostname 과 --hostname·--add-host, json-file 로그 로테이션과 --log-driver none, --shm-size 와 --ulimit, docker events 를 짧은 객관식·빈칸·순서 문제로 익히고, 라벨로 범위를 좁혀 이미지 정리하기, 컨테이너의 파일 시스템을 이미지로 옮기기, rmi 가 거부될 때 풀기, 로그가 커지지 않게 로테이션 설정하기의 순서를 연습합니다.', 'quiz', '도커'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 183);
+UPDATE quest_set SET display_order = 178, unit_id = (SELECT id FROM unit WHERE id = 5), icon = '🧹' WHERE id = 183;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 1, '태그는 이름표', '`docker tag etude:v1 etude:alias` 로 이름을 하나 더 붙인 뒤 `docker rmi etude:alias` 를 하면 이미지는 어떻게 될까요?', '이름표만 떼요.', NULL, NULL, '[]', 'choice', '["이미지가 삭제되고 `etude:v1` 도 사라진다", "이미지가 복사본이어서 용량이 두 배로 든다", "두 이름은 같은 이미지(같은 ID)를 가리키며, `rmi etude:alias` 는 `Untagged: etude:alias` 만 출력하고 이미지는 `etude:v1` 로 그대로 남는다", "`rmi` 는 태그와 상관없이 항상 이미지 파일을 지운다"]', 2, '이미지를 가리키는 마지막 태그를 지울 때 비로소 이미지 자체가 삭제됩니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 2, '마지막 태그와 ID 로 삭제', '이미지에 태그가 하나만 남았을 때 `docker rmi 이름:태그` 의 출력은 어떻게 다를까요? 태그가 둘인 이미지를 `docker rmi 이미지ID` 로 지우면요? 태그 둘을 `docker rmi a b` 로 한 번에 지우면요?', '마지막 태그가 지워지면 이미지도 지워져요.', NULL, NULL, '[]', 'choice', '["`Deleted` 줄 없이 항상 `Untagged` 만 나온다", "마지막 태그를 지우면 `Untagged: 이름:태그` 와 함께 `Deleted: sha256:...` 가 나오고 이미지가 사라진다. 태그가 둘인 이미지를 ID 로 지우면 `image is referenced in multiple repositories` 충돌 오류가 난다. 두 태그를 한 번에 지우면 `Untagged` 두 줄 뒤에 `Deleted` 가 나온다", "ID 로 지우면 태그가 여러 개여도 오류 없이 삭제된다", "`docker rmi a b` 는 첫 번째만 지운다"]', 1, '태그 이름으로 지우면 그 태그만 떼어지고(`Untagged`), 마지막 태그일 때 이미지가 삭제됩니다(`Deleted`).', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 3, 'rmi 가 막히는 경우', '이미지를 쓰는 컨테이너가 있을 때 `docker rmi 이미지` 를 하면 어떻게 될까요? 컨테이너가 멈춰 있어도 같을까요?', '컨테이너가 이미지를 참조하고 있어요.', NULL, NULL, '[]', 'choice', '["`conflict: unable to delete ... (must be forced) - container 해시 is using its referenced image` 오류로 거부되며, 실행 중이든 멈춰 있든 마찬가지이다. 그 컨테이너를 `docker rm` 한 뒤에 지운다", "멈춘 컨테이너가 있으면 이미지가 삭제된다", "실행 중일 때만 거부된다", "오류 없이 이미지가 삭제되고 컨테이너는 계속 실행된다"]', 0, '`docker ps -a` 로 그 이미지를 쓰는 컨테이너를 찾을 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 4, 'images 의 필터와 출력', '`docker images --filter reference=''etude:*''`, `--filter label=etude=v183`, `-q`, `--no-trunc` 는 각각 무엇을 할까요? 한 이미지에 태그가 두 개일 때 `-q` 는 몇 줄일까요?', '이름·라벨로 거르고, ID 만 출력해요.', NULL, NULL, '[]', 'choice', '["`-q` 는 이미지당 한 줄만 출력한다", "`--filter label` 은 이름에 그 글자가 든 이미지를 보여 준다", "`--no-trunc` 는 출력 줄 수를 줄인다", "`reference` 는 이름 패턴, `label=키=값` 은 그 라벨이 있는 이미지만 보여 준다. `-q` 는 ID 만 출력하며 태그마다 한 줄씩이라 같은 이미지가 두 번 나오고, `--no-trunc` 는 `sha256:` 를 포함한 전체 ID(71자)를, 기본은 12자를 보여 준다"]', 3, '`docker image ls` 는 `docker images` 와 같은 결과를 보여 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 5, 'image inspect', '`docker image inspect 이미지` 의 결과에서 `LABEL`, `ENV`, `EXPOSE`, `CMD` 로 정한 값은 어디에 보일까요? 없는 이미지를 조회하면요? `docker inspect --type image` 는요?', '이미지의 설정이 JSON 으로 나와요.', NULL, NULL, '[]', 'choice', '["이미지 안의 파일 목록이 보인다", "없는 이미지는 빈 JSON 이 출력된다", "`Config` 아래의 `Labels`, `Env`, `ExposedPorts`, `Cmd` 에 보인다. 없는 이미지는 `No such image: 이름:latest` 오류가 나고, `docker inspect --type image 이름` 도 같은 정보를 보여 준다", "`CMD` 는 `inspect` 에 나오지 않는다"]', 2, '`--type image` 를 쓰면 이미지로만 조회합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 6, 'docker export', '컨테이너 안에서 `/v.txt` 를 `changed` 로 고친 뒤 `docker export 컨테이너 -o exp.tar` 를 하면 무엇이 담길까요?', '컨테이너의 파일 시스템 스냅샷이에요.', NULL, NULL, '[]', 'choice', '["이미지의 레이어와 설정이 그대로 담긴다", "컨테이너의 현재 파일 시스템(고친 `v.txt` 포함, `bin/` 등 시스템 파일 전체)이 tar 로 담긴다. 이미지의 `CMD` 같은 설정은 담기지 않는다", "원래 이미지의 `/v.txt` 가 담긴다", "컨테이너의 로그가 담긴다"]', 1, '`docker commit` 은 이미지로 만들고, `export` 는 파일 시스템만 tar 로 꺼냅니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 7, 'docker import', '`docker export` 한 tar 를 `docker import exp.tar 이름:imported` 로 이미지로 만들었습니다. 이 이미지를 `docker run --rm 이름:imported` 로 실행하면? `--change ''CMD [...]''` 는? 레이어는 몇 개일까요?', '명령 정보가 없는 이미지가 만들어져요.', NULL, NULL, '[]', 'choice', '["`Cmd` 가 비어 있어서 명령을 주지 않으면 `no command specified` 오류가 나고, `docker run --rm 이름:imported cat /v.txt` 처럼 명령을 주면 실행된다. `docker import --change ''CMD [\\"cat\\",\\"/v.txt\\"]''` 로 CMD 를 정할 수 있고, 레이어는 하나로 합쳐진다(`history` 가 1줄)", "원래 이미지의 `CMD` 가 그대로 들어간다", "명령 없이도 항상 실행된다", "원래 이미지와 같은 레이어 수를 가진다"]', 0, '`import` 한 이미지는 `Cmd` 가 비어 있으므로 필요하면 `--change` 로 다시 정합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 8, 'prune 의 범위', '`docker image prune -f` 와 `docker image prune -a -f --filter label=etude=v183` 은 각각 무엇을 지울까요? 태그가 붙은 미사용 이미지는요?', '-a 가 있어야 태그 붙은 미사용 이미지까지 지워요.', NULL, NULL, '[]', 'choice', '["`prune -f` 만으로 태그 붙은 미사용 이미지도 모두 지워진다", "`--filter label` 은 `prune -a` 에는 쓸 수 없다", "`prune -a` 는 실행 중인 컨테이너의 이미지도 지운다", "`prune -f` 는 dangling 이미지만 지워서(없으면 `Total reclaimed space: 0B`) 태그가 붙은 미사용 이미지는 남고, `-a` 는 사용하지 않는 모든 이미지를 지운다. `--filter label=...` 을 붙이면 그 라벨이 있는 이미지만 대상이 되어 범위를 좁힐 수 있다"]', 3, '`prune -a` 는 필터 없이 쓰면 다른 프로젝트의 이미지까지 지울 수 있어 위험합니다. 먼저 `docker images --filter ...` 로 대상을 확인하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 9, 'docker system df', '`docker system df` 는 무엇을 보여 줄까요? 열과 행은 어떻게 읽을까요?', '종류별 디스크 사용량이에요.', NULL, NULL, '[]', 'choice', '["컨테이너의 CPU 사용량을 보여 준다", "호스트 디스크 전체의 파티션을 보여 준다", "도커가 쓰는 디스크 사용량을 종류별로 보여 준다. 열은 `TYPE`, `TOTAL`, `ACTIVE`, `SIZE`, `RECLAIMABLE` 이고 행은 `Images`, `Containers`, `Local Volumes`, `Build Cache` 이다. `-v` 를 붙이면 항목별 상세(`Images space usage` 등)가 나온다", "`-v` 는 이미지만 삭제한다"]', 2, '`RECLAIMABLE` 은 지울 수 있는 크기의 추정치입니다. 읽기만 하는 명령이라 안전합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 10, 'hostname 과 add-host', '컨테이너의 기본 hostname 은 무엇일까요? `--hostname web-etude` 를 주면 `/etc/hosts` 는 어떻게 될까요? `--add-host db.internal:host-gateway` 는요? 그 옵션이 없을 때 `db.internal` 은 풀릴까요?', 'hostname 은 컨테이너 ID 예요.', NULL, NULL, '[]', 'choice', '["기본 hostname 은 이미지 이름이다", "기본 hostname 은 컨테이너 ID 앞 12자리이다. `--hostname web-etude` 는 hostname 을 바꾸고 `/etc/hosts` 에도 그 이름이 들어간다. `--add-host db.internal:host-gateway` 는 `/etc/hosts` 에 항목을 더해 `getent hosts db.internal` 이 풀리고, 옵션이 없으면 풀리지 않는다(종료 코드 2)", "`--add-host` 항목은 `/etc/hosts` 에 들어가지 않는다", "`--hostname` 은 `/etc/hosts` 를 바꾸지 않는다"]', 1, '`host-gateway` 는 컨테이너에서 호스트를 가리키는 특수한 값입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 11, '로그 로테이션', '`docker run --log-opt max-size=1k --log-opt max-file=2 ...` 로 로그를 많이 만들면 `docker logs` 는 어떻게 보일까요? 기본 로그 드라이버는 무엇일까요?', '오래된 로그가 지워져요.', NULL, NULL, '[]', 'choice', '["오래된 로그가 삭제되어 처음 줄 번호가 0 이 아니고(예: 380부터) 줄 수도 만든 것보다 적다. 이 설정은 `docker inspect` 의 `LogConfig`(`Type: json-file`, `max-file`)에서 볼 수 있고, 기본 로그 드라이버는 `json-file` 이다", "로그가 모두 처음부터 남는다", "`max-size` 는 `docker logs` 의 출력 줄 수를 제한할 뿐 파일은 그대로다", "기본 로그 드라이버는 `none` 이다"]', 0, '로그가 디스크를 채우는 사고를 막으려면 `max-size` 와 `max-file` 을 정해 두세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 12, '--log-driver none', '`--log-driver none` 으로 만든 컨테이너에 `docker logs` 를 하면 어떻게 될까요?', '로그를 저장하지 않아요.', NULL, NULL, '[]', 'choice', '["빈 출력으로 성공한다", "`json-file` 로 자동 전환된다", "컨테이너가 재시작된다", "로그를 저장하지 않으므로 `configured logging driver does not support reading` 오류가 난다"]', 3, '컨테이너 안의 출력이 사라지므로 로그가 필요한 서비스에는 쓰지 마세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 13, '--shm-size 와 --ulimit', '컨테이너의 `/dev/shm` 크기는 기본이 얼마이고 `--shm-size=128m` 을 주면요? `--ulimit nofile=256:256` 을 주면 안에서 `ulimit -n` 은 얼마일까요?', '공유 메모리 크기와 열 수 있는 파일 수 한도예요.', NULL, NULL, '[]', 'choice', '["`/dev/shm` 은 기본이 1G 이다", "`--ulimit` 은 컨테이너 밖의 호스트 한도를 바꾼다", "`/dev/shm` 은 기본 64M 이고 `--shm-size=128m` 이면 128M 이 된다. `--ulimit nofile=256:256` 이면 컨테이너 안의 `ulimit -n` 이 256 이다(옵션이 없을 때의 기본값은 환경마다 다르다)", "`--shm-size` 는 디스크 용량을 정한다"]', 2, '`df -m /dev/shm` 으로 컨테이너 안의 크기를 확인할 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 14, 'docker events', '`docker events --since 시각 --until 시각 --filter container=이름 --format ...` 로 컨테이너를 만들고 멈추고 지운 기록을 보면 어떤 동작(Action)들이 나올까요?', '컨테이너의 생애 이벤트가 나와요.', NULL, NULL, '[]', 'choice', '["이벤트는 `start` 와 `stop` 두 가지뿐이다", "`create`, `start`, `kill`, `die`, `stop`, `destroy` 같은 이벤트가 나온다 (`stop` 이 신호를 보내므로 `kill` 도 보인다). `--until` 을 주면 그 시각에 끝나고, `--filter type=container` 로 종류를 거를 수 있다", "`--until` 없이도 항상 자동으로 종료한다", "컨테이너를 지운 기록은 나오지 않는다"]', 1, '`--since` 와 `--until` 로 시간 범위를 정하면 그 사이의 기록만 볼 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 15, '이미지 삭제', '이미지(태그)를 **삭제하는** `docker` 하위 명령을 채우세요.', '"remove image"를 줄인 이름이에요.', NULL, NULL, '[]', 'fill', '["rmi", "rm", "delete", "remove"]', NULL, '`docker rm` 은 컨테이너를 지우는 명령입니다.', '[0]', 'docker {0} etude:v1', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 16, '라벨로 거르기', '`docker images` 를 **라벨로 거르는** 필터 이름을 채우세요.', '"라벨"이라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["label", "tag", "name", "meta"]', NULL, '`reference` 필터는 이름 패턴으로 거릅니다.', '[0]', 'docker images --filter {0}=etude=v183', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 17, 'ID 만 출력', '이미지 **ID 만** 출력하는 옵션을 채우세요.', '"quiet"의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-q", "-a", "-i", "-n"]', NULL, '태그가 둘이면 같은 ID 가 두 번 나옵니다.', '[0]', 'docker images {0} etude', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 18, '전체 ID', '이미지 ID 를 **줄이지 않고 전체**로 출력하는 옵션을 채우세요.', '"자르지 않음"이라는 뜻이에요.', NULL, NULL, '[]', 'fill', '["no-trunc", "full", "long", "all-id"]', NULL, '`sha256:` 를 포함해 71자가 나옵니다.', '[0]', 'docker images --{0} -q', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 19, '파일 시스템 꺼내기', '컨테이너의 **파일 시스템을 tar 로 꺼내는** 하위 명령을 채우세요.', '"내보내기"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["export", "save", "commit", "dump"]', NULL, '`save` 는 이미지를 tar 로 묶습니다.', '[0]', 'docker {0} -o exp.tar container', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 20, 'tar 를 이미지로', '파일 시스템 tar 를 **이미지로 만드는** 하위 명령을 채우세요.', '"가져오기"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["import", "load", "pull", "build"]', NULL, '`load` 는 `docker save` 로 만든 이미지 tar 를 읽습니다.', '[0]', 'docker {0} exp.tar etude:imported', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 21, 'CMD 정하며 import', '`docker import` 에서 Dockerfile 명령(예: `CMD`)을 **덧붙이는** 옵션을 채우세요.', '"바꾸다"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["--change", "--cmd", "--set", "--meta"]', NULL, '이 옵션이 없으면 `Cmd` 가 비어 있는 이미지가 만들어집니다.', '[0]', 'docker import {0} ''CMD ["cat","/v.txt"]'' exp.tar etude:imported2', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 22, 'prune 범위 좁히기', '`docker image prune` 의 대상을 **라벨로 제한**하는 옵션을 채우세요.', '"필터"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["--filter", "--only", "--label", "--match"]', NULL, '먼저 같은 필터로 `docker images` 를 실행해 대상을 확인하세요.', '[0]', 'docker image prune -a -f {0} label=etude=v183', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 23, '디스크 사용량', '도커의 **디스크 사용량**을 종류별로 보는 `docker system` 하위 명령을 채우세요.', '"disk free"를 줄인 이름이에요.', NULL, NULL, '[]', 'fill', '["df", "du", "usage", "space"]', NULL, '`-v` 를 붙이면 항목별 상세가 나옵니다.', '[0]', 'docker system {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 24, 'hostname 정하기', '컨테이너의 **hostname 을 정하는** `run` 옵션을 채우세요.', '"호스트 이름"이라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["hostname", "name", "host", "domain"]', NULL, '`--name` 은 컨테이너 이름이고 hostname 과 다릅니다.', '[0]', 'docker run --rm --{0} web-etude alpine hostname', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 25, '로그 크기 제한', '`json-file` 로그 파일 **하나의 최대 크기**를 정하는 `--log-opt` 키를 채우세요.', '"최대 크기"를 이어 붙인 이름이에요.', NULL, NULL, '[]', 'fill', '["max-size", "max-bytes", "limit", "size"]', NULL, '`max-file` 은 보관할 로그 파일의 개수를 정합니다.', '[0]', 'docker run --log-opt {0}=1k alpine true', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 26, '라벨로 범위를 좁혀 이미지 정리하기', '내 이미지만 안전하게 정리하는 순서입니다. 순서에 맞게 놓아 보세요.', '대상 확인 → 영향 확인 → 지우기 → 결과 확인 순서예요.', NULL, NULL, '[]', 'order', '["`docker images --filter label=etude=v183` 로 지울 대상을 확인한다", "`docker image prune -f --filter label=etude=v183` 로 dangling 만 지워 보고 태그 붙은 이미지가 남는지 본다", "`docker image prune -a -f --filter label=etude=v183` 로 그 라벨의 미사용 이미지를 지운다", "같은 필터로 `docker images` 를 다시 실행해 대상이 사라졌는지 확인한다"]', NULL, '필터 없는 `prune -a` 는 다른 이미지까지 지울 수 있으니 쓰지 마세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 27, '컨테이너의 파일 시스템을 이미지로 옮기기', '실행한 컨테이너의 현재 파일 시스템을 새 이미지로 만들어 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '변경 → 꺼내기 → 이미지화 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`docker exec` 로 컨테이너 안의 파일을 고친다", "`docker export 컨테이너 -o exp.tar` 로 파일 시스템을 tar 로 꺼낸다", "`docker import --change ''CMD [...]'' exp.tar 이름:태그` 로 이미지를 만든다", "`docker run --rm 이름:태그` 를 실행해 고친 파일의 내용이 나오는지 확인한다"]', NULL, '`import` 한 이미지는 메타데이터가 사라지니 `ENV`, `LABEL` 이 필요하면 `--change` 로 다시 정하세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 28, 'rmi 가 거부될 때 풀기', '이미지를 지우려는데 `unable to delete` 오류가 날 때 푸는 순서입니다. 순서에 맞게 놓아 보세요.', '오류 확인 → 사용 컨테이너 찾기 → 삭제 → 재시도 순서예요.', NULL, NULL, '[]', 'order', '["`docker rmi 이미지` 를 하고 `container ... is using its referenced image` 오류를 확인한다", "`docker ps -a` 로 그 이미지를 쓰는 컨테이너를 찾는다", "필요 없는 컨테이너를 `docker rm` 으로 지운다", "`docker rmi 이미지` 를 다시 실행해 `Untagged`(그리고 `Deleted`)가 나오는지 확인한다"]', NULL, '실행 중인 컨테이너는 먼저 `docker stop` 으로 멈춘 뒤 지우세요.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 183, 29, '로그가 커지지 않게 로테이션 설정하기', '컨테이너 로그가 디스크를 채우지 않게 설정하고 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '설정해 실행 → 로그 생성 → 결과 확인 → 설정 확인 순서예요.', NULL, NULL, '[]', 'order', '["`docker run --log-opt max-size=1k --log-opt max-file=2 ...` 로 컨테이너를 실행한다", "로그를 많이 출력하는 작업을 실행해 로그를 쌓는다", "`docker logs` 의 첫 줄 번호가 0 이 아니어서 오래된 로그가 삭제된 것을 확인한다", "`docker inspect` 의 `LogConfig` 에서 `json-file` 과 `max-file` 설정을 확인한다"]', NULL, '`--log-driver none` 으로 만든 컨테이너는 `docker logs` 로 읽을 수 없습니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 183 AND order_index = 29);
