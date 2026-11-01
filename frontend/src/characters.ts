@@ -5,7 +5,7 @@ export interface Stage { name: string; body: string; desc: string }
 
 // 레벨 1~10 (서버 TITLES 와 같은 단계 수). 마지막 단계를 넘는 레벨은 마지막 모습을 쓴다.
 export const STAGES: Stage[] = [
-  { name: '알', body: '🥚', desc: '아직 알이에요. 첫 세트를 끝내면 깨어나요!' },
+  { name: '전사의 알', body: '🥚', desc: '새싹 전사의 알이에요. 첫 세트를 끝내면 깨어나요!' },
   { name: '아기 전사', body: '🐣', desc: '막 깨어난 아기 전사예요.' },
   { name: '꼬마 전사', body: '🐥', desc: '나무 막대를 들고 연습 중이에요.' },
   { name: '견습 전사', body: '🐤', desc: '첫 검을 손에 쥐었어요.' },
