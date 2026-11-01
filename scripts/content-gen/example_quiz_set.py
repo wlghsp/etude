@@ -78,7 +78,7 @@ for q in Q:
 
 COLS = 'quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs'
 TITLE = '네트워크 기본과 텍스트 도구 한 줄씩'  # 제목은 주제만 쓴다("쉬운 문제 N:" 접두 금지, docs/specs/spec_content_reinforcement.md)
-DESC = '리눅스 네트워크와 텍스트 처리의 기본을 한 개념씩 쉬운 문제로 반복합니다. IP·포트·localhost·DNS, ping·curl·ss·nc·ip addr 의 쓰임과 refused 읽기, grep -v/-c/-r/-n, sort -nr·uniq -c, sed 치환, awk 칸 뽑기, tee, 연결이 안 될 때와 로그에서 IP 별 접속 수 세기의 점검 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.'
+DESC = '리눅스 네트워크와 텍스트 처리의 기본을 한 개념씩 반복합니다. IP·포트·localhost·DNS, ping·curl·ss·nc·ip addr 의 쓰임과 refused 읽기, grep -v/-c/-r/-n, sort -nr·uniq -c, sed 치환, awk 칸 뽑기, tee, 연결이 안 될 때와 로그에서 IP 별 접속 수 세기의 점검 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.'
 body = f"-- 세트 {SID}: {TITLE}\n-- 기본기 사다리(docs/specs/spec_foundations_ladder.md). 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다.\nINSERT INTO quest ({COLS}) VALUES\n  " + ',\n  '.join(rows) + ';\n'
 open(f'{ROOT}/backend/db/03_quest_set{SID}.sql','w').write(body)
 json.dump(dict(setId=SID, answers=answers), open(f'{ROOT}/backend/verify/set{SID}.json','w'), ensure_ascii=False, indent=2)
