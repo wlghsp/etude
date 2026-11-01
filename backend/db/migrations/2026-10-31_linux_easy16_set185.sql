@@ -1,0 +1,122 @@
+-- 리눅스 세트 185. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set185.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 185, 'grep 과 정규식 심화: BRE·ERE, -o, -P, 앵커·클래스, 역참조, -F, 종료 코드 한 줄씩', 'grep 과 정규식의 기본기를 한 개념씩 반복합니다. grep 의 종료 코드 0·1·2 와 -q·-s, 기본 정규식과 확장 정규식(-E)에서 + 와 | 와 {n,m} 이 다르게 해석되는 것, -o 로 일치한 부분만 뽑기와 -c 가 줄 수를 세는 것, 탐욕적 매칭과 [^>]*, -P 의 숫자 약식 표기와 미리보기, 앵커와 -x, POSIX 문자 클래스, 점과 -F 고정 문자열, 역참조, -e 와 -f 로 여러 패턴 주기와 대시로 시작하는 패턴, -m·-n·-b, 재귀 검색의 --include·--exclude·--exclude-dir·-l·-L 과 -r 과 -R 의 차이, 이진 파일 메시지와 -a, ps 와 grep 으로 찾을 때 grep 자신이 걸리는 문제를 짧은 객관식·빈칸·순서 문제로 익히고, 설정 파일에서 주석과 빈 줄 빼기, 숫자만 뽑고 세기, 폴더에서 파일 종류를 정해 검색하기, ps 결과에서 grep 자신 빼기의 순서를 연습합니다.', 'quiz', '리눅스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 185);
+UPDATE quest_set SET display_order = 9, unit_id = (SELECT id FROM unit WHERE id = 1), icon = '🔤' WHERE id = 185;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 1, 'grep 의 종료 코드', '`grep` 은 찾았을 때, 못 찾았을 때, 파일이 없을 때 각각 종료 코드가 몇일까요? `-q` 와 `-s` 는 무엇을 할까요?', '종료 코드로 결과를 알릴 수 있어요.', NULL, NULL, '[]', 'choice', '["못 찾으면 종료 코드 0 이다", "`-s` 는 종료 코드도 0 으로 바꾼다", "찾으면 0, 못 찾으면 1, 오류(파일 없음 등)면 2 이다. `-q` 는 아무것도 출력하지 않고 종료 코드만 남겨 `if grep -q 패턴 파일; then ...` 에 쓰고, `-s` 는 `No such file or directory` 같은 오류 메시지만 숨기며 종료 코드 2 는 그대로이다", "`-q` 는 일치한 줄을 두 번 출력한다"]', 2, '스크립트에서는 출력을 볼 필요가 없을 때 `-q` 를 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 2, '기본 정규식과 확장 정규식', '`grep ''a+b''`, `grep ''a\\+b''`, `grep ''o|b''`, `grep -E ''apple|cherry''` 는 각각 어떻게 해석될까요?', '기본 정규식에서는 +, | 가 평범한 글자예요.', NULL, NULL, '[]', 'choice', '["기본 정규식에서도 `+` 가 ''한 번 이상''이다", "기본 정규식(BRE)에서 `+` 와 `|` 는 문자 그대로여서 `a+b` 는 글자 `a+b` 를 찾고, `a\\\\+b` 는 `a` 가 한 번 이상, `o|b` 는 글자 `o|b` 를 찾는다. `-E`(확장 정규식)에서는 `apple|cherry` 의 `|` 가 ''또는''이다", "`-E` 에서는 `|` 가 문자 그대로이다", "`\\\\+` 는 문자 그대로의 더하기이다"]', 1, 'GNU grep 의 기본 정규식에서는 `\\|` 도 ''또는''으로 쓸 수 있습니다(`apple\\|cherry`).', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 3, '-E 로 쓰는 패턴', '`grep -E ''colou?r''`, `grep -E ''^a{2,}$''`, `grep -E ''^(ab)+$''` 는 각각 무엇을 찾을까요? `egrep` 은 무엇일까요?', '?, {n,m}, 그룹을 바로 쓸 수 있어요.', NULL, NULL, '[]', 'choice', '["`colou?r` 은 `color` 와 `colour`, `^a{2,}$` 는 `a` 만 2개 이상인 줄, `^(ab)+$` 는 `ab` 가 한 번 이상 반복된 줄(`abab`, `ab`)을 찾는다. `egrep` 은 `grep -E` 와 같다", "`colou?r` 은 `colou` 와 `r` 을 따로 찾는다", "`^a{2,}$` 는 `a` 가 정확히 2개인 줄만 찾는다", "`egrep` 은 `grep -F` 와 같다"]', 0, '기본 정규식에서 `{2}` 는 글자 그대로이고 `\\{2\\}` 로 써야 반복이 됩니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 4, '-o 와 -c', '`echo ''a1b22c333'' | grep -oE ''[0-9]+''` 는 무엇을 출력할까요? `-o` 에 `-n` 이나 `-b` 를 더하면요? `-c` 는 같은 입력에서 몇을 셀까요?', '-o 는 일치한 부분만 보여 줘요.', NULL, NULL, '[]', 'choice', '["`-c` 는 일치한 부분의 개수인 3 을 센다", "`-o` 는 일치하지 않은 부분을 출력한다", "`-o` 는 줄 전체를 출력한다", "일치한 부분 `1`, `22`, `333` 을 각각 한 줄로 출력한다. `-n` 을 더하면 줄 번호가, `-b` 를 더하면 바이트 위치(`2:abc`)가 앞에 붙는다. `-c` 는 일치한 줄의 수를 세므로 일치가 3개여도 한 줄이라 1 이다"]', 3, '일치 개수가 필요하면 `grep -o ... | wc -l` 을 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 5, '탐욕적 매칭', '`echo ''a<b>c<d>e'' | grep -oE ''<.*>''` 와 `grep -oE ''<[^>]*>''` 의 결과는 어떻게 다를까요?', '.* 는 가능한 한 길게 잡아요.', NULL, NULL, '[]', 'choice', '["두 패턴 모두 `<b>` 와 `<d>` 를 따로 출력한다", "`<.*>` 가 `<b>` 만 출력한다", "`<.*>` 는 가장 길게 잡아 `<b>c<d>` 전체를 한 번에 출력하고, `<[^>]*>` 는 `>` 가 아닌 글자만 이어 `<b>` 와 `<d>` 를 따로 출력한다", "`[^>]*` 는 `>` 를 포함해 가장 길게 잡는다"]', 2, '짧게 끊어 잡고 싶을 때는 끝 글자를 제외하는 문자 클래스(`[^>]*`)를 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 6, '-P 와 \\d', '`grep -oP ''\\d+(?= USD)''` 와 `grep -oE ''\\d''` 는 각각 어떻게 될까요? `\\w`, `\\s` 는요?', '-P 는 펄 정규식이에요.', NULL, NULL, '[]', 'choice', '["`-E` 에서도 `\\\\d` 가 숫자를 뜻한다", "`-P` 는 펄 호환 정규식이라 `\\\\d`(숫자)와 `(?= ...)` 같은 미리보기, `\\\\K` 를 쓸 수 있다. `-E` 에서는 `\\\\d` 가 숫자로 해석되지 않아 `a1` 에서 아무것도 나오지 않는다. `\\\\w`(단어 글자)와 `\\\\s`(공백)는 GNU grep 의 `-E` 에서도 쓸 수 있다", "`-P` 는 `\\\\d` 를 쓸 수 없다", "`\\\\w` 는 `-E` 에서 쓸 수 없다"]', 1, '`grep -oP ''key=\\K\\w+''` 는 `key=` 뒤의 값만 출력합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 7, '앵커와 -x', '`grep -c ''^$''`, `grep -c ''^a''`, `grep -c ''[0-9]$''` 는 각각 무엇을 셀까요? `-x` 는 무엇을 할까요?', '^ 는 줄의 시작, $ 는 줄의 끝이에요.', NULL, NULL, '[]', 'choice', '["`^$` 는 빈 줄, `^a` 는 `a` 로 시작하는 줄, `[0-9]$` 는 숫자로 끝나는 줄을 센다. `-x` 는 줄 전체가 패턴과 일치할 때만 찾는다(`cherry 3` 는 한 줄 전체이고 `cherry` 만으로는 `-x` 에서 일치하지 않는다)", "`^$` 는 모든 줄을 센다", "`-x` 는 줄의 일부만 일치해도 찾는다", "`$` 는 줄의 시작을 뜻한다"]', 0, '빈 줄 제거는 `grep -v ''^$''` 입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 8, '문자 클래스', '`[[:digit:]]`, `[[:upper:]]`, `[[:space:]]`, `[^0-9]` 는 각각 무엇을 뜻할까요? `echo ABC | grep ''[a-z]''` 는 일치할까요? `-i` 를 붙이면요?', 'POSIX 클래스는 이중 대괄호로 써요.', NULL, NULL, '[]', 'choice', '["`[[:digit:]]` 는 영문자를 뜻한다", "`[^0-9]` 는 숫자만 뜻한다", "`ABC` 는 `-i` 없이도 `[a-z]` 에 일치한다", "`[[:digit:]]` 는 숫자, `[[:upper:]]` 는 대문자, `[[:space:]]` 는 공백 문자, `[^0-9]` 는 숫자가 아닌 글자이다. `ABC` 는 `[a-z]` 에 일치하지 않지만(0줄) `-i` 를 붙이면 일치한다(1줄)"]', 3, '`-i` 를 붙이면 `ABC` 도 `[a-z]` 에 일치합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 9, '점과 -F', '`grep ''1.5''` 는 `105` 도 찾을까요? 점 자체를 찾으려면? `grep -F` 는 무엇일까요?', '점은 아무 한 글자예요.', NULL, NULL, '[]', 'choice', '["`1.5` 는 정확히 `1.5` 만 찾는다", "`-F` 는 패턴을 대문자로 바꾼다", "`.` 은 임의의 한 글자라서 `1.5` 는 `105` 에도 일치하고, 점 자체는 `1\\\\.5` 로 찾는다. `-F` 는 정규식이 아니라 고정 문자열로 취급해서 `a+b`, `foo|bar`, `x[0]` 같은 특수 문자도 그대로 찾는다. `-F` 없이 `x[0]` 은 `x0` 으로 해석된다", "`-F` 에서도 `|` 는 ''또는''이다"]', 2, '사용자 입력이나 파일 이름처럼 특수 문자가 섞인 문자열을 찾을 때 `-F` 가 안전합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 10, '역참조', '`grep ''\\(ab\\)\\1''`, `grep -E ''(.)\\1''`, `grep -E ''\\b(\\w+) \\1\\b''` 는 각각 무엇을 찾을까요?', '\\1 은 앞의 괄호가 잡은 내용이에요.', NULL, NULL, '[]', 'choice', '["`\\\\1` 은 줄 번호 1 을 뜻한다", "`\\\\(ab\\\\)\\\\1` 은 `abab` 처럼 `ab` 가 두 번 이어진 줄, `(.)\\\\1` 은 `book`·`bell` 처럼 같은 글자가 연달아 나오는 줄, `\\\\b(\\\\w+) \\\\1\\\\b` 는 `the the` 처럼 같은 단어가 반복된 줄을 찾는다", "기본 정규식에서는 역참조를 쓸 수 없다", "`(.)\\\\1` 은 서로 다른 두 글자를 찾는다"]', 1, '기본 정규식에서는 그룹도 `\\(` `\\)` 로 써야 합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 11, '여러 패턴과 대시로 시작하는 패턴', '패턴을 여러 개 주려면? `-v option` 을 찾으려고 패턴 `-v` 를 그냥 쓰면 어떻게 될까요?', '대시로 시작하면 옵션으로 읽혀요.', NULL, NULL, '[]', 'choice', '["`-e 패턴1 -e 패턴2` 로 여러 개를 주거나 `-f 파일` 로 파일의 줄마다 패턴을 읽는다. 패턴이 `-` 로 시작하면 옵션으로 해석되어 `Usage: grep ...` 가 나오므로 `-e ''-v''` 또는 `-- ''-v''` 로 쓴다", "`-v` 패턴은 그냥 써도 항상 찾는다", "`-f` 는 패턴 하나만 읽는다", "여러 패턴은 `-e` 로 줄 수 없다"]', 0, '`-f 파일` 의 파일에는 줄마다 패턴 하나를 적습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 12, '-m, -n, -b, -c', '`grep -m1`, `grep -n cherry`, `grep -b cherry`, `grep -c hello 파일들` 은 각각 어떤 출력을 낼까요?', '하나는 멈추고, 나머지는 번호를 붙여요.', NULL, NULL, '[]', 'choice', '["`-m1` 은 모든 일치를 출력하고 한 줄로 합친다", "`-b` 는 줄 번호를 붙인다", "`-c` 는 여러 파일이어도 총합 하나만 출력한다", "`-m1` 은 첫 일치 한 줄만 출력하고 멈추며, `-n` 은 `3:cherry 3` 처럼 줄 번호를, `-b` 는 `20:cherry 3` 처럼 그 줄의 바이트 위치를 앞에 붙인다. 파일이 여러 개면 `-c` 가 `d/a.txt:1` 처럼 파일별 개수를 출력한다"]', 3, '`-n` 은 가장 자주 쓰는 옵션으로, 에디터에서 그 줄로 바로 이동할 수 있게 해 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 13, '재귀 검색 옵션', '`grep -r hello d`, `--include=''*.txt''`, `--exclude=''*.log''`, `--exclude-dir=sub`, `-l`, `-L` 은 각각 무엇을 할까요? 디렉터리에 `-r` 없이 쓰면? `-r` 과 `-R` 의 차이는요?', '파일 종류와 폴더로 범위를 정해요.', NULL, NULL, '[]', 'choice', '["`--include` 는 폴더를 제외한다", "`-r` 없이도 하위 폴더까지 검색된다", "`-r` 은 하위 폴더까지 검색(결과에 `d/a.txt:...` 처럼 파일 이름이 붙음), `--include` 와 `--exclude` 는 파일 이름 패턴, `--exclude-dir` 은 폴더를 제외하고, `-l` 은 일치한 파일 이름만, `-L` 은 일치하지 않은 파일 이름만 보여 준다. `-r` 없이 디렉터리를 주면 `Is a directory` 가 나온다. `-r` 은 재귀 중 만난 심볼릭 링크를 따라가지 않고 `-R` 은 따라간다", "`-r` 과 `-R` 은 완전히 같다"]', 2, '`-h` 는 파일 이름을 숨기고 `-H` 는 한 파일을 검색할 때도 파일 이름을 붙입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 14, '이진 파일과 grep 자신', 'NUL 문자가 든 파일에서 일치하면 `grep` 은 무엇을 출력할까요? `-a` 는요? `ps aux | grep sleep` 을 하면 왜 `grep` 줄도 나오고 어떻게 피할까요?', '이진 파일은 줄을 출력하지 않아요.', NULL, NULL, '[]', 'choice', '["이진 파일도 줄을 그대로 출력한다", "`grep: b.bin: binary file matches` 라고만 알려 주고 줄은 출력하지 않으며, `-a` 를 쓰면 텍스트로 취급해 줄을 출력한다. `ps aux | grep sleep` 은 `grep sleep` 프로세스의 명령줄에도 `sleep` 이 있어 자기 자신이 걸리고, `grep ''[s]leep''` 처럼 쓰면 패턴 문자열 자체는 `sleep` 과 일치하지 않아 자기 자신을 피한다", "`-a` 는 이진 파일을 건너뛴다", "`[s]leep` 은 `sleep` 을 찾지 못한다"]', 1, '`ps aux | grep -v grep | grep sleep` 로도 피할 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 15, '종료 코드만 남기기', '**출력 없이 종료 코드로만** 결과를 알리는 `grep` 옵션을 채우세요.', '"quiet"의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-q", "-s", "-c", "-n"]', NULL, '`if grep -q ...; then` 처럼 조건문에 씁니다.', '[0]', 'grep {0} ''apple'' file', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 16, '확장 정규식', '`+`, `?`, `|`, `{n,m}` 을 **백슬래시 없이** 쓰게 하는 옵션을 채우세요.', '"extended"의 첫 글자(대문자)예요.', NULL, NULL, '[]', 'fill', '["-E", "-e", "-P", "-F"]', NULL, '`egrep` 은 `grep -E` 와 같습니다.', '[0]', 'grep {0} ''apple|cherry'' file', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 17, '일치한 부분만', '줄 전체가 아니라 **일치한 부분만** 출력하는 옵션을 채우세요.', '"only"의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-o", "-c", "-l", "-w"]', NULL, '일치가 여러 개면 각각 한 줄로 나옵니다.', '[0]', 'grep {0}E ''[0-9]+'' file', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 18, '펄 정규식', '`\\d` 와 미리보기를 쓸 수 있는 **펄 호환 정규식** 옵션을 채우세요.', '"Perl"의 첫 글자(대문자)예요.', NULL, NULL, '[]', 'fill', '["-P", "-E", "-F", "-G"]', NULL, '모든 환경에서 지원되는 것은 아닙니다.', '[0]', 'grep -o {0} ''\\d+'' file', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 19, '고정 문자열', '패턴을 **정규식이 아닌 고정 문자열**로 취급하는 옵션을 채우세요.', '"fixed"의 첫 글자(대문자)예요.', NULL, NULL, '[]', 'fill', '["-F", "-f", "-x", "-w"]', NULL, '`.`, `*`, `[`, `|` 같은 특수 문자를 그대로 찾습니다.', '[0]', 'grep {0} ''a+b'' file', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 20, '줄 전체 일치', '**줄 전체가 패턴과 일치**할 때만 찾는 옵션을 채우세요.', '"line-regexp"의 x 예요.', NULL, NULL, '[]', 'fill', '["-x", "-w", "-o", "-q"]', NULL, '`-w` 는 단어 단위로 일치합니다.', '[0]', 'grep {0} ''cherry 3'' file', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 21, '숫자 클래스', 'POSIX 문자 클래스에서 **숫자**를 뜻하는 이름을 채우세요.', '"숫자 한 자리"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["digit", "number", "num", "numeric"]', NULL, '대괄호가 이중으로 필요합니다.', '[0]', 'grep ''[[:{0}:]]'' file', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 22, '패턴을 여러 번', '패턴을 **여러 개 지정**할 때 각각 앞에 붙이는 옵션을 채우세요.', '"expression"의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-e", "-E", "-f", "-m"]', NULL, '패턴이 `-` 로 시작할 때도 이 옵션을 씁니다.', '[0]', 'grep -e apple {0} cherry file', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 23, '패턴 파일', '**파일에 적힌 패턴들**을 읽어 오는 옵션을 채우세요.', '"file"의 첫 글자(소문자)예요.', NULL, NULL, '[]', 'fill', '["-f", "-F", "-e", "-r"]', NULL, '패턴 파일은 줄마다 패턴 하나입니다.', '[0]', 'grep {0} patterns.txt file', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 24, '파일 이름 패턴 지정', '재귀 검색에서 **검색할 파일 이름 패턴**을 정하는 옵션을 채우세요.', '"포함하다"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["--include", "--only", "--name", "--match"]', NULL, '제외는 `--exclude`, 폴더 제외는 `--exclude-dir` 입니다.', '[0]', 'grep -r hello d {0}=''*.txt''', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 25, '첫 일치에서 멈추기', '첫 번째 일치를 찾은 뒤 **멈추도록** `-m` 에 줄 값을 채우세요.', '한 자리 숫자예요.', NULL, NULL, '[]', 'fill', '["1", "0", "2", "9"]', NULL, '`-m2` 는 두 줄까지 출력합니다.', '[0]', 'grep -m{0} -E ''[0-9]+'' file', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 26, '설정 파일에서 주석과 빈 줄 빼기', '설정 파일에서 주석과 빈 줄을 뺀 내용만 보는 순서입니다. 순서에 맞게 놓아 보세요.', '주석 제거 → 빈 줄 제거 → 확인 → 한 번에 순서예요.', NULL, NULL, '[]', 'order', '["`grep -v ''^#'' 파일` 로 `#` 로 시작하는 줄을 뺀다", "그 결과를 `| grep -v ''^$''` 로 이어 빈 줄을 뺀다", "남은 줄이 필요한 설정뿐인지 확인한다 (`  # 들여쓴 주석` 은 남는 것을 알아 둔다)", "`grep -vE ''^(#|$)'' 파일` 로 한 번에 같은 결과를 얻는다"]', NULL, '`  # 들여쓴 주석` 이나 줄 끝의 `x # 주석` 은 `^#` 패턴으로는 빠지지 않고 남습니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 27, '로그에서 숫자만 뽑기', '텍스트에서 숫자만 뽑고 개수를 세는 순서입니다. 순서에 맞게 놓아 보세요.', '줄 확인 → 숫자만 → 위치 → 개수 순서예요.', NULL, NULL, '[]', 'order', '["`grep -E ''[0-9]+'' 파일` 로 숫자가 든 줄을 확인한다", "`grep -oE ''[0-9]+'' 파일` 로 숫자만 한 줄씩 뽑는다", "`grep -noE ''[0-9]+'' 파일` 로 줄 번호와 함께 본다", "`grep -oE ''[0-9]+'' 파일 | wc -l` 로 숫자 덩어리의 개수를 센다 (`-c` 는 줄 수라 다르다)"]', NULL, '`-c` 는 일치한 줄의 수를 세므로 한 줄에 숫자가 여러 개여도 1 로 셉니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 28, '폴더에서 파일 종류를 정해 검색하기', '폴더를 재귀로 검색하며 범위를 좁혀 가는 순서입니다. 순서에 맞게 놓아 보세요.', '전체 → 파일 종류 → 이름만 → 폴더 제외 순서예요.', NULL, NULL, '[]', 'order', '["`grep -r hello d` 로 전체에서 일치하는 줄을 본다", "`grep -r hello d --include=''*.txt''` 로 `.txt` 파일로 제한한다", "`grep -rl hello d --include=''*.txt''` 로 파일 이름만 확인한다", "`--exclude-dir=sub` 를 더해 하위 폴더 `sub` 를 제외한다"]', NULL, '`-L` 은 일치하지 않은 파일의 이름을 보여 줍니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 185, 29, 'ps 결과에서 grep 자신 빼기', '프로세스 목록을 `grep` 으로 찾을 때 `grep` 자신이 걸리는 문제를 푸는 순서입니다. 순서에 맞게 놓아 보세요.', '증상 → 원인 → 해결 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`ps aux | grep sleep` 결과에 `grep sleep` 줄이 함께 나오는 것을 확인한다", "`grep` 프로세스의 명령줄에도 `sleep` 이 들어 있어 자기 자신이 걸린다는 것을 파악한다", "`ps aux | grep ''[s]leep''` 처럼 패턴을 바꾸거나 `| grep -v grep` 을 더한다", "결과 줄 수가 실제 `sleep` 프로세스 수와 같은지 확인한다"]', NULL, '`grep -c` 가 아니라 `grep -vc grep` 처럼 자기 자신을 뺀 개수를 세어 보면 확인할 수 있습니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 185 AND order_index = 29);
