@@ -180,3 +180,4 @@ UPDATE quest_set SET display_order = 9 WHERE id = 177;
 UPDATE quest_set SET display_order = 249 WHERE id = 178;
 UPDATE quest_set SET display_order = 178 WHERE id = 179;
 UPDATE quest_set SET display_order = 405 WHERE id = 180;
+UPDATE quest_set SET display_order = 9 WHERE id = 181;
