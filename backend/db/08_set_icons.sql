@@ -184,3 +184,4 @@ UPDATE quest_set SET icon = '🧭' WHERE id = 184;
 UPDATE quest_set SET icon = '🔤' WHERE id = 185;
 UPDATE quest_set SET icon = '🔗' WHERE id = 186;
 UPDATE quest_set SET icon = '🩺' WHERE id = 187;
+UPDATE quest_set SET icon = '📑' WHERE id = 188;
