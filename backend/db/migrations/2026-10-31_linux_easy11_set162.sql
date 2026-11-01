@@ -1,7 +1,7 @@
 -- 리눅스 세트 162. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set162.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 162, '성능 읽기, top·ps·free·vmstat 와 좀비 프로세스 한 줄씩', '서버 성능 화면을 읽는 기본기를 한 개념씩 쉬운 문제로 반복합니다. top 의 Tasks·%Cpu(us·sy·id·wa)·메모리 줄, ps 의 STAT(R·S·D·Z·T)와 컬럼(%CPU·VSZ·RSS·TIME), VSZ 와 RSS 의 차이, --sort=-%cpu, %CPU 100 의 의미, 좀비 프로세스와 kill -9 로 안 죽는 이유, vmstat 의 첫 행·r·b·si·so, free 의 available 과 /proc/meminfo·/proc/loadavg 읽기를 짧은 객관식·빈칸·순서 문제로 익히고, 서버가 느릴 때 좁혀 가기, CPU 와 입출력 대기 구분, 좀비 정리, 메모리 읽기의 순서를 연습합니다.', 'quiz', '리눅스'
+SELECT 162, '성능 읽기, top·ps·free·vmstat 와 좀비 프로세스 한 줄씩', '서버 성능 화면을 읽는 기본기를 한 개념씩 반복합니다. top 의 Tasks·%Cpu(us·sy·id·wa)·메모리 줄, ps 의 STAT(R·S·D·Z·T)와 컬럼(%CPU·VSZ·RSS·TIME), VSZ 와 RSS 의 차이, --sort=-%cpu, %CPU 100 의 의미, 좀비 프로세스와 kill -9 로 안 죽는 이유, vmstat 의 첫 행·r·b·si·so, free 의 available 과 /proc/meminfo·/proc/loadavg 읽기를 짧은 객관식·빈칸·순서 문제로 익히고, 서버가 느릴 때 좁혀 가기, CPU 와 입출력 대기 구분, 좀비 정리, 메모리 읽기의 순서를 연습합니다.', 'quiz', '리눅스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 162);
 UPDATE quest_set SET display_order = 9, unit_id = (SELECT id FROM unit WHERE id = 1), icon = '📈' WHERE id = 162;
 

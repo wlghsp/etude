@@ -1,6 +1,6 @@
 -- 입문 세트 107. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_friendly_audit.md
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 107, 'k8s 장애 읽기 입문: Pod 상태 한마디씩', '쉬운 장애 고치기(33) 전에 가볍게 보는 입문입니다. Running·Pending·ImagePullBackOff·CrashLoopBackOff 의 뜻, 막힌 Pod 를 보는 순서(get → describe → logs), Events 읽는 법, logs --previous, Pod 가 아니라 Deployment 를 고치는 이유를 쉬운 문제로 익힙니다.', 'quiz', 'k8s'
+SELECT 107, 'k8s 장애 읽기 입문: Pod 상태 한마디씩', '쉬운 장애 고치기(33) 전에 가볍게 보는 입문입니다. Running·Pending·ImagePullBackOff·CrashLoopBackOff 의 뜻, 막힌 Pod 를 보는 순서(get → describe → logs), Events 읽는 법, logs --previous, Pod 가 아니라 Deployment 를 고치는 이유를 문제로 익힙니다.', 'quiz', 'k8s'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 107);
 UPDATE quest_set SET display_order = 225, unit_id = (SELECT id FROM unit WHERE id = 6), icon = '🩺' WHERE id = 107;
 

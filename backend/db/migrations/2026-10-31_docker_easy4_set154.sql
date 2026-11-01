@@ -1,7 +1,7 @@
 -- 도커 세트 154. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set154.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 5, '도커', 'Docker 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 5);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 154, 'Dockerfile 심화, 변수와 명령, 멀티스테이지, 이미지 옮기기 한 줄씩', 'Dockerfile 과 이미지를 다루는 기본기를 한 개념씩 쉬운 문제로 반복합니다. COPY 와 ADD 의 차이, ARG 와 ENV(빌드 때만 보이는 변수), --build-arg, CMD 의 쉘 형식과 exec 형식, CMD 와 ENTRYPOINT 의 차이와 함께 쓸 때의 인자, --entrypoint, 멀티스테이지 빌드로 이미지 줄이기, 같은 RUN 에서 지워야 크기가 주는 이유, docker history, save 와 load 로 이미지 옮기기, --env-file 을 짧은 객관식·빈칸·순서 문제로 익히고, 빌드 변수 확인, 멀티스테이지로 줄이기, 인터넷 없는 서버로 옮기기, 큰 이미지 원인 찾기의 순서를 연습합니다.', 'quiz', '도커'
+SELECT 154, 'Dockerfile 심화, 변수와 명령, 멀티스테이지, 이미지 옮기기 한 줄씩', 'Dockerfile 과 이미지를 다루는 기본기를 한 개념씩 반복합니다. COPY 와 ADD 의 차이, ARG 와 ENV(빌드 때만 보이는 변수), --build-arg, CMD 의 쉘 형식과 exec 형식, CMD 와 ENTRYPOINT 의 차이와 함께 쓸 때의 인자, --entrypoint, 멀티스테이지 빌드로 이미지 줄이기, 같은 RUN 에서 지워야 크기가 주는 이유, docker history, save 와 load 로 이미지 옮기기, --env-file 을 짧은 객관식·빈칸·순서 문제로 익히고, 빌드 변수 확인, 멀티스테이지로 줄이기, 인터넷 없는 서버로 옮기기, 큰 이미지 원인 찾기의 순서를 연습합니다.', 'quiz', '도커'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 154);
 UPDATE quest_set SET display_order = 178, unit_id = (SELECT id FROM unit WHERE id = 5), icon = '🧊' WHERE id = 154;
 

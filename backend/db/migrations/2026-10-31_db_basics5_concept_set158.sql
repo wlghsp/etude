@@ -1,7 +1,7 @@
 -- 데이터베이스 세트 158. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set158.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 20, '데이터베이스', 'MariaDB 운영', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 20);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 158, 'DB 기초 5 (개념): 운영자가 자주 쓰는 SQL, 세션·설정·권한·실행 계획', 'MariaDB 를 운영할 때 가장 먼저 쓰는 SQL 을 한 개념씩 쉬운 문제로 반복합니다. SHOW PROCESSLIST 와 FULL, Time 열 읽기, KILL QUERY 와 KILL 의 차이(연결 유지 여부), SHOW VARIABLES 와 STATUS 의 차이, SET GLOBAL 이 재시작하면 사라지는 것, CREATE USER·GRANT·SHOW GRANTS·REVOKE 와 ERROR 1142, 계정 이름@위치와 USER()·CURRENT_USER(), information_schema 로 DB 크기 보기, EXPLAIN 의 type 과 인덱스를 못 쓰는 조건을 짧은 객관식·빈칸·순서 문제로 익히고, 느린 쿼리 중단, 앱 전용 계정 만들기, 권한 오류 풀기, 인덱스로 느린 조회 개선하기의 순서를 연습합니다.', 'quiz', '데이터베이스'
+SELECT 158, 'DB 기초 5 (개념): 운영자가 자주 쓰는 SQL, 세션·설정·권한·실행 계획', 'MariaDB 를 운영할 때 가장 먼저 쓰는 SQL 을 한 개념씩 반복합니다. SHOW PROCESSLIST 와 FULL, Time 열 읽기, KILL QUERY 와 KILL 의 차이(연결 유지 여부), SHOW VARIABLES 와 STATUS 의 차이, SET GLOBAL 이 재시작하면 사라지는 것, CREATE USER·GRANT·SHOW GRANTS·REVOKE 와 ERROR 1142, 계정 이름@위치와 USER()·CURRENT_USER(), information_schema 로 DB 크기 보기, EXPLAIN 의 type 과 인덱스를 못 쓰는 조건을 짧은 객관식·빈칸·순서 문제로 익히고, 느린 쿼리 중단, 앱 전용 계정 만들기, 권한 오류 풀기, 인덱스로 느린 조회 개선하기의 순서를 연습합니다.', 'quiz', '데이터베이스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 158);
 UPDATE quest_set SET display_order = 539, unit_id = (SELECT id FROM unit WHERE id = 20), icon = '🧮' WHERE id = 158;
 

@@ -1,6 +1,6 @@
 -- 입문 세트 108. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_friendly_audit.md
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 108, 'k8s 통신 입문: Pod IP, Service, 이름', '통신 방법 익히기(37) 전에 가볍게 보는 입문입니다. Pod 마다 IP 가 있다는 것, IP 가 바뀌는 이유, 그래서 Service 가 필요한 이유, 이름으로 접속하는 길, 레이블과 selector, port 와 targetPort, 다른 네임스페이스 이름, 외부 접속 방식을 쉬운 문제로 익힙니다.', 'quiz', 'k8s'
+SELECT 108, 'k8s 통신 입문: Pod IP, Service, 이름', '통신 방법 익히기(37) 전에 가볍게 보는 입문입니다. Pod 마다 IP 가 있다는 것, IP 가 바뀌는 이유, 그래서 Service 가 필요한 이유, 이름으로 접속하는 길, 레이블과 selector, port 와 targetPort, 다른 네임스페이스 이름, 외부 접속 방식을 문제로 익힙니다.', 'quiz', 'k8s'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 108);
 UPDATE quest_set SET display_order = 283, unit_id = (SELECT id FROM unit WHERE id = 8), icon = '🔗' WHERE id = 108;
 

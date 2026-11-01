@@ -1,7 +1,7 @@
 -- 데이터베이스 세트 140. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set140.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 140, 'DB 기초 3 (개념): 집계와 묶기로 숫자 요약하기', 'SQL 로 숫자를 요약하는 방법을 한 개념씩 쉬운 문제로 반복합니다. COUNT(*) 와 COUNT(컬럼)의 NULL 차이, SUM·AVG·MIN·MAX, GROUP BY 로 묶어 집계하기, WHERE 와 HAVING 의 차이, 조건에 맞는 행이 없을 때의 0 과 NULL, AS 별칭과 ORDER BY, COUNT(DISTINCT), SELECT 절의 쓰는 순서를 짧은 객관식·빈칸·순서 문제로 익히고, 도시별 고객 수, 합계가 큰 고객 찾기, 집계 결과 점검, Invalid use of group function 오류 풀기의 순서를 연습합니다.', 'quiz', '데이터베이스'
+SELECT 140, 'DB 기초 3 (개념): 집계와 묶기로 숫자 요약하기', 'SQL 로 숫자를 요약하는 방법을 한 개념씩 반복합니다. COUNT(*) 와 COUNT(컬럼)의 NULL 차이, SUM·AVG·MIN·MAX, GROUP BY 로 묶어 집계하기, WHERE 와 HAVING 의 차이, 조건에 맞는 행이 없을 때의 0 과 NULL, AS 별칭과 ORDER BY, COUNT(DISTINCT), SELECT 절의 쓰는 순서를 짧은 객관식·빈칸·순서 문제로 익히고, 도시별 고객 수, 합계가 큰 고객 찾기, 집계 결과 점검, Invalid use of group function 오류 풀기의 순서를 연습합니다.', 'quiz', '데이터베이스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 140);
 UPDATE quest_set SET display_order = 539, unit_id = (SELECT id FROM unit WHERE id = 30), icon = '📊' WHERE id = 140;
 

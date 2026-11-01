@@ -1,7 +1,7 @@
 -- 리눅스 세트 133. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set133.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 133, '쉘 스크립트, 서비스, 압축 한 줄씩', '리눅스 운영에 자주 쓰는 도구를 한 개념씩 쉬운 문제로 반복합니다. 쉘 스크립트의 shebang·실행 권한·변수·인자($1)·종료 코드($?)·&& 와 ||·set -e, systemctl 의 start·enable·status·restart·daemon-reload 와 journalctl -u, tar 로 압축·풀기·목록 보기(-czf, -xzf, -tzf, -C), 그리고 스크립트 작성, 서비스 장애 점검, 압축 백업의 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', '리눅스'
+SELECT 133, '쉘 스크립트, 서비스, 압축 한 줄씩', '리눅스 운영에 자주 쓰는 도구를 한 개념씩 반복합니다. 쉘 스크립트의 shebang·실행 권한·변수·인자($1)·종료 코드($?)·&& 와 ||·set -e, systemctl 의 start·enable·status·restart·daemon-reload 와 journalctl -u, tar 로 압축·풀기·목록 보기(-czf, -xzf, -tzf, -C), 그리고 스크립트 작성, 서비스 장애 점검, 압축 백업의 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', '리눅스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 133);
 UPDATE quest_set SET display_order = 9, unit_id = (SELECT id FROM unit WHERE id = 1), icon = '📦' WHERE id = 133;
 

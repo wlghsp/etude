@@ -1,7 +1,7 @@
 -- k8s 세트 134. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set134.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크로드와 설정', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 7);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 134, 'Deployment 업데이트, Job, 상태 읽기 한 줄씩', 'k8s 워크로드 운영의 기본을 한 개념씩 쉬운 문제로 반복합니다. Deployment 롤링 업데이트(maxSurge·maxUnavailable)와 rollout status·history·undo·restart, 멈춘 업데이트 읽기, Job·backoffLimit·restartPolicy·Completed, CronJob 과 cron 5칸, describe 의 Events·logs --previous·get -o wide/yaml/-w 로 상태 읽기, 그리고 업데이트와 롤백, Job 실행, 재시작 조사, CronJob 확인의 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', 'k8s'
+SELECT 134, 'Deployment 업데이트, Job, 상태 읽기 한 줄씩', 'k8s 워크로드 운영의 기본을 한 개념씩 반복합니다. Deployment 롤링 업데이트(maxSurge·maxUnavailable)와 rollout status·history·undo·restart, 멈춘 업데이트 읽기, Job·backoffLimit·restartPolicy·Completed, CronJob 과 cron 5칸, describe 의 Events·logs --previous·get -o wide/yaml/-w 로 상태 읽기, 그리고 업데이트와 롤백, Job 실행, 재시작 조사, CronJob 확인의 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', 'k8s'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 134);
 UPDATE quest_set SET display_order = 249, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '🔄' WHERE id = 134;
 

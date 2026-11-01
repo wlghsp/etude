@@ -1,7 +1,7 @@
 -- 리눅스 세트 152. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set152.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 152, '쉘 스크립트 조건, 반복, 함수, 백그라운드 한 줄씩', '쉘 스크립트의 제어 구조를 한 개념씩 쉬운 문제로 반복합니다. [ ] 검사(-f·-d·-z·-n), 숫자(-gt)와 문자열(=) 비교의 차이, 대괄호 사이 공백과 빈 변수 따옴표 오류, if·fi, for 와 와일드카드, 무한 반복 막기, continue·break, $(( )) 정수 산술, 함수의 return·local, $#·$@·$0·shift, case, &·$!·wait 를 짧은 객관식·빈칸·순서 문제로 익히고, 파일 검사 스크립트, 로그 압축 반복문, 백그라운드 작업 다루기, 대괄호 오류 풀기의 순서를 연습합니다.', 'quiz', '리눅스'
+SELECT 152, '쉘 스크립트 조건, 반복, 함수, 백그라운드 한 줄씩', '쉘 스크립트의 제어 구조를 한 개념씩 반복합니다. [ ] 검사(-f·-d·-z·-n), 숫자(-gt)와 문자열(=) 비교의 차이, 대괄호 사이 공백과 빈 변수 따옴표 오류, if·fi, for 와 와일드카드, 무한 반복 막기, continue·break, $(( )) 정수 산술, 함수의 return·local, $#·$@·$0·shift, case, &·$!·wait 를 짧은 객관식·빈칸·순서 문제로 익히고, 파일 검사 스크립트, 로그 압축 반복문, 백그라운드 작업 다루기, 대괄호 오류 풀기의 순서를 연습합니다.', 'quiz', '리눅스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 152);
 UPDATE quest_set SET display_order = 9, unit_id = (SELECT id FROM unit WHERE id = 1), icon = '🧾' WHERE id = 152;
 

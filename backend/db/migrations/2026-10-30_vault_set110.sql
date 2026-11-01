@@ -1,7 +1,7 @@
 -- 세트 110. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_content_reinforcement.md
 INSERT INTO unit (id, category, title, display_order) SELECT 28, '미들웨어', '보안·시크릿', 100 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 28);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 110, 'Vault 입문: 비밀을 맡기는 금고', 'Vault 를 처음 만나는 입문입니다. Vault 가 무엇인지, Sealed/Unseal 과 unseal 키를 나눠 갖는 이유, 처음 시작하는 순서(init → unseal → login), root 토큰을 다루는 법, KV 에 비밀 넣고 꺼내기, 정책(최소 권한), 토큰 TTL, 앱이 비밀을 안전하게 쓰는 흐름을 쉬운 문제로 익힙니다.', 'quiz', '미들웨어'
+SELECT 110, 'Vault 입문: 비밀을 맡기는 금고', 'Vault 를 처음 만나는 입문입니다. Vault 가 무엇인지, Sealed/Unseal 과 unseal 키를 나눠 갖는 이유, 처음 시작하는 순서(init → unseal → login), root 토큰을 다루는 법, KV 에 비밀 넣고 꺼내기, 정책(최소 권한), 토큰 TTL, 앱이 비밀을 안전하게 쓰는 흐름을 문제로 익힙니다.', 'quiz', '미들웨어'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 110);
 UPDATE quest_set SET display_order = 600, unit_id = (SELECT id FROM unit WHERE id = 28), icon = '🔐' WHERE id = 110;
 

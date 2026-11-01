@@ -1,6 +1,6 @@
 -- 입문 세트 106. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_friendly_audit.md
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 106, '이름으로 통신 입문: 이름표, 전화번호부, 포트', '이름으로 통신하기(36) 전에 가볍게 보는 입문입니다. 왜 이름이 필요한지, /etc/hosts 와 DNS 의 차이, 이름을 찾는 순서, 포트 번호, Name or service not known 과 Connection refused 의 차이, 접속 장애를 좁히는 순서를 쉬운 문제로 익힙니다.', 'quiz', '리눅스'
+SELECT 106, '이름으로 통신 입문: 이름표, 전화번호부, 포트', '이름으로 통신하기(36) 전에 가볍게 보는 입문입니다. 왜 이름이 필요한지, /etc/hosts 와 DNS 의 차이, 이름을 찾는 순서, 포트 번호, Name or service not known 과 Connection refused 의 차이, 접속 장애를 좁히는 순서를 문제로 익힙니다.', 'quiz', '리눅스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 106);
 UPDATE quest_set SET display_order = 110, unit_id = (SELECT id FROM unit WHERE id = 3), icon = '📒' WHERE id = 106;
 

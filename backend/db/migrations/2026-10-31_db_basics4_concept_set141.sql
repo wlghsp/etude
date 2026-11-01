@@ -1,7 +1,7 @@
 -- 데이터베이스 세트 141. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set141.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 141, 'DB 기초 4 (개념): JOIN 으로 두 테이블 이어서 보기', '두 테이블을 이어서 보는 JOIN 을 한 개념씩 쉬운 문제로 반복합니다. 테이블을 나누는 이유와 외래키, JOIN ... ON 으로 짝짓기, ON 을 빼먹으면 생기는 곱집합(15행), INNER JOIN 과 LEFT JOIN 의 결과 차이와 NULL 읽기, LEFT JOIN + IS NULL 로 짝 없는 행 찾기, 겹치는 컬럼의 ambiguous 오류와 테이블 별칭, JOIN + GROUP BY 합계, COUNT(*) 와 COUNT(o.id) 의 차이를 짧은 객관식·빈칸·순서 문제로 익히고, JOIN 쿼리 조립과 결과가 이상할 때의 점검 순서를 연습합니다.', 'quiz', '데이터베이스'
+SELECT 141, 'DB 기초 4 (개념): JOIN 으로 두 테이블 이어서 보기', '두 테이블을 이어서 보는 JOIN 을 한 개념씩 반복합니다. 테이블을 나누는 이유와 외래키, JOIN ... ON 으로 짝짓기, ON 을 빼먹으면 생기는 곱집합(15행), INNER JOIN 과 LEFT JOIN 의 결과 차이와 NULL 읽기, LEFT JOIN + IS NULL 로 짝 없는 행 찾기, 겹치는 컬럼의 ambiguous 오류와 테이블 별칭, JOIN + GROUP BY 합계, COUNT(*) 와 COUNT(o.id) 의 차이를 짧은 객관식·빈칸·순서 문제로 익히고, JOIN 쿼리 조립과 결과가 이상할 때의 점검 순서를 연습합니다.', 'quiz', '데이터베이스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 141);
 UPDATE quest_set SET display_order = 539, unit_id = (SELECT id FROM unit WHERE id = 30), icon = '🔗' WHERE id = 141;
 

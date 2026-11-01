@@ -1,7 +1,7 @@
 -- 리눅스 세트 146. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set146.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 146, 'vi 편집기, ssh·scp, 날짜 형식, 방화벽, 서버 정보 한 줄씩', '서버에 접속해 파일을 고치고 옮길 때 자주 쓰는 도구를 한 개념씩 쉬운 문제로 반복합니다. vi 의 명령 모드와 입력 모드, :wq·:q!, dd·u·yy·p, /검색, ssh user@host 의 모양과 -p·-i, scp 의 방향과 -P·-r(ssh 와 scp 의 포트 옵션 대소문자 차이), date +%Y-%m-%d 형식, 서비스는 LISTEN 인데 접속이 안 될 때의 방화벽 점검, /etc/os-release 와 uname 을 짧은 객관식·빈칸·순서 문제로 익히고, vi 로 파일 고치기, 원격에 파일 보내고 확인하기, 방화벽 점검, 서버 정보 파악의 순서를 연습합니다.', 'quiz', '리눅스'
+SELECT 146, 'vi 편집기, ssh·scp, 날짜 형식, 방화벽, 서버 정보 한 줄씩', '서버에 접속해 파일을 고치고 옮길 때 자주 쓰는 도구를 한 개념씩 반복합니다. vi 의 명령 모드와 입력 모드, :wq·:q!, dd·u·yy·p, /검색, ssh user@host 의 모양과 -p·-i, scp 의 방향과 -P·-r(ssh 와 scp 의 포트 옵션 대소문자 차이), date +%Y-%m-%d 형식, 서비스는 LISTEN 인데 접속이 안 될 때의 방화벽 점검, /etc/os-release 와 uname 을 짧은 객관식·빈칸·순서 문제로 익히고, vi 로 파일 고치기, 원격에 파일 보내고 확인하기, 방화벽 점검, 서버 정보 파악의 순서를 연습합니다.', 'quiz', '리눅스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 146);
 UPDATE quest_set SET display_order = 9, unit_id = (SELECT id FROM unit WHERE id = 1), icon = '✏️' WHERE id = 146;
 

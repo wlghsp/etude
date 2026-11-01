@@ -1,7 +1,7 @@
 -- Git 세트 155. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set155.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 12, 'Git', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 12);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 155, '병합 방식, 원격 관리, detached HEAD, 안전한 푸시 한 줄씩', '팀으로 Git 을 쓸 때 만나는 개념과 명령을 한 개념씩 쉬운 문제로 반복합니다. merge 의 --no-ff·--squash·--abort 와 충돌 상태 UU, remote -v·set-url, branch -r·-a, push --delete 와 fetch --prune, detached HEAD 와 작업 구하기, pull 과 pull --rebase 의 차이, --force-with-lease 와 --force, 태그를 따로 올리는 것을 짧은 객관식·빈칸·순서 문제로 익히고, 스쿼시 병합, 병합 중단, detached HEAD 에서 작업 구하기, push 거절을 rebase 로 풀기의 순서를 연습합니다.', 'quiz', 'Git'
+SELECT 155, '병합 방식, 원격 관리, detached HEAD, 안전한 푸시 한 줄씩', '팀으로 Git 을 쓸 때 만나는 개념과 명령을 한 개념씩 반복합니다. merge 의 --no-ff·--squash·--abort 와 충돌 상태 UU, remote -v·set-url, branch -r·-a, push --delete 와 fetch --prune, detached HEAD 와 작업 구하기, pull 과 pull --rebase 의 차이, --force-with-lease 와 --force, 태그를 따로 올리는 것을 짧은 객관식·빈칸·순서 문제로 익히고, 스쿼시 병합, 병합 중단, detached HEAD 에서 작업 구하기, push 거절을 rebase 로 풀기의 순서를 연습합니다.', 'quiz', 'Git'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 155);
 UPDATE quest_set SET display_order = 405, unit_id = (SELECT id FROM unit WHERE id = 12), icon = '🌿' WHERE id = 155;
 

@@ -1,7 +1,7 @@
 -- k8s 세트 157. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set157.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크로드와 설정', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 7);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 157, '배포 전략, 설정 반영 시점, 삭제 연쇄, 노드·DNS 읽기 한 줄씩', 'k8s 운영 중 헷갈리기 쉬운 동작을 한 개념씩 쉬운 문제로 반복합니다. 기본 RollingUpdate(25%)와 Recreate 의 차이와 쓰임, 롤링 중 두 버전이 함께 도는 것, ConfigMap 을 바꿨을 때 환경 변수·볼륨·subPath 가 반영되는 시점과 rollout restart, emptyDir 의 수명, Deployment 삭제의 연쇄와 --cascade=orphan, 노드의 Capacity·Allocatable·Conditions 읽기, 클러스터 DNS 이름(서비스.네임스페이스.svc.cluster.local)을 짧은 객관식·빈칸·순서 문제로 익히고, 설정 반영 안 될 때, bad address 풀기, 고아로 지우기, 노드 상태 점검의 순서를 연습합니다.', 'quiz', 'k8s'
+SELECT 157, '배포 전략, 설정 반영 시점, 삭제 연쇄, 노드·DNS 읽기 한 줄씩', 'k8s 운영 중 헷갈리기 쉬운 동작을 한 개념씩 반복합니다. 기본 RollingUpdate(25%)와 Recreate 의 차이와 쓰임, 롤링 중 두 버전이 함께 도는 것, ConfigMap 을 바꿨을 때 환경 변수·볼륨·subPath 가 반영되는 시점과 rollout restart, emptyDir 의 수명, Deployment 삭제의 연쇄와 --cascade=orphan, 노드의 Capacity·Allocatable·Conditions 읽기, 클러스터 DNS 이름(서비스.네임스페이스.svc.cluster.local)을 짧은 객관식·빈칸·순서 문제로 익히고, 설정 반영 안 될 때, bad address 풀기, 고아로 지우기, 노드 상태 점검의 순서를 연습합니다.', 'quiz', 'k8s'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 157);
 UPDATE quest_set SET display_order = 249, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '🧭' WHERE id = 157;
 

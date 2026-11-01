@@ -1,7 +1,7 @@
 -- 데이터베이스 세트 139. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set139.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 139, 'DB 기초 2 (개념): 조건과 정렬로 원하는 행만 골라 보기', 'SQL 로 원하는 행만 골라 보는 방법을 한 개념씩 쉬운 문제로 반복합니다. WHERE 의 역할과 문자열 따옴표(Unknown column 오류), =·<>·AND·OR·IN·LIKE·%·BETWEEN, NULL 은 IS NULL 로 찾기, ORDER BY 의 ASC·DESC, ORDER BY DESC LIMIT 1 로 최댓값 행 찾기, DISTINCT, SELECT 절의 쓰는 순서를 짧은 객관식·빈칸·순서 문제로 익히고, SELECT 조립과 조건을 하나씩 좁혀 가기, 오류 풀기의 순서를 연습합니다.', 'quiz', '데이터베이스'
+SELECT 139, 'DB 기초 2 (개념): 조건과 정렬로 원하는 행만 골라 보기', 'SQL 로 원하는 행만 골라 보는 방법을 한 개념씩 반복합니다. WHERE 의 역할과 문자열 따옴표(Unknown column 오류), =·<>·AND·OR·IN·LIKE·%·BETWEEN, NULL 은 IS NULL 로 찾기, ORDER BY 의 ASC·DESC, ORDER BY DESC LIMIT 1 로 최댓값 행 찾기, DISTINCT, SELECT 절의 쓰는 순서를 짧은 객관식·빈칸·순서 문제로 익히고, SELECT 조립과 조건을 하나씩 좁혀 가기, 오류 풀기의 순서를 연습합니다.', 'quiz', '데이터베이스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 139);
 UPDATE quest_set SET display_order = 539, unit_id = (SELECT id FROM unit WHERE id = 30), icon = '🎯' WHERE id = 139;
 

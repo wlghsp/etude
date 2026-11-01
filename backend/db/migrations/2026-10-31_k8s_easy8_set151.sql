@@ -1,7 +1,7 @@
 -- k8s 세트 151. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set151.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크로드와 설정', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 7);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 151, 'Pod 수명주기, 이미지 정책, 라벨 셀렉터, 출력 고르기 한 줄씩', 'Pod 가 시작되고 끝나는 과정과 라벨로 고르는 방법을 한 개념씩 쉬운 문제로 반복합니다. init 컨테이너와 Init:0/1 읽기, restartPolicy 의 Always·OnFailure·Never 와 Completed, imagePullPolicy 기본값과 IfNotPresent 의 함정, terminationGracePeriodSeconds 와 삭제가 30초 걸리는 이유, 라벨 셀렉터의 in·!=·존재·부재·쉼표(AND), custom-columns, scale 을 짧은 객관식·빈칸·순서 문제로 익히고, Init 에서 멈춘 Pod, 재시작하지 않는 Pod, 라벨로 좁히기, 삭제가 느릴 때의 조사 순서를 연습합니다.', 'quiz', 'k8s'
+SELECT 151, 'Pod 수명주기, 이미지 정책, 라벨 셀렉터, 출력 고르기 한 줄씩', 'Pod 가 시작되고 끝나는 과정과 라벨로 고르는 방법을 한 개념씩 반복합니다. init 컨테이너와 Init:0/1 읽기, restartPolicy 의 Always·OnFailure·Never 와 Completed, imagePullPolicy 기본값과 IfNotPresent 의 함정, terminationGracePeriodSeconds 와 삭제가 30초 걸리는 이유, 라벨 셀렉터의 in·!=·존재·부재·쉼표(AND), custom-columns, scale 을 짧은 객관식·빈칸·순서 문제로 익히고, Init 에서 멈춘 Pod, 재시작하지 않는 Pod, 라벨로 좁히기, 삭제가 느릴 때의 조사 순서를 연습합니다.', 'quiz', 'k8s'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 151);
 UPDATE quest_set SET display_order = 249, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '⏳' WHERE id = 151;
 

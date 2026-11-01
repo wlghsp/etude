@@ -1,6 +1,6 @@
 -- 입문 세트 105. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_friendly_audit.md
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 105, '반복 입문: 같은 일을 컴퓨터에게 맡기기', '반복 작업 세트(35) 전에 가볍게 보는 입문입니다. 같은 일을 여러 번 시키는 이유, for 문의 모양, 와일드카드(*.log), seq, 한 줄씩 읽는 while read, 공백 파일 이름의 함정, 지우기 전에 echo 로 미리보기하는 습관을 쉬운 문제로 익힙니다.', 'quiz', '리눅스'
+SELECT 105, '반복 입문: 같은 일을 컴퓨터에게 맡기기', '반복 작업 세트(35) 전에 가볍게 보는 입문입니다. 같은 일을 여러 번 시키는 이유, for 문의 모양, 와일드카드(*.log), seq, 한 줄씩 읽는 while read, 공백 파일 이름의 함정, 지우기 전에 echo 로 미리보기하는 습관을 문제로 익힙니다.', 'quiz', '리눅스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 105);
 UPDATE quest_set SET display_order = 90, unit_id = (SELECT id FROM unit WHERE id = 2), icon = '🪜' WHERE id = 105;
 

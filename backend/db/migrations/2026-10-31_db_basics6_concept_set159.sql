@@ -1,7 +1,7 @@
 -- 데이터베이스 세트 159. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set159.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 159, 'DB 기초 6 (개념): 데이터 바꾸기와 트랜잭션, INSERT·UPDATE·DELETE 안전하게', '데이터를 추가·수정·삭제하는 SQL 과 그 안전 습관을 한 개념씩 쉬운 문제로 반복합니다. INSERT 의 열 목록과 ERROR 1136·1062·1364·1048, AUTO_INCREMENT 와 TRUNCATE, WHERE 없는 UPDATE·DELETE 의 위험, Rows matched 와 Changed 의 차이, sql_safe_updates 안전 모드, DELETE 와 TRUNCATE 의 차이, START TRANSACTION·COMMIT·ROLLBACK, 다른 세션에서 보이는 시점과 행 잠금, autocommit, DDL 의 암묵적 커밋을 짧은 객관식·빈칸·순서 문제로 익히고, 안전하게 값 바꾸기, WHERE 를 빠뜨렸을 때의 대응, 안전 모드, DDL 함정의 순서를 연습합니다.', 'quiz', '데이터베이스'
+SELECT 159, 'DB 기초 6 (개념): 데이터 바꾸기와 트랜잭션, INSERT·UPDATE·DELETE 안전하게', '데이터를 추가·수정·삭제하는 SQL 과 그 안전 습관을 한 개념씩 반복합니다. INSERT 의 열 목록과 ERROR 1136·1062·1364·1048, AUTO_INCREMENT 와 TRUNCATE, WHERE 없는 UPDATE·DELETE 의 위험, Rows matched 와 Changed 의 차이, sql_safe_updates 안전 모드, DELETE 와 TRUNCATE 의 차이, START TRANSACTION·COMMIT·ROLLBACK, 다른 세션에서 보이는 시점과 행 잠금, autocommit, DDL 의 암묵적 커밋을 짧은 객관식·빈칸·순서 문제로 익히고, 안전하게 값 바꾸기, WHERE 를 빠뜨렸을 때의 대응, 안전 모드, DDL 함정의 순서를 연습합니다.', 'quiz', '데이터베이스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 159);
 UPDATE quest_set SET display_order = 539, unit_id = (SELECT id FROM unit WHERE id = 30), icon = '✍️' WHERE id = 159;
 

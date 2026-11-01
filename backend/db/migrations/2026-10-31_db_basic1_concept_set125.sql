@@ -1,7 +1,7 @@
 -- 미들웨어 세트 125. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set125.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 20, '미들웨어', '데이터베이스', 40 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 20);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 125, 'DB 기초 1 (개념): 데이터베이스와 테이블 구경하기', 'SQL 을 처음 만나는 사람을 위한 쉬운 문제 모음입니다. 행과 열, 데이터베이스·테이블 목록 보기(SHOW, USE), 테이블 구조 읽기(DESC, PRI, NULL), SELECT 의 기본 모양, 필요한 열만 고르기, LIMIT 로 맛보기, 별명(AS), 세미콜론과 주석, 운영 DB 에서 안전하게 구경하는 순서를 짧은 문제로 반복해서 익힙니다.', 'quiz', '미들웨어'
+SELECT 125, 'DB 기초 1 (개념): 데이터베이스와 테이블 구경하기', 'SQL 을 처음 만나는 사람을 위한 문제 모음입니다. 행과 열, 데이터베이스·테이블 목록 보기(SHOW, USE), 테이블 구조 읽기(DESC, PRI, NULL), SELECT 의 기본 모양, 필요한 열만 고르기, LIMIT 로 맛보기, 별명(AS), 세미콜론과 주석, 운영 DB 에서 안전하게 구경하는 순서를 짧은 문제로 반복해서 익힙니다.', 'quiz', '미들웨어'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 125);
 UPDATE quest_set SET display_order = 538, unit_id = (SELECT id FROM unit WHERE id = 20), icon = '🗂️' WHERE id = 125;
 

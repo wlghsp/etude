@@ -1,7 +1,7 @@
 -- 리눅스 세트 156. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set156.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 156, '네트워크 읽기(경로, DNS, curl, LISTEN)와 텍스트 도구 심화 한 줄씩', '서버의 네트워크 문제를 읽는 도구와 텍스트 도구의 옵션을 한 개념씩 쉬운 문제로 반복합니다. ip route 의 default via 와 게이트웨이가 없을 때의 증상, resolv.conf 의 nameserver 와 getent hosts, curl 의 상태 코드와 -f·-m·-I·-v 및 종료 코드 7·6·28, ss 의 LISTEN 주소(127.0.0.1 과 0.0.0.0 의 차이), grep 의 -i·-l·-w·-A/-B/-C, awk 의 조건과 합계, sort -k·-n, tail -n +2 를 짧은 객관식·빈칸·순서 문제로 익히고, 이름→경로→응답 점검, 로그 에러 맥락 보기, 표의 합계·평균, 헤더 있는 CSV 의 최댓값 찾기의 순서를 연습합니다.', 'quiz', '리눅스'
+SELECT 156, '네트워크 읽기(경로, DNS, curl, LISTEN)와 텍스트 도구 심화 한 줄씩', '서버의 네트워크 문제를 읽는 도구와 텍스트 도구의 옵션을 한 개념씩 반복합니다. ip route 의 default via 와 게이트웨이가 없을 때의 증상, resolv.conf 의 nameserver 와 getent hosts, curl 의 상태 코드와 -f·-m·-I·-v 및 종료 코드 7·6·28, ss 의 LISTEN 주소(127.0.0.1 과 0.0.0.0 의 차이), grep 의 -i·-l·-w·-A/-B/-C, awk 의 조건과 합계, sort -k·-n, tail -n +2 를 짧은 객관식·빈칸·순서 문제로 익히고, 이름→경로→응답 점검, 로그 에러 맥락 보기, 표의 합계·평균, 헤더 있는 CSV 의 최댓값 찾기의 순서를 연습합니다.', 'quiz', '리눅스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 156);
 UPDATE quest_set SET display_order = 9, unit_id = (SELECT id FROM unit WHERE id = 1), icon = '🌐' WHERE id = 156;
 

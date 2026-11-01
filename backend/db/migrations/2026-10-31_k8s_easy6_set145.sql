@@ -1,7 +1,7 @@
 -- k8s 세트 145. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set145.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크로드와 설정', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 7);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 145, '워크로드 관계, 리소스 단위, kubectl 작업 도구 한 줄씩', 'k8s 워크로드를 다루는 기본기를 한 개념씩 쉬운 문제로 반복합니다. Deployment·ReplicaSet·Pod 의 관계와 Pod 를 지우면 되살아나는 이유, 업데이트 뒤 DESIRED 0 으로 남는 ReplicaSet, DaemonSet 과 StatefulSet, get all 의 범위, CPU 500m·1 과 메모리 Mi 단위, create 와 apply 의 차이, --dry-run=client -o yaml, exec·port-forward·top 을 짧은 객관식·빈칸·순서 문제로 익히고, Deployment 에서 Pod 까지 따라가기, YAML 뼈대 만들어 적용하기, Pod 안에서 확인하기, 임시 접속하기의 순서를 연습합니다.', 'quiz', 'k8s'
+SELECT 145, '워크로드 관계, 리소스 단위, kubectl 작업 도구 한 줄씩', 'k8s 워크로드를 다루는 기본기를 한 개념씩 반복합니다. Deployment·ReplicaSet·Pod 의 관계와 Pod 를 지우면 되살아나는 이유, 업데이트 뒤 DESIRED 0 으로 남는 ReplicaSet, DaemonSet 과 StatefulSet, get all 의 범위, CPU 500m·1 과 메모리 Mi 단위, create 와 apply 의 차이, --dry-run=client -o yaml, exec·port-forward·top 을 짧은 객관식·빈칸·순서 문제로 익히고, Deployment 에서 Pod 까지 따라가기, YAML 뼈대 만들어 적용하기, Pod 안에서 확인하기, 임시 접속하기의 순서를 연습합니다.', 'quiz', 'k8s'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 145);
 UPDATE quest_set SET display_order = 249, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '🔧' WHERE id = 145;
 

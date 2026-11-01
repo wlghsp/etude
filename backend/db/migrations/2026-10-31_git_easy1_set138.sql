@@ -1,7 +1,7 @@
 -- Git 세트 138. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set138.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 12, 'Git', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 12);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 138, '기록하고, 갈라지고, 합치고, 되돌리기 한 줄씩', 'Git 의 가장 기본 개념과 명령을 한 개념씩 쉬운 문제로 반복합니다. 작업 폴더·스테이징·저장소의 흐름, init·add·commit·status·diff --staged·log --oneline, 브랜치와 HEAD, switch·merge 와 충돌 표시 읽기, fetch 와 pull 의 차이, push 거절 대처, restore --staged·stash pop·reset --hard 의 위험·revert, .gitignore 를 짧은 객관식·빈칸·순서 문제로 익히고, 첫 커밋, 브랜치 작업과 병합, 협업의 하루 흐름, 충돌 해결의 순서를 연습합니다.', 'quiz', 'Git'
+SELECT 138, '기록하고, 갈라지고, 합치고, 되돌리기 한 줄씩', 'Git 의 가장 기본 개념과 명령을 한 개념씩 반복합니다. 작업 폴더·스테이징·저장소의 흐름, init·add·commit·status·diff --staged·log --oneline, 브랜치와 HEAD, switch·merge 와 충돌 표시 읽기, fetch 와 pull 의 차이, push 거절 대처, restore --staged·stash pop·reset --hard 의 위험·revert, .gitignore 를 짧은 객관식·빈칸·순서 문제로 익히고, 첫 커밋, 브랜치 작업과 병합, 협업의 하루 흐름, 충돌 해결의 순서를 연습합니다.', 'quiz', 'Git'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 138);
 UPDATE quest_set SET display_order = 405, unit_id = (SELECT id FROM unit WHERE id = 12), icon = '📝' WHERE id = 138;
 

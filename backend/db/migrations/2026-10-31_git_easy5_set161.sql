@@ -1,7 +1,7 @@
 -- Git 세트 161. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set161.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 12, 'Git', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 12);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 161, '이력 다듬기, rebase 충돌, 병합 되돌리기, 무시 규칙, 이력 검색 한 줄씩', 'Git 이력을 다듬고 되돌리는 기술을 한 개념씩 쉬운 문제로 반복합니다. reset 의 --soft·--mixed·--hard 차이, rebase -i 의 pick·squash·fixup·drop·reword 와 순서 바꾸기, rebase 충돌 때의 UU·--continue·--abort·--skip, rebase 뒤의 일직선 이력, 병합 커밋 revert -m 1, .gitignore 의 !·폴더·/ 패턴과 check-ignore -v, log --grep·-S·shortlog -sn HEAD, config 의 local 이 global 보다 우선하는 것과 alias 를 짧은 객관식·빈칸·순서 문제로 익히고, 커밋 하나로 정리, rebase 충돌 해결, 병합 되돌리기, drop 한 커밋 되살리기의 순서를 연습합니다.', 'quiz', 'Git'
+SELECT 161, '이력 다듬기, rebase 충돌, 병합 되돌리기, 무시 규칙, 이력 검색 한 줄씩', 'Git 이력을 다듬고 되돌리는 기술을 한 개념씩 반복합니다. reset 의 --soft·--mixed·--hard 차이, rebase -i 의 pick·squash·fixup·drop·reword 와 순서 바꾸기, rebase 충돌 때의 UU·--continue·--abort·--skip, rebase 뒤의 일직선 이력, 병합 커밋 revert -m 1, .gitignore 의 !·폴더·/ 패턴과 check-ignore -v, log --grep·-S·shortlog -sn HEAD, config 의 local 이 global 보다 우선하는 것과 alias 를 짧은 객관식·빈칸·순서 문제로 익히고, 커밋 하나로 정리, rebase 충돌 해결, 병합 되돌리기, drop 한 커밋 되살리기의 순서를 연습합니다.', 'quiz', 'Git'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 161);
 UPDATE quest_set SET display_order = 405, unit_id = (SELECT id FROM unit WHERE id = 12), icon = '🧹' WHERE id = 161;
 

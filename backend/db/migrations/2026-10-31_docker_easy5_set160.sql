@@ -1,7 +1,7 @@
 -- 도커 세트 160. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set160.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 5, '도커', 'Docker 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 5);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 160, '종료 코드 읽기, 컨테이너 보안 기본, 레지스트리와 digest 한 줄씩', '컨테이너 문제를 읽고 안전하게 운영하는 기본기를 한 개념씩 쉬운 문제로 반복합니다. 종료 코드 127(명령 없음)·126(실행 불가)·125(docker 오류)와 앱 종료 코드 전달, 137 이 항상 OOM 은 아니라는 점과 OOMKilled 확인, --user·--read-only(--tmpfs)·--cap-drop/--cap-add·--privileged 의 위험·no-new-privileges, docker diff 의 A·C·D 와 docker top·logs --since, 레지스트리 주소가 든 이름으로 tag·push 하기, 움직이는 태그와 고정된 digest 를 짧은 객관식·빈칸·순서 문제로 익히고, 바로 종료되는 컨테이너 조사, 단계적 보안 강화, 로컬 레지스트리에 올리기, 컨테이너 안 변경 살펴보기의 순서를 연습합니다.', 'quiz', '도커'
+SELECT 160, '종료 코드 읽기, 컨테이너 보안 기본, 레지스트리와 digest 한 줄씩', '컨테이너 문제를 읽고 안전하게 운영하는 기본기를 한 개념씩 반복합니다. 종료 코드 127(명령 없음)·126(실행 불가)·125(docker 오류)와 앱 종료 코드 전달, 137 이 항상 OOM 은 아니라는 점과 OOMKilled 확인, --user·--read-only(--tmpfs)·--cap-drop/--cap-add·--privileged 의 위험·no-new-privileges, docker diff 의 A·C·D 와 docker top·logs --since, 레지스트리 주소가 든 이름으로 tag·push 하기, 움직이는 태그와 고정된 digest 를 짧은 객관식·빈칸·순서 문제로 익히고, 바로 종료되는 컨테이너 조사, 단계적 보안 강화, 로컬 레지스트리에 올리기, 컨테이너 안 변경 살펴보기의 순서를 연습합니다.', 'quiz', '도커'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 160);
 UPDATE quest_set SET display_order = 178, unit_id = (SELECT id FROM unit WHERE id = 5), icon = '🔏' WHERE id = 160;
 

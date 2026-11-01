@@ -1,7 +1,7 @@
 -- k8s 세트 147. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set147.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크로드와 설정', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 7);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 147, 'Helm 기본, 오토스케일(HPA), 이벤트·로그 읽기 한 줄씩', 'k8s 운영에서 자주 만나는 도구를 한 개념씩 쉬운 문제로 반복합니다. Helm 의 chart 와 release 의 차이, repo add·install·--set·template·upgrade·history·rollback(롤백도 새 리비전)·uninstall, HPA 의 min~max 와 TARGETS 가 unknown 일 때의 원인, 컨테이너가 여러 개인 Pod 의 logs -c, get events --sort-by 를 짧은 객관식·빈칸·순서 문제로 익히고, 설치하고 확인하기, 업그레이드 후 되돌리기, 설치 전 점검, HPA unknown 점검의 순서를 연습합니다.', 'quiz', 'k8s'
+SELECT 147, 'Helm 기본, 오토스케일(HPA), 이벤트·로그 읽기 한 줄씩', 'k8s 운영에서 자주 만나는 도구를 한 개념씩 반복합니다. Helm 의 chart 와 release 의 차이, repo add·install·--set·template·upgrade·history·rollback(롤백도 새 리비전)·uninstall, HPA 의 min~max 와 TARGETS 가 unknown 일 때의 원인, 컨테이너가 여러 개인 Pod 의 logs -c, get events --sort-by 를 짧은 객관식·빈칸·순서 문제로 익히고, 설치하고 확인하기, 업그레이드 후 되돌리기, 설치 전 점검, HPA unknown 점검의 순서를 연습합니다.', 'quiz', 'k8s'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 147);
 UPDATE quest_set SET display_order = 249, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '⚓' WHERE id = 147;
 

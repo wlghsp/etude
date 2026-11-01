@@ -1,7 +1,7 @@
 -- 미들웨어 세트 131. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set131.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
 INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
 INSERT INTO quest_set (id, title, description, sandbox_type, category)
-SELECT 131, '네트워크 기본과 텍스트 도구 한 줄씩', '리눅스 네트워크와 텍스트 처리의 기본을 한 개념씩 쉬운 문제로 반복합니다. IP·포트·localhost·DNS, ping·curl·ss·nc·ip addr 의 쓰임과 refused 읽기, grep -v/-c/-r/-n, sort -nr·uniq -c, sed 치환, awk 칸 뽑기, tee, 연결이 안 될 때와 로그에서 IP 별 접속 수 세기의 점검 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', '리눅스'
+SELECT 131, '네트워크 기본과 텍스트 도구 한 줄씩', '리눅스 네트워크와 텍스트 처리의 기본을 한 개념씩 반복합니다. IP·포트·localhost·DNS, ping·curl·ss·nc·ip addr 의 쓰임과 refused 읽기, grep -v/-c/-r/-n, sort -nr·uniq -c, sed 치환, awk 칸 뽑기, tee, 연결이 안 될 때와 로그에서 IP 별 접속 수 세기의 점검 순서를 짧은 객관식·빈칸·순서 문제로 익힙니다.', 'quiz', '리눅스'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 131);
 UPDATE quest_set SET display_order = 9, unit_id = (SELECT id FROM unit WHERE id = 1), icon = '🔌' WHERE id = 131;
 
