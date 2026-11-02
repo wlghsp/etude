@@ -1,0 +1,122 @@
+-- 리눅스 세트 193. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set193.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 193, '파일 다루기 옵션: ls 정렬, stat, touch, cp·mv 덮어쓰기, ln, realpath, mktemp, 변수 치환', '파일과 폴더를 다루는 명령의 옵션을 한 개념씩 반복합니다. ls 의 -S·-t·-r 정렬과 -a·-A·-d·-R·-F, stat -c 서식, touch 의 -d·-t·-r·-c 와 내용 유지, mkdir -p, cp 의 -n·-i·-u·-p 와 폴더 복사의 -r 과 대상이 이미 있을 때의 동작, mv 의 -n·-b·-v 와 덮어쓰기, 하드 링크와 심볼릭 링크의 차이와 끊어진 링크, realpath 와 readlink -f, mktemp 의 파일·폴더·권한·템플릿 오류, 변수의 %·%%·#·## 치환을 짧은 객관식·빈칸·순서 문제로 익히고, 임시 폴더에서 안전하게 작업하기, 복사본의 시각 유지 확인하기, 링크 끊어짐 점검하기, 파일 이름에서 확장자 분리하기의 순서를 연습합니다.', 'quiz', '리눅스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 193);
+UPDATE quest_set SET display_order = 9, unit_id = (SELECT id FROM unit WHERE id = 1), icon = '📂' WHERE id = 193;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 1, 'ls 정렬 옵션', '크기가 `big`(3000바이트) > `small`(5바이트) > `mid`(3바이트) 이고 수정 시각이 `big`(3월) > `mid`(2월) > `small`(1월) 인 폴더에서 `ls`, `ls -S`, `ls -t`, `ls -tr` 은 각각 어떤 순서로 보여 줄까요?', '이름, 크기, 시각 기준이 달라요.', NULL, NULL, '[]', 'choice', '["`ls -S` 는 작은 것부터 `mid small big` 이다", "`ls -t` 는 오래된 것부터 `small mid big` 이다", "`ls` 는 이름순 `big mid small`, `ls -S` 는 큰 것부터 `big small mid`, `ls -t` 는 최근 수정부터 `big mid small`, `ls -tr` 은 오래된 것부터 `small mid big` 이다", "`ls -tr` 은 큰 것부터 `big small mid` 이다"]', 2, '`-r` 은 정렬 순서를 뒤집습니다 (`-tr` 은 오래된 것부터).', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 2, '숨김 파일 보기', '`.hid` 파일과 `d` 폴더가 있는 폴더에서 `ls`, `ls -a`, `ls -A` 는 각각 무엇을 보여 줄까요?', '점으로 시작하는 파일과 `.`, `..` 의 처리가 달라요.', NULL, NULL, '[]', 'choice', '["`ls` 도 `.hid` 를 보여 준다", "`ls` 는 `d` 만, `ls -a` 는 `.`, `..`, `.hid`, `d` 를, `ls -A` 는 `.` 과 `..` 을 뺀 `.hid`, `d` 를 보여 준다", "`ls -A` 는 `.` 과 `..` 도 보여 준다", "`ls -a` 는 `.hid` 만 보여 준다"]', 1, '`.` 은 현재 폴더, `..` 은 상위 폴더입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 3, '폴더 자체와 하위 목록', '`ls d` 와 `ls -d d`, `ls -ld d` 의 결과는 각각 어떻게 다를까요? `ls -R d` 는요?', '폴더 안을 보느냐 폴더 자체를 보느냐예요.', NULL, NULL, '[]', 'choice', '["`ls d` 는 폴더 안의 파일을, `ls -d d` 는 폴더 자체인 `d` 만, `ls -ld d` 는 폴더 자체의 자세한 정보(권한 첫 글자 `d`)를 보여 준다. `ls -R d` 는 `d:` 로 시작해 하위 폴더까지 재귀로 나열한다", "`ls -d d` 는 폴더 안의 파일을 나열한다", "`ls -R d` 는 하위 폴더를 건너뛴다", "`ls -ld d` 는 권한 첫 글자가 `-` 이다"]', 0, '`ls -F` 는 폴더 이름 뒤에 `/` 를 붙여 구분해 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 4, 'stat 서식', '`stat -c ''%s %a %A'' d/big` 와 `stat -c ''%F'' d d/big` 는 무엇을 출력할까요? (`big` 은 3000바이트, 권한 644)', '서식 문자가 각각 정해져 있어요.', NULL, NULL, '[]', 'choice', '["`%s` 는 파일 이름을 출력한다", "`%a` 는 `-rw-r--r--` 을 출력한다", "`%F` 는 항상 `file` 한 단어만 출력한다", "앞은 크기 `3000`, 8진수 권한 `644`, 문자 권한 `-rw-r--r--` 을, 뒤는 파일 종류 `directory` 와 `regular file` 을 출력한다. `%h` 는 하드 링크 수, `%y` 는 수정 시각이다"]', 3, '없는 파일이면 `stat: cannot statx ''이름'': No such file or directory` 오류가 납니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 5, 'touch 의 시각 지정', '`touch -d ''2020-05-06 07:08:09'' new`, `touch -t 202101020304 new`, `touch -r d/big new` 는 각각 무엇을 할까요? 이미 내용이 있는 파일에 `touch` 하면요?', '시각만 바꾸고 내용은 건드리지 않아요.', NULL, NULL, '[]', 'choice', '["`touch` 는 파일 내용을 비운다", "`-r` 은 파일을 `d/big` 의 내용으로 덮어쓴다", "`-d` 는 날짜 문자열로, `-t` 는 `YYYYMMDDhhmm` 형식으로 수정 시각을 정하고 `-r` 은 다른 파일의 시각을 따라 한다. 내용이 있는 파일에 `touch` 해도 내용(크기)은 그대로이다", "`-t` 는 `YYYY-MM-DD` 형식만 받는다"]', 2, '`touch -c 이름` 은 파일이 없으면 만들지 않습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 6, 'mkdir -p', '`mkdir a/b/c` 와 `mkdir -p a/b/c` 는 `a` 가 없을 때 각각 어떻게 될까요? 이미 있는 `a` 에 `mkdir a` 와 `mkdir -p a` 는요?', '-p 는 중간 폴더도 만들고 이미 있어도 오류가 아니에요.', NULL, NULL, '[]', 'choice', '["`-p` 가 없어도 중간 폴더가 자동으로 만들어진다", "`-p` 가 없으면 중간 폴더가 없어 `No such file or directory` 로 실패하고, `-p` 가 있으면 중간 폴더까지 만든다. 이미 있는 폴더에 `mkdir a` 는 `File exists` 오류이고 `mkdir -p a` 는 오류 없이 종료 코드 0 이다", "`mkdir -p a` 는 기존 `a` 를 비우고 다시 만든다", "이미 있는 폴더에 `mkdir a` 는 조용히 성공한다"]', 1, '스크립트에서는 `mkdir -p` 로 여러 번 실행해도 안전하게 만들 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 7, 'cp 의 덮어쓰기 옵션', '`f2` 가 이미 있을 때 `cp f1 f2`, `cp -n f1 f2`, `cp -u n o` 는 각각 어떻게 동작할까요?', '덮어쓸지 말지, 새것일 때만 덮어쓸지가 달라요.', NULL, NULL, '[]', 'choice', '["`cp f1 f2` 는 묻지 않고 덮어쓰고, `-n` 은 덮어쓰지 않고 그대로 둔다. `-u` 는 원본이 대상보다 새로울 때만 복사한다 (오래된 원본이면 복사하지 않는다)", "`cp f1 f2` 는 기본으로 덮어쓰기 전에 묻는다", "`-n` 은 덮어쓰고 기존 파일을 백업한다", "`-u` 는 항상 복사한다"]', 0, '`cp -i` 는 덮어쓰기 전에 `overwrite ''f2''?` 라고 묻습니다. 대화형 입력이 없으면 덮어쓰지 않습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 8, 'cp -p 와 폴더 복사', '`cp -p src dst` 와 `cp src dst` 는 수정 시각이 어떻게 다를까요? `cp srcd dd` 는 `srcd` 가 폴더일 때 어떻게 될까요?', '시각 보존과 재귀 옵션을 확인해요.', NULL, NULL, '[]', 'choice', '["`cp srcd dd` 는 폴더 안 파일을 모두 복사한다", "`cp` 는 항상 수정 시각을 유지한다", "`cp -p` 는 복사한 시각으로 바꾼다", "`cp -p` 는 원본의 수정 시각(예: 2021년)을 유지하고 그냥 `cp` 는 복사한 시각으로 바뀐다. 폴더는 `-r` 없이 `cp: -r not specified; omitting directory ''srcd''` 라며 복사하지 않는다"]', 3, '`cp -a` 는 폴더를 재귀로 복사하면서 속성도 보존합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 9, 'cp -r 의 대상이 있을 때', '`cp -r srcd dd` 를 대상 `dd` 가 없을 때와 이미 있을 때 실행하면 각각 `dd` 안에는 무엇이 생길까요?', '대상이 폴더로 이미 있으면 그 안에 들어가요.', NULL, NULL, '[]', 'choice', '["항상 `dd/srcd/` 가 만들어진다", "이미 있으면 `dd` 의 내용을 덮어써 `dd/q` 만 남는다", "`dd` 가 없으면 `dd` 가 `srcd` 의 복사본이 되어 `dd/q` 가 생기고, 이미 있으면 그 안에 `dd/srcd/` 가 만들어진다. `srcd/` 처럼 끝에 `/` 를 붙인 경우도 `dd2` 가 없으면 `dd2/q` 가 생긴다", "이미 있으면 오류가 난다"]', 2, '대상이 있으면 그 안으로, 없으면 그 이름으로 복사된다고 기억하세요.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 10, 'mv 의 덮어쓰기와 백업', '`mv m1 m2` 에서 `m2` 가 이미 있으면 어떻게 될까요? `mv -n` 과 `mv -b` 는요?', 'mv 도 기본은 묻지 않고 덮어써요.', NULL, NULL, '[]', 'choice', '["`mv` 는 기본으로 덮어쓰기 전에 묻는다", "`mv m1 m2` 는 묻지 않고 `m2` 를 덮어쓴다(`-v` 는 `renamed ''m1'' -> ''m2''` 출력). `-n` 은 덮어쓰지 않고 `m1` 을 그대로 두며, `-b` 는 기존 `m2` 를 `m2~` 로 백업한 뒤 옮긴다", "`mv -n` 은 덮어쓰면서 `~` 백업을 만든다", "`mv -b` 는 기존 파일을 삭제하고 옮긴다"]', 1, '없는 원본은 `mv: cannot stat ''이름'': No such file or directory` 오류입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 11, '하드 링크와 심볼릭 링크', '`t.txt` 에 `ln t.txt hard`, `ln -s t.txt sym` 을 만든 뒤 `t.txt` 를 `rm` 하면 `hard` 와 `sym` 은 각각 어떻게 될까요?', '하나는 같은 파일 내용을 가리키고, 하나는 이름을 가리켜요.', NULL, NULL, '[]', 'choice', '["`hard` 는 같은 내용을 그대로 읽을 수 있고(링크 수가 2 에서 1 로) `sym` 은 대상이 없어 `No such file or directory` 로 읽히지 않는다. 대상이 없는 심볼릭 링크는 `test -L` 은 참, `test -e` 는 거짓이다", "`hard` 도 읽을 수 없게 된다", "`sym` 은 계속 내용을 읽을 수 있다", "`test -e sym` 은 참이다"]', 0, '`ls -l` 에서 심볼릭 링크는 권한 첫 글자가 `l` 이고 `readlink sym` 은 가리키는 경로 `t.txt` 를 출력합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 12, 'realpath 와 readlink -f', '`realpath d/../t.txt`, `readlink -f sym`, `realpath -m nonexist/a`, `realpath nonexist/a` 는 각각 어떻게 될까요?', '-m 은 없는 경로도 계산해요.', NULL, NULL, '[]', 'choice', '["`realpath d/../t.txt` 는 `d/../t.txt` 를 그대로 출력한다", "`realpath -m` 은 없는 경로에서 오류를 낸다", "`readlink -f sym` 은 링크 대상 이름 `t.txt` 만 출력한다", "앞의 두 개는 `..` 과 심볼릭 링크를 풀어 절대 경로(`.../t.txt`)를 출력한다. `realpath -m` 은 없는 경로도 계산해 `.../nonexist/a` 를 출력하고, 옵션 없이 `nonexist/a` 는 중간 폴더가 없어 `No such file or directory` 로 실패한다"]', 3, '`realpath --relative-to=d t.txt` 는 `../t.txt` 처럼 상대 경로를 출력합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 13, 'mktemp', '`mktemp` 와 `mktemp -d`, `mktemp aXX` 는 각각 무엇을 할까요?', '임시 파일을 안전하게 만들어요.', NULL, NULL, '[]', 'choice', '["`mktemp` 는 이름만 출력하고 파일은 만들지 않는다", "`mktemp` 로 만든 파일은 권한 644 이다", "`mktemp` 는 `/tmp/tmp.임의문자` 형태의 빈 파일을 권한 600 으로 만들고 그 경로를 출력하며, `-d` 는 폴더를 만든다. 템플릿의 `X` 가 부족한 `aXX` 는 `too few X''s in template` 오류이다", "`mktemp aXX` 는 `a` 뒤에 임의 문자 2개를 붙여 만든다"]', 2, '`-u` 는 파일을 만들지 않고 이름만 출력하며 `--suffix=.txt` 로 확장자를 붙일 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 14, '변수에서 확장자 떼기', '`v=hello.tar.gz` 일 때 `${v%.gz}`, `${v%%.*}`, `${v#*.}`, `${v##*.}` 는 각각 무엇일까요?', '`%` 는 뒤에서, `#` 는 앞에서 지워요.', NULL, NULL, '[]', 'choice', '["`${v%%.*}` 는 `hello.tar` 이다", "`${v%.gz}` 는 `hello.tar`, `${v%%.*}` 는 `hello`, `${v#*.}` 는 `tar.gz`, `${v##*.}` 는 `gz` 이다. 글자 하나인 `%`·`#` 는 가장 짧게, 두 개인 `%%`·`##` 는 가장 길게 일치시켜 지운다", "`${v##*.}` 는 `tar.gz` 이다", "`${v#*.}` 는 `hello` 이다"]', 1, '`${#v}` 는 글자 수 12, `${v:0:5}` 는 `hello` 입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 15, '크기순 정렬', '큰 파일부터 나열하는 `ls` 옵션을 채우세요.', '"size" 의 첫 글자 대문자예요.', NULL, NULL, '[]', 'fill', '["-S", "-s", "-t", "-X"]', NULL, '`-S` 는 파일 크기를 기준으로 정렬합니다.', '[0]', 'ls {0} d', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 16, '점으로 시작하는 파일 보기', '`.` 과 `..` 은 빼고 점으로 시작하는 파일을 보이는 `ls` 옵션을 채우세요.', '"almost all" 이라는 뜻의 대문자 한 글자예요.', NULL, NULL, '[]', 'fill', '["-A", "-a", "-H", "-h"]', NULL, '`-a` 는 `.` 과 `..` 도 보여 줍니다.', '[0]', 'ls {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 17, '폴더 자체 보기', '폴더 안이 아니라 폴더 자체의 정보를 보는 `ls` 옵션을 채우세요.', '"directory" 의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-d", "-D", "-R", "-F"]', NULL, '권한의 첫 글자가 `d` 로 나옵니다.', '[0]', 'ls -l {0} d', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 18, 'stat 서식 지정', '`stat` 출력 형식을 직접 정하는 옵션을 채우세요.', '"format" 이 아니라 한 글자 옵션이에요.', NULL, NULL, '[]', 'fill', '["-c", "-f", "-t", "-F"]', NULL, '`%s` 는 크기, `%n` 은 파일 이름입니다.', '[0]', 'stat {0} ''%s %n'' d/big', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 19, '날짜 문자열로 시각 정하기', '`touch` 로 수정 시각을 `2020-05-06 07:08:09` 로 정하는 옵션을 채우세요.', '"date" 의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-d", "-t", "-r", "-c"]', NULL, '`-t` 는 `YYYYMMDDhhmm` 형식을 씁니다.', '[0]', 'touch {0} ''2020-05-06 07:08:09'' new', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 20, '중간 폴더까지 만들기', '중간 폴더가 없어도 만들고 이미 있어도 오류가 나지 않게 하는 `mkdir` 옵션을 채우세요.', '"parents" 의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-p", "-m", "-v", "-r"]', NULL, '이미 있는 폴더에 써도 종료 코드는 0 입니다.', '[0]', 'mkdir {0} a/b/c', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 21, '덮어쓰지 않고 복사', '대상이 이미 있으면 덮어쓰지 않는 `cp` 옵션을 채우세요.', '"no clobber" 의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-n", "-u", "-f", "-p"]', NULL, '`-u` 는 원본이 더 새로울 때만 복사합니다.', '[0]', 'cp {0} f1 f2', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 22, '새로운 것만 복사', '원본이 대상보다 새로울 때만 복사하는 `cp` 옵션을 채우세요.', '"update" 의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-u", "-n", "-i", "-a"]', NULL, '오래된 원본은 복사하지 않습니다.', '[0]', 'cp {0} n o', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 23, '심볼릭 링크 만들기', '`ln` 으로 심볼릭 링크를 만드는 옵션을 채우세요.', '"symbolic" 의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-s", "-h", "-l", "-f"]', NULL, '옵션이 없으면 하드 링크가 만들어집니다.', '[0]', 'ln {0} t.txt sym', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 24, '링크를 끝까지 풀기', '심볼릭 링크를 끝까지 따라가 절대 경로를 출력하는 `readlink` 옵션을 채우세요.', '"full" 의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-f", "-n", "-e", "-v"]', NULL, '옵션 없이 쓰면 링크가 가리키는 경로 문자열만 출력합니다.', '[0]', 'readlink {0} sym', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 25, '임시 폴더 만들기', '빈 임시 폴더를 만들고 그 경로를 출력하는 `mktemp` 옵션을 채우세요.', '"directory" 의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-d", "-p", "-u", "-t"]', NULL, '옵션이 없으면 빈 파일을 만듭니다.', '[0]', 'd=$(mktemp {0})', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 26, '임시 폴더에서 안전하게 작업하기', '임시 작업 폴더를 만들어 쓰고 정리하는 순서입니다. 순서에 맞게 놓아 보세요.', '만들기 → 작업 → 결과 보관 → 정리 순서예요.', NULL, NULL, '[]', 'order', '["`d=$(mktemp -d)` 로 임시 폴더를 만든다", "`cp -r 원본 \\"$d\\"` 로 작업할 내용을 복사해 둔다", "필요한 결과를 `cp -a \\"$d/결과\\" 보관폴더` 로 보관한다", "`rm -r \\"$d\\"` 로 임시 폴더를 지운다"]', NULL, '삭제 전에 `echo "$d"` 로 변수가 비어 있지 않은지 확인하는 습관이 안전합니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 27, '복사본의 시각 유지 확인하기', '복사 후에도 수정 시각이 유지되는지 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '원본 시각 → 복사 → 비교 순서예요.', NULL, NULL, '[]', 'order', '["`touch -d ''2021-01-01'' src` 로 원본 시각을 정한다", "`cp src dst1` 과 `cp -p src dst2` 로 두 가지 복사본을 만든다", "`stat -c ''%y'' dst1` 로 시각이 복사한 때로 바뀐 것을 본다", "`stat -c ''%y'' dst2` 로 시각이 `2021` 로 유지된 것을 본다"]', NULL, '`stat -c ''%y'' 파일` 로 수정 시각을 읽습니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 28, '링크 끊어짐 점검하기', '원본을 지운 뒤 두 종류의 링크를 점검하는 순서입니다. 순서에 맞게 놓아 보세요.', '만들기 → 지우기 → 읽기 → 판별 순서예요.', NULL, NULL, '[]', 'order', '["`ln t.txt hard` 와 `ln -s t.txt sym` 으로 두 링크를 만든다", "`rm t.txt` 로 원본 이름을 지운다", "`cat hard` 는 내용이 나오고 `cat sym` 은 `No such file or directory` 가 나오는지 본다", "`test -L sym && test ! -e sym` 으로 끊어진 심볼릭 링크임을 확인한다"]', NULL, '`readlink sym` 은 가리키는 경로 문자열을 출력합니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 193, 29, '파일 이름에서 확장자 분리하기', '`v=hello.tar.gz` 에서 필요한 부분을 뽑는 순서입니다. 순서에 맞게 놓아 보세요.', '마지막 확장자 → 확장자 뺀 이름 → 첫 이름 → 길이 순서예요.', NULL, NULL, '[]', 'order', '["`echo \\"${v##*.}\\"` 로 마지막 확장자 `gz` 를 얻는다", "`echo \\"${v%.gz}\\"` 로 마지막 확장자를 뺀 `hello.tar` 를 얻는다", "`echo \\"${v%%.*}\\"` 로 첫 점 앞의 `hello` 를 얻는다", "`echo \\"${#v}\\"` 로 전체 길이 `12` 를 얻는다"]', NULL, '`${v/./_}` 는 첫 번째 점만, `${v//./_}` 는 모든 점을 `_` 로 바꿉니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 193 AND order_index = 29);
