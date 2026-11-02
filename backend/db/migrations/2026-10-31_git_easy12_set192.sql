@@ -1,0 +1,122 @@
+-- Git 세트 192. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set192.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 12, 'Git', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 12);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 192, '검색과 패치: git grep, rev-parse, symbolic-ref, describe, format-patch, apply, am', 'Git 으로 찾고 주고받는 명령의 동작을 한 개념씩 반복합니다. git grep 의 추적 파일 범위와 --untracked, -n·-c·-l·-L·-h 출력 형태, 옛 커밋에서 검색할 때의 앞 표기, --or·--and 조합, 종료 코드와 -q, rev-parse 의 --show-toplevel·--show-prefix·--abbrev-ref·--short 와 --verify 오류, symbolic-ref 와 분리된 HEAD, log 의 --graph·--first-parent·--merges, describe 의 태그-개수-해시 형태와 --abbrev=0·--exact-match·--always, format-patch 의 파일 이름과 번호, apply 와 am 의 차이, --check 와 실패 오류, am 의 --abort 를 짧은 객관식·빈칸·순서 문제로 익히고, 패치 파일로 변경 주고받기, am 이 실패했을 때 정리하기, 이력에서 문자열 찾아 위치 확인하기, 저장소와 브랜치 정보 확인하기의 순서를 연습합니다.', 'quiz', 'Git'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 192);
+UPDATE quest_set SET display_order = 406, unit_id = (SELECT id FROM unit WHERE id = 12), icon = '📮' WHERE id = 192;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 1, 'git grep 의 검색 범위', '작업 폴더에 아직 `git add` 하지 않은 새 파일 `u.txt`(내용에 `foo`)가 있을 때 `git grep foo` 는 이 파일을 찾을까요? 찾으려면요?', '기본은 git 이 추적하는 파일만이에요.', NULL, NULL, '[]', 'choice', '["`git grep` 은 작업 폴더의 모든 파일을 검색해 `u.txt` 도 나온다", "`--untracked` 를 쓰면 추적하는 파일은 검색에서 빠진다", "추적하지 않는 파일은 검색하지 않아 `u.txt` 는 나오지 않고(종료 코드 1), `git grep --untracked foo` 를 쓰면 `u.txt` 도 검색한다", "`git add` 를 해도 검색되지 않는다"]', 2, '`git grep` 은 기본으로 추적하는 파일을 대상으로 빠르게 찾습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 2, 'grep 출력 형태 고르기', '`b.txt` 에 `foo` 가 든 줄이 3개 있을 때 `git grep -n foo b.txt`, `git grep -c foo b.txt`, `git grep -h foo b.txt` 는 각각 무엇을 보여 줄까요?', '줄 번호, 개수, 파일 이름 숨김이에요.', NULL, NULL, '[]', 'choice', '["`-c` 는 일치한 줄 내용을 모두 보여 준다", "`-n` 은 `b.txt:1:foo bar` 처럼 줄 번호를 붙이고, `-c` 는 파일별 일치 개수 `b.txt:3` 을, `-h` 는 파일 이름 없이 줄 내용만 보여 준다", "`-h` 는 도움말을 출력한다", "`-n` 은 일치한 줄 수만 출력한다"]', 1, '`-l` 은 일치한 파일 이름만, `-L` 은 일치하지 않은 파일 이름만 나열합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 3, '옛 커밋에서 검색하기', '`git grep foo HEAD~2 -- sub` 는 무엇을 검색하고 결과는 어떤 모양일까요?', '작업 폴더가 아니라 지정한 커밋의 내용이에요.', NULL, NULL, '[]', 'choice', '["`HEAD~2` 커밋 시점의 `sub` 폴더 파일에서 검색하고 결과 앞에 `HEAD~2:sub/c.txt:foo in sub` 처럼 커밋과 경로가 붙는다", "현재 작업 폴더의 `sub` 만 검색한다", "`HEAD~2` 이후에 바뀐 줄만 검색한다", "커밋 메시지에서 `foo` 를 검색한다"]', 0, '과거의 파일 내용에서 문자열을 찾을 때 checkout 하지 않고 쓸 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 4, '여러 패턴 조합', '`git grep -e alpha --or -e gamma a.txt` 와 `git grep -e foo --and -e bar b.txt` 는 각각 어떤 줄을 찾을까요?', '한 줄 안에서 or 와 and 를 따져요.', NULL, NULL, '[]', 'choice', '["`--and` 는 서로 다른 줄에 각각 있어도 찾는다", "`--or` 는 두 패턴이 모두 있는 줄만 찾는다", "`-e` 는 한 번만 쓸 수 있다", "앞은 `alpha` 또는 `gamma` 가 든 줄(`a.txt:alpha`, `a.txt:gamma`)을, 뒤는 한 줄에 `foo` 와 `bar` 가 모두 든 줄(`foo bar`, `barfoo`)을 찾는다"]', 3, '`-e` 로 각 패턴을 구분해 쓰면 `--and`, `--or`, `--not` 으로 조합할 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 5, 'grep 의 종료 코드', '`git grep nomatchxyz` 와 `git grep -q foo`(일치하는 줄 있음)는 각각 종료 코드가 무엇일까요?', '스크립트에서 존재 여부를 판단해요.', NULL, NULL, '[]', 'choice', '["일치가 없으면 종료 코드 128 이다", "`-q` 는 일치가 있어도 종료 코드 1 이다", "일치가 없으면 출력 없이 종료 코드 1, `-q` 는 출력 없이 일치가 있으면 종료 코드 0 이다", "일치가 없어도 종료 코드는 항상 0 이다"]', 2, '`if git grep -q 패턴; then` 처럼 조건문에 쓸 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 6, 'rev-parse 로 위치 알아내기', '하위 폴더 `sub` 안에서 `git rev-parse --show-toplevel`, `--show-prefix`, `--is-inside-work-tree` 는 각각 무엇을 출력할까요?', '저장소 최상위와 현재 위치의 관계예요.', NULL, NULL, '[]', 'choice', '["`--show-prefix` 는 항상 빈 줄을 출력한다", "`--show-toplevel` 은 저장소 최상위 폴더의 전체 경로, `--show-prefix` 는 최상위에서 현재 폴더까지의 경로 `sub/`, `--is-inside-work-tree` 는 `true` 를 출력한다", "`--show-toplevel` 은 현재 폴더를 출력한다", "`--is-inside-work-tree` 는 `.git` 폴더 안에서만 `true` 이다"]', 1, '하위 폴더에서 실행하면 `--show-prefix` 가 `sub/` 처럼 최상위로부터의 상대 경로를 보여 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 7, 'rev-parse 로 이름과 해시', '`git rev-parse --abbrev-ref HEAD`, `--short HEAD`, `HEAD` 는 각각 무엇을 출력할까요?', '브랜치 이름, 짧은 해시, 전체 해시예요.', NULL, NULL, '[]', 'choice', '["`--abbrev-ref HEAD` 는 현재 브랜치 이름(`main`), `--short HEAD` 는 7글자의 짧은 해시, `HEAD` 는 40글자의 전체 해시를 출력한다. `--short=10` 이면 10글자이다", "`--abbrev-ref HEAD` 는 전체 해시를 출력한다", "`--short HEAD` 는 40글자 해시를 출력한다", "`HEAD` 는 브랜치 이름을 출력한다"]', 0, '분리된 HEAD 에서는 `--abbrev-ref HEAD` 가 브랜치 이름이 아니라 `HEAD` 를 출력합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 8, 'rev-parse --verify', '없는 이름 `nobranch` 에 `git rev-parse --verify nobranch` 와 `git rev-parse --verify -q nobranch` 를 하면 어떻게 다를까요?', '하나는 메시지를 내고 하나는 조용해요.', NULL, NULL, '[]', 'choice', '["둘 다 빈 해시를 출력하고 종료 코드 0 이다", "`-q` 는 오류 메시지를 더 자세히 출력한다", "`--verify` 는 없는 이름을 자동으로 만든다", "앞은 `fatal: Needed a single revision` 오류를 내고, `-q` 를 붙이면 메시지 없이 종료 코드 1 로 끝난다"]', 3, '브랜치나 태그가 있는지 확인하는 스크립트에서 `-q` 와 종료 코드를 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 9, 'symbolic-ref HEAD', '브랜치 `main` 에 있을 때 `git symbolic-ref HEAD` 와 `--short HEAD` 는 무엇을 출력할까요? `git checkout --detach` 뒤에는요?', 'HEAD 가 가리키는 참조 이름이에요.', NULL, NULL, '[]', 'choice', '["분리된 HEAD 에서도 `main` 을 출력한다", "분리된 HEAD 에서는 종료 코드 0 이다", "`refs/heads/main` 과 `main` 을 출력한다. 분리된 HEAD 에서는 `fatal: ref HEAD is not a symbolic ref` 오류와 종료 코드 128 이고 `-q` 를 붙이면 메시지 없이 종료 코드 1 이다", "`--short` 는 40글자 해시를 출력한다"]', 2, '브랜치 위에 있는지 아닌지 스크립트로 판단할 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 10, 'log 의 그래프와 개수', '`feat` 브랜치를 `--no-ff` 로 병합한 뒤 `git log --oneline --graph` 는 어떻게 보일까요? `--first-parent`, `--merges`, `--no-merges` 는요?', '갈라졌다 합쳐지는 모양이에요.', NULL, NULL, '[]', 'choice', '["`--graph` 는 기호 없이 한 줄로만 보여 준다", "`*`, `|\\\\`, `|/` 같은 기호로 갈라졌다 합쳐지는 모양을 그린다. 이 이력에서 `--first-parent` 는 4개, `--merges` 는 병합 커밋 1개, `--no-merges` 는 4개를 보여 준다", "`--first-parent` 는 병합된 브랜치의 커밋도 모두 보여 준다", "`--merges` 는 병합이 아닌 커밋을 보여 준다"]', 1, '`--decorate` 를 쓰면 `(HEAD -> main)` 처럼 브랜치와 태그 이름이 함께 보입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 11, 'git describe', '태그 `v1` 이 달린 커밋에서 3개 뒤의 커밋에서 `git describe --tags` 를 하면 어떻게 나올까요? `--abbrev=0` 을 붙이면요? 태그가 없는 커밋에는요?', '가장 가까운 태그에서 몇 개 뒤인지 보여 줘요.', NULL, NULL, '[]', 'choice', '["`v1-3-g해시` 처럼 가까운 태그, 그 뒤 커밋 수, `g` 와 짧은 해시로 나오고 `--abbrev=0` 은 태그 이름 `v1` 만 출력한다. 태그에 맞는 커밋이 없을 때 `--exact-match` 는 `no tag exactly matches` 오류이고 `--always` 는 짧은 해시를 출력한다", "`v1-3` 으로만 나오고 해시는 붙지 않는다", "`--exact-match` 는 가장 가까운 태그를 출력한다", "태그에서 떨어진 커밋은 `describe` 로 이름을 얻을 수 없고 `--always` 도 오류이다"]', 0, '`git name-rev --name-only 커밋` 은 `tags/v1` 처럼 이름 형태로 위치를 보여 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 12, 'format-patch 로 패치 만들기', '`git format-patch -2 -o ../out` 은 무엇을 만들까요? `-2 --stdout` 의 제목과 `-1 -N --stdout` 의 제목은요?', '커밋 하나가 파일 하나가 돼요.', NULL, NULL, '[]', 'choice', '["두 커밋을 하나의 파일로 합쳐 만든다", "커밋을 만들지 않고 작업 폴더의 변경만 파일로 만든다", "`-o` 는 패치를 바로 적용할 폴더를 지정한다", "최근 커밋 2개를 `0001-add-four.patch`, `0002-add-five.patch` 처럼 커밋마다 파일 하나로 만든다. `-2 --stdout` 의 제목은 `[PATCH 1/2]`, `[PATCH 2/2]` 로 번호가 붙고 `-N` 은 번호 없이 `[PATCH]` 로 나온다"]', 3, '패치 파일에는 작성자, 날짜, 제목과 `From 해시` 로 시작하는 헤더가 들어 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 13, 'apply 와 am 의 차이', '같은 패치 파일을 `git apply` 로 적용했을 때와 `git am` 으로 적용했을 때는 각각 어떻게 다를까요?', '커밋이 만들어지는지 봐요.', NULL, NULL, '[]', 'choice', '["`git apply` 도 커밋을 자동으로 만든다", "`git am` 은 작업 폴더만 바꾸고 커밋하지 않는다", "`git apply` 는 작업 폴더만 바꿔 ` M f.txt` 상태가 되고 커밋은 늘지 않는다. `git am` 은 `Applying: add four` 처럼 패치의 작성자와 메시지로 커밋을 만들어 준다", "둘 다 파일을 바꾸지 않고 검사만 한다"]', 2, '`git apply --check 패치` 는 적용하지 않고 적용 가능한지만 검사합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 14, '적용 가능 검사와 실패', '기준이 맞지 않는 저장소에서 `git apply --check 0002-add-five.patch` 를 하면 어떻게 될까요? 이미 적용된 변경을 다시 `git am` 하면요?', '맥락이 맞지 않으면 거부돼요.', NULL, NULL, '[]', 'choice', '["검사만 하므로 적용 불가여도 종료 코드는 0 이다", "`error: patch failed: f.txt:2` 와 `patch does not apply` 오류, 종료 코드 1 로 끝나고 파일은 바뀌지 않는다. 이미 반영된 패치를 `git am` 하면 `patch failed` 오류와 종료 코드 128 이 나고, `git am --abort` 로 am 작업을 취소한다", "맥락이 맞지 않으면 파일에 충돌 표시가 자동으로 남는다", "`git am --abort` 는 이미 적용된 커밋을 지운다"]', 1, '진행 중인 am 이 없을 때 `--abort` 는 `Resolve operation not in progress` 오류를 냅니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 15, '줄 번호와 함께 검색', '`git grep` 결과에 줄 번호를 붙이는 옵션을 채우세요.', '"number" 의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-n", "-c", "-l", "-h"]', NULL, '`b.txt:1:foo bar` 처럼 나옵니다.', '[0]', 'git grep {0} foo b.txt', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 16, '파일 이름만 보기', '일치한 파일 이름만 나열하는 `git grep` 옵션을 채우세요.', '"list" 의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-l", "-n", "-c", "-w"]', NULL, '`-L` 은 일치하지 않은 파일 이름을 나열합니다.', '[0]', 'git grep {0} foo', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 17, '추적 안 하는 파일 포함', '추적하지 않는 파일까지 검색하게 하는 `git grep` 옵션을 채우세요.', '"추적하지 않는"이라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["--untracked", "--all", "--new", "--others-only"]', NULL, '기본은 추적하는 파일만 검색합니다.', '[0]', 'git grep {0} foo', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 18, '저장소 최상위 경로', '저장소 최상위 폴더의 경로를 출력하는 `git rev-parse` 옵션을 채우세요.', '"최상위 폴더 보이기"라는 뜻이에요.', NULL, NULL, '[]', 'fill', '["--show-toplevel", "--root", "--top", "--git-root"]', NULL, '하위 폴더에서 실행해도 같은 최상위 경로가 나옵니다.', '[0]', 'git rev-parse {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 19, '현재 브랜치 이름', '현재 브랜치 이름만 출력하는 `git rev-parse` 옵션을 채우세요.', '"줄인 참조 이름"이라는 뜻이에요.', NULL, NULL, '[]', 'fill', '["--abbrev-ref", "--short", "--name", "--branch"]', NULL, '분리된 HEAD 에서는 `HEAD` 를 출력합니다.', '[0]', 'git rev-parse {0} HEAD', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 20, '가장 가까운 태그', '`git describe` 에서 해시 없이 가장 가까운 태그 이름만 출력하는 옵션을 채우세요.', '해시의 길이를 0 으로 줄여요.', NULL, NULL, '[]', 'fill', '["--abbrev=0", "--short", "--name-only", "--exact"]', NULL, '태그에서 떨어진 커밋도 가장 가까운 태그 이름이 나옵니다.', '[0]', 'git describe --tags {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 21, '그래프로 보기', '`git log --oneline` 에 브랜치가 갈라졌다 합쳐지는 모양을 기호로 그리는 옵션을 채우세요.', '"그래프"라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["--graph", "--tree", "--branches-only", "--draw"]', NULL, '`--all` 을 함께 쓰면 모든 브랜치를 그립니다.', '[0]', 'git log --oneline {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 22, '한 줄로 이어진 이력', '병합된 브랜치의 커밋은 빼고 현재 브랜치를 따라가는 커밋만 보는 옵션을 채우세요.', '"첫 번째 부모"라는 뜻이에요.', NULL, NULL, '[]', 'fill', '["--first-parent", "--no-merges", "--merges", "--simplify"]', NULL, '병합 커밋이 부모 둘을 가질 때 첫 번째 부모만 따라갑니다.', '[0]', 'git log --oneline {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 23, '패치를 화면으로 출력', '`git format-patch -1` 의 결과를 파일로 만들지 않고 화면에 출력하는 옵션을 채우세요.', '"표준 출력"이라는 뜻이에요.', NULL, NULL, '[]', 'fill', '["--stdout", "--print", "--console", "-p"]', NULL, '`-o 폴더` 는 파일을 저장할 폴더를 정합니다.', '[0]', 'git format-patch -1 {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 24, '적용 전 검사', '패치를 실제로 적용하지 않고 적용 가능한지만 검사하는 `git apply` 옵션을 채우세요.', '"확인"이라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["--check", "--dry", "--test", "--verify"]', NULL, '적용 가능하면 아무 출력 없이 종료 코드 0 입니다.', '[0]', 'git apply {0} 0001-add-four.patch', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 25, '진행 중인 am 취소', '충돌로 멈춘 `git am` 작업을 취소하고 원래 상태로 돌아가는 옵션을 채우세요.', '"중단"이라는 뜻의 영어 단어예요.', NULL, NULL, '[]', 'fill', '["--abort", "--cancel", "--quit-now", "--reset"]', NULL, '해당 패치만 건너뛰려면 `--skip` 을 씁니다.', '[0]', 'git am {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 26, '패치 파일로 변경 주고받기', '커밋 두 개를 패치로 만들어 다른 저장소에 적용하는 순서입니다. 순서에 맞게 놓아 보세요.', '만들기 → 검사 → 적용 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`git format-patch -2 -o ../out` 으로 커밋 두 개를 패치 파일로 만든다", "받는 저장소에서 `git apply --check ../out/0001-add-four.patch` 로 적용 가능한지 검사한다", "`git am ../out/0001-add-four.patch ../out/0002-add-five.patch` 로 커밋까지 만들며 적용한다", "`git log --oneline` 으로 두 커밋이 생겼는지 확인한다"]', NULL, '`git apply` 는 커밋을 만들지 않고 작업 폴더만 바꿉니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 27, 'am 이 실패했을 때 정리하기', '`git am` 이 `patch failed` 로 멈췄을 때 상태를 보고 정리하는 순서입니다. 순서에 맞게 놓아 보세요.', '상태 → 시도 → 취소 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`git status` 로 `You are in the middle of an am session.` 메시지를 확인한다", "`git am --show-current-patch=diff` 로 적용에 실패한 패치를 본다", "`git am --abort` 로 am 작업을 취소하고 원래 상태로 돌아간다", "`git status` 로 `On branch main` 의 깨끗한 상태인지 확인한다"]', NULL, '3-way 병합으로 다시 시도하려면 `git am -3 패치` 를 씁니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 28, '이력에서 문자열 찾아 위치 확인하기', '과거 커밋에 있던 문자열을 찾아 어느 커밋인지 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '현재 검색 → 과거 검색 → 위치 확인 순서예요.', NULL, NULL, '[]', 'order', '["`git grep -n foo` 로 현재 추적 파일에서 줄 번호와 함께 찾는다", "`git grep -n foo HEAD~2` 로 과거 커밋 시점의 내용에서 찾는다", "`git rev-parse --short HEAD~2` 로 그 커밋의 짧은 해시를 얻는다", "`git describe --tags --always HEAD~2` 로 가까운 태그 기준의 이름을 확인한다"]', NULL, '`git grep` 은 `--untracked` 없이는 추적하지 않는 파일을 보지 않습니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 192, 29, '저장소와 브랜치 정보 확인하기', '스크립트에서 현재 위치와 브랜치 상태를 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '저장소 안인지 → 최상위 → 브랜치 → 분리 여부 순서예요.', NULL, NULL, '[]', 'order', '["`git rev-parse --is-inside-work-tree` 로 저장소 안인지 확인한다", "`git rev-parse --show-toplevel` 로 저장소 최상위 경로를 얻는다", "`git rev-parse --abbrev-ref HEAD` 로 현재 브랜치 이름을 얻는다", "`git symbolic-ref -q HEAD` 의 종료 코드로 분리된 HEAD 인지 판단한다"]', NULL, '분리된 HEAD 에서는 `symbolic-ref -q HEAD` 가 메시지 없이 종료 코드 1 입니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 192 AND order_index = 29);
