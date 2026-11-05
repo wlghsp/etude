@@ -1,0 +1,122 @@
+-- 리눅스 세트 207. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set207.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 207, '스크립트 기본기 2와 사용자·그룹: [ -f -d -z ], case, until, set -x, source, trap, base64, useradd, usermod -aG', '쉘 스크립트 기본기와 사용자·그룹 관리를 한 개념씩 반복합니다. [ ] 의 파일 검사 -f·-d·-s, 빈 문자열 검사 -z·-n, 숫자 비교 -gt 와 문자열 비교의 차이, 따옴표 없는 빈 변수의 오류, case 가 첫 일치만 실행하는 것과 | 패턴·기본 분기, until 반복, set -x 와 bash -x 로 따라가기, source 와 bash 실행의 차이, trap EXIT 로 정리하기와 신호 잡기, SIGKILL 은 잡을 수 없는 것, base64 인코딩과 echo -n, usermod -aG 와 -G 의 차이, 그룹 폴더의 setgid, userdel 과 -r 을 짧은 객관식·빈칸·순서 문제로 익히고, 인자 검사 스크립트 뼈대, 종료 때 임시 파일 정리, 그룹 만들고 사용자 넣기, 사용자와 그룹 정리의 순서를 연습합니다.', 'quiz', '리눅스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 207);
+UPDATE quest_set SET display_order = 9, unit_id = (SELECT id FROM unit WHERE id = 1), icon = '🪞' WHERE id = 207;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 1, '파일 검사 연산자', '`f` 는 일반 파일, `d` 는 폴더, `empty` 는 크기가 0 인 파일일 때 `[ -f d ]` 와 `[ -d d ]`, `[ -s empty ]` 의 결과는 각각 어떻게 될까요?', '`-f` 는 일반 파일, `-d` 는 폴더, `-s` 는 크기가 0 보다 큰 파일이에요.', NULL, NULL, '[]', 'choice', '["셋 모두 참이다", "`[ -f d ]` 는 참이고 `[ -d d ]` 는 거짓이다", "`[ -f d ]` 는 거짓(폴더는 일반 파일이 아님), `[ -d d ]` 는 참, `[ -s empty ]` 는 거짓(크기가 0)이다", "`[ -s empty ]` 는 파일이 존재하면 항상 참이다"]', 2, '존재만 확인하려면 `-e` 를 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 2, '숫자 비교와 문자열 비교', '`[ 10 -gt 9 ]` 와 `[ "10" \\> "9" ]` 의 결과는 어떻게 될까요?', '`-gt` 는 숫자, `\\>` 는 글자 순서 비교예요.', NULL, NULL, '[]', 'choice', '["둘 다 참이다", "`[ 10 -gt 9 ]` 는 참이고 `[ \\"10\\" \\\\> \\"9\\" ]` 는 거짓이다. 문자열 비교는 글자를 앞에서부터 비교하므로 `1` 이 `9` 보다 앞서 `10` 이 더 작다", "둘 다 거짓이다", "`[ 10 -gt 9 ]` 는 문자열 비교라 거짓이다"]', 1, '숫자 비교에는 `-eq`, `-ne`, `-lt`, `-gt` 를, 문자열 같음에는 `=` 를 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 3, '따옴표 없는 빈 변수', '변수 `B` 가 정의되지 않았을 때 `[ $B = x ]` 와 `[ "$B" = x ]` 는 각각 어떻게 될까요?', '따옴표가 없으면 변수가 사라져요.', NULL, NULL, '[]', 'choice', '["`[ $B = x ]` 는 `unary operator expected` 오류(종료 코드 2)가 나고, `[ \\"$B\\" = x ]` 는 오류 없이 거짓(종료 코드 1)이다. 변수는 따옴표로 감싸야 한다", "둘 다 오류 없이 참이다", "둘 다 같은 오류가 난다", "따옴표 없는 쪽이 항상 안전하다"]', 0, '따옴표가 없으면 빈 변수가 단어로 사라져 `[ = x ]` 가 되기 때문입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 4, 'case 의 일치 순서', '`case abc in a*) echo first;; abc) echo second;; esac` 는 무엇을 출력할까요?', '위에서부터 맞는 첫 패턴만 실행해요.', NULL, NULL, '[]', 'choice', '["`second` 만 출력한다", "`first` 와 `second` 를 모두 출력한다", "아무것도 출력하지 않는다", "`first` 만 출력한다. 위에서부터 처음 일치하는 패턴 하나만 실행하고 `esac` 로 나간다"]', 3, '구체적인 패턴을 위에, `*)` 같은 기본 패턴을 맨 아래에 둡니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 5, 'case 의 패턴', '`case "$v" in start|run) ... ;; [0-9]*) ... ;; *) ... ;; esac` 에서 `|`, `[0-9]*`, `*)` 는 각각 무엇일까요?', 'case 의 패턴은 정규식이 아니라 와일드카드예요.', NULL, NULL, '[]', 'choice', '["`|` 는 파이프로 다음 명령에 넘기고, `*)` 는 모든 입력에 가장 먼저 일치한다", "`[0-9]*` 는 숫자가 0 번 이상 반복되는 정규식이고, `|` 는 사용할 수 없다", "`|` 는 여러 패턴 중 하나면 일치, `[0-9]*` 는 숫자로 시작하는 문자열, `*)` 는 앞의 어느 것에도 맞지 않을 때 쓰는 기본 분기다", "`*)` 는 오류가 났을 때만 실행된다"]', 2, '패턴 끝은 `;;` 로 닫습니다. 파일 이름 분기는 `*.tar.gz)` 처럼 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 6, 'until 반복', '`i=0; until [ $i -ge 3 ]; do echo $i; i=$((i+1)); done` 은 무엇을 출력할까요? 처음부터 조건이 참이면요?', '`until` 은 조건이 참이 될 때까지 반복해요.', NULL, NULL, '[]', 'choice', '["`0`, `1`, `2`, `3` 을 출력한다", "`0`, `1`, `2` 를 출력하고 `i` 가 3 이 되면 끝난다. 처음부터 조건이 참이면 한 번도 실행하지 않는다", "조건이 참인 동안 반복하므로 아무것도 출력하지 않는다", "처음부터 조건이 참이어도 한 번은 실행한다"]', 1, '`while` 은 조건이 참인 동안, `until` 은 조건이 거짓인 동안 반복합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 7, 'set -x 로 따라가기', '스크립트 안에서 `set -x` 를 쓰거나 `bash -x script.sh` 로 실행하면 무엇이 보일까요?', '실행되는 명령을 보여 줘요.', NULL, NULL, '[]', 'choice', '["실행하는 각 명령이 `+` 를 붙인 채 변수가 펼쳐진 상태로 표준 오류에 표시된다. `set +x` 로 끈다", "명령은 실행하지 않고 문법만 검사한다", "명령의 출력만 파일에 저장한다", "스크립트가 오류가 나면 자동으로 멈춘다"]', 0, '예를 들어 `a=1; echo hi $a` 는 `+ a=1` 과 `+ echo hi 1` 로 보입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 8, 'source 와 bash 의 차이', '`X=from-file` 을 정의한 `lib.sh` 를 `bash lib.sh` 로 실행했을 때와 `source lib.sh` 로 실행했을 때, 이후 `echo $X` 는 어떻게 다를까요?', 'source 는 현재 쉘에서 실행해요.', NULL, NULL, '[]', 'choice', '["둘 다 `from-file` 이 남는다", "둘 다 비어 있다", "`bash lib.sh` 는 남고 `source lib.sh` 는 비어 있다", "`bash lib.sh` 는 자식 쉘에서 실행되어 이후 `$X` 가 비어 있고, `source lib.sh` 는 현재 쉘에서 실행되어 `from-file` 이 남는다. `.` 도 `source` 와 같다. `cd` 도 같은 이유로 `source` 일 때만 현재 위치가 바뀐다"]', 3, '`source` 한 파일에 `exit` 가 있으면 현재 쉘이 종료됩니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 9, 'trap EXIT 로 정리하기', '`trap "rm -f tmpf; echo cleaned" EXIT` 를 등록한 스크립트가 중간에 `exit 4` 로 끝나면 어떻게 될까요?', 'EXIT 는 종료할 때마다 실행돼요.', NULL, NULL, '[]', 'choice', '["`exit` 로 끝나면 `trap` 이 실행되지 않는다", "`trap` 이 실행되면 종료 코드가 항상 0 으로 바뀐다", "종료 직전에 `rm -f tmpf; echo cleaned` 가 실행되고, 스크립트의 종료 코드는 그대로 4 이다. 정상 종료나 오류 종료에도 같다", "정상 종료할 때만 실행된다"]', 2, '같은 신호에 `trap` 을 다시 걸면 앞의 것이 바뀌고, `trap - EXIT` 로 해제합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 10, 'trap 으로 잡는 신호', '`trap "echo caught" INT` 를 건 쉘이 SIGINT 를 받으면 어떻게 될까요? `kill -9` 로 종료시키면요?', 'SIGKILL 은 특별해요.', NULL, NULL, '[]', 'choice', '["두 신호 모두 핸들러가 실행된다", "SIGINT 는 핸들러 `caught` 가 실행된 뒤 스크립트가 계속된다. `kill -9`(SIGKILL)은 잡을 수 없어 핸들러도 `EXIT` trap 도 실행되지 않고 종료 코드가 137 이다", "SIGINT 는 핸들러 없이 바로 종료되고, SIGKILL 은 핸들러가 실행된다", "`trap` 은 신호에 쓸 수 없고 `EXIT` 에만 쓸 수 있다"]', 1, '`trap "" TERM` 처럼 빈 명령을 걸면 그 신호를 무시합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 11, 'base64 인코딩', '`echo hello | base64` 와 `echo -n hello | base64` 의 결과는 같을까요? 이것은 암호화일까요?', '`echo` 는 끝에 줄바꿈을 붙여요.', NULL, NULL, '[]', 'choice', '["다르다. 앞은 줄바꿈까지 인코딩해 `aGVsbG8K`, 뒤는 `aGVsbG8=` 가 된다. `base64 -d` 로 그대로 되돌릴 수 있어 암호화가 아니라 단순한 표기 변환이다", "같다. 둘 다 `aGVsbG8=` 가 된다", "다르지만 `-d` 로 되돌릴 수 없는 암호화이다", "같다. `echo` 의 줄바꿈은 `base64` 가 무시한다"]', 0, '값 끝의 `=` 는 길이를 맞추는 채움 문자입니다. 줄바꿈 없이 인코딩하려면 `echo -n` 을 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 12, 'usermod -aG', '사용자 `dev1` 이 이미 그룹 `g1`, `g2` 에 속해 있을 때 `usermod -G g1 dev1` 을 하면 어떻게 될까요? `usermod -aG g2 dev1` 을 하면요?', '`-a` 는 추가(append)예요.', NULL, NULL, '[]', 'choice', '["`-G` 는 기존 그룹에 추가하고 `-aG` 는 대체한다", "두 명령 모두 기존 그룹을 유지한 채 추가한다", "`-G` 는 기본 그룹을 바꾸고 `-aG` 는 오류가 난다", "`-G` 만 쓰면 보조 그룹이 `g1` 하나로 바뀌어 `g2` 에서 빠지고, `-aG g2` 는 기존 그룹을 그대로 두고 `g2` 를 추가한다"]', 3, '`id -Gn dev1` 로 사용자가 속한 그룹 목록을 확인합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 13, '그룹 폴더의 새 파일', '그룹이 `dev` 이고 모드가 `770` 인 폴더 `shared` 에서 `dev1`(기본 그룹 `dev1`)이 파일을 만들면 그 파일의 그룹은 무엇일까요? 폴더를 `chmod 2770` 으로 바꾼 뒤 만들면요?', '맨 앞의 `2` 는 setgid 예요.', NULL, NULL, '[]', 'choice', '["두 경우 모두 `dev` 가 된다", "두 경우 모두 `dev1` 이 된다", "`770` 일 때는 만든 사용자의 기본 그룹 `dev1` 이고, `2770`(setgid)이면 폴더의 그룹인 `dev` 가 된다. 공유 폴더에서 새 파일도 같은 그룹이 되게 하려고 setgid 를 쓴다", "`770` 이면 `root`, `2770` 이면 `dev` 가 된다"]', 2, '그룹 사용자가 폴더에 들어가고 쓰려면 폴더의 그룹 권한이 `rwx` 여야 합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 14, 'userdel 과 홈 폴더', '`userdel dev1` 과 `userdel -r dev1` 은 홈 폴더 `/home/dev1` 을 어떻게 다룰까요?', '`-r` 은 remove 예요.', NULL, NULL, '[]', 'choice', '["둘 다 홈 폴더까지 지운다", "`userdel dev1` 은 계정만 지우고 `/home/dev1` 은 남기며, `userdel -r dev1` 은 홈 폴더까지 지운다", "둘 다 홈 폴더를 남긴다", "`userdel dev1` 만 홈 폴더를 지우고 `-r` 은 계정을 지우지 않는다"]', 1, '남은 홈 폴더는 같은 이름으로 다시 만들 때 소유자 문제를 일으킬 수 있어 직접 정리합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 15, '폴더인지 검사', '`[ ... d ]` 에서 `d` 가 **폴더인지 검사하는** 연산자를 채우세요.', '"directory"의 머리글자예요.', NULL, NULL, '[]', 'fill', '["-d", "-f", "-z", "-n"]', NULL, '일반 파일인지는 `-f` 입니다.', '[0]', '[ {0} d ] && echo dir', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 16, '빈 문자열 검사', '변수 값이 **빈 문자열인지 검사하는** 연산자를 채우세요.', '"zero"의 머리글자예요.', NULL, NULL, '[]', 'fill', '["-z", "-n", "-e", "-s"]', NULL, '비어 있지 않은지는 `-n` 입니다.', '[0]', '[ {0} "$A" ] && echo empty', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 17, '숫자 크기 비교', '`5` 가 `3` 보다 **큰지 숫자로 비교하는** 연산자를 채우세요.', '"greater than"의 머리글자예요.', NULL, NULL, '[]', 'fill', '["-gt", ">", "-more", "gt"]', NULL, '`>` 는 문자열 비교이고 `[ ]` 안에서는 `\\>` 로 써야 합니다.', '[0]', '[ 5 {0} 3 ] && echo big', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 18, '실행 명령 따라가기', '스크립트가 **실행하는 명령을 `+` 와 함께 보여 주게** 하는 `set` 옵션을 채우세요.', '"x"로 시작하는 한 글자예요.', NULL, NULL, '[]', 'fill', '["-x", "-e", "-u", "-v"]', NULL, '끄려면 `set +x` 입니다.', '[0]', 'set {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 19, '현재 쉘에서 실행', '파일의 내용을 **현재 쉘에서 실행해** 변수를 남기는 내장 명령을 채우세요.', '"원천"을 뜻하는 영어예요.', NULL, NULL, '[]', 'fill', '["source", "run", "load", "import"]', NULL, '`.` 은 같은 뜻의 줄임말입니다.', '[0]', '{0} lib.sh', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 20, '종료 때 실행', '`trap` 으로 **스크립트가 끝날 때 실행할 일을 등록하는** 신호 이름을 채우세요.', '"나가다"를 뜻하는 영어예요.', NULL, NULL, '[]', 'fill', '["EXIT", "END", "FINISH", "DONE"]', NULL, '정상 종료와 `exit`, 오류 종료에서 모두 실행됩니다.', '[0]', 'trap ''echo bye'' {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 21, 'base64 되돌리기', '`base64` 로 인코딩한 값을 **원래대로 되돌리는** 옵션을 채우세요.', '"decode"의 머리글자예요.', NULL, NULL, '[]', 'fill', '["-d", "-e", "-r", "-x"]', NULL, '긴 이름은 `--decode` 입니다.', '[0]', 'echo aGVsbG8= | base64 {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 22, '홈 폴더 함께 만들기', '`useradd` 로 사용자를 만들 때 **홈 폴더도 함께 만드는** 옵션을 채우세요.', '"make"의 머리글자예요.', NULL, NULL, '[]', 'fill', '["-m", "-h", "-H", "-c"]', NULL, '홈 폴더를 만들지 않으려면 `-M` 을 씁니다.', '[0]', 'useradd {0} dev1', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 23, '그룹 만들기', '새 **그룹을 만드는** 명령을 채우세요.', '"group"과 "add"를 이어요.', NULL, NULL, '[]', 'fill', '["groupadd", "mkgroup", "groupmake", "newgroup"]', NULL, '지울 때는 `groupdel` 입니다.', '[0]', '{0} dev', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 24, '그룹에 추가', '기존 그룹은 두고 사용자를 **그룹에 추가하는** `usermod` 옵션을 채우세요.', '"append"의 `a` 와 "Group"의 `G` 를 이어요.', NULL, NULL, '[]', 'fill', '["-aG", "-G", "-g", "-a"]', NULL, '`-a` 없이 `-G` 만 쓰면 기존 보조 그룹이 대체됩니다.', '[0]', 'usermod {0} dev dev1', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 25, '홈 폴더까지 삭제', '`userdel` 로 계정과 함께 **홈 폴더까지 지우는** 옵션을 채우세요.', '"remove"의 머리글자예요.', NULL, NULL, '[]', 'fill', '["-r", "-f", "-m", "-h"]', NULL, '옵션이 없으면 홈 폴더는 남습니다.', '[0]', 'userdel {0} dev1', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 26, '인자 검사 스크립트 뼈대', '스크립트가 인자를 검사하고 동작을 나누는 순서입니다. 순서에 맞게 놓아 보세요.', '인자 확인 → 파일 확인 → 분기 → 분기 닫기 순서예요.', NULL, NULL, '[]', 'order', '["`[ -z \\"$1\\" ]` 로 인자가 비었는지 검사하고, 비었으면 사용법을 출력한 뒤 `exit 1` 한다", "`[ -f \\"$1\\" ]` 로 파일이 있는지 검사하고, 없으면 오류를 출력한 뒤 `exit 1` 한다", "`case \\"$2\\" in` 으로 동작 이름(`start`, `stop`)에 따라 분기를 나눈다", "각 분기를 `;;` 로 끝내고 `esac` 로 닫는다"]', NULL, '아무 패턴에도 맞지 않는 입력은 마지막 `*)` 분기에서 처리합니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 27, '종료 때 임시 파일 정리', '스크립트가 끝날 때 임시 파일을 지우도록 만드는 순서입니다. 순서에 맞게 놓아 보세요.', '등록 → 작업 → 종료 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`trap \\"rm -f tmpf; echo cleaned\\" EXIT` 로 종료 때 실행할 일을 등록한다", "`touch tmpf` 로 임시 파일을 만들고 작업한다", "스크립트가 `exit` 하거나 오류로 끝난다", "`cleaned` 가 출력되고 `tmpf` 가 지워졌는지 확인한다"]', NULL, '`kill -9` 로 끝나면 `EXIT` trap 이 실행되지 않으므로 임시 파일이 남을 수 있습니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 28, '그룹 만들고 사용자 넣기', '새 그룹을 만들고 새 사용자를 그 그룹에 넣는 순서입니다. 순서에 맞게 놓아 보세요.', '그룹 만들기 → 사용자 만들기 → 그룹 추가 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`groupadd dev` 로 그룹을 만든다", "`useradd -m dev1` 로 홈 폴더가 있는 사용자를 만든다", "`usermod -aG dev dev1` 로 `dev1` 을 `dev` 그룹에 추가한다", "`id -Gn dev1` 로 `dev` 가 목록에 있는지 확인한다"]', NULL, '`groups dev1` 로도 같은 목록을 볼 수 있습니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 207, 29, '사용자와 그룹 정리', '만들어 둔 사용자와 그룹을 정리하는 순서입니다. 순서에 맞게 놓아 보세요.', '사용자 삭제 → 확인 → 그룹 삭제 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`userdel -r dev1` 로 계정과 홈 폴더를 지운다", "`getent passwd dev1` 에 아무것도 나오지 않는지 확인한다", "`groupdel dev` 로 그룹을 지운다", "`getent group dev` 에 아무것도 나오지 않는지 확인한다"]', NULL, '계정과 홈 폴더를 함께 지우려면 `userdel -r` 이 필요합니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 207 AND order_index = 29);

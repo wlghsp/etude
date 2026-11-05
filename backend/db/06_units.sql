@@ -337,3 +337,5 @@ INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크�
 UPDATE quest_set SET unit_id = 7 WHERE id = 205;
 INSERT INTO unit (id, category, title, display_order) SELECT 5, '도커', 'Docker 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 5);
 UPDATE quest_set SET unit_id = 5 WHERE id = 206;
+INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
+UPDATE quest_set SET unit_id = 1 WHERE id = 207;
