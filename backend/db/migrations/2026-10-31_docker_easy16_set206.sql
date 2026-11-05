@@ -1,0 +1,122 @@
+-- 도커 세트 206. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set206.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 5, '도커', 'Docker 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 5);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 206, 'Compose 기본 명령과 필드: up -d, -p·-f, down -v, stop·start, build·pull, ports, restart, ADD 와 COPY', 'docker compose 의 기본 명령과 compose 파일 필드의 동작을 한 개념씩 반복합니다. 폴더 이름이 프로젝트 이름이 되어 컨테이너와 네트워크 이름이 정해지는 것, -p 로 프로젝트 이름을, -f 로 다른 파일을 지정하는 것, down 과 down -v 의 볼륨 차이, stop 과 start 가 컨테이너를 지우지 않는 것과 ps -a, restart 가 같은 컨테이너를 다시 시작하는 것, up -d 를 다시 실행할 때 바뀐 서비스만 다시 만드는 것, ports 의 호스트:컨테이너 순서, 서비스 이름으로 접근하는 것, 서비스별 restart 정책, build 와 pull 의 대상, Dockerfile 을 고친 뒤 up -d --build 가 필요한 것, ADD 가 tar 를 풀고 COPY 는 그대로 복사하는 것, network prune 이 쓰지 않는 네트워크만 지우는 것을 짧은 객관식·빈칸·순서 문제로 익히고, 올리고 내리기, Dockerfile 고치고 반영하기, 멈췄다 다시 시작하기, 볼륨 데이터 남기고 내렸다 올리기의 순서를 연습합니다.', 'quiz', '도커'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 206);
+UPDATE quest_set SET display_order = 178, unit_id = (SELECT id FROM unit WHERE id = 5), icon = '🛳️' WHERE id = 206;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 1, 'compose 가 만드는 이름', '`myproj` 폴더에 서비스 `web` 하나만 있는 `compose.yaml` 이 있습니다. 그 폴더에서 `docker compose up -d` 를 하면 컨테이너와 네트워크 이름은 어떻게 될까요?', '폴더 이름이 프로젝트 이름이 돼요.', NULL, NULL, '[]', 'choice', '["컨테이너는 `web`, 네트워크는 `bridge` 로 만들어진다", "컨테이너는 `compose-web`, 네트워크는 `compose_default` 로 만들어진다", "컨테이너는 `myproj-web-1`, 네트워크는 `myproj_default` 로 만들어진다. 프로젝트 이름은 기본으로 폴더 이름을 쓴다", "컨테이너는 `myproj_web_0`, 네트워크는 `myproj` 로 만들어진다"]', 2, '`networks:` 에서 `back` 을 정의해 쓰면 네트워크 이름은 `myproj_back` 이 됩니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 2, '-p 로 프로젝트 이름 정하기', '`docker compose -p demo up -d` 를 하면 폴더 이름과 상관없이 어떻게 될까요?', '-p 는 프로젝트 이름이에요.', NULL, NULL, '[]', 'choice', '["컨테이너 이름을 `demo` 하나로 고정한다", "프로젝트 이름이 `demo` 가 되어 컨테이너는 `demo-서비스-1`, 네트워크는 `demo_네트워크` 로 만들어진다. 이후 같은 프로젝트를 다룰 때도 `-p demo` 를 붙인다", "`-p` 는 포트를 정하는 옵션이다", "프로젝트 이름은 바뀌지 않고 로그에만 `demo` 가 표시된다"]', 1, '`-p` 없이 다른 폴더에서 같은 명령을 하면 다른 프로젝트로 취급됩니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 3, '-f 로 다른 파일 쓰기', '폴더에 `compose.yaml` 과 `other.yaml` 이 있을 때 `docker compose -f other.yaml up -d` 는 무엇을 할까요?', '기본 파일 이름 대신 지정한 파일을 읽어요.', NULL, NULL, '[]', 'choice', '["`other.yaml` 에 적힌 서비스만 올리고 `compose.yaml` 은 읽지 않는다. 같은 파일을 계속 다루려면 `ps`, `down` 에도 `-f` 를 붙인다", "`compose.yaml` 과 `other.yaml` 을 모두 올린다", "`-f` 는 로그를 따라보는 옵션이라 아무것도 올리지 않는다", "`other.yaml` 의 내용을 `compose.yaml` 로 복사하고 올린다"]', 0, '`-p` 와 `-f` 를 함께 쓰면 같은 파일을 다른 프로젝트 이름으로 여러 번 올릴 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 4, 'down 과 down -v', '`docker compose down` 과 `docker compose down -v` 는 무엇이 다를까요?', '`-v` 는 볼륨까지 지워요.', NULL, NULL, '[]', 'choice', '["`down` 은 볼륨까지 지우고 `down -v` 는 이미지까지 지운다", "둘 다 컨테이너만 지우고 네트워크와 볼륨은 남긴다", "`down -v` 는 오류 없이 아무것도 지우지 않는다", "`down` 은 컨테이너와 네트워크를 지우지만 `volumes:` 로 만든 이름 있는 볼륨은 남긴다. `down -v` 는 그 볼륨까지 지운다. 이미지는 둘 다 남는다"]', 3, '그래서 `down` 후 `up -d` 를 해도 볼륨에 쓴 데이터는 남아 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 5, 'stop 과 down 의 차이', '`docker compose stop` 을 하면 컨테이너는 어떻게 되고 `docker compose ps` 와 `ps -a` 에는 어떻게 보일까요?', 'stop 은 지우지 않고 멈춰요.', NULL, NULL, '[]', 'choice', '["컨테이너와 네트워크가 모두 지워져 `ps -a` 에도 보이지 않는다", "컨테이너가 `paused` 로 얼어붙어 `ps` 에도 보인다", "컨테이너는 지워지지 않고 `exited` 로 멈춘다. `ps` 에는 보이지 않고 `ps -a` 에만 보인다. `start` 로 다시 시작한다", "`stop` 은 서비스 정의를 `compose.yaml` 에서 지운다"]', 2, '`ps` 는 기본으로 실행 중인 것만 보여 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 6, 'restart 는 새 컨테이너?', '`docker compose restart web` 을 하면 컨테이너는 어떻게 될까요?', '새로 만드는 것이 아니에요.', NULL, NULL, '[]', 'choice', '["항상 새 컨테이너가 만들어져 ID 가 바뀐다", "같은 컨테이너(ID 그대로)가 멈췄다가 다시 시작된다. 설정이 바뀐 것을 반영하려면 `up -d` 로 다시 만들게 해야 한다", "`compose.yaml` 의 바뀐 설정이 자동으로 반영되어 컨테이너가 다시 만들어진다", "컨테이너가 지워지고 서비스도 목록에서 사라진다"]', 1, '단순히 프로세스를 다시 띄우고 싶을 때 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 7, 'up -d 를 다시 실행하면', '이미 올라와 있는 프로젝트에서 `docker compose up -d` 를 다시 실행하면 어떻게 될까요? 서비스의 `command` 를 고친 뒤에는요?', '바뀐 것이 있을 때만 다시 만들어요.', NULL, NULL, '[]', 'choice', '["바뀐 것이 없으면 `Running` 으로 그대로 두고, 설정이 바뀐 서비스는 `Recreate` 로 컨테이너를 다시 만들어 새 설정으로 시작한다", "항상 모든 컨테이너를 지우고 새로 만든다", "이미 올라와 있으면 오류가 나고, 설정을 고쳐도 반영되지 않는다", "설정을 고쳐도 컨테이너는 그대로이고 `restart` 를 해야만 반영된다"]', 0, '그래서 설정을 고친 뒤에는 보통 `up -d` 를 다시 실행합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 8, 'ports 의 앞뒤 숫자', '`ports:` 에 `"18206:80"` 이라고 적으면 어떤 뜻일까요?', '앞이 호스트, 뒤가 컨테이너예요.', NULL, NULL, '[]', 'choice', '["컨테이너의 18206 번 포트를 호스트의 80 번으로 보낸다", "컨테이너 안의 두 포트를 서로 연결한다", "18206 개의 연결을 80 초 동안 허용한다", "호스트의 18206 번 포트로 들어온 요청을 컨테이너의 80 번 포트로 보낸다. `docker compose port web 80` 으로 연결된 호스트 포트를 확인할 수 있다"]', 3, '`docker compose ps` 의 `PORTS` 열에도 `18206->80/tcp` 처럼 보입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 9, '서비스 이름으로 접근', '같은 네트워크에 있는 서비스 `web` 과 `db` 가 있을 때, `web` 컨테이너 안에서 `db` 라는 이름으로 접근할 수 있을까요?', 'Compose 네트워크에는 이름 해석이 있어요.', NULL, NULL, '[]', 'choice', '["IP 주소로만 접근할 수 있고 이름은 풀리지 않는다", "`container_name` 을 따로 적어야만 이름이 풀린다", "된다. 같은 네트워크에서는 서비스 이름이 호스트 이름으로 풀려 `ping db` 나 `getent hosts db` 가 동작한다", "서비스 이름 대신 `localhost` 로 접근해야 한다"]', 2, 'IP 는 다시 올릴 때마다 바뀔 수 있어서 이름으로 접근하는 것이 안전합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 10, 'restart 필드', '서비스에 `restart: unless-stopped` 를 적고 다른 서비스에는 아무것도 적지 않았습니다. 각 컨테이너의 재시작 정책은 어떻게 될까요?', '적지 않으면 기본값이에요.', NULL, NULL, '[]', 'choice', '["모든 서비스가 `unless-stopped` 가 된다", "적은 서비스는 `unless-stopped`, 적지 않은 서비스는 기본값 `no` 이다. 정책은 서비스마다 따로 정한다", "적지 않은 서비스는 `always` 가 된다", "`restart` 필드는 `docker run` 에서만 쓸 수 있어 무시된다"]', 1, '`docker inspect` 의 `HostConfig.RestartPolicy.Name` 에서 확인할 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 11, 'build 와 pull', '`docker compose build` 와 `docker compose pull` 은 각각 어떤 서비스에 쓰일까요?', '하나는 직접 만들고 하나는 받아 와요.', NULL, NULL, '[]', 'choice', '["`build` 는 `build:` 로 정의한 서비스의 이미지를 Dockerfile 로 만들고, `pull` 은 `image:` 로 정의한 서비스의 이미지를 레지스트리에서 받는다. 만든 이미지 이름은 `프로젝트-서비스` 형식이다", "둘 다 `image:` 서비스에만 쓰인다", "`build` 는 이미지를 받고 `pull` 은 이미지를 만든다", "`build` 는 컨테이너를 실행하고 `pull` 은 컨테이너를 삭제한다"]', 0, '서비스 이름을 뒤에 적으면 그 서비스만 처리합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 12, 'Dockerfile 을 고친 뒤', '`build:` 로 정의한 서비스의 Dockerfile 을 고친 뒤 `docker compose up -d` 만 하면 새 내용이 반영될까요?', '이미 있는 이미지를 재사용해요.', NULL, NULL, '[]', 'choice', '["항상 이미지가 다시 만들어져 바로 반영된다", "`up -d` 는 Dockerfile 이 바뀌면 오류를 낸다", "`docker compose restart` 만 하면 반영된다", "반영되지 않는다. 이미 있는 이미지로 만든 컨테이너가 `Running` 으로 그대로다. `docker compose up -d --build` 로 이미지를 다시 만들어야 컨테이너가 새로 만들어진다"]', 3, '`docker compose build` 로 이미지만 먼저 만들어 둘 수도 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 13, 'ADD 와 COPY', 'Dockerfile 에서 `ADD pack.tgz /a/` 와 `COPY pack.tgz /c/` 는 어떻게 다를까요?', '하나는 압축을 풀어요.', NULL, NULL, '[]', 'choice', '["둘 다 압축을 풀어서 넣는다", "`COPY` 는 압축을 풀고 `ADD` 는 그대로 복사한다", "`ADD` 는 로컬 tar 압축 파일을 자동으로 풀어 `/a/hello.txt` 처럼 풀린 파일을 넣고, `COPY` 는 압축 파일 `/c/pack.tgz` 를 그대로 복사한다. 단순 복사에는 `COPY` 를 쓴다", "둘 다 압축 파일을 그대로 복사해 차이가 없다"]', 2, '일반 파일이라면 둘의 결과는 같으므로 의도가 분명한 `COPY` 를 권장합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 14, 'network prune 의 범위', '`docker network prune -f` 를 하면 어떤 네트워크가 지워질까요?', '쓰고 있지 않은 것만 지워요.', NULL, NULL, '[]', 'choice', '["모든 네트워크가 지워진다", "컨테이너가 연결돼 있지 않은 네트워크만 지워지고, 컨테이너가 쓰고 있는 네트워크는 남는다", "컨테이너가 연결된 네트워크를 우선해서 지운다", "네트워크가 아니라 사용하지 않는 볼륨이 지워진다"]', 1, '다른 사람의 네트워크까지 지우지 않도록 `--filter label=...` 로 범위를 좁힐 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 15, '프로젝트 올리기', '정의된 서비스를 **만들고 시작하는** `docker compose` 하위 명령을 채우세요.', '"위로 올린다"는 뜻의 짧은 영어예요.', NULL, NULL, '[]', 'fill', '["up", "run", "start", "begin"]', NULL, '`-d` 를 붙이면 백그라운드로 실행합니다.', '[0]', 'docker compose {0} -d', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 16, '프로젝트 이름 옵션', '**프로젝트 이름을 정하는** `docker compose` 옵션을 채우세요.', '"project"의 머리글자예요.', NULL, NULL, '[]', 'fill', '["-p", "-n", "-s", "-t"]', NULL, '긴 이름은 `--project-name` 입니다.', '[0]', 'docker compose {0} demo up -d', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 17, '파일 지정 옵션', '기본 파일 대신 **다른 compose 파일을 지정하는** 옵션을 채우세요.', '"file"의 머리글자예요.', NULL, NULL, '[]', 'fill', '["-f", "-c", "-i", "-y"]', NULL, '긴 이름은 `--file` 입니다.', '[0]', 'docker compose {0} other.yaml up -d', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 18, '볼륨까지 지우기', '`docker compose down` 에서 **이름 있는 볼륨까지 지우는** 옵션을 채우세요.', '"volume"의 머리글자예요.', NULL, NULL, '[]', 'fill', '["-v", "-a", "-r", "-f"]', NULL, '이미지는 지워지지 않습니다.', '[0]', 'docker compose down {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 19, '지우지 않고 멈추기', '컨테이너를 **지우지 않고 멈추기만 하는** `docker compose` 하위 명령을 채우세요.', '"멈추다"를 뜻하는 영어예요.', NULL, NULL, '[]', 'fill', '["stop", "down", "pause", "halt"]', NULL, '다시 시작하려면 `start` 를 씁니다.', '[0]', 'docker compose {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 20, '서비스 다시 시작', '서비스를 **멈췄다가 다시 시작하는** `docker compose` 하위 명령을 채우세요.', '"re"와 "start"를 이어요.', NULL, NULL, '[]', 'fill', '["restart", "reload", "reboot", "refresh"]', NULL, '컨테이너는 같은 것이 다시 시작됩니다.', '[0]', 'docker compose {0} web', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 21, '이미지를 다시 만들어 올리기', '`docker compose up -d` 에서 **이미지를 다시 만든 뒤 올리게 하는** 옵션을 채우세요.', '"build"를 그대로 써요.', NULL, NULL, '[]', 'fill', '["--build", "--rebuild", "--make", "--image"]', NULL, 'Dockerfile 을 고친 뒤 새 내용을 반영할 때 씁니다.', '[0]', 'docker compose up -d {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 22, '이미지 받기', '`image:` 로 정의한 서비스의 **이미지를 레지스트리에서 받는** 하위 명령을 채우세요.', '"끌어오다"를 뜻하는 영어예요.', NULL, NULL, '[]', 'fill', '["pull", "fetch", "get", "download"]', NULL, '`build:` 로 정의한 서비스는 `build` 로 만듭니다.', '[0]', 'docker compose {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 23, '정지된 것까지 보기', '정지된 컨테이너까지 **모두 보여 주는** `docker compose ps` 옵션을 채우세요.', '"all"의 머리글자예요.', NULL, NULL, '[]', 'fill', '["-a", "-r", "-x", "-e"]', NULL, '옵션 없이 `ps` 를 하면 실행 중인 것만 나옵니다.', '[0]', 'docker compose ps {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 24, '서비스 이름만 출력', 'compose 파일에 정의된 **서비스 이름만 출력하는** `docker compose config` 옵션을 채우세요.', '"services"를 그대로 써요.', NULL, NULL, '[]', 'fill', '["--services", "--names", "--list", "--short"]', NULL, '파일을 올리지 않고도 정의를 확인할 수 있습니다.', '[0]', 'docker compose config {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 25, '포트 연결 확인', '서비스의 **컨테이너 포트가 호스트의 어느 포트에 연결됐는지** 확인하는 하위 명령을 채우세요.', '"포트"를 영어로 쓰세요.', NULL, NULL, '[]', 'fill', '["port", "ports", "map", "expose"]', NULL, '`ps` 의 `PORTS` 열에서도 볼 수 있습니다.', '[0]', 'docker compose {0} web 80', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 26, '프로젝트 올리고 내리기', 'Compose 프로젝트를 올리고 확인하고 내리는 순서입니다. 순서에 맞게 놓아 보세요.', '올리기 → 확인 → 내리기 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`docker compose up -d` 로 서비스를 올린다", "`docker compose ps` 로 서비스가 `running` 인지 확인한다", "`docker compose down` 으로 컨테이너와 네트워크를 지운다", "`docker compose ps -a` 로 컨테이너가 남아 있지 않은지 확인한다"]', NULL, '이름 있는 볼륨은 `down` 으로는 지워지지 않습니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 27, 'Dockerfile 고치고 반영하기', '`build:` 서비스의 Dockerfile 을 고쳐 새 내용을 반영하는 순서입니다. 순서에 맞게 놓아 보세요.', '고치기 → 그냥 올려 보기 → 다시 빌드해 올리기 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["Dockerfile 에서 파일에 쓰는 내용을 고친다", "`docker compose up -d` 만 하면 컨테이너가 `Running` 으로 그대로인 것을 확인한다", "`docker compose up -d --build` 로 이미지를 다시 만들고 컨테이너를 다시 만든다", "`docker compose exec app cat /b.txt` 로 새 내용이 보이는지 확인한다"]', NULL, 'Dockerfile 만 고치고 `up -d` 를 하면 새 내용이 반영되지 않는 것이 핵심입니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 28, '멈췄다 다시 시작하기', '컨테이너를 지우지 않고 멈췄다가 다시 시작하는 순서입니다. 순서에 맞게 놓아 보세요.', '멈추기 → 확인 → 시작 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`docker compose stop` 으로 서비스를 멈춘다", "`docker compose ps -a` 로 컨테이너가 `exited` 인지 확인한다", "`docker compose start` 로 다시 시작한다", "`docker compose ps` 로 `running` 이 되었는지 확인한다"]', NULL, '`ps` 만 하면 멈춘 동안에는 아무것도 보이지 않습니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 206, 29, '볼륨 데이터 남기고 내렸다 올리기', '이름 있는 볼륨에 쓴 데이터가 `down` 뒤에도 남는지 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '쓰기 → 내리기 → 올리기 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`docker compose exec web sh -c ''echo keep > /data/f.txt''` 로 볼륨 경로에 파일을 쓴다", "`docker compose down` 으로 컨테이너와 네트워크를 지운다", "`docker compose up -d` 로 다시 올린다", "`docker compose exec web cat /data/f.txt` 로 파일이 남아 있는지 확인한다"]', NULL, '`down -v` 로 내렸다면 이 파일은 사라집니다.', '[0, 1, 2, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 206 AND order_index = 29);
