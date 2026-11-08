@@ -4,6 +4,7 @@ import { cleanupOrphanContainers, cleanupRunningContainers } from './plugins/doc
 import { cleanupOrphanVclusters, initPool } from './services/vcluster-pool.js'
 import { cleanupOrphanQuestNamespaces } from './plugins/k8s-namespace.js'
 import { assertPortFree } from './services/port-guard.js'
+import { startAttachmentPurge } from './services/feedback-attachments.js'
 
 const PORT = 3001
 const HOST = '0.0.0.0'
@@ -35,3 +36,4 @@ process.on('SIGTERM', shutdown)
 process.on('SIGINT', shutdown)
 
 await fastify.listen({ port: PORT, host: HOST })
+startAttachmentPurge(fastify.log)

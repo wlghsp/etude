@@ -80,3 +80,20 @@ k3d cluster start etude
 3. k8s 퀘스트 — `kubectl get nodes` 실행 확인
 
 문제가 생기면 [guide_server_operations.md의 "퀘스트 터미널이 '환경 준비 중'에서 안 넘어갈 때"](guide_server_operations.md) 섹션을 따라간다.
+
+---
+
+## 5. 피드백 이미지 첨부 (볼륨·업로드 크기)
+
+피드백에 스크린샷을 올리는 기능([명세](../specs/spec_feedback_attachments.md))은 서버 디스크와 프록시 설정이 맞아야 동작한다.
+
+```bash
+# 이미지 저장 볼륨이 붙어 있는가 (재배포해도 이미지가 유지되려면 필요)
+docker inspect etude-backend --format '{{ range .Mounts }}{{ .Destination }} {{ end }}' | tr ' ' '\n' | grep /app/data/feedback
+
+# 새 테이블이 만들어졌는가 (마이그레이션: bash scripts/migrate.sh)
+docker exec etude-db sh -c 'mariadb -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE" -N -e "SHOW TABLES LIKE \"feedback_attachment\""'
+```
+
+- nginx 설정(`deploy/nginx.conf`)을 바꿨다면 web 컨테이너를 다시 띄워 반영한다. `POST /feedback` 만 본문 상한이 12MB 이고 나머지는 기본 1MB 다. 이 설정이 빠지면 이미지를 붙인 피드백이 413 으로 실패한다.
+- 이미지는 첨부 후 30일이 지나면 서버가 알아서 지운다. 기간은 `.env.prod` 의 `FEEDBACK_ATTACHMENT_RETENTION_DAYS` 로 바꾸고, backend 를 `--build` 로 다시 띄워야 반영된다. 저장 경로는 `FEEDBACK_UPLOAD_DIR`(기본 `/app/data/feedback`)이며 바꾸면 compose 의 볼륨 경로도 같이 바꾼다.

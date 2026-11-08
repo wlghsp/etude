@@ -99,6 +99,17 @@ CREATE TABLE IF NOT EXISTS feedback (
   FOREIGN KEY (user_id) REFERENCES user(id)
 );
 
+-- 피드백 스크린샷. 파일은 FEEDBACK_UPLOAD_DIR 에 두고 여기에는 서버가 만든 파일명만 둔다 (docs/specs/spec_feedback_attachments.md).
+CREATE TABLE IF NOT EXISTS feedback_attachment (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  feedback_id INT NOT NULL,
+  stored_name VARCHAR(100) NOT NULL,
+  mime        VARCHAR(50) NOT NULL,
+  size_bytes  INT NOT NULL,
+  created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (feedback_id) REFERENCES feedback(id) ON DELETE CASCADE
+);
+
 -- 세트 완료 기록: 한 번 입장해서 세트의 모든 퀘스트를 통과하면 1건. 서버가 quest_attempt 로 확인한 뒤에만 저장한다.
 CREATE TABLE IF NOT EXISTS set_completion (
   id                  INT AUTO_INCREMENT PRIMARY KEY,

@@ -37,6 +37,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOME}/.kube/config-etude:/root/.kube/config-etude:ro
+      # 피드백 이미지 (기본 경로 FEEDBACK_UPLOAD_DIR=/app/data/feedback). 없으면 재배포 때 사라진다.
+      - etude-feedback-files:/app/data/feedback
     depends_on:
       db:
         condition: service_healthy
@@ -71,6 +73,7 @@ services:
 
 volumes:
   etude-db-data:
+  etude-feedback-files:
 
 networks:
   etude:

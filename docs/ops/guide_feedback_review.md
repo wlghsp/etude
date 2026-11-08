@@ -12,6 +12,7 @@
 1. 서버에서 피드백 가져오기  →  feedback.json (로컬)
 2. Claude Code와 함께 분석  →  개선 항목 정리
 3. 코드 수정 + 재배포
+4. 처리한 피드백의 첨부 이미지 삭제
 ```
 
 ---
@@ -29,7 +30,9 @@ bash backend/http/fetch-feedback.sh https://{서버 도메인} {관리자 이메
 - 저장 위치를 바꾸려면 `FEEDBACK_OUT=경로`를 앞에 붙인다.
 - 건수가 `0`이면 아직 피드백이 없는 것이고, 로그인 실패 메시지가 나오면 주소·계정을 확인한다.
 
-피드백 한 건의 필드: `id`, `userName`, `page`(제출 시점 화면), `questSetTitle`, `questTitle`, `body`, `createdAt`.
+피드백 한 건의 필드: `id`, `userName`, `page`(제출 시점 화면), `questSetTitle`, `questTitle`, `body`, `createdAt`, `attachments`(첨부 이미지 목록), `localFiles`(내려받은 이미지의 로컬 경로).
+
+**첨부 이미지:** 로그인한 사용자는 피드백에 스크린샷을 최대 3장 붙일 수 있다. 스크립트가 이미지를 `feedback_images/` 에 함께 내려받고(`.gitignore` 로 커밋되지 않는다. 저장 위치는 `FEEDBACK_IMAGES_OUT=경로`), `localFiles` 에 경로를 적어 둔다. Claude Code 에게 그 파일을 열어 보게 하면 된다. 스크린샷에 개인 정보가 있을 수 있으니 로컬에서만 읽는다.
 
 ---
 
@@ -80,3 +83,16 @@ docker compose -f deploy/docker-compose.prod.yml --project-directory . up -d --b
 ```
 
 배포 후에는 [배포 직후 체크리스트](guide_post_deploy_checklist.md)를 훑는다.
+
+---
+
+## Step 5. 처리한 이미지 삭제
+
+피드백을 처리했으면 서버의 이미지를 지운다. 글(body)은 남는다. **지울 피드백 id 를 직접 적어야 하며** 전체 삭제는 하지 않는다.
+
+```bash
+bash backend/http/delete-feedback-images.sh https://{서버 도메인} {관리자 이메일} 12 15 21
+# 비밀번호 입력 후: 피드백 12 의 이미지를 지웠습니다. ...
+```
+
+잊어도 괜찮다. 첨부 후 30일(`FEEDBACK_ATTACHMENT_RETENTION_DAYS`)이 지난 이미지는 서버가 기동할 때와 24시간마다 자동으로 지운다. 로컬에 내려받은 `feedback_images/` 는 직접 지운다.

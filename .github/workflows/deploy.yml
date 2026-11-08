@@ -27,3 +27,5 @@ jobs:
             npm run build
             cd ..
             docker compose -f deploy/docker-compose.prod.yml --project-directory . up -d --build --wait --wait-timeout 600 backend nginx
+            # nginx.conf 는 파일 단위 바인드 마운트라 git pull 로 파일이 교체되면 컨테이너가 옛 설정을 쥘 수 있다. 재시작해 확실히 반영한다.
+            docker compose -f deploy/docker-compose.prod.yml --project-directory . restart nginx

@@ -23,6 +23,23 @@ if [ -z "$TOKEN" ]; then
 fi
 
 curl -sS "$SERVER/admin/feedback" -H "Authorization: Bearer $TOKEN" | jq '.' > "$OUT"
+
+# 첨부 이미지를 feedback_images/ 로 내려받고, 각 항목에 localFiles(로컬 경로)를 적는다.
+# 이미지에 개인 정보가 있을 수 있어 .gitignore(feedback_images/)로 커밋되지 않는다.
+IMG_DIR="${FEEDBACK_IMAGES_OUT:-feedback_images}"
+EXT_OF() { case "$1" in image/png) echo png;; image/jpeg) echo jpg;; image/webp) echo webp;; *) echo bin;; esac; }
+if [ "$(jq '[.[].attachments | length] | add // 0' "$OUT")" -gt 0 ]; then
+  mkdir -p "$IMG_DIR"
+  MAP="$(mktemp)"; echo '{}' > "$MAP"
+  while IFS=$'\t' read -r FID AID MIME; do
+    DEST="$IMG_DIR/feedback-$FID-$AID.$(EXT_OF "$MIME")"
+    curl -sS -f "$SERVER/admin/feedback/attachments/$AID" -H "Authorization: Bearer $TOKEN" -o "$DEST"
+    jq --arg k "$FID" --arg v "$DEST" '.[$k] += [$v]' "$MAP" > "$MAP.new" && mv "$MAP.new" "$MAP"
+  done < <(jq -r '.[] | .id as $f | .attachments[] | [$f, .id, .mime] | @tsv' "$OUT")
+  jq --slurpfile m "$MAP" 'map(. + {localFiles: ($m[0][(.id|tostring)] // [])})' "$OUT" > "$OUT.new" && mv "$OUT.new" "$OUT"
+  rm -f "$MAP"
+  echo "이미지 저장 완료: $IMG_DIR/ ($(ls "$IMG_DIR" | wc -l | tr -d ' ')장)"
+fi
 unset TOKEN
 
 echo "저장 완료: $OUT ($(jq length "$OUT")건)"
