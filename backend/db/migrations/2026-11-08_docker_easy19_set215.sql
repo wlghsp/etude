@@ -1,0 +1,122 @@
+-- 도커 세트 215. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set215.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 5, '도커', 'Docker 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 5);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 215, '조회와 출력 형식: inspect·--format, ps --format·-n·-l·-s, port, 필터 3종, --no-trunc, stats --no-stream', '컨테이너 정보를 원하는 모양으로 읽는 기본기를 한 개념씩 반복합니다. docker inspect 의 JSON 출력과 --format 템플릿, json 함수, docker ps 의 --format 과 table, 공개한 포트를 보여 주는 docker port, -n 과 -l 로 최근 컨테이너 고르기, -s 의 SIZE 열, --no-trunc 의 64자리 ID, docker run -d 가 출력하는 ID, ancestor·exited·name 필터의 뜻, docker container ls 가 ps 와 같다는 점, stats --no-stream 의 동작을 짧은 객관식·빈칸·순서 문제로 익히고, 상태 조회하기, ps 로 골라 보기, 공개한 포트 확인하기, ID 길이 확인하기의 순서를 연습합니다.', 'quiz', '도커'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 215);
+UPDATE quest_set SET display_order = 178, unit_id = (SELECT id FROM unit WHERE id = 5), icon = '📇' WHERE id = 215;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 1, 'inspect 기본 출력', '`docker inspect c1` 은 무엇을 출력할까요?', 'inspect 는 자세히 들여다본다는 뜻이에요.', NULL, NULL, '[]', 'choice', '["컨테이너의 이름과 실행 상태만 한 줄로 요약해서 출력한다", "컨테이너가 남긴 로그를 JSON 형식으로 바꿔서 출력한다", "컨테이너의 설정과 상태 전체를 JSON 배열로 출력한다", "컨테이너 안에 있는 파일의 목록을 표 형태로 출력한다"]', 2, '출력은 `[` 로 시작하고 그 안에 `State`, `Config` 같은 항목이 있습니다. 이미지에도 `docker inspect 이미지` 로 같은 방식으로 쓸 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 2, '--format 으로 한 값만', '실행 중인 컨테이너에 `docker inspect --format ''{{.State.Status}}'' c1` 을 하면 무엇이 출력될까요?', '템플릿에 적은 값만 나와요.', NULL, NULL, '[]', 'choice', '["`Up` 과 실행 시간이 한 줄의 표 형태로 출력된다", "`running` 한 단어만 줄 바꿈과 함께 출력된다", "JSON 전체를 출력한 뒤 마지막에 `running` 을 따로 표시한다", "`.State.Status` 라는 글자가 변환되지 않고 그대로 출력된다"]', 1, '`{{.State.Running}}` 은 `true`, `{{.State.ExitCode}}` 는 실행 중에는 `0` 입니다. 멈춘 뒤에는 같은 명령이 `exited` 를 출력합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 3, 'json 함수', '`docker inspect -f ''{{json .Config.Cmd}}'' c1` 의 컨테이너가 `sleep 300` 으로 실행 중이라면 무엇이 출력될까요?', 'json 을 붙이면 JSON 문법으로 나와요.', NULL, NULL, '[]', 'choice', '["`[\\"sleep\\",\\"300\\"]` 처럼 따옴표가 있는 JSON 배열로 출력된다", "`sleep 300` 처럼 따옴표 없이 명령이 한 줄로 출력된다", "`{\\"Cmd\\":[\\"sleep\\",\\"300\\"]}` 처럼 이름이 붙은 객체로 출력된다", "`json` 이라는 함수가 없어서 오류가 나고 아무것도 출력되지 않는다"]', 0, '`json` 을 빼면 `[sleep 300]` 으로 출력됩니다. `{{json .State}}` 처럼 한 묶음을 통째로 JSON 으로 볼 수도 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 4, 'ps --format', '`docker ps --format ''{{.Names}}''` 은 무엇을 출력할까요?', '머리글이 있는지가 달라요.', NULL, NULL, '[]', 'choice', '["컨테이너 이름과 ID 를 머리글이 붙은 표로 묶어 출력한다", "컨테이너 이름을 글자 수가 긴 순서대로 정렬해 출력한다", "컨테이너 이름이 12자리를 넘으면 잘라서 출력한다", "머리글 없이 컨테이너 이름만 한 줄에 하나씩 출력한다"]', 3, '앞에 `table ` 을 붙여 `table {{.Names}}` 로 쓰면 `NAMES` 머리글이 함께 나옵니다. `{{.Image}}`, `{{.Status}}` 같은 열도 함께 고를 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 5, 'docker port', '`-p 18080:80` 으로 실행한 컨테이너에 `docker port c1` 을 하면 무엇이 나올까요?', '컨테이너 포트가 호스트 어디로 열렸는지 보여 줘요.', NULL, NULL, '[]', 'choice', '["컨테이너 안에서 열려 있는 모든 포트를 하나씩 검사해서 번호순 목록으로 보여 준다", "호스트에서 사용 중인 포트 전체를 번호순으로 정렬해 보여 준다", "공개한 포트 연결을 `80/tcp -> 호스트주소:18080` 형태로 보여 준다", "아직 공개하지 않은 포트를 새로 열고 그 번호를 출력한다"]', 2, '공개한 포트가 없으면 아무것도 출력하지 않습니다. `docker port c1 80` 은 주소와 포트만 보여 주고, `docker ps` 의 `PORTS` 열에서도 같은 연결을 볼 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 6, 'ps -n 과 -l', '`docker ps -n 2` 와 `docker ps -l` 은 각각 무엇을 보여 줄까요?', '최근에 만든 컨테이너를 기준으로 해요.', NULL, NULL, '[]', 'choice', '["`-n 2` 는 실행 중인 컨테이너 두 개만, `-l` 은 마지막에 시작한 하나를 보여 준다", "`-n 2` 는 최근 만든 두 개, `-l` 은 가장 최근 하나이고 정지한 것도 포함한다", "`-n 2` 는 오래전에 만든 두 개, `-l` 은 가장 오래된 하나를 보여 준다", "`-n 2` 는 이름순으로 앞의 두 개, `-l` 은 이름순 마지막 하나를 보여 준다"]', 1, '`-l` 은 `--latest` 의 줄임입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 7, 'ps -s', '`docker ps -s` 는 `docker ps` 와 무엇이 다를까요?', 's 는 size 의 첫 글자예요.', NULL, NULL, '[]', 'choice', '["맨 끝에 `SIZE` 열이 더해져 컨테이너가 쓴 데이터 크기를 보여 준다", "`STATUS` 열이 사라지고 컨테이너의 크기만 남겨서 보여 준다", "컨테이너를 크기가 큰 순서대로 정렬해서 보여 준다", "`SIZE` 열에 컨테이너가 쓰고 있는 메모리 사용량을 보여 준다"]', 0, '`virtual` 크기는 이미지까지 포함한 값입니다. `docker system df` 는 도커 전체가 쓰는 공간을 보여 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 8, 'ps --no-trunc', '`docker ps -q --no-trunc` 로 출력한 컨테이너 ID 는 `docker ps -q` 의 ID 와 어떻게 다를까요?', 'trunc 는 truncate, 잘라낸다는 뜻이에요.', NULL, NULL, '[]', 'choice', '["`--no-trunc` 를 쓰면 ID 가 앞 4자리만 남겨서 나온다", "`--no-trunc` 를 쓰면 ID 가 아니라 이미지의 ID 가 대신 나오고 길이도 12자리로 같다", "두 출력의 길이는 같고 정렬 순서만 서로 다르게 나온다", "`-q` 의 12자리 ID 가 `--no-trunc` 에서는 64자리 전체로 나온다"]', 3, '12자리는 64자리의 앞부분입니다. `docker inspect --format ''{{.Id}}''` 도 64자리 전체를 보여 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 9, 'docker run -d 의 출력', '`docker run -d alpine sleep 300` 을 하면 터미널에 무엇이 출력될까요?', '만들어진 컨테이너를 가리키는 값이에요.', NULL, NULL, '[]', 'choice', '["만들어진 컨테이너의 이름이 한 줄로 출력된다", "컨테이너가 처음 남긴 로그 한 줄이 그대로 출력되고 컨테이너는 계속 실행된다", "만들어진 컨테이너의 ID 가 64자리 전체로 한 줄 출력된다", "실행에 성공했다는 뜻의 `OK` 라는 글자가 출력된다"]', 2, '`docker ps` 에 보이는 12자리는 그 앞부분입니다. 이 ID 를 변수에 담아 `docker stop $ID` 처럼 쓸 수 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 10, 'ancestor 필터', '`docker ps --filter ancestor=alpine` 은 어떤 컨테이너를 보여 줄까요?', 'ancestor 는 조상, 어디서 비롯됐는지를 뜻해요.', NULL, NULL, '[]', 'choice', '["이름에 `alpine` 이 들어 있는 컨테이너만 모아서 보여 준다", "`alpine` 이미지로 만든 컨테이너만 보여 준다", "`alpine` 이라는 라벨이 붙어 있는 컨테이너만 보여 준다", "`alpine` 컨테이너와 같은 네트워크에 있는 것만 보여 준다"]', 1, '이름이 아니라 컨테이너의 바탕 이미지로 거르는 조건입니다. `docker ps` 는 `image` 라는 이름의 필터를 받지 않습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 11, 'exited 필터', '`docker ps -a --filter exited=3` 은 어떤 컨테이너를 보여 줄까요? `-a` 를 빼면요?', '종료 코드로 거르는 조건이에요.', NULL, NULL, '[]', 'choice', '["종료 코드가 `3` 인 정지한 컨테이너만 나오고, `-a` 를 빼면 나오지 않는다", "`3` 초 전에 종료된 컨테이너만 나오고, `-a` 와는 관계가 없다", "종료 코드가 `3` 이상인 컨테이너가 모두 나오고, `-a` 를 빼도 같다", "세 번째로 종료된 컨테이너 하나만 나오고, `-a` 는 필요 없다"]', 0, '`--filter status=exited` 는 종료 코드와 관계없이 정지한 컨테이너를 보여 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 12, 'name 필터는 부분 일치', '이름에 `web` 이 든 `myweb` 컨테이너가 있습니다. `docker ps --filter name=web` 과 `name=^web` 에 나올까요?', 'name 필터는 정규식처럼 일치를 봐요.', NULL, NULL, '[]', 'choice', '["`name=web` 에도 `name=^web` 에도 모두 나오지 않는다", "`name=web` 은 이름이 정확히 `web` 일 때만 나온다", "`name=^web` 은 문법 오류가 나서 쓸 수 없다", "`name=web` 에는 나오고, `name=^web` 에는 나오지 않는다"]', 3, '이름 어디든 `web` 이 있으면 일치합니다. 정확히 일치만 원하면 `name=^web$` 처럼 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 13, 'docker container ls', '`docker container ls` 는 `docker ps` 와 어떤 관계일까요?', '같은 일을 하는 다른 이름이에요.', NULL, NULL, '[]', 'choice', '["`docker ps -a` 와 같아서 정지한 컨테이너까지 모두 보여 준다", "이미지의 목록을 보여 주는 명령이라서 `docker images` 와 똑같은 결과를 표로 보여 준다", "`docker ps` 와 같은 명령이고 `docker container ps` 도 같다", "컨테이너를 하나 새로 만들고 그 ID 를 출력하는 명령이다"]', 2, '`docker image ls` 와 `docker images` 도 같은 관계입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 14, 'stats --no-stream', '`docker stats --no-stream` 은 무엇을 할까요? 옵션을 빼면요?', 'stream 은 계속 흘러나오는 것을 뜻해요.', NULL, NULL, '[]', 'choice', '["사용량을 파일에 저장하고 끝나며, 옵션이 없으면 화면에만 보인다", "현재 사용량을 한 번 출력하고 끝나며, 옵션이 없으면 계속 갱신된다", "표 머리글을 숨기고 한 번 출력하며, 옵션이 없으면 머리글이 보인다", "정지한 컨테이너의 마지막 사용량을 한 번 출력하고 끝난다"]', 1, '계속 갱신하는 화면은 `Ctrl+C` 로 끝냅니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 15, '상세 정보 보기', '컨테이너의 **설정과 상태를 JSON 으로 보여 주는** 하위 명령을 채우세요.', '"검사하다"를 영어로 써요.', NULL, NULL, '[]', 'fill', '["detail", "describe", "info", "inspect"]', NULL, '이미지에도 쓸 수 있습니다.', '[3]', 'docker {0} c1', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 16, '출력 모양 정하기', '`docker inspect` 에서 **출력 모양을 Go 템플릿으로 정하는** 옵션을 채우세요.', '"모양, 형식"을 영어로 써요.', NULL, NULL, '[]', 'fill', '["format", "style", "layout", "template"]', NULL, '짧은 이름은 `-f` 입니다.', '[0]', 'docker inspect --{0} 템플릿 c1', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 17, '공개한 포트 보기', '컨테이너 포트가 **호스트의 어느 포트로 열렸는지 보여 주는** 하위 명령을 채우세요.', '"포트"를 그대로 영어로 써요.', NULL, NULL, '[]', 'fill', '["ports", "port", "map", "bind"]', NULL, '`docker ps` 의 PORTS 열에서도 볼 수 있습니다.', '[1]', 'docker {0} c1 80', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 18, '최근 몇 개만', '`docker ps` 에서 **최근에 만든 컨테이너 몇 개만 보여 주는** 옵션을 채우세요.', '"number"의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-m", "-t", "-n", "-c"]', NULL, '정지한 컨테이너도 포함합니다.', '[2]', 'docker ps {0} 2', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 19, '크기 열 더하기', '`docker ps` 에 **컨테이너 크기를 보여 주는 SIZE 열을 더하는** 옵션을 채우세요.', '"size"의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-z", "-b", "-k", "-s"]', NULL, '긴 이름은 `--size` 입니다.', '[3]', 'docker ps {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 20, 'ID 를 자르지 않기', '`docker ps` 에서 **ID 와 명령을 줄이지 않고 전체로 보여 주는** 옵션을 채우세요.', '"자르지 않는다"를 뜻하는 영어예요.', NULL, NULL, '[]', 'fill', '["trunc", "cut", "short", "clip"]', NULL, 'ID 가 64자리로 나옵니다.', '[0]', 'docker ps --no-{0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 21, '한 번만 출력', '`docker stats` 가 **계속 갱신하지 않고 한 번만 출력하게 하는** 옵션을 채우세요.', '"흐름"을 영어로 써요.', NULL, NULL, '[]', 'fill', '["loop", "stream", "watch", "wait"]', NULL, '빼면 `Ctrl+C` 로 끝내야 합니다.', '[1]', 'docker stats --no-{0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 22, '바탕 이미지로 거르기', '`docker ps` 에서 **컨테이너를 만든 이미지로 거르는** 필터 이름을 채우세요.', '"조상"을 뜻하는 영어예요.', NULL, NULL, '[]', 'fill', '["image", "base", "ancestor", "parent"]', NULL, '`image` 라는 필터는 없습니다.', '[2]', 'docker ps --filter {0}=alpine', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 23, '종료 코드로 거르기', '`docker ps -a` 에서 **종료 코드로 거르는** 필터 이름을 채우세요.', '"종료했다"를 뜻하는 영어 과거형이에요.', NULL, NULL, '[]', 'fill', '["exit", "code", "status", "exited"]', NULL, '정지한 컨테이너라서 `-a` 가 필요합니다.', '[3]', 'docker ps -a --filter {0}=3', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 24, 'ps 의 다른 이름', '`docker ps` 와 **같은 일을 하는 `docker container` 하위 명령**을 채우세요.', '"list"를 두 글자로 줄여요.', NULL, NULL, '[]', 'fill', '["ls", "view", "show", "all"]', NULL, '`docker container ps` 도 같습니다.', '[0]', 'docker container {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 25, '가장 최근 하나', '`docker ps` 에서 **가장 최근에 만든 컨테이너 하나만 보여 주는** 옵션을 채우세요.', '"latest"의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["-w", "-l", "-y", "-j"]', NULL, '긴 이름은 `--latest` 입니다.', '[1]', 'docker ps {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 26, '상태 조회하기', '컨테이너의 상태를 `inspect` 로 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '실행 → 전체 → 한 값 → 멈춘 뒤 순서예요.', NULL, NULL, '[]', 'order', '["`docker stop -t 1 c1` 로 멈춘 뒤 같은 명령이 `exited` 를 출력하는지 확인한다", "`docker inspect --format ''{{.State.Status}}'' c1` 로 `running` 한 단어만 나오는지 확인한다", "`docker run -d --name c1 alpine sleep 300` 으로 컨테이너를 실행한다", "`docker inspect c1` 로 설정과 상태가 JSON 으로 나오는지 본다"]', NULL, '끝나면 `docker rm c1` 로 지웁니다.', '[2, 3, 1, 0]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 27, 'ps 로 골라 보기', '정지한 컨테이너를 `ps` 로 골라 보는 순서입니다. 순서에 맞게 놓아 보세요.', '만들기 → 실행 중 → 전체 → 종료 코드 필터 순서예요.', NULL, NULL, '[]', 'order', '["`docker ps -a` 로 정지한 `c2` 까지 보이는지 확인한다", "`docker ps -a --filter exited=3` 으로 `c2` 만 남는지 확인한다", "`docker ps` 로 실행 중인 `c1` 만 보이는지 확인한다", "`docker run -d --name c1 alpine sleep 300` 과 `docker run --name c2 alpine sh -c ''exit 3''` 로 컨테이너 둘을 만든다"]', NULL, '끝나면 `docker rm -f c1 c2` 로 지웁니다.', '[3, 2, 0, 1]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 28, '공개한 포트 확인하기', '공개한 포트를 여러 방법으로 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '실행 → 전체 → 하나만 → PORTS 열 순서예요.', NULL, NULL, '[]', 'order', '["`docker port c1 80` 으로 주소와 포트만 나오는지 확인한다", "`docker run -d --name c1 -p 18080:80 nginx:alpine` 으로 포트를 공개해 실행한다", "`docker ps` 의 `PORTS` 열에서도 같은 연결이 보이는지 확인한다", "`docker port c1` 로 `80/tcp -> ` 로 시작하는 연결이 나오는지 본다"]', NULL, '끝나면 `docker rm -f c1` 로 지웁니다.', '[1, 3, 0, 2]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 215, 29, 'ID 길이 확인하기', '컨테이너 ID 의 짧은 형태와 전체를 비교하는 순서입니다. 순서에 맞게 놓아 보세요.', '실행 → 짧게 → 전체 → inspect 순서예요.', NULL, NULL, '[]', 'order', '["`docker ps -q` 로 앞 12자리만 나오는지 확인한다", "`docker inspect --format ''{{.Id}}'' c1` 이 같은 64자리 ID 를 출력하는지 확인한다", "`docker run -d --name c1 alpine sleep 300` 으로 실행해 출력된 64자리 ID 를 본다", "`docker ps -q --no-trunc` 로 64자리 전체가 나오는지 확인한다"]', NULL, '끝나면 `docker rm -f c1` 로 지웁니다.', '[2, 0, 3, 1]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 215 AND order_index = 29);
