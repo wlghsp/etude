@@ -216,3 +216,4 @@ UPDATE quest_set SET icon = '🔦' WHERE id = 216;
 UPDATE quest_set SET icon = '🪄' WHERE id = 217;
 UPDATE quest_set SET icon = '🪆' WHERE id = 218;
 UPDATE quest_set SET icon = '🪚' WHERE id = 219;
+UPDATE quest_set SET icon = '🛑' WHERE id = 220;
