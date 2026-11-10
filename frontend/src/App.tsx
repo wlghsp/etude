@@ -12,7 +12,7 @@ import { Hall } from './pages/Hall'
 import { Review } from './pages/Review'
 import { Admin } from './pages/Admin'
 import type { Quest } from './types'
-import { fetchQuests, completeSet, startSet, type CompletionXp } from './api/quest'
+import { fetchQuests, fetchResume, completeSet, startSet, type CompletionXp } from './api/quest'
 import { fetchMe, token } from './api/auth'
 import { Login } from './pages/Login'
 import { ChangePasswordModal } from './components/ChangePasswordModal'
@@ -53,6 +53,7 @@ function App() {
   const [completedIndices, setCompletedIndices] = useState<Set<number>>(new Set())
   // 이번에 세트에 들어와서 푼 기록 (세트 완료 화면에서 보여 준다). 세트가 바뀌면 비운다.
   const [records, setRecords] = useState<Record<number, QuestRecord>>({})
+  const [resumeNotice, setResumeNotice] = useState<string | null>(null) // 이어 풀기로 들어왔을 때의 안내
   // 문제를 연속으로 한 번에 맞힌 횟수 (틀렸다가 맞히면 끊긴다)
   const [combo, setCombo] = useState(0)
   const [summaryOpen, setSummaryOpen] = useState(false)
@@ -99,12 +100,14 @@ function App() {
   // 세트 화면에서 나갈 때 확인이 필요한지 (일부만 풀었고 아직 완료 기록이 없는 경우)와 안내 문구
   const leaveGuardRef = useRef<{ inSet: number | null; message: string | null }>({ inSet: null, message: null })
   useEffect(() => {
-    const partial = selectedSetId !== null && quests.length > 0 && completedIndices.size > 0 && completedIndices.size < quests.length
+    // 이어 풀 수 있는 세트(시험형·docker-persistent 가 아님)는 나가도 푼 문제가 저장되므로 경고하지 않는다
+    const resumable = run === null && sandboxType !== 'docker-persistent'
+    const partial = !resumable && selectedSetId !== null && quests.length > 0 && completedIndices.size > 0 && completedIndices.size < quests.length
     leaveGuardRef.current = {
       inSet: selectedSetId,
       message: partial ? `이 세트에서 나가면 지금까지 푼 ${completedIndices.size}/${quests.length}개가 기록되지 않아요. (세트를 한 번에 끝까지 풀어야 완료로 기록돼요) 나갈까요?` : null,
     }
-  }, [selectedSetId, quests.length, completedIndices])
+  }, [selectedSetId, quests.length, completedIndices, run, sandboxType])
   const leaveBypassRef = useRef(false)
   const [leaveMessage, setLeaveMessage] = useState<string | null>(null)
   useEffect(() => {
@@ -152,16 +155,28 @@ function App() {
     if (selectedSetId === null) return
     let cancelled = false
     fetchQuests(selectedSetId)
-      .then((data: Quest[]) => {
+      .then(async (data: Quest[]) => {
+        // 지난번에 다 끝내지 못한 세션이 있으면 이어 푼다 (docs/specs/spec_resume_set.md). 조회에 실패하면 새로 시작한다.
+        const resume = await fetchResume(selectedSetId).catch(() => null)
         if (cancelled) return
+        const indexOfQuest = new Map(data.map((q, i) => [q.id, i]))
+        const resumedRecords: Record<number, QuestRecord> = {}
+        for (const p of resume?.sessionId ? resume.passed : []) {
+          const i = indexOfQuest.get(p.questId)
+          if (i !== undefined) resumedRecords[i] = { seconds: p.seconds, hintUsed: p.hintUsed, solutionUsed: p.solutionUsed, attempts: p.attempts }
+        }
+        const resumedCount = Object.keys(resumedRecords).length
+        const resumed = resume?.sessionId != null && resumedCount > 0
+        const firstUnsolved = data.findIndex((_, i) => !resumedRecords[i])
         setQuests(data)
-        setQuestIndex(0)
-        setCompletedIndices(new Set())
-        setRecords({})
-        setSummaryOpen(false)
+        setQuestIndex(resumed && firstUnsolved >= 0 ? firstUnsolved : 0)
+        setCompletedIndices(resumed ? new Set(Object.keys(resumedRecords).map(Number)) : new Set())
+        setRecords(resumed ? resumedRecords : {})
+        setSummaryOpen(resumed && firstUnsolved < 0) // 다 풀었는데 완료 저장 직전에 닫은 경우: 아래의 완료 저장 흐름이 이어서 저장한다
+        setResumeNotice(resumed ? `지난번에 푼 ${resumedCount}/${data.length}개를 이어서 풀어요.` : null)
         setSaveState('idle')
         setXpGain(null)
-        const sid = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+        const sid = resumed ? resume!.sessionId! : `${Date.now()}-${Math.random().toString(36).slice(2)}`
         setSessionId(sid)
         setMaximized(null)
         setRun(null)
@@ -303,6 +318,12 @@ function App() {
             <div className="h-9 border-b border-outline-variant flex items-center justify-between px-4 bg-surface shrink-0">
               <span className="font-sans text-label-caps text-on-surface flex items-center gap-2"><span className="material-symbols-outlined text-[16px]">assignment</span> 문제</span>
               <PaneToggle active={maximized === 'task'} onClick={() => setMaximized(maximized === 'task' ? null : 'task')} />
+            </div>
+          )}
+          {resumeNotice && !summaryOpen && (
+            <div className="mx-6 mt-4 flex items-center justify-between gap-2 rounded-lg border border-accent/40 bg-accent/10 px-4 py-3 font-sans text-body-md text-on-surface" role="status">
+              <span className="flex items-center gap-2"><span className="material-symbols-outlined text-[20px]">history</span>{resumeNotice}</span>
+              <button onClick={() => setResumeNotice(null)} className="shrink-0 text-on-surface-variant hover:text-on-surface" aria-label="안내 닫기"><span className="material-symbols-outlined text-[18px]">close</span></button>
             </div>
           )}
           {summaryOpen && expired && (

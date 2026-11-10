@@ -75,6 +75,16 @@ export async function answerChoice(
 }
 
 // 시간 제한 세트(시험형)를 시작한다. 시작 시각은 서버가 기록하고, 제한이 없는 세트는 null 을 돌려준다.
+// 이어 풀 세션 (docs/specs/spec_resume_set.md). 없으면 sessionId 가 null 이다.
+export interface ResumePassed { questId: number; seconds: number; hintUsed: boolean; solutionUsed: boolean; attempts: number }
+export interface ResumeRun { sessionId: string | null; passed: ResumePassed[] }
+
+export async function fetchResume(setId: number): Promise<ResumeRun> {
+  const r = await fetch(`${BASE}/quest-sets/${setId}/resume`, { headers: authHeaders() })
+  if (!r.ok) throw await requestError(r)
+  return r.json()
+}
+
 export async function startSet(setId: number, sessionId: string): Promise<{ limitSec: number | null; remainingSec: number | null }> {
   const r = await fetch(`${BASE}/quest-sets/${setId}/start`, {
     method: 'POST',

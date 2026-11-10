@@ -4,6 +4,7 @@ import { getSession } from "../services/session-registry.js";
 import { recordAttempt } from "../services/progress.js";
 import { recordSetCompletion } from "../services/set-completion.js";
 import { checkRun, startRun, type RunCheck } from "../services/set-run.js";
+import { findResumableRun } from "../services/set-resume.js";
 import { docker } from '../plugins/docker.js'
 import { authMiddleware } from "../plugins/auth-guard.js";
 
@@ -21,6 +22,15 @@ export const questRoutes: FastifyPluginAsync = async (app) => {
         const allowed = await canAccessQuestSet(req.user.userId, req.user.role, questSetId)
         if (!allowed) return reply.code(403).send({ error: '이 세트에 접근할 권한이 없습니다.'})
         return getQuests(questSetId)
+    })
+
+    // 세트 이어 풀기 (docs/specs/spec_resume_set.md): 이 사람이 이어 풀 수 있는 세션과 푼 문제. 정답·해설은 담지 않는다.
+    app.get<{ Params: { id: string } }>('/quest-sets/:id/resume', { preHandler: authMiddleware }, async (req: any, reply) => {
+        const questSetId = Number(req.params.id)
+        if (!Number.isInteger(questSetId)) return reply.code(400).send({ error: '요청이 올바르지 않습니다.' })
+        const allowed = await canAccessQuestSet(req.user.userId, req.user.role, questSetId)
+        if (!allowed) return reply.code(403).send({ error: '이 세트에 접근할 권한이 없습니다.' })
+        return findResumableRun(req.user.userId, questSetId)
     })
 
     // 시간 제한 세트(시험형)의 시작. 시작 시각을 서버가 기록하고 남은 시간을 돌려준다 (제한이 없는 세트는 null).

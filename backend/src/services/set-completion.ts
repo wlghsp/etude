@@ -29,6 +29,15 @@ export interface Completion {
     detail: CompletionQuestDetail[]
 }
 
+// 한 문제의 시도들에서 문제별 기록을 만든다. 통과한 시도가 없으면 null.
+// 통과한 시도 중 가장 짧은 시간의 시도가 시간·힌트·풀이 사용을 정하고(시간이 없는 기록은 뒤로), 시도 수는 전체다.
+export function summarizeQuestAttempts(mine: CompletionAttempt[]): { seconds: number; hintUsed: boolean; solutionUsed: boolean; attempts: number } | null {
+    const passed = mine.filter((a) => a.passed)
+    const best = [...passed].sort((a, b) => (a.elapsedSec ?? Infinity) - (b.elapsedSec ?? Infinity))[0]
+    if (!best) return null
+    return { seconds: best.elapsedSec ?? 0, hintUsed: best.hintUsed, solutionUsed: best.solutionUsed, attempts: mine.length }
+}
+
 /**
  * 이 세션의 채점 기록만으로 세트를 완료했는지 판단하고, 완료했으면 요약을 만든다.
  * 세트의 모든 퀘스트에 통과한 시도가 하나라도 있어야 한다. 아니면 null.
@@ -37,21 +46,9 @@ export function buildCompletion(quests: CompletionQuest[], attempts: CompletionA
     if (quests.length === 0) return null
     const detail: CompletionQuestDetail[] = []
     for (const q of [...quests].sort((a, b) => a.orderIndex - b.orderIndex)) {
-        const mine = attempts.filter((a) => a.questId === q.questId)
-        const passed = mine.filter((a) => a.passed)
-        if (passed.length === 0) return null
-        // 통과한 시도 중 가장 짧은 시간 (시간이 없는 기록은 뒤로)
-        const best = [...passed].sort((a, b) => (a.elapsedSec ?? Infinity) - (b.elapsedSec ?? Infinity))[0]
-        if (!best) return null
-        detail.push({
-            questId: q.questId,
-            orderIndex: q.orderIndex,
-            title: q.title,
-            seconds: best.elapsedSec ?? 0,
-            hintUsed: best.hintUsed,
-            solutionUsed: best.solutionUsed,
-            attempts: mine.length,
-        })
+        const summary = summarizeQuestAttempts(attempts.filter((a) => a.questId === q.questId))
+        if (!summary) return null
+        detail.push({ questId: q.questId, orderIndex: q.orderIndex, title: q.title, ...summary })
     }
     return {
         questCount: detail.length,
