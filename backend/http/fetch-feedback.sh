@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 관리자 피드백을 feedback.json으로 저장한다 (docs/ops/guide_feedback_review.md Step 1~2).
 #   사용법: bash backend/http/fetch-feedback.sh <서버 주소, 예: https://etude.example.com> <관리자 이메일>
-# 비밀번호는 인자로 받지 않고 입력창에서만 받는다 (터미널 히스토리에 남기지 않는다).
+# 비밀번호는 인자로 받지 않는다. 입력창 또는 환경 변수 ETUDE_ADMIN_PASSWORD 로만 받는다 (터미널 히스토리에 남기지 않는다).
 set -euo pipefail
 
 SERVER="${1:?'서버 주소를 입력하세요 (예: https://etude.example.com)'}"
@@ -11,7 +11,9 @@ OUT="${FEEDBACK_OUT:-feedback.json}"
 
 command -v jq >/dev/null || { echo "jq가 필요합니다." >&2; exit 1; }
 
-read -r -s -p "관리자 비밀번호: " PASSWORD; echo
+# 환경 변수 ETUDE_ADMIN_PASSWORD 가 있으면 입력창을 건너뛴다 (없으면 입력창에서만 받는다).
+PASSWORD="${ETUDE_ADMIN_PASSWORD:-}"
+if [ -z "$PASSWORD" ]; then read -r -s -p "관리자 비밀번호: " PASSWORD; echo; fi
 TOKEN="$(jq -n --arg e "$EMAIL" --arg p "$PASSWORD" '{email:$e,password:$p}' \
   | curl -sS "$SERVER/auth/login" -H "Content-Type: application/json" -d @- \
   | jq -r '.token // empty')"

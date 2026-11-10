@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 처리가 끝난 피드백의 첨부 이미지를 서버에서 지운다 (글은 남는다). docs/ops/guide_feedback_review.md Step 5.
 #   사용법: bash backend/http/delete-feedback-images.sh <서버 주소> <관리자 이메일> <피드백 id> [<피드백 id> ...]
-# 지울 피드백 id 를 직접 적어야 하며, 전체 삭제는 하지 않는다. 비밀번호는 입력창에서만 받는다.
+# 지울 피드백 id 를 직접 적어야 하며, 전체 삭제는 하지 않는다. 비밀번호는 입력창 또는 환경 변수 ETUDE_ADMIN_PASSWORD 로만 받는다.
 # 보관 기간(기본 30일)이 지난 이미지는 서버가 알아서 지운다.
 set -euo pipefail
 
@@ -16,7 +16,9 @@ SERVER="${SERVER%/}"
 
 command -v jq >/dev/null || { echo "jq가 필요합니다." >&2; exit 1; }
 
-read -r -s -p "관리자 비밀번호: " PASSWORD; echo
+# 환경 변수 ETUDE_ADMIN_PASSWORD 가 있으면 입력창을 건너뛴다 (없으면 입력창에서만 받는다).
+PASSWORD="${ETUDE_ADMIN_PASSWORD:-}"
+if [ -z "$PASSWORD" ]; then read -r -s -p "관리자 비밀번호: " PASSWORD; echo; fi
 TOKEN="$(jq -n --arg e "$EMAIL" --arg p "$PASSWORD" '{email:$e,password:$p}' \
   | curl -sS "$SERVER/auth/login" -H "Content-Type: application/json" -d @- \
   | jq -r '.token // empty')"
