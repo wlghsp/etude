@@ -1,0 +1,122 @@
+-- k8s 세트 223. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set223.sql, 05_display_order.sql, 06_units.sql, 08_set_icons.sql. docs/specs/spec_foundations_ladder.md
+INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크로드와 설정', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 7);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 223, 'Pending 원인 읽기: nodeSelector·nodeName, 노드 라벨, Insufficient cpu, required·preferred, PVC', '파드가 Pending 에서 멈췄을 때 원인을 읽는 방법을 한 개념씩 반복합니다. nodeSelector 가 맞지 않을 때, requests 가 노드보다 클 때의 Insufficient cpu 와 memory, PodScheduled 조건의 Unschedulable, 없는 노드를 nodeName 으로 지정했을 때 스케줄러가 건드리지 않는다는 점, 노드 어피니티 required 와 preferred 의 차이, 노드에 라벨을 붙이면 Pending 파드가 바로 배치된다는 점과 라벨을 떼도 실행 중인 파드는 남는다는 점, 없는 StorageClass 의 PVC, kubectl get 의 --field-selector 와 라벨 셀렉터의 차이, describe 의 Events, Pending 파드에 exec 가 안 되는 이유를 짧은 객관식·빈칸·순서 문제로 익히고, Pending 원인 찾기, 라벨로 풀기, 자원 부족 확인, required 와 preferred 비교의 순서를 연습합니다.', 'quiz', 'k8s'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 223);
+UPDATE quest_set SET display_order = 249, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '📍' WHERE id = 223;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 1, 'nodeSelector 가 맞지 않을 때', '노드에 없는 라벨을 `nodeSelector` 로 요구한 파드를 만들면 `kubectl get pod -o wide` 에는 어떻게 보일까요?', '배치될 노드가 없어요.', NULL, NULL, '[]', 'choice', '["STATUS 는 `ContainerCreating` 이고 NODE 칸에는 가장 가까운 노드 이름이 보인다", "STATUS 는 `Error` 이고 NODE 칸은 `<none>` 이며 파드가 바로 종료된다", "STATUS 는 `Pending` 이고 NODE 칸은 `<none>` 이다", "STATUS 는 `Running` 이고 NODE 칸에는 노드 이름이 보이며 선택자는 무시된다"]', 2, '이때 이벤트에는 `didn''t match Pod''s node affinity/selector` 라는 문구가 나옵니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 2, 'CPU 요청이 너무 클 때', '노드의 CPU 보다 훨씬 큰 `requests.cpu` 를 가진 파드를 만들면 어떻게 될까요?', '스케줄러는 요청량으로 계산해요.', NULL, NULL, '[]', 'choice', '["일단 `Running` 이 되고 CPU 를 실제로 쓰기 시작할 때 `OOMKilled` 로 종료된다", "배치할 노드가 없어서 `Pending` 으로 남고 이벤트에 `Insufficient cpu` 가 나온다", "요청량이 노드 크기에 맞게 자동으로 줄어들어서 파드가 `Running` 이 되고 계속 실행된다", "`kubectl apply` 단계에서 오류가 나서 파드 자체가 만들어지지 않고 이벤트도 남지 않는다"]', 1, '스케줄러는 실제 사용량이 아니라 `requests` 합계가 노드의 할당 가능량에 들어가는지로 판단합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 3, '메모리 요청이 너무 클 때', '노드의 메모리보다 훨씬 큰 `requests.memory` 를 가진 파드의 이벤트에는 무엇이 나올까요?', 'CPU 일 때와 같은 방식이에요.', NULL, NULL, '[]', 'choice', '["`0/1 nodes are available` 뒤에 `Insufficient memory` 가 나온다", "`OOMKilled` 가 나오고 컨테이너가 시작했다가 바로 종료된다", "`Insufficient cpu` 가 나오고 메모리는 요청으로 계산하지 않아 CPU 만 비교한다고 알려 준다", "`ImagePullBackOff` 가 나오고 이미지를 받지 못해서 컨테이너를 시작하지 못한다고 알려 준다"]', 0, '`0/1` 은 노드 한 개 중 쓸 수 있는 노드가 0개라는 뜻입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 4, 'PodScheduled 조건', '스케줄되지 못한 파드의 `.status.conditions` 에서 `PodScheduled` 는 어떻게 기록될까요?', '스케줄러가 배치하지 못했다는 표시예요.', NULL, NULL, '[]', 'choice', '["`status` 가 `True`, `reason` 이 `Unschedulable` 로 기록되고 `.spec.nodeName` 에는 노드가 있다", "`status` 가 `False` 로 기록되지만 `reason` 은 없고 `.spec.nodeName` 에 노드가 있다", "조건 자체가 생기지 않고 `.status` 는 비어 있으며 `.spec.nodeName` 만 비어 있다", "`status` 가 `False`, `reason` 이 `Unschedulable` 로 기록되고 `.spec.nodeName` 은 비어 있다"]', 3, '스케줄되면 `PodScheduled` 가 `True` 가 되고 `.spec.nodeName` 에 노드 이름이 들어갑니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 5, '없는 노드 이름을 직접 지정', '`spec.nodeName: no-such-node` 처럼 없는 노드를 직접 지정한 파드는 어떻게 될까요?', 'nodeName 은 스케줄러를 거치지 않아요.', NULL, NULL, '[]', 'choice', '["`Pending` 으로 남고 스케줄러가 다른 노드를 이리저리 골라 보다가 `FailedScheduling` 이벤트를 남긴다", "`kubectl apply` 가 그런 노드는 없다는 오류로 거부해서 파드가 아예 만들어지지 않고 목록에도 보이지 않는다", "`Pending` 으로 남고 NODE 칸에는 그 이름이 보이지만 `FailedScheduling` 이벤트는 생기지 않는다", "`Running` 이 되고 없는 노드 이름은 가장 가까운 다른 노드로 바뀌어 그대로 적용된다"]', 2, '`nodeName` 을 직접 쓰면 스케줄러가 그 파드를 건드리지 않습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 6, 'required 와 preferred', '맞는 노드가 하나도 없을 때 `requiredDuringScheduling...` 노드 어피니티와 `preferredDuringScheduling...` 노드 어피니티 파드는 각각 어떻게 될까요?', '필수와 선호의 차이예요.', NULL, NULL, '[]', 'choice', '["required 는 다른 노드에서도 `Running` 이 되고, preferred 는 `Pending` 으로 남는다", "required 는 `Pending` 으로 남고, preferred 는 다른 노드에라도 배치되어 `Running` 이 된다", "둘 다 `Pending` 으로 남고 맞는 노드가 생길 때까지 계속 기다리게 되며 이벤트에 사유가 나온다", "둘 다 `Running` 이 되고 두 방식의 차이는 이벤트 문구에만 조금 다르게 나타날 뿐 결과는 같다"]', 1, 'preferred 는 가중치를 더해 줄 뿐이고 맞지 않는다고 배치를 막지 않습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 7, '나중에 라벨을 붙이면', '`nodeSelector` 때문에 `Pending` 인 파드가 있을 때 노드에 맞는 라벨을 붙이면 어떻게 될까요?', '스케줄러는 계속 다시 시도해요.', NULL, NULL, '[]', 'choice', '["파드를 다시 만들지 않아도 곧 그 노드에 배치되어 `Running` 이 된다", "파드를 지우고 다시 만들어야만 `Running` 이 되고 그전에는 계속 `Pending` 이다", "파드가 `Error` 로 바뀌고 라벨은 파드를 만들 때만 읽는다는 오류가 난다", "라벨을 붙인 노드가 재시작될 때까지 `Pending` 으로 남아 있게 된다"]', 0, '`kubectl label node 노드이름 disk=ssd` 로 붙입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 8, '라벨을 떼도 실행 중인 파드는', '`nodeSelector` 로 배치되어 `Running` 인 파드가 있을 때 노드에서 그 라벨을 떼면 파드는 어떻게 될까요?', '이름에 IgnoredDuringExecution 이 들어 있어요.', NULL, NULL, '[]', 'choice', '["`Pending` 으로 되돌아가서 맞는 노드가 다시 생길 때까지 기다린다", "즉시 종료되고 같은 이름의 새 파드가 `Pending` 으로 만들어진다", "`Evicted` 상태가 되어 노드 밖으로 쫓겨나고 다른 노드로 옮겨진다", "그대로 `Running` 으로 남는다. 선택자는 배치할 때만 확인한다"]', 3, '`kubectl label node 노드이름 disk-` 처럼 키 뒤에 `-` 를 붙이면 라벨이 지워집니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 9, '없는 StorageClass 의 PVC', '존재하지 않는 `storageClassName` 을 가진 PVC 를 쓰는 파드는 어떻게 될까요?', '볼륨이 준비되지 않았어요.', NULL, NULL, '[]', 'choice', '["`Running` 이 되지만 볼륨은 빈 폴더로 마운트되어 쓴 데이터가 파드와 함께 사라진다", "`ImagePullBackOff` 가 되고 볼륨 이름이 이미지 이름으로 잘못 읽혀서 받지 못한다", "`Pending` 으로 남고 이벤트에 `unbound immediate PersistentVolumeClaims` 문구가 나온다", "`kubectl apply` 가 StorageClass 가 없다는 오류로 거부해서 파드가 만들어지지 않고 PVC 만 남게 되어 있다"]', 2, '이 경우는 노드 문제가 아니라 PVC 가 묶이지 않은 것이 원인입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 10, 'Pending 파드만 모아 보기', '`kubectl get pods` 로 `Pending` 파드만 걸러서 보려면 어떻게 할까요?', '필드 셀렉터는 상태 값으로 걸러요.', NULL, NULL, '[]', 'choice', '["`--selector status.phase=Pending` 을 붙인다. 라벨 셀렉터가 상태를 비교한다", "`--field-selector status.phase=Pending` 을 붙인다", "`--status Pending` 을 붙인다. 이 옵션이 `kubectl get` 에 있다", "`-o pending` 을 붙인다. 출력 형식이 Pending 만 보여 준다"]', 1, '`--selector` 는 라벨을 거르고 `--field-selector` 는 `status.phase` 같은 필드를 거릅니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 11, '이벤트로 스케줄 실패 찾기', '스케줄 실패 이벤트만 모아 보려면 어떻게 할까요?', 'reason 이 FailedScheduling 이에요.', NULL, NULL, '[]', 'choice', '["`kubectl get events --field-selector reason=FailedScheduling` 을 쓴다", "`kubectl get events --selector reason=FailedScheduling` 을 쓴다. 이벤트 라벨을 비교한다", "`kubectl logs --reason FailedScheduling` 을 쓴다. 컨테이너 로그에서 찾는다", "`kubectl get nodes --field-selector reason=FailedScheduling` 을 쓴다"]', 0, '이벤트는 네임스페이스 단위이므로 `-n` 을 맞춰야 합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 12, 'describe 의 Events', '`kubectl describe pod` 출력에서 스케줄 실패의 원인은 어디서 볼까요?', '맨 아래쪽 구역이에요.', NULL, NULL, '[]', 'choice', '["맨 위 `Labels` 와 `Annotations` 에 `FailedScheduling` 값으로 키와 함께 나온다", "`Containers` 아래 `Last State` 에 종료 코드와 종료 사유와 시각과 함께 나온다", "`Volumes` 아래에 스케줄러 이름과 함께 한 줄로 요약되어 나온다", "맨 아래 `Events` 에 `Warning FailedScheduling`, From `default-scheduler` 줄로 나온다"]', 3, '이벤트의 `x2 over 30s` 처럼 같은 사유는 한 줄로 묶여 표시됩니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 12);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 13, 'Pending 파드에 exec', '노드에 배치되지 못한 파드에 `kubectl exec 파드 -- ls` 를 하면 어떻게 될까요?', '실행할 호스트가 없어요.', NULL, NULL, '[]', 'choice', '["`ls` 결과가 비어서 아무것도 출력되지 않고 종료 코드 `0` 으로 조용히 끝난다", "파드가 배치될 때까지 기다렸다가 배치되면 `ls` 를 실행한다", "`pod ... does not have a host assigned` 오류가 난다", "스케줄러가 임시 노드를 하나 골라 그곳에서 대신 `ls` 를 실행해 보여 준다"]', 2, '컨테이너가 없는 파드에는 들어갈 수 없으므로 먼저 `describe` 로 이벤트를 봅니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 13);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 14, '라벨로 노드 거르기', '라벨이 `disk=ssd` 인 노드만 보려면 어떻게 할까요?', '소문자 l 이에요.', NULL, NULL, '[]', 'choice', '["`kubectl get nodes --field-selector disk=ssd` 를 쓰고 필드 셀렉터가 라벨을 비교한다", "`kubectl get nodes -l disk=ssd` 를 쓴다", "`kubectl get nodes disk=ssd` 를 쓰고 이름 자리에 라벨을 적어서 거른다", "`kubectl get nodes -o disk=ssd` 를 쓰고 출력 형식이 노드를 거른다"]', 1, '`--show-labels` 는 모든 노드의 라벨을 한 열로 보여 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 14);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 15, '노드 선택 필드', '파드 스펙에서 **노드 라벨로 배치할 노드를 고르는** 필드 이름을 채우세요.', '"노드"와 "선택자"를 이어 써요.', NULL, NULL, '[]', 'fill', '["nodeLabel", "nodeMatch", "nodeName", "nodeSelector"]', NULL, '`nodeName` 은 노드 이름을 직접 지정합니다.', '[3]', '{0}: {disk: ssd}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 15);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 16, '노드 직접 지정', '파드 스펙에서 **스케줄러를 거치지 않고 노드를 직접 지정하는** 필드 이름을 채우세요.', '"노드"와 "이름"을 이어 써요.', NULL, NULL, '[]', 'fill', '["nodeName", "nodeHost", "nodeId", "hostName"]', NULL, '없는 이름을 쓰면 파드가 `Pending` 으로 남습니다.', '[0]', '{0}: node-1', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 16);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 17, '노드에 라벨 붙이기', '**노드에 라벨을 붙이는** `kubectl` 하위 명령을 채우세요.', '"이름표"를 영어로 써요.', NULL, NULL, '[]', 'fill', '["tag", "label", "annotate", "set"]', NULL, '`annotate` 는 주석을 붙입니다.', '[1]', 'kubectl {0} node n1 disk=ssd', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 17);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 18, '라벨 지우기', '`kubectl label` 에서 **라벨을 지울 때 키 뒤에 붙이는** 기호를 채우세요.', '"빼기"와 같은 모양이에요.', NULL, NULL, '[]', 'fill', '["!", "~", "-", "/"]', NULL, '`=` 로 끝내면 빈 값으로 남습니다.', '[2]', 'kubectl label node n1 disk{0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 18);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 19, '라벨로 노드 거르기', '`kubectl get nodes` 에서 **라벨로 거르는** 옵션을 채우세요.', '"label"의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["L", "o", "w", "l"]', NULL, '`-L disk` 는 라벨 값을 열로 보여 줍니다.', '[3]', 'kubectl get nodes -{0} disk=ssd', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 19);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 20, '필드로 거르기', '`kubectl get events` 에서 **필드 값으로 거르는** 옵션을 채우세요.', '"필드"와 "선택자"를 이어 써요.', NULL, NULL, '[]', 'fill', '["field-selector", "filter", "selector", "where"]', NULL, '`--selector` 는 라벨을 거릅니다.', '[0]', 'kubectl get events --{0} reason=FailedScheduling', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 20);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 21, '파드 단계 필드', '`--field-selector` 로 **파드의 단계를 가리키는** 필드를 채우세요.', '"단계"를 영어로 써요.', NULL, NULL, '[]', 'fill', '["state", "phase", "status", "stage"]', NULL, '`Running`, `Succeeded` 같은 값이 들어갑니다.', '[1]', 'kubectl get pods --field-selector status.{0}=Pending', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 21);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 22, '스케줄 실패 이벤트', '스케줄러가 파드를 배치하지 못했을 때 이벤트의 **Reason** 을 채우세요.', '"스케줄링 실패"를 이어 써요.', NULL, NULL, '[]', 'fill', '["FailedCreate", "Unschedulable", "FailedScheduling", "BackOff"]', NULL, 'From 칸에는 `default-scheduler` 가 나옵니다.', '[2]', 'Warning  {0}  default-scheduler', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 22);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 23, '자원 부족 문구', 'CPU 요청을 채울 수 없을 때 이벤트에 나오는 **자원 부족 문구의 첫 단어** 를 채우세요.', '"부족한"을 영어로 써요.', NULL, NULL, '[]', 'fill', '["Excessive", "Lacking", "Missing", "Insufficient"]', NULL, '메모리는 `Insufficient memory` 입니다.', '[3]', '1 {0} cpu', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 23);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 24, '필수 어피니티', '노드 어피니티에서 **맞지 않으면 배치하지 않는** 쪽의 앞부분을 채우세요.', '"필수"를 영어로 써요.', NULL, NULL, '[]', 'fill', '["required", "preferred", "optional", "strict"]', NULL, '`preferred` 는 선호일 뿐 배치를 막지 않습니다.', '[0]', '{0}DuringSchedulingIgnoredDuringExecution:', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 24);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 25, '스케줄 조건의 사유', '`PodScheduled` 조건이 `False` 일 때 **reason 값** 을 채우세요.', '"스케줄할 수 없음"이에요.', NULL, NULL, '[]', 'fill', '["Pending", "Unschedulable", "Failed", "NotReady"]', NULL, '스케줄되면 `True` 가 됩니다.', '[1]', 'PodScheduled: False, reason {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 25);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 26, 'Pending 원인 찾기', '`Pending` 파드의 원인을 좁혀 가는 순서입니다. 순서에 맞게 놓아 보세요.', '목록 → 설명 → 이벤트 문구 → 노드 확인 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl get nodes --show-labels` 로 노드에 필요한 라벨이 있는지 확인한다", "`FailedScheduling` 의 `didn''t match Pod''s node affinity/selector` 문구로 선택자 문제를 파악한다", "`kubectl get pods -o wide` 로 STATUS 가 `Pending` 이고 NODE 가 `<none>` 인지 본다", "`kubectl describe pod` 의 맨 아래 `Events` 를 읽는다"]', NULL, '`Insufficient cpu` 라면 요청량 쪽을 봅니다.', '[2, 3, 1, 0]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 26);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 27, '라벨로 풀기', '라벨 때문에 `Pending` 인 파드를 푸는 순서입니다. 순서에 맞게 놓아 보세요.', '만들기 → Pending → 라벨 → Running 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl label node 노드이름 disk=ssd` 로 노드에 라벨을 붙인다", "파드를 다시 만들지 않아도 `Running` 이 되는지 확인한다", "`kubectl get pod` 로 `Pending` 인지 확인한다", "`nodeSelector: {disk: ssd}` 를 가진 파드를 만든다"]', NULL, '라벨을 지워도 이미 `Running` 인 파드는 그대로입니다.', '[3, 2, 0, 1]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 27);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 28, '자원 부족 확인', '자원 부족으로 `Pending` 인 파드를 확인하는 순서입니다. 순서에 맞게 놓아 보세요.', '만들기 → Pending → 이벤트 → 노드 순서예요.', NULL, NULL, '[]', 'order', '["`kubectl get events --field-selector reason=FailedScheduling` 로 `Insufficient cpu` 를 읽는다", "`requests.cpu` 가 매우 큰 파드를 만든다", "`kubectl describe node` 의 `Allocated resources` 로 노드의 요청 합계를 본다", "`kubectl get pod` 로 `Pending` 인지 확인한다"]', NULL, '스케줄러는 실제 사용량이 아니라 요청량으로 판단합니다.', '[1, 3, 0, 2]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 28);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 223, 29, 'required 와 preferred 비교', '필수 어피니티와 선호 어피니티를 비교하는 순서입니다. 순서에 맞게 놓아 보세요.', 'required → preferred → 라벨 → 결과 순서예요.', NULL, NULL, '[]', 'order', '["같은 조건의 `preferred` 어피니티 파드를 만들어 `Running` 인지 본다", "`required` 파드가 `Running` 으로 바뀌는지 확인한다", "맞는 노드가 없는 상태에서 `required` 어피니티 파드를 만들어 `Pending` 인지 본다", "노드에 맞는 라벨을 붙인다"]', NULL, '`preferred` 는 배치를 막지 않습니다.', '[2, 0, 3, 1]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 223 AND order_index = 29);
