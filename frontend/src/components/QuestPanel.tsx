@@ -84,6 +84,9 @@ function gradeErrorMessage(err: unknown): string {
     return '채점 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.'
 }
 
+// 한 단계의 문제 수. 문제가 이보다 적으면 단계 표시를 하지 않는다.
+const STEP_SIZE = 10
+
 export function QuestPanel({ quest, setId, containerId, sessionId, total, index, completedIndices, onPrev, onNext, onFinish, onReset, onComplete, run = null, onExpire }: Props) {
     const timer = useQuestTimer(sessionId, quest.id)
     const left = useCountdown(run ? run.deadlineMs : null)
@@ -136,6 +139,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
     const ns = containerId ? `quest-${containerId.slice(0, 8)}` : '$NS'
     const resolve = (text: string) => text.replace(/\$NS/g, ns)
     const allDone = completedIndices.size >= total
+    const steps = Math.ceil(total / STEP_SIZE) // 문제가 많은 세트는 10문제씩 단계로 나눠 보여 준다 (진행 막대의 간격, 단계 표시)
 
     const grade = async () => {
         setLoading(true)
@@ -200,7 +204,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                 {Array.from({ length: total }, (_, i) => (
                     <div
                         key={i}
-                        className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${completedIndices.has(i) ? 'bg-success' : i === index ? 'bg-info' : 'bg-surface-container-highest'} ${completedIndices.has(i) ? 'fx-seg-pop' : ''}`}
+                        className={`h-1.5 flex-1 rounded-full ${steps > 1 && i > 0 && i % STEP_SIZE === 0 ? 'ml-2' : ''} transition-colors duration-300 ${completedIndices.has(i) ? 'bg-success' : i === index ? 'bg-info' : 'bg-surface-container-highest'} ${completedIndices.has(i) ? 'fx-seg-pop' : ''}`}
                     />
                 ))}
             </div>
@@ -211,6 +215,7 @@ export function QuestPanel({ quest, setId, containerId, sessionId, total, index,
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                             <span className="rounded-full border border-sky/40 bg-sky/10 px-2.5 py-0.5 font-sans text-label-caps text-sky tabular-nums">문제 {index + 1} / {total}</span>
+                            {steps > 1 && <span className="rounded-full border border-outline-variant px-2.5 py-0.5 font-sans text-label-caps text-on-surface-variant tabular-nums">{Math.floor(index / STEP_SIZE) + 1}단계 / {steps}단계</span>}
                             {completedIndices.size > 0 && <span className="rounded-full border border-success/40 bg-success/10 px-2.5 py-0.5 font-sans text-label-caps text-success tabular-nums">✅ {completedIndices.size}개 해결</span>}
                         </div>
                         <h1 className="font-sans text-headline-lg text-on-surface truncate">{quest.title}</h1>
