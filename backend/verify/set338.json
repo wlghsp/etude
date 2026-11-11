@@ -1,0 +1,14 @@
+{
+  "setId": 338,
+  "answers": {
+    "1": "tar czf /tmp/backup.tar.gz -C /tmp/lab project\ntar tzf /tmp/backup.tar.gz\n\n# -C /tmp/lab 으로 이동한 뒤 project 를 묶었기 때문에 안의 경로가 project/... 로 시작한다",
+    "2": "tar tzf /tmp/lab/site.tar.gz > /tmp/list.txt\ncat /tmp/list.txt\n\n# t 는 아무것도 풀지 않고 목록만 보여 준다",
+    "3": "mkdir -p /tmp/restore\ntar xzf /tmp/lab/site.tar.gz -C /tmp/restore\ncat /tmp/restore/site/index.html\n\n# -C 폴더가 없으면 tar 가 오류를 낸다. 먼저 mkdir -p 로 만든다",
+    "4": "tar czf /tmp/clean.tar.gz --exclude=logs -C /tmp/lab project\ntar tzf /tmp/clean.tar.gz\n\n# --exclude 는 묶을 대상보다 앞에 둔다",
+    "6": "gzip -k /tmp/lab/big.txt\nls -l /tmp/lab/big.txt /tmp/lab/big.txt.gz\n\n# -k (keep) 가 없으면 big.txt 는 사라지고 big.txt.gz 만 남는다",
+    "8": "cp -a /tmp/lab/src /tmp/lab/copy\nstat -c '%a %y' /tmp/lab/src/conf.sh /tmp/lab/copy/conf.sh\n\n# cp -r 로 하면 copy/conf.sh 의 수정 시각이 복사한 순간으로 바뀐다",
+    "9": "cp /tmp/lab/data/report.csv /tmp/lab/report.bak\nsha256sum /tmp/lab/data/report.csv /tmp/lab/report.bak > /tmp/lab/sums.txt\ncat /tmp/lab/sums.txt\nsha256sum -c /tmp/lab/sums.txt\n\n# 두 줄의 해시가 같으면 내용이 한 글자도 다르지 않다는 뜻이다",
+    "11": "tar czf /tmp/lab/backups/data-$(date +%F).tar.gz -C /tmp/lab data\nls /tmp/lab/backups\n\n# 매일 같은 명령을 돌려도 이름이 날짜별로 달라서 덮어쓰지 않는다",
+    "12": "cd /tmp/lab/daily\nls -t | tail -n +4 | xargs rm\nls\n\n# tail -n +4 는 4번째 줄부터 끝까지 출력한다. 즉 새 것 3개를 빼고 나머지만 골라낸다"
+  }
+}

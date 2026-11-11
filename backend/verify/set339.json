@@ -1,0 +1,14 @@
+{
+  "setId": 339,
+  "answers": {
+    "1": "kubectl describe pod diag-img -n $NS > /tmp/describe.txt\ncat /tmp/describe.txt | tail -15\n\n# Events 에 Failed to pull image \"busybox:1.99\" 같은 줄이 보인다 (그런 태그는 없다는 뜻)\n# 이미지 문제는 컨테이너가 한 번도 시작하지 못해서 logs 가 비어 있다. describe 의 Events 가 단서다",
+    "2": "kubectl set image pod/diag-img main=busybox:1.36 -n $NS\nkubectl get pod diag-img -n $NS -w   # Running, 1/1 이 되면 Ctrl+C\n\n# Pod 의 이미지는 실행 중에도 바꿀 수 있는 몇 안 되는 필드다\n# 바뀐 이미지로 컨테이너가 새로 시작된다",
+    "4": "kubectl logs diag-crash -n $NS --previous > /tmp/prev.log\ncat /tmp/prev.log\n\n# boom: config file not found 처럼 죽기 직전의 마지막 말이 보인다\n# 재시작 직후엔 새 컨테이너 로그가 비어 있을 수 있어 --previous 가 중요하다",
+    "5": "kubectl describe pod diag-exit -n $NS | grep -A6 'Last State'\nkubectl get pod diag-exit -n $NS -o jsonpath='{.status.containerStatuses[0].lastState.terminated.exitCode}' > /tmp/exitcode.txt\ncat /tmp/exitcode.txt\n\n# 종료 코드 0 은 정상, 0 이 아니면 실패다. 이 Pod 는 42 로 끝난다\n# 이 숫자는 프로그램이 정한 값이라 원인은 logs 와 함께 봐야 한다",
+    "6": "kubectl delete pod diag-fix -n $NS --grace-period=1\nkubectl run diag-fix --image=busybox:1.36 --labels=etude=lab339 -n $NS -- sleep 3600\nkubectl get pod diag-fix -n $NS\n\n# 고친 뒤에는 STATUS 가 Running, READY 가 1/1, RESTARTS 가 0 이다\n# command 는 Pod 를 만든 뒤에는 바꿀 수 없어서, 이런 오류는 지우고 다시 만드는 것이 기본이다",
+    "8": "kubectl describe pod diag-oom -n $NS | grep -A6 'Last State'\nkubectl get pod diag-oom -n $NS -o jsonpath='{.status.containerStatuses[0].lastState.terminated.reason}' > /tmp/reason.txt\ncat /tmp/reason.txt\n\n# Reason: OOMKilled, Exit Code: 137 이 보인다 (메모리 한도를 넘었다)\n# Limits 의 memory 값이 작은지 같이 본다",
+    "9": "sed -i 's/memory: 10Mi/memory: 128Mi/' /tmp/oom.yaml\nkubectl delete -f /tmp/oom.yaml -n $NS --grace-period=1\nkubectl apply -f /tmp/oom.yaml -n $NS\nkubectl get pod diag-oom -n $NS\n\n# 이제 RESTARTS 가 0 이고 Running 이다\n# limits.memory 가 실제 사용량보다 작으면 OOMKilled, 너무 크게 잡으면 노드 자원을 낭비한다",
+    "10": "kubectl describe pod diag-ready -n $NS | tail -8\nkubectl exec diag-ready -n $NS -- touch /tmp/ready\nkubectl get pod diag-ready -n $NS\n\n# 몇 초 뒤 READY 가 1/1 이 된다 (RESTARTS 는 0 그대로)\n# readiness 실패는 컨테이너를 죽이지 않고 Service 트래픽만 막는다. liveness 실패와 다르다",
+    "11": "kubectl logs diag-multi -n $NS -c sidecar > /tmp/sidecar.log\ncat /tmp/sidecar.log\n\n# sidecar: cache warmed 한 줄이 나온다\n# -c 를 안 쓰면 첫 컨테이너(app)의 로그가 나온다. 컨테이너 목록은 describe 로 본다"
+  }
+}

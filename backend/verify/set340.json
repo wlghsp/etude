@@ -1,0 +1,14 @@
+{
+  "setId": 340,
+  "answers": {
+    "1": "docker run -d --name web --memory 64m alpine sleep 300\ndocker inspect -f '{{.HostConfig.Memory}}' web\n\n# 64m = 64*1024*1024 = 67108864 바이트로 저장된다",
+    "2": "docker run -d --name calc --cpus 0.5 alpine sleep 300\ndocker inspect -f '{{.HostConfig.NanoCpus}}' calc\n\n# 0.5 코어 = 500000000 (1코어 = 1000000000)",
+    "3": "docker run -d --name forky --pids-limit 50 alpine sleep 300\ndocker inspect -f '{{.HostConfig.PidsLimit}}' forky\n\n# 한도를 넘으면 fork 가 'Resource temporarily unavailable' 로 실패한다",
+    "4": "docker inspect -f '{{.HostConfig.Memory}}' capped > /tmp/work/mem.txt\ncat /tmp/work/mem.txt\n\n# 128m 은 134217728 바이트. 값이 0 이면 제한이 없다는 뜻",
+    "6": "docker update --memory 256m --memory-swap 256m grow\ndocker inspect -f '{{.HostConfig.Memory}}' grow\n\n# 메모리와 swap 은 한 쌍이다. 한쪽만 올리면 거부된다. 컨테이너는 재시작되지 않는다",
+    "7": "docker run -d --name vault --read-only alpine sleep 300\ndocker exec vault touch /probe\n\n# touch: /probe: Read-only file system",
+    "8": "docker run -d --name scratch --read-only --tmpfs /tmp alpine sleep 300\ndocker exec scratch touch /tmp/probe\ndocker exec scratch touch /etc/probe\n\n# /tmp 는 되고 /etc 는 막힌다. tmpfs 내용은 컨테이너가 사라지면 같이 사라진다",
+    "9": "docker run -d --name worker --user 1000:1000 alpine sleep 300\ndocker exec worker id -u\ndocker exec worker id -g\n\n# 컨테이너 탈출·권한 상승 피해를 줄이는 기본 습관",
+    "10": "docker run -d --name locked --cap-drop ALL --cap-add CHOWN alpine sleep 300\ndocker exec locked chown 1:1 /etc/hostname\ndocker exec locked grep CapEff /proc/1/status\n\n# 최소 권한 원칙: 빼고(drop) 필요한 것만 더한다(add)"
+  }
+}
