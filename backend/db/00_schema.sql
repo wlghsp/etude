@@ -14,7 +14,7 @@ CREATE TABLE unit (
 );
 CREATE TABLE quest_set (
   id           INT AUTO_INCREMENT PRIMARY KEY,
-  title        VARCHAR(100) NOT NULL,
+  title        VARCHAR(200) NOT NULL,
   description  TEXT,
   sandbox_type VARCHAR(20) NOT NULL DEFAULT 'linux',
   category     VARCHAR(50) NOT NULL DEFAULT '기타',
