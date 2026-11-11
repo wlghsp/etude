@@ -1,0 +1,14 @@
+{
+  "setId": 232,
+  "answers": {
+    "1": "id kim > /tmp/kim_id.txt\ncat /tmp/kim_id.txt\n\n# uid=사용자번호(이름) gid=기본그룹번호(이름) groups=속한 모든 그룹. groups 만 이름으로 보려면 id -nG kim",
+    "2": "grep '^lee:' /etc/passwd | cut -d: -f6 > /tmp/lee_home.txt\ncat /tmp/lee_home.txt\n\n# 칸 번호: 1 이름, 2 비밀번호(x), 3 UID, 4 GID, 5 설명, 6 홈 디렉터리, 7 로그인 셸. getent passwd lee 도 같은 한 줄을 준다",
+    "3": "awk -F: '$7==\"/bin/bash\" {print $1}' /etc/passwd > /tmp/bash_users.txt\ncat /tmp/bash_users.txt\n\n# awk 는 조건 {동작} 형태. 7번째 칸이 /bin/bash 인 줄만 골라 1번째 칸(이름)을 출력한다",
+    "4": "useradd -m -s /bin/bash park\ngetent passwd park\nls -ld /home/park\n\n# -m 홈 디렉터리 생성(/etc/skel 의 기본 파일 복사), -s 로그인 셸 지정. 확인은 getent passwd park",
+    "5": "id -nG kim\nusermod -aG audit kim\nid -nG kim\n\n# -a(append) 없이 -G audit 만 쓰면 devs 가 빠진다. 반드시 -aG 한 쌍으로",
+    "7": "ls -l /tmp/lab/report.txt\nchown kim:devs /tmp/lab/report.txt\nls -l /tmp/lab/report.txt\n\n# chown 사용자 파일 / chown :그룹 파일 / chown 사용자:그룹 파일. 폴더 전체는 -R",
+    "8": "ls -l /tmp/lab/team.txt\nchmod g+w /tmp/lab/team.txt\nls -l /tmp/lab/team.txt\n\n# -rw-r--r-- 에서 -rw-rw-r-- 로. 대상(u/g/o) + 연산(+/-) + 권한(r/w/x)",
+    "10": "su - kim -c 'id -un > /tmp/by_kim.txt'\ncat /tmp/by_kim.txt\nls -l /tmp/by_kim.txt\n\n# su - kim -c id -un > 파일 처럼 따옴표 밖에 > 를 쓰면 root 의 셸이 파일을 만들어 소유자가 root 가 된다",
+    "11": "ls -ld /home/guest\nuserdel -r guest\nls -ld /home/guest\ngetent passwd guest\n\n# -r 없이 지우면 /home/guest 가 남고, 그 파일은 UID 숫자만 남은 주인 없는 파일이 된다"
+  }
+}

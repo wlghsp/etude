@@ -1,0 +1,14 @@
+{
+  "setId": 233,
+  "answers": {
+    "1": "kubectl create job hello --image=busybox:1.36 -n $NS -- echo hello etude\nkubectl get jobs -n $NS\nkubectl logs job/hello -n $NS\n\n# Job 은 Pod 를 만들어 명령을 끝까지 한 번 실행하고, 성공하면 더 만들지 않는다\n# Deployment 와 달리 끝나는 것이 정상이다",
+    "2": "kubectl get jobs -n $NS > /tmp/jobs.txt\ncat /tmp/jobs.txt\n\n# hello 는 1/1 (필요한 1번 중 1번 성공), flaky 는 0/1 (아직 한 번도 성공하지 못함)",
+    "3": "kubectl logs job/hello -n $NS > /tmp/job-log.txt\ncat /tmp/job-log.txt\n\n# Job 의 Pod 이름은 hello-xxxxx 처럼 무작위 글자가 붙는다\n# job/hello 로 부르면 그 Job 의 Pod 로그를 대신 찾아 준다",
+    "4": "kubectl get jobs -n $NS\nkubectl get pods -n $NS\nkubectl logs job/flaky -n $NS > /tmp/flaky-log.txt\ncat /tmp/flaky-log.txt\n\n# 로그에 'ech0: not found' 가 보인다: echo 를 ech0 로 잘못 적은 것이다\n# 명령이 없으면 Pod 는 Error 로 끝나고, Job 은 실패한 횟수를 센다",
+    "6": "kubectl delete job flaky -n $NS\nkubectl create job flaky --image=busybox:1.36 -n $NS -- echo done\nkubectl get jobs -n $NS\nkubectl logs job/flaky -n $NS\n\n# 실패한 Job 은 스스로 고쳐지지 않는다. 템플릿이 고정이라 지우고 새로 만든다\n# 지우면 그 Job 의 Pod 도 함께 지워진다",
+    "7": "cat > /tmp/batch.yaml <<'EOF'\napiVersion: batch/v1\nkind: Job\nmetadata:\n  name: batch\nspec:\n  completions: 6\n  parallelism: 2\n  template:\n    spec:\n      restartPolicy: Never\n      containers:\n      - name: main\n        image: busybox:1.36\n        command: [\"echo\", \"batch\"]\nEOF\nkubectl apply -n $NS -f /tmp/batch.yaml\nkubectl get jobs -n $NS\n\n# completions 는 성공해야 하는 총 횟수, parallelism 은 동시에 띄우는 Pod 수\n# COMPLETIONS 칸이 0/6, 2/6, ... 6/6 으로 올라간다",
+    "9": "kubectl create cronjob nightly --image=busybox:1.36 --schedule=\"*/30 * * * *\" -n $NS -- echo nightly\nkubectl get cronjob -n $NS\n\n# 일정은 분 시 일 월 요일 다섯 칸이다. */30 은 30분마다\n# CronJob 은 때가 되면 Job 을 만들고, Job 이 Pod 를 만든다",
+    "10": "kubectl create job manual-run --from=cronjob/nightly -n $NS\nkubectl get jobs -n $NS\nkubectl logs job/manual-run -n $NS\n\n# CronJob 의 jobTemplate 으로 Job 을 하나 즉시 만든다. 일정에는 영향이 없다\n# 일정이 먼 CronJob 을 시험해 볼 때 쓴다",
+    "11": "kubectl patch cronjob nightly -n $NS -p '{\"spec\":{\"suspend\":true}}'\nkubectl get cronjob -n $NS\n\n# SUSPEND 칸이 True 로 바뀐다. 이미 돌고 있는 Job 에는 영향이 없다\n# 다시 켜려면 값을 false 로 patch 한다"
+  }
+}

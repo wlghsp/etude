@@ -1,0 +1,14 @@
+{
+  "setId": 234,
+  "answers": {
+    "1": "cd /tmp/app\ncat > Dockerfile <<'EOF'\nFROM alpine\nCMD [\"echo\", \"hello etude\"]\nEOF\ndocker build -t hello:1 .\ndocker run --rm hello:1\n\n# -t 로 이름:태그를 붙이고, 끝의 . 은 빌드 컨텍스트(현재 디렉터리)다",
+    "2": "docker images demo\ndocker images demo --format '{{.Tag}}' | sort > /tmp/tags.txt\ncat /tmp/tags.txt\n\n# 저장소 이름으로 거르고, --format 으로 원하는 열만 뽑는다",
+    "3": "docker tag demo:1 demo:stable\ndocker images demo\n\n# tag 는 이름표만 추가한다. 두 이름의 IMAGE ID 가 같다",
+    "4": "cd /tmp/app\ncat > Dockerfile <<'EOF'\nFROM alpine\nENV NAME=Etude\nCMD echo hello $NAME\nEOF\ndocker build -t greet:1 .\ndocker run --rm greet:1\n\n# ENV 는 빌드 뒤 컨테이너 실행 중에도 남는다",
+    "6": "cd /tmp/app\ncat Dockerfile\ndocker build --build-arg VER=2.5 -t ver:2 .\ndocker run --rm ver:2\n\n# --build-arg 는 Dockerfile 의 ARG 값을 빌드할 때만 바꾼다",
+    "7": "cd /tmp/app\ncat > Dockerfile <<'EOF'\nFROM alpine\nCOPY note.txt /note.txt\nEOF\ndocker build -t note:1 .\ndocker run --rm note:1 cat /note.txt\n\n# COPY 는 빌드 컨텍스트의 파일을 이미지 안으로 복사한다",
+    "8": "cd /tmp/app\ncat > Dockerfile <<'EOF'\nFROM alpine\nENTRYPOINT [\"echo\", \"say:\"]\nEOF\ndocker build -t say:1 .\ndocker run --rm say:1 world > /tmp/out.txt\ncat /tmp/out.txt\n\n# ENTRYPOINT 는 남고 run 뒤의 인자가 붙는다 (CMD 였다면 인자가 CMD 를 통째로 대체한다)",
+    "10": "cd /tmp/app\necho secret.txt > .dockerignore\ndocker build -t ign:1 .\ndocker run --rm ign:1 ls /data\n\n# .dockerignore 에 적은 파일은 빌드 컨텍스트에서 빠져 COPY 되지 않는다",
+    "11": "cd /tmp/app\ncat Dockerfile\ndocker build -t layers:1 .\ndocker history layers:1\ndocker history --format '{{.CreatedBy}}' layers:1 | grep -c echo > /tmp/runs.txt\ncat /tmp/runs.txt\n\n# RUN 한 줄마다 레이어가 하나 생긴다"
+  }
+}
