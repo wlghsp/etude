@@ -1,0 +1,14 @@
+{
+  "setId": 227,
+  "answers": {
+    "1": "kubectl get endpoints web -n $NS > /tmp/ep.txt\ncat /tmp/ep.txt\n\n# ENDPOINTS 칸에 Pod 주소:80 이 보이면 Service 가 Pod 를 찾은 것이다\n# 이 칸이 <none> 이면 Service 가 연결할 Pod 를 하나도 못 찾았다는 뜻이다",
+    "2": "kubectl describe svc web -n $NS | grep -E 'Selector|TargetPort' > /tmp/svc.txt\ncat /tmp/svc.txt\n\n# Selector: app=web  → 이 라벨을 가진 Pod 를 찾는다\n# TargetPort: 80/TCP → 찾은 Pod 의 80 번 포트로 보낸다",
+    "3": "kubectl get pods -n $NS --show-labels > /tmp/labels.txt\ncat /tmp/labels.txt\n\n# Pod web-1 의 라벨은 app=web 인데 Service 의 Selector 는 app=wbe → 글자가 달라서 못 찾는다 (오타)\n# kubectl get endpoints web 을 보면 ENDPOINTS 가 <none> 이다",
+    "4": "kubectl label pod web-1 app=web --overwrite -n $NS\nkubectl get endpoints web -n $NS\n\n# 같은 키를 덮어쓰려면 --overwrite 가 필요하다 (없으면 already has a value 오류)\n# 라벨을 고치면 곧바로 ENDPOINTS 에 Pod 주소가 채워진다",
+    "6": "kubectl patch svc web -n $NS -p '{\"spec\":{\"selector\":{\"app\":\"web\"}}}'\nkubectl get endpoints web -n $NS\n\n# patch 는 지정한 필드만 바꾼다. selector 의 app 만 web 으로 바뀐다\n# 고친 뒤에는 get endpoints 에 Pod 주소가 나오는지 꼭 확인한다",
+    "7": "kubectl describe svc web -n $NS | grep Selector\nkubectl get pods -n $NS -l app=web,tier=front -o name > /tmp/picked.txt\ncat /tmp/picked.txt\n\n# -l 에 쉼표로 이은 조건은 모두 맞아야(AND) 한다. Service 의 selector 도 같은 규칙이다\n# old-1 은 app=web 이지만 tier=back 이라 Service 가 고르지 않는다",
+    "8": "kubectl describe pod web-1 -n $NS | grep -i readiness\nkubectl exec web-1 -n $NS -- touch /tmp/ready\nkubectl get pods -n $NS\nkubectl get endpoints web -n $NS\n\n# readinessProbe 가 cat /tmp/ready 를 실행하는데 파일이 없어서 실패 중이었다\n# 파일을 만들면 프로브가 통과하고, Ready 가 된 Pod 만 ENDPOINTS 에 들어간다",
+    "9": "kubectl get endpoints web -n $NS\nkubectl patch svc web -n $NS --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/ports/0/targetPort\",\"value\":80}]'\nkubectl get endpoints web -n $NS\n\n# Endpoints 에 주소가 있어도 포트가 틀리면 연결은 거절된다 (selector 문제와 증상이 다르다)\n# targetPort 는 Pod(컨테이너)가 실제로 듣는 포트여야 한다",
+    "11": "kubectl get endpoints web -n $NS\nkubectl get pods -n $NS --show-labels\nkubectl label pod web-2 app=web --overwrite -n $NS\nkubectl patch svc web -n $NS --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/ports/0/targetPort\",\"value\":80}]'\nkubectl get endpoints web -n $NS\n\n# 증상: 주소 1개(web-1 만) + 포트 8080 → 원인 둘: web-2 라벨 오타(app=wbe), targetPort 8080\n# 하나를 고쳐도 다른 하나가 남아 있으니, 고친 뒤마다 get endpoints 로 확인한다"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "setId": 226,
+  "answers": {
+    "1": "df -h / > /tmp/df.txt\ncat /tmp/df.txt\n\n# Size(전체) Used(사용) Avail(남음) Use%(사용률) Mounted on(마운트 위치). 장애 때 가장 먼저 치는 명령",
+    "2": "df -i / > /tmp/inode.txt\ncat /tmp/inode.txt\n\n# 작은 파일이 수백만 개 쌓이면 용량(Use%)은 한참 남아도 IUse% 가 100% 가 되어 파일을 못 만든다",
+    "3": "du -sh /tmp/lab/logs > /tmp/logs_size.txt\ncat /tmp/logs_size.txt\n\n# -s 가 없으면 하위 폴더·파일을 전부 나열한다. 합계만 필요할 땐 -sh",
+    "4": "du -h --max-depth=1 /tmp/lab > /tmp/depth.txt\ncat /tmp/depth.txt\n\n# 맨 아래 줄은 /tmp/lab 전체 합계. \"큰 폴더 찾기\"는 이렇게 한 단계씩 내려가며 범위를 좁히는 일이다",
+    "5": "ls -lhS /tmp/lab/data > /tmp/ls.txt\ncat /tmp/ls.txt\n\n# -S 큰 파일 순, -t 는 최근 수정 순, -r 을 더하면 거꾸로. 파일 몇 개짜리 폴더를 훑을 때 du 보다 빠르다",
+    "7": "du -sh /tmp/lab/* | sort -rh | head -n 2 > /tmp/top2.txt\ncat /tmp/top2.txt\n\n# du | sort -rh | head 는 \"무엇이 제일 큰가\"를 한 줄로 묻는 가장 흔한 조합이다",
+    "8": "find /tmp/lab -type f -size +10M > /tmp/big.txt\ncat /tmp/big.txt\n\n# 단위: k, M, G. +100M 처럼 기준만 바꿔 서버 어디서든 \"큰 파일 후보\"를 뽑을 수 있다",
+    "9": "find /tmp/lab -type f -printf '%s %p\\n' | sort -rn | head -n 3 > /tmp/top3.txt\ncat /tmp/top3.txt\n\n# 크기를 바이트 숫자로 뽑으면 단위 걱정 없이 sort -rn. 파일을 찾는 find 와 정렬하는 sort 를 이어 붙인 형태",
+    "11": "du -sh /tmp/lab/logs > /tmp/before.txt\nrm /tmp/lab/logs/db.log\ndu -sh /tmp/lab/logs > /tmp/after.txt\ncat /tmp/before.txt /tmp/after.txt\n\n# 16M -> 약 3.6M. 정리 작업은 \"전 크기 기록 -> 삭제 -> 후 크기 확인\"으로 효과를 증명해 두면 보고하기도 좋다"
+  }
+}
