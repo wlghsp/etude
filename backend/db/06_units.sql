@@ -371,3 +371,35 @@ INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '�
 UPDATE quest_set SET unit_id = 1 WHERE id = 222;
 INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크로드와 설정', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 7);
 UPDATE quest_set SET unit_id = 7 WHERE id = 223;
+
+-- 도커 단원 재편 (2026-11-11): 위의 5단원 배정을 덮어쓴다. docs/specs/spec_docker_unit_split.md
+INSERT INTO unit (id, category, title, display_order) SELECT 32, '도커', '컨테이너 다루기', 12 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 32);
+INSERT INTO unit (id, category, title, display_order) SELECT 33, '도커', '이미지와 Dockerfile', 14 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 33);
+INSERT INTO unit (id, category, title, display_order) SELECT 34, '도커', '네트워크와 볼륨', 16 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 34);
+INSERT INTO unit (id, category, title, display_order) SELECT 35, '도커', 'Compose와 운영', 18 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 35);
+UPDATE quest_set SET unit_id = 5 WHERE id = 40;
+UPDATE quest_set SET unit_id = 5 WHERE id = 77;
+UPDATE quest_set SET unit_id = 5 WHERE id = 5;
+UPDATE quest_set SET unit_id = 5 WHERE id = 137;
+UPDATE quest_set SET unit_id = 32 WHERE id = 171;
+UPDATE quest_set SET unit_id = 32 WHERE id = 191;
+UPDATE quest_set SET unit_id = 32 WHERE id = 195;
+UPDATE quest_set SET unit_id = 32 WHERE id = 199;
+UPDATE quest_set SET unit_id = 32 WHERE id = 203;
+UPDATE quest_set SET unit_id = 32 WHERE id = 212;
+UPDATE quest_set SET unit_id = 32 WHERE id = 215;
+UPDATE quest_set SET unit_id = 32 WHERE id = 160;
+UPDATE quest_set SET unit_id = 33 WHERE id = 11;
+UPDATE quest_set SET unit_id = 33 WHERE id = 167;
+UPDATE quest_set SET unit_id = 33 WHERE id = 218;
+UPDATE quest_set SET unit_id = 33 WHERE id = 183;
+UPDATE quest_set SET unit_id = 33 WHERE id = 221;
+UPDATE quest_set SET unit_id = 33 WHERE id = 154;
+UPDATE quest_set SET unit_id = 33 WHERE id = 187;
+UPDATE quest_set SET unit_id = 33 WHERE id = 8;
+UPDATE quest_set SET unit_id = 34 WHERE id = 142;
+UPDATE quest_set SET unit_id = 34 WHERE id = 179;
+UPDATE quest_set SET unit_id = 34 WHERE id = 209;
+UPDATE quest_set SET unit_id = 35 WHERE id = 148;
+UPDATE quest_set SET unit_id = 35 WHERE id = 175;
+UPDATE quest_set SET unit_id = 35 WHERE id = 206;
