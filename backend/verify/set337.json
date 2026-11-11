@@ -1,0 +1,14 @@
+{
+  "setId": 337,
+  "answers": {
+    "1": "docker pull alpine:3.19\ndocker images alpine\n\n# 이름:태그 로 받으면 그 버전만 받는다. 태그를 생략하면 latest",
+    "2": "docker images --format '{{.Repository}}:{{.Tag}}' > /tmp/work/images.txt\ncat /tmp/work/images.txt\n\n# 헤더 줄 없이 원하는 칸만 뽑을 수 있다",
+    "3": "docker tag alpine:3.19 myapp:v1\ndocker images\n\n# 두 이름의 IMAGE ID 가 같다. 이름(태그)만 늘어난 것",
+    "5": "docker rmi alpine:3.19      # 오류: 컨테이너가 이 이미지를 쓰는 중\ndocker rm keeper\ndocker rmi alpine:3.19\ndocker images\n\n# 순서: 컨테이너 삭제 -> 이미지 삭제",
+    "6": "docker images -f dangling=true\ndocker image prune -f\ndocker images -f dangling=true\ndocker images\n\n# -a 없이 쓰면 dangling 만 지운다. tmp:1 은 이름이 있으니 남는다",
+    "7": "docker commit work greeter:1\ndocker images greeter\ndocker run --rm greeter:1 cat /greeting\n\n# commit 은 컨테이너의 변경분(파일)을 새 이미지 레이어로 굳힌다",
+    "9": "docker save -o /tmp/work/a.tar alpine:3.19\nls -l /tmp/work/a.tar\ntar tf /tmp/work/a.tar\n\n# save 는 이미지(레이어+태그 정보)를 tar 하나로 묶는다",
+    "10": "docker load -i /tmp/work/img.tar\ndocker images alpine\n\n# load 는 save 로 만든 tar 의 이미지와 태그를 그대로 복원한다",
+    "11": "docker export src -o /tmp/work/fs.tar\ntar tf /tmp/work/fs.tar | head\ndocker import /tmp/work/fs.tar flat:1\ndocker run --rm flat:1 cat /note\n\n# export/import 는 파일시스템만 옮긴다 (태그·CMD·히스토리는 안 따라옴)"
+  }
+}

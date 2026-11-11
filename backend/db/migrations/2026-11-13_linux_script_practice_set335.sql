@@ -1,0 +1,160 @@
+-- 리눅스 세트 335. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 단원·display_order·아이콘은 통합 시 따로 정한다. docs/specs/spec_linux_script_practice_set.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 335, '스크립트 직접 써 보기: heredoc, shebang, $1, if -f, for, while read, exit, set -e, 함수, $( )', '작은 쉘 스크립트를 직접 만들고 돌려 보는 연습입니다. heredoc 으로 파일을 만들고 chmod +x 로 실행 권한을 준 뒤, 인자($1, $#), if [ -f ], for, while read, exit 코드와 $?, set -e, 함수, 명령 치환 $( ) 로 한 가지씩 새 기능을 붙여 갑니다.', 'linux', '리눅스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 335);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 335, 1, 'heredoc 으로 첫 스크립트 만들고 실행하기', '`/tmp/lab/hello.sh` 를 만드세요. 첫 줄은 **shebang**(`#!/bin/bash`), 다음 줄은 `hello script` 를 출력하는 명령입니다. 파일은 편집기 없이 **heredoc**(`cat > 파일 <<''EOF''`)으로 만들고, **실행 권한**을 준 뒤 `./` 방식으로 실행해서 출력을 `/tmp/hello_out.txt` 에 저장하세요.', 'heredoc 은 `<<''EOF''` 로 시작해서 줄 맨 앞의 `EOF` 한 줄로 끝납니다. 권한은 `ls -l` 로 확인할 수 있고, 실행 결과를 파일로 보내는 건 `>` 입니다.', 'mkdir -p /tmp/lab
+cat > /tmp/lab/hello.sh <<''EOF''
+#!/bin/bash
+echo "hello script"
+EOF
+chmod +x /tmp/lab/hello.sh
+/tmp/lab/hello.sh > /tmp/hello_out.txt
+cat /tmp/hello_out.txt
+
+# 따옴표 친 ''EOF'' 는 $ 같은 문자를 풀지 않고 그대로 파일에 적는다', '["sh", "-c", "rm -rf /tmp/lab /tmp/*.txt; mkdir -p /tmp/lab/data\\nprintf ''x\\\\ny\\\\n'' > /tmp/lab/data/a.txt\\nprintf ''x\\\\n'' > /tmp/lab/data/b.txt\\nprintf ''x\\\\ny\\\\nz\\\\n'' > /tmp/lab/data/c.txt\\nprintf ''alice\\\\nbob\\\\ncarol\\\\n'' > /tmp/lab/names.txt\\ntrue"]', '["sh", "-c", "( [ -x /tmp/lab/hello.sh ] ) && ( head -n 1 /tmp/lab/hello.sh | grep -q \\"^#!\\" ) && ( [ \\"$(/tmp/lab/hello.sh)\\" = \\"hello script\\" ] ) && ( [ \\"$(cat /tmp/hello_out.txt)\\" = \\"hello script\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "hello.sh 가 실행 가능하다", "cmd": ["sh", "-c", "[ -x /tmp/lab/hello.sh ]"]}, {"label": "첫 줄이 shebang 이다", "cmd": ["sh", "-c", "head -n 1 /tmp/lab/hello.sh | grep -q \\"^#!\\""]}, {"label": "실행하면 hello script 가 나온다", "cmd": ["sh", "-c", "[ \\"$(/tmp/lab/hello.sh)\\" = \\"hello script\\" ]"]}, {"label": "출력이 /tmp/hello_out.txt 에 저장되었다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/hello_out.txt)\\" = \\"hello script\\" ]"]}]', '[{"title": "Bash 레퍼런스 매뉴얼", "url": "https://www.gnu.org/software/bash/manual/bash.html"}, {"title": "Bash 매뉴얼: 위치 매개변수 ($1, $#)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Positional-Parameters"}, {"title": "Bash 매뉴얼: 종료 상태 ($?)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Exit-Status"}, {"title": "Bash 매뉴얼: 쉘 함수", "url": "https://www.gnu.org/software/bash/manual/bash.html#Shell-Functions"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 335 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 335, 2, '첫 번째 인자로 인사하기 ($1)', '`/tmp/lab/greet.sh` 를 만드세요. 첫 번째 인자를 받아 `Hello, 인자!` 를 출력해야 합니다. 예를 들어 `./greet.sh Etude` 는 `Hello, Etude!` 를 출력합니다. (실행 권한과 shebang 을 잊지 마세요.)', '스크립트가 받은 첫 번째 인자는 `$1` 입니다. 인자가 바뀌어도 맞아야 하니 이름을 글자로 박아 넣지 마세요.', 'cat > /tmp/lab/greet.sh <<''EOF''
+#!/bin/bash
+echo "Hello, $1!"
+EOF
+chmod +x /tmp/lab/greet.sh
+/tmp/lab/greet.sh Etude
+
+# $1 은 첫 번째 인자, $2 는 두 번째 ... 이다', '["sh", "-c", "rm -rf /tmp/lab /tmp/*.txt; mkdir -p /tmp/lab/data\\nprintf ''x\\\\ny\\\\n'' > /tmp/lab/data/a.txt\\nprintf ''x\\\\n'' > /tmp/lab/data/b.txt\\nprintf ''x\\\\ny\\\\nz\\\\n'' > /tmp/lab/data/c.txt\\nprintf ''alice\\\\nbob\\\\ncarol\\\\n'' > /tmp/lab/names.txt\\ntrue"]', '["sh", "-c", "( [ -x /tmp/lab/greet.sh ] ) && ( [ \\"$(/tmp/lab/greet.sh Etude)\\" = \\"Hello, Etude!\\" ] ) && ( [ \\"$(/tmp/lab/greet.sh Bash)\\" = \\"Hello, Bash!\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "greet.sh 가 실행 가능하다", "cmd": ["sh", "-c", "[ -x /tmp/lab/greet.sh ]"]}, {"label": "Etude 를 주면 Hello, Etude! 가 나온다", "cmd": ["sh", "-c", "[ \\"$(/tmp/lab/greet.sh Etude)\\" = \\"Hello, Etude!\\" ]"]}, {"label": "다른 인자도 따라간다", "cmd": ["sh", "-c", "[ \\"$(/tmp/lab/greet.sh Bash)\\" = \\"Hello, Bash!\\" ]"]}]', '[{"title": "Bash 레퍼런스 매뉴얼", "url": "https://www.gnu.org/software/bash/manual/bash.html"}, {"title": "Bash 매뉴얼: 위치 매개변수 ($1, $#)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Positional-Parameters"}, {"title": "Bash 매뉴얼: 종료 상태 ($?)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Exit-Status"}, {"title": "Bash 매뉴얼: 쉘 함수", "url": "https://www.gnu.org/software/bash/manual/bash.html#Shell-Functions"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 335 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 335, 3, '받은 인자의 개수', '스크립트가 **인자를 하나도 받지 못했을 때** 안내 문구를 보이려고 합니다. 받은 **인자의 개수**를 담고 있는 특수 변수를 빈칸에 채우세요.', '`$1`, `$2` 는 인자의 값입니다. 개수를 담은 변수는 이름에 "숫자(number)" 를 뜻하는 기호가 들어 있습니다.', NULL, NULL, '[]', 'fill', '["$#", "$1", "$@", "$?"]', NULL, '`$#` 는 스크립트가 받은 인자의 개수입니다. `$1` 은 첫 번째 인자의 값, `$@` 는 인자 전부, `$?` 는 직전 명령의 종료 코드라서 개수를 묻는 자리에는 맞지 않습니다.', '[0]', 'if [ {0} -eq 0 ]; then echo "인자가 없어요"; fi', NULL, '[{"title": "Bash 레퍼런스 매뉴얼", "url": "https://www.gnu.org/software/bash/manual/bash.html"}, {"title": "Bash 매뉴얼: 위치 매개변수 ($1, $#)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Positional-Parameters"}, {"title": "Bash 매뉴얼: 종료 상태 ($?)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Exit-Status"}, {"title": "Bash 매뉴얼: 쉘 함수", "url": "https://www.gnu.org/software/bash/manual/bash.html#Shell-Functions"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 335 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 335, 4, '스크립트를 만들고 실행하는 순서', '새 스크립트 `/tmp/lab/x.sh` 를 만들어 처음 돌려 볼 때의 순서입니다. **앞에서 뒤**로 놓으세요.', '파일이 있어야 권한을 줄 수 있고, 권한이 있어야 `./` 로 실행할 수 있습니다. 결과를 확인하는 건 맨 마지막입니다.', NULL, NULL, '[]', 'order', '["`cat > /tmp/lab/x.sh <<''EOF''` 로 shebang 과 명령을 적어 파일을 만든다", "`chmod +x /tmp/lab/x.sh` 로 실행 권한을 준다", "`/tmp/lab/x.sh` 로 실행한다", "`echo $?` 로 종료 코드를 확인한다"]', NULL, '**파일 만들기 → 실행 권한 → 실행 → 종료 코드 확인** 순서입니다. 파일이 없으면 권한을 줄 수 없고, 실행 권한 없이 `./` 로 실행하면 `Permission denied` 가 납니다. `$?` 는 **바로 직전 명령**의 종료 코드라서 실행 바로 다음에 읽어야 스크립트의 결과를 봅니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "Bash 레퍼런스 매뉴얼", "url": "https://www.gnu.org/software/bash/manual/bash.html"}, {"title": "Bash 매뉴얼: 위치 매개변수 ($1, $#)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Positional-Parameters"}, {"title": "Bash 매뉴얼: 종료 상태 ($?)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Exit-Status"}, {"title": "Bash 매뉴얼: 쉘 함수", "url": "https://www.gnu.org/software/bash/manual/bash.html#Shell-Functions"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 335 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 335, 5, '파일이 있는지 확인하는 스크립트 (if [ -f ])', '`/tmp/lab/exists.sh` 를 만드세요. 첫 번째 인자가 가리키는 **일반 파일이 있으면 `found`, 없으면 `missing`** 을 출력합니다. 예: `./exists.sh /tmp/lab/data/a.txt` 는 `found` 입니다.', '`[ -f 경로 ]` 는 그 경로가 일반 파일일 때 참입니다. `if ...; then ...; else ...; fi` 모양이고, 대괄호 안쪽 양옆에는 공백이 필요합니다.', 'cat > /tmp/lab/exists.sh <<''EOF''
+#!/bin/bash
+if [ -f "$1" ]; then
+  echo found
+else
+  echo missing
+fi
+EOF
+chmod +x /tmp/lab/exists.sh
+/tmp/lab/exists.sh /tmp/lab/data/a.txt
+/tmp/lab/exists.sh /tmp/lab/nothing', '["sh", "-c", "rm -rf /tmp/lab /tmp/*.txt; mkdir -p /tmp/lab/data\\nprintf ''x\\\\ny\\\\n'' > /tmp/lab/data/a.txt\\nprintf ''x\\\\n'' > /tmp/lab/data/b.txt\\nprintf ''x\\\\ny\\\\nz\\\\n'' > /tmp/lab/data/c.txt\\nprintf ''alice\\\\nbob\\\\ncarol\\\\n'' > /tmp/lab/names.txt\\ntrue"]', '["sh", "-c", "( [ -x /tmp/lab/exists.sh ] ) && ( [ \\"$(/tmp/lab/exists.sh /tmp/lab/data/a.txt)\\" = found ] ) && ( [ \\"$(/tmp/lab/exists.sh /tmp/lab/nothing)\\" = missing ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "exists.sh 가 실행 가능하다", "cmd": ["sh", "-c", "[ -x /tmp/lab/exists.sh ]"]}, {"label": "있는 파일이면 found", "cmd": ["sh", "-c", "[ \\"$(/tmp/lab/exists.sh /tmp/lab/data/a.txt)\\" = found ]"]}, {"label": "없는 파일이면 missing", "cmd": ["sh", "-c", "[ \\"$(/tmp/lab/exists.sh /tmp/lab/nothing)\\" = missing ]"]}]', '[{"title": "Bash 레퍼런스 매뉴얼", "url": "https://www.gnu.org/software/bash/manual/bash.html"}, {"title": "Bash 매뉴얼: 위치 매개변수 ($1, $#)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Positional-Parameters"}, {"title": "Bash 매뉴얼: 종료 상태 ($?)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Exit-Status"}, {"title": "Bash 매뉴얼: 쉘 함수", "url": "https://www.gnu.org/software/bash/manual/bash.html#Shell-Functions"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 335 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 335, 6, '*.txt 파일을 하나씩 돌며 줄 수 세기 (for)', '`/tmp/lab/lines.sh` 를 만드세요. `/tmp/lab/data/` 안의 `*.txt` 파일마다 **`파일이름 줄수`** 를 한 줄씩 출력합니다. 파일 이름에는 경로를 붙이지 않습니다. 예: `a.txt 2`.', '`for f in /tmp/lab/data/*.txt; do ... done` 으로 파일을 하나씩 받고, 경로를 뗀 이름은 `basename`, 줄 수는 `wc -l < 파일` 이 숫자만 줍니다. 파일이 늘어도 맞아야 하니 이름을 직접 적지 마세요.', 'cat > /tmp/lab/lines.sh <<''EOF''
+#!/bin/bash
+for f in /tmp/lab/data/*.txt; do
+  echo "$(basename "$f") $(wc -l < "$f")"
+done
+EOF
+chmod +x /tmp/lab/lines.sh
+/tmp/lab/lines.sh
+
+# 출력: a.txt 2 / b.txt 1 / c.txt 3', '["sh", "-c", "rm -rf /tmp/lab /tmp/*.txt; mkdir -p /tmp/lab/data\\nprintf ''x\\\\ny\\\\n'' > /tmp/lab/data/a.txt\\nprintf ''x\\\\n'' > /tmp/lab/data/b.txt\\nprintf ''x\\\\ny\\\\nz\\\\n'' > /tmp/lab/data/c.txt\\nprintf ''alice\\\\nbob\\\\ncarol\\\\n'' > /tmp/lab/names.txt\\ntrue"]', '["sh", "-c", "( [ -x /tmp/lab/lines.sh ] ) && ( [ \\"$(/tmp/lab/lines.sh)\\" = \\"$(printf ''a.txt 2\\\\nb.txt 1\\\\nc.txt 3'')\\" ] ) && ( printf \\"1\\\\n2\\\\n3\\\\n4\\\\n5\\\\n\\" > /tmp/lab/data/z.txt; out=$(/tmp/lab/lines.sh); rm -f /tmp/lab/data/z.txt; [ \\"$out\\" = \\"$(printf ''a.txt 2\\\\nb.txt 1\\\\nc.txt 3\\\\nz.txt 5'')\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "lines.sh 가 실행 가능하다", "cmd": ["sh", "-c", "[ -x /tmp/lab/lines.sh ]"]}, {"label": "파일마다 이름과 줄 수가 나온다", "cmd": ["sh", "-c", "[ \\"$(/tmp/lab/lines.sh)\\" = \\"$(printf ''a.txt 2\\\\nb.txt 1\\\\nc.txt 3'')\\" ]"]}, {"label": "새 파일이 생겨도 따라간다", "cmd": ["sh", "-c", "printf \\"1\\\\n2\\\\n3\\\\n4\\\\n5\\\\n\\" > /tmp/lab/data/z.txt; out=$(/tmp/lab/lines.sh); rm -f /tmp/lab/data/z.txt; [ \\"$out\\" = \\"$(printf ''a.txt 2\\\\nb.txt 1\\\\nc.txt 3\\\\nz.txt 5'')\\" ]"]}]', '[{"title": "Bash 레퍼런스 매뉴얼", "url": "https://www.gnu.org/software/bash/manual/bash.html"}, {"title": "Bash 매뉴얼: 위치 매개변수 ($1, $#)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Positional-Parameters"}, {"title": "Bash 매뉴얼: 종료 상태 ($?)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Exit-Status"}, {"title": "Bash 매뉴얼: 쉘 함수", "url": "https://www.gnu.org/software/bash/manual/bash.html#Shell-Functions"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 335 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 335, 7, '파일을 한 줄씩 읽어 처리하는 스크립트 (while read)', '`/tmp/lab/users.sh` 를 만드세요. 첫 번째 인자로 받은 파일을 **한 줄씩 읽어** `user: 줄내용` 형태로 출력합니다. 예: `./users.sh /tmp/lab/names.txt` 는 `user: alice`, `user: bob`, `user: carol` 세 줄입니다.', '`while read line; do ...; done < 파일` 모양입니다. 반복문 끝(`done`) 뒤에 `<` 로 파일을 이어 주면 그 파일이 한 줄씩 `read` 로 들어옵니다.', 'cat > /tmp/lab/users.sh <<''EOF''
+#!/bin/bash
+while read line; do
+  echo "user: $line"
+done < "$1"
+EOF
+chmod +x /tmp/lab/users.sh
+/tmp/lab/users.sh /tmp/lab/names.txt', '["sh", "-c", "rm -rf /tmp/lab /tmp/*.txt; mkdir -p /tmp/lab/data\\nprintf ''x\\\\ny\\\\n'' > /tmp/lab/data/a.txt\\nprintf ''x\\\\n'' > /tmp/lab/data/b.txt\\nprintf ''x\\\\ny\\\\nz\\\\n'' > /tmp/lab/data/c.txt\\nprintf ''alice\\\\nbob\\\\ncarol\\\\n'' > /tmp/lab/names.txt\\ntrue"]', '["sh", "-c", "( [ -x /tmp/lab/users.sh ] ) && ( grep -q while /tmp/lab/users.sh && grep -q read /tmp/lab/users.sh ) && ( [ \\"$(/tmp/lab/users.sh /tmp/lab/names.txt)\\" = \\"$(printf ''user: alice\\\\nuser: bob\\\\nuser: carol'')\\" ] ) && ( printf \\"dave\\\\n\\" > /tmp/lab/other.txt; out=$(/tmp/lab/users.sh /tmp/lab/other.txt); rm -f /tmp/lab/other.txt; [ \\"$out\\" = \\"user: dave\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "users.sh 가 실행 가능하다", "cmd": ["sh", "-c", "[ -x /tmp/lab/users.sh ]"]}, {"label": "while 과 read 를 쓴다", "cmd": ["sh", "-c", "grep -q while /tmp/lab/users.sh && grep -q read /tmp/lab/users.sh"]}, {"label": "names.txt 세 줄이 변환된다", "cmd": ["sh", "-c", "[ \\"$(/tmp/lab/users.sh /tmp/lab/names.txt)\\" = \\"$(printf ''user: alice\\\\nuser: bob\\\\nuser: carol'')\\" ]"]}, {"label": "다른 파일도 처리한다", "cmd": ["sh", "-c", "printf \\"dave\\\\n\\" > /tmp/lab/other.txt; out=$(/tmp/lab/users.sh /tmp/lab/other.txt); rm -f /tmp/lab/other.txt; [ \\"$out\\" = \\"user: dave\\" ]"]}]', '[{"title": "Bash 레퍼런스 매뉴얼", "url": "https://www.gnu.org/software/bash/manual/bash.html"}, {"title": "Bash 매뉴얼: 위치 매개변수 ($1, $#)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Positional-Parameters"}, {"title": "Bash 매뉴얼: 종료 상태 ($?)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Exit-Status"}, {"title": "Bash 매뉴얼: 쉘 함수", "url": "https://www.gnu.org/software/bash/manual/bash.html#Shell-Functions"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 335 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 335, 8, '종료 코드로 결과 알리기 (exit 3, echo $?)', '`/tmp/lab/gate.sh` 를 만드세요. 첫 번째 인자가 가리키는 **일반 파일이 있으면 종료 코드 0, 없으면 종료 코드 3** 으로 끝나야 합니다. 그런 다음 **없는 파일** `/tmp/lab/nothing.dat` 로 실행해서, 그 종료 코드를 `/tmp/rc.txt` 에 저장하세요. (숫자만)', '스크립트 안에서 `exit 숫자` 로 종료 코드를 정합니다. 종료 코드는 실행 **바로 다음 줄**의 `echo $?` 로 읽을 수 있어요. 그 출력을 파일로 보내세요.', 'cat > /tmp/lab/gate.sh <<''EOF''
+#!/bin/bash
+if [ -f "$1" ]; then
+  exit 0
+fi
+exit 3
+EOF
+chmod +x /tmp/lab/gate.sh
+/tmp/lab/gate.sh /tmp/lab/nothing.dat
+echo $? > /tmp/rc.txt
+cat /tmp/rc.txt
+
+# 종료 코드 0 은 성공, 그 밖의 숫자는 실패(어떤 이유인지는 만든 사람이 정한다)', '["sh", "-c", "rm -rf /tmp/lab /tmp/*.txt; mkdir -p /tmp/lab/data\\nprintf ''x\\\\ny\\\\n'' > /tmp/lab/data/a.txt\\nprintf ''x\\\\n'' > /tmp/lab/data/b.txt\\nprintf ''x\\\\ny\\\\nz\\\\n'' > /tmp/lab/data/c.txt\\nprintf ''alice\\\\nbob\\\\ncarol\\\\n'' > /tmp/lab/names.txt\\ntrue"]', '["sh", "-c", "( [ -x /tmp/lab/gate.sh ] ) && ( /tmp/lab/gate.sh /tmp/lab/data/a.txt; [ $? -eq 0 ] ) && ( /tmp/lab/gate.sh /tmp/lab/nothing.dat; [ $? -eq 3 ] ) && ( [ \\"$(cat /tmp/rc.txt)\\" = 3 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "gate.sh 가 실행 가능하다", "cmd": ["sh", "-c", "[ -x /tmp/lab/gate.sh ]"]}, {"label": "있는 파일이면 0 으로 끝난다", "cmd": ["sh", "-c", "/tmp/lab/gate.sh /tmp/lab/data/a.txt; [ $? -eq 0 ]"]}, {"label": "없는 파일이면 3 으로 끝난다", "cmd": ["sh", "-c", "/tmp/lab/gate.sh /tmp/lab/nothing.dat; [ $? -eq 3 ]"]}, {"label": "/tmp/rc.txt 에 3 이 저장되었다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/rc.txt)\\" = 3 ]"]}]', '[{"title": "Bash 레퍼런스 매뉴얼", "url": "https://www.gnu.org/software/bash/manual/bash.html"}, {"title": "Bash 매뉴얼: 위치 매개변수 ($1, $#)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Positional-Parameters"}, {"title": "Bash 매뉴얼: 종료 상태 ($?)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Exit-Status"}, {"title": "Bash 매뉴얼: 쉘 함수", "url": "https://www.gnu.org/software/bash/manual/bash.html#Shell-Functions"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 335 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 335, 9, '$? 를 두 번 읽으면', '터미널에서 아래 두 줄을 차례로 실행했습니다. 출력되는 두 숫자로 알맞은 것을 고르세요.
+
+```
+false; echo $?; echo $?
+```', '`false` 는 항상 실패하는 명령입니다. 첫 `echo $?` 도 하나의 명령이라는 점, 그 명령이 성공했는지를 생각해 보세요.', NULL, NULL, '[]', 'choice', '["1 그리고 1", "0 그리고 0", "1 그리고 0", "0 그리고 1"]', 2, '`$?` 는 **바로 직전 명령**의 종료 코드입니다. `false` 는 실패(1)라서 첫 `echo $?` 는 1 을 찍고, 그 `echo` 자체는 성공(0)했으므로 두 번째 `echo $?` 는 0 을 찍습니다. 그래서 `1 그리고 0` 입니다. 두 번 모두 1 이 되는 것은 `$?` 가 유지된다고 착각할 때이고, 종료 코드를 나중에 쓰려면 바로 변수에 담아 두어야 합니다.', NULL, NULL, NULL, '[{"title": "Bash 레퍼런스 매뉴얼", "url": "https://www.gnu.org/software/bash/manual/bash.html"}, {"title": "Bash 매뉴얼: 위치 매개변수 ($1, $#)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Positional-Parameters"}, {"title": "Bash 매뉴얼: 종료 상태 ($?)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Exit-Status"}, {"title": "Bash 매뉴얼: 쉘 함수", "url": "https://www.gnu.org/software/bash/manual/bash.html#Shell-Functions"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 335 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 335, 10, '명령이 실패하면 바로 멈추는 스크립트 (set -e)', '`/tmp/lab/strict.sh` 를 만드세요. `start` 를 출력하고, **항상 실패하는 명령 `false`** 를 실행하고, 그다음 `end` 를 출력하는 스크립트입니다. 단, `false` 에서 실패하면 **`end` 는 출력되지 않고 스크립트가 실패 코드로 끝나야** 합니다. 스크립트의 앞부분에 알맞은 설정을 한 줄 넣으세요.', '`set -e` 를 쓰면 이후 명령이 실패하는 순간 스크립트가 거기서 종료됩니다. 설정 줄은 `false` 보다 **앞**에 있어야 합니다.', 'cat > /tmp/lab/strict.sh <<''EOF''
+#!/bin/bash
+set -e
+echo start
+false
+echo end
+EOF
+chmod +x /tmp/lab/strict.sh
+/tmp/lab/strict.sh
+echo $?
+
+# set -e 가 없으면 false 를 지나 end 까지 출력하고 0 으로 끝난다', '["sh", "-c", "rm -rf /tmp/lab /tmp/*.txt; mkdir -p /tmp/lab/data\\nprintf ''x\\\\ny\\\\n'' > /tmp/lab/data/a.txt\\nprintf ''x\\\\n'' > /tmp/lab/data/b.txt\\nprintf ''x\\\\ny\\\\nz\\\\n'' > /tmp/lab/data/c.txt\\nprintf ''alice\\\\nbob\\\\ncarol\\\\n'' > /tmp/lab/names.txt\\ntrue"]', '["sh", "-c", "( [ -x /tmp/lab/strict.sh ] ) && ( grep -q \\"set -e\\" /tmp/lab/strict.sh && grep -q \\"echo end\\" /tmp/lab/strict.sh ) && ( [ \\"$(/tmp/lab/strict.sh)\\" = start ] ) && ( /tmp/lab/strict.sh >/dev/null; [ $? -ne 0 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "strict.sh 가 실행 가능하다", "cmd": ["sh", "-c", "[ -x /tmp/lab/strict.sh ]"]}, {"label": "set -e 와 end 출력 줄이 들어 있다", "cmd": ["sh", "-c", "grep -q \\"set -e\\" /tmp/lab/strict.sh && grep -q \\"echo end\\" /tmp/lab/strict.sh"]}, {"label": "start 만 출력된다", "cmd": ["sh", "-c", "[ \\"$(/tmp/lab/strict.sh)\\" = start ]"]}, {"label": "실패 코드로 끝난다", "cmd": ["sh", "-c", "/tmp/lab/strict.sh >/dev/null; [ $? -ne 0 ]"]}]', '[{"title": "Bash 레퍼런스 매뉴얼", "url": "https://www.gnu.org/software/bash/manual/bash.html"}, {"title": "Bash 매뉴얼: 위치 매개변수 ($1, $#)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Positional-Parameters"}, {"title": "Bash 매뉴얼: 종료 상태 ($?)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Exit-Status"}, {"title": "Bash 매뉴얼: 쉘 함수", "url": "https://www.gnu.org/software/bash/manual/bash.html#Shell-Functions"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 335 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 335, 11, '함수로 묶어 재사용하기 (function)', '`/tmp/lab/square.sh` 를 만드세요. 스크립트 안에 **함수**를 정의하고, 그 함수를 불러서 첫 번째 인자의 **제곱**을 출력합니다. 예: `./square.sh 4` 는 `16`, `./square.sh 7` 은 `49`.', '함수는 `이름() { ... }` 로 정의하고 `이름 인자` 로 부릅니다. 함수 안에서 받은 첫 인자도 `$1` 이고, 계산은 `$(( 식 ))` 입니다.', 'cat > /tmp/lab/square.sh <<''EOF''
+#!/bin/bash
+square() {
+  echo $(( $1 * $1 ))
+}
+square "$1"
+EOF
+chmod +x /tmp/lab/square.sh
+/tmp/lab/square.sh 4
+/tmp/lab/square.sh 7', '["sh", "-c", "rm -rf /tmp/lab /tmp/*.txt; mkdir -p /tmp/lab/data\\nprintf ''x\\\\ny\\\\n'' > /tmp/lab/data/a.txt\\nprintf ''x\\\\n'' > /tmp/lab/data/b.txt\\nprintf ''x\\\\ny\\\\nz\\\\n'' > /tmp/lab/data/c.txt\\nprintf ''alice\\\\nbob\\\\ncarol\\\\n'' > /tmp/lab/names.txt\\ntrue"]', '["sh", "-c", "( [ -x /tmp/lab/square.sh ] ) && ( grep -Eq \\"\\\\(\\\\)|function \\" /tmp/lab/square.sh ) && ( [ \\"$(/tmp/lab/square.sh 4)\\" = 16 ] ) && ( [ \\"$(/tmp/lab/square.sh 7)\\" = 49 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "square.sh 가 실행 가능하다", "cmd": ["sh", "-c", "[ -x /tmp/lab/square.sh ]"]}, {"label": "함수를 정의했다", "cmd": ["sh", "-c", "grep -Eq \\"\\\\(\\\\)|function \\" /tmp/lab/square.sh"]}, {"label": "4 는 16", "cmd": ["sh", "-c", "[ \\"$(/tmp/lab/square.sh 4)\\" = 16 ]"]}, {"label": "7 은 49", "cmd": ["sh", "-c", "[ \\"$(/tmp/lab/square.sh 7)\\" = 49 ]"]}]', '[{"title": "Bash 레퍼런스 매뉴얼", "url": "https://www.gnu.org/software/bash/manual/bash.html"}, {"title": "Bash 매뉴얼: 위치 매개변수 ($1, $#)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Positional-Parameters"}, {"title": "Bash 매뉴얼: 종료 상태 ($?)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Exit-Status"}, {"title": "Bash 매뉴얼: 쉘 함수", "url": "https://www.gnu.org/software/bash/manual/bash.html#Shell-Functions"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 335 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 335, 12, '명령 결과를 변수에 담아 파일로 저장하기 ($( ))', '`/tmp/lab/report.sh` 를 만드세요. `/tmp/lab/data/` 안의 `*.txt` 파일 **개수를 세어 변수에 담고**, `txt files: 개수` 한 줄을 스크립트가 **`/tmp/lab/report.txt` 에 직접 저장**하게 하세요.', '`변수=$(명령)` 으로 명령의 출력이 변수에 들어갑니다. 개수는 `ls` 결과를 `wc -l` 로 셀 수 있고, 저장은 스크립트 안의 `echo ... > 파일` 입니다. 개수를 직접 적지 마세요.', 'cat > /tmp/lab/report.sh <<''EOF''
+#!/bin/bash
+count=$(ls /tmp/lab/data/*.txt | wc -l)
+echo "txt files: $count" > /tmp/lab/report.txt
+EOF
+chmod +x /tmp/lab/report.sh
+/tmp/lab/report.sh
+cat /tmp/lab/report.txt
+
+# 변수에 담지 않고 한 줄로도 쓸 수 있지만, 담아 두면 여러 번 재사용할 수 있다', '["sh", "-c", "rm -rf /tmp/lab /tmp/*.txt; mkdir -p /tmp/lab/data\\nprintf ''x\\\\ny\\\\n'' > /tmp/lab/data/a.txt\\nprintf ''x\\\\n'' > /tmp/lab/data/b.txt\\nprintf ''x\\\\ny\\\\nz\\\\n'' > /tmp/lab/data/c.txt\\nprintf ''alice\\\\nbob\\\\ncarol\\\\n'' > /tmp/lab/names.txt\\ntrue"]', '["sh", "-c", "( [ -x /tmp/lab/report.sh ] ) && ( grep -qF ''$('' /tmp/lab/report.sh ) && ( rm -f /tmp/lab/report.txt; /tmp/lab/report.sh >/dev/null 2>&1; [ \\"$(cat /tmp/lab/report.txt)\\" = \\"txt files: 3\\" ] ) && ( touch /tmp/lab/data/z.txt; rm -f /tmp/lab/report.txt; /tmp/lab/report.sh >/dev/null 2>&1; rm -f /tmp/lab/data/z.txt; [ \\"$(cat /tmp/lab/report.txt)\\" = \\"txt files: 4\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "report.sh 가 실행 가능하다", "cmd": ["sh", "-c", "[ -x /tmp/lab/report.sh ]"]}, {"label": "$( ) 로 결과를 변수에 담는다", "cmd": ["sh", "-c", "grep -qF ''$('' /tmp/lab/report.sh"]}, {"label": "실행하면 report.txt 가 txt files: 3 이 된다", "cmd": ["sh", "-c", "rm -f /tmp/lab/report.txt; /tmp/lab/report.sh >/dev/null 2>&1; [ \\"$(cat /tmp/lab/report.txt)\\" = \\"txt files: 3\\" ]"]}, {"label": "파일이 늘면 개수도 따라간다", "cmd": ["sh", "-c", "touch /tmp/lab/data/z.txt; rm -f /tmp/lab/report.txt; /tmp/lab/report.sh >/dev/null 2>&1; rm -f /tmp/lab/data/z.txt; [ \\"$(cat /tmp/lab/report.txt)\\" = \\"txt files: 4\\" ]"]}]', '[{"title": "Bash 레퍼런스 매뉴얼", "url": "https://www.gnu.org/software/bash/manual/bash.html"}, {"title": "Bash 매뉴얼: 위치 매개변수 ($1, $#)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Positional-Parameters"}, {"title": "Bash 매뉴얼: 종료 상태 ($?)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Exit-Status"}, {"title": "Bash 매뉴얼: 쉘 함수", "url": "https://www.gnu.org/software/bash/manual/bash.html#Shell-Functions"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 335 AND order_index = 12);
+
+-- 배치: 단원 끝 (분할 마이그레이션 뒤에 적용되도록 2026-11-13 이름을 쓴다)
+UPDATE quest_set SET display_order = 84 WHERE id = 4;
+UPDATE quest_set SET display_order = 85 WHERE id = 18;
+UPDATE quest_set SET display_order = 86 WHERE id = 106;
+UPDATE quest_set SET display_order = 87 WHERE id = 36;
+UPDATE quest_set SET display_order = 88 WHERE id = 81;
+UPDATE quest_set SET display_order = 89 WHERE id = 235;
+UPDATE quest_set SET display_order = 90 WHERE id = 24;
+UPDATE quest_set SET display_order = 91 WHERE id = 123;
+UPDATE quest_set SET display_order = 92 WHERE id = 10;
+UPDATE quest_set SET display_order = 93 WHERE id = 16;
+UPDATE quest_set SET display_order = 94 WHERE id = 27;
+UPDATE quest_set SET display_order = 95 WHERE id = 32;
+UPDATE quest_set SET display_order = 96 WHERE id = 75;
+UPDATE quest_set SET display_order = 97 WHERE id = 124;
+UPDATE quest_set SET display_order = 98 WHERE id = 28;
+UPDATE quest_set SET display_order = 99 WHERE id = 226;
+UPDATE quest_set SET display_order = 100 WHERE id = 229;
+UPDATE quest_set SET display_order = 101 WHERE id = 232;
+UPDATE quest_set SET display_order = 83, unit_id = (SELECT id FROM unit WHERE id = 2), icon = '📝' WHERE id = 335;

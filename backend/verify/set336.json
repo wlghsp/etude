@@ -1,0 +1,14 @@
+{
+  "setId": 336,
+  "answers": {
+    "1": "kubectl get pods -n $NS --show-labels > /tmp/labels.txt\ncat /tmp/labels.txt\n\n# 마지막 LABELS 열에 app=web,env=prod 처럼 키=값 이 쉼표로 이어져 보인다\n# 라벨은 Pod 를 묶고 고르는 이름표다",
+    "2": "kubectl get pods -n $NS -L app,env > /tmp/columns.txt\ncat /tmp/columns.txt\n\n# APP, ENV 열이 생기고 그 키가 없는 Pod 는 빈칸으로 보인다\n# 키마다 열 하나씩이라 표처럼 비교하기 좋다",
+    "3": "kubectl get pods -n $NS -l app=web -o name > /tmp/web.txt\ncat /tmp/web.txt\n\n# pod/lab-web1 과 pod/lab-web2 두 줄이 나온다\n# -l 은 라벨 셀렉터다. 같은 셀렉터를 Service 와 Deployment 도 쓴다",
+    "4": "kubectl get pods -n $NS -l 'app in (web,api)' -o name > /tmp/inset.txt\ncat /tmp/inset.txt\n\n# lab-web1, lab-web2, lab-api 세 줄\n# -l app=web 은 값 하나만, in (...) 은 여러 값 중 하나면 된다 (집합 기반 셀렉터)",
+    "6": "kubectl label pod lab-api version=v2 -n $NS\nkubectl get pods -n $NS --show-labels\n\n# 실행 중인 Pod 에 라벨만 추가된다 (재시작 없음)\n# 이미 있는 키를 바꾸려면 --overwrite 가 필요하다",
+    "7": "kubectl label pod lab-web2 env=prod --overwrite -n $NS\nkubectl get pods -n $NS -L env\n\n# --overwrite 가 없으면 'already has a value (dev), and --overwrite is false' 오류가 난다\n# 같은 키의 값만 덮어쓰고 다른 라벨은 그대로다",
+    "8": "kubectl label pod lab-cache debug- -n $NS\nkubectl get pod lab-cache -n $NS --show-labels\n\n# 키 뒤의 - 가 \"이 라벨을 지워라\" 라는 뜻이다\n# 라벨을 떼면 그 라벨로 고르던 셀렉터에서 자동으로 빠진다",
+    "9": "kubectl annotate pod lab-api owner=ops-team -n $NS\nkubectl describe pod lab-api -n $NS | grep -A2 Annotations\n\n# 어노테이션은 사람이나 도구가 읽는 메모다. 길고 자유로운 값도 넣을 수 있다\n# 라벨과 달리 -l 셀렉터로는 고를 수 없다",
+    "11": "kubectl get pods -n $NS -l env=dev\nkubectl delete pods -n $NS -l env=dev\nkubectl get pods -n $NS --show-labels\n\n# 지워지는 것은 lab-web2 와 lab-cache 두 개다\n# delete 에도 get 과 같은 셀렉터가 통한다. 셀렉터를 틀리면 엉뚱한 Pod 가 지워지니 get 으로 먼저 본다"
+  }
+}

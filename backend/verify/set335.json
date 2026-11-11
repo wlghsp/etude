@@ -1,0 +1,14 @@
+{
+  "setId": 335,
+  "answers": {
+    "1": "mkdir -p /tmp/lab\ncat > /tmp/lab/hello.sh <<'EOF'\n#!/bin/bash\necho \"hello script\"\nEOF\nchmod +x /tmp/lab/hello.sh\n/tmp/lab/hello.sh > /tmp/hello_out.txt\ncat /tmp/hello_out.txt\n\n# 따옴표 친 'EOF' 는 $ 같은 문자를 풀지 않고 그대로 파일에 적는다",
+    "2": "cat > /tmp/lab/greet.sh <<'EOF'\n#!/bin/bash\necho \"Hello, $1!\"\nEOF\nchmod +x /tmp/lab/greet.sh\n/tmp/lab/greet.sh Etude\n\n# $1 은 첫 번째 인자, $2 는 두 번째 ... 이다",
+    "5": "cat > /tmp/lab/exists.sh <<'EOF'\n#!/bin/bash\nif [ -f \"$1\" ]; then\n  echo found\nelse\n  echo missing\nfi\nEOF\nchmod +x /tmp/lab/exists.sh\n/tmp/lab/exists.sh /tmp/lab/data/a.txt\n/tmp/lab/exists.sh /tmp/lab/nothing",
+    "6": "cat > /tmp/lab/lines.sh <<'EOF'\n#!/bin/bash\nfor f in /tmp/lab/data/*.txt; do\n  echo \"$(basename \"$f\") $(wc -l < \"$f\")\"\ndone\nEOF\nchmod +x /tmp/lab/lines.sh\n/tmp/lab/lines.sh\n\n# 출력: a.txt 2 / b.txt 1 / c.txt 3",
+    "7": "cat > /tmp/lab/users.sh <<'EOF'\n#!/bin/bash\nwhile read line; do\n  echo \"user: $line\"\ndone < \"$1\"\nEOF\nchmod +x /tmp/lab/users.sh\n/tmp/lab/users.sh /tmp/lab/names.txt",
+    "8": "cat > /tmp/lab/gate.sh <<'EOF'\n#!/bin/bash\nif [ -f \"$1\" ]; then\n  exit 0\nfi\nexit 3\nEOF\nchmod +x /tmp/lab/gate.sh\n/tmp/lab/gate.sh /tmp/lab/nothing.dat\necho $? > /tmp/rc.txt\ncat /tmp/rc.txt\n\n# 종료 코드 0 은 성공, 그 밖의 숫자는 실패(어떤 이유인지는 만든 사람이 정한다)",
+    "10": "cat > /tmp/lab/strict.sh <<'EOF'\n#!/bin/bash\nset -e\necho start\nfalse\necho end\nEOF\nchmod +x /tmp/lab/strict.sh\n/tmp/lab/strict.sh\necho $?\n\n# set -e 가 없으면 false 를 지나 end 까지 출력하고 0 으로 끝난다",
+    "11": "cat > /tmp/lab/square.sh <<'EOF'\n#!/bin/bash\nsquare() {\n  echo $(( $1 * $1 ))\n}\nsquare \"$1\"\nEOF\nchmod +x /tmp/lab/square.sh\n/tmp/lab/square.sh 4\n/tmp/lab/square.sh 7",
+    "12": "cat > /tmp/lab/report.sh <<'EOF'\n#!/bin/bash\ncount=$(ls /tmp/lab/data/*.txt | wc -l)\necho \"txt files: $count\" > /tmp/lab/report.txt\nEOF\nchmod +x /tmp/lab/report.sh\n/tmp/lab/report.sh\ncat /tmp/lab/report.txt\n\n# 변수에 담지 않고 한 줄로도 쓸 수 있지만, 담아 두면 여러 번 재사용할 수 있다"
+  }
+}
