@@ -47,6 +47,9 @@ interface Stats {
     level: LevelInfo // 경험치와 레벨
 }
 
+// 한 단원에서 끝낸 세트가 이 수 이상이면 접는다
+const COLLAPSE_DONE_FROM = 3
+
 export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onReview, onFeed, onAdmin, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
     const [sets, setSets] = useState<QuestSet[]>([])
     // 세트별 완료 횟수. 세트 완료만 기록으로 보여 주고, 문제별 진행은 보여 주지 않는다.
@@ -55,6 +58,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
     const [chosen, setChosen] = useState<string | null>(() => { try { return localStorage.getItem('etude.category') } catch { return null } })
     const [stats, setStats] = useState<Stats | null>(null)
     const [goals, setGoals] = useState<Goals | null>(null)
+    const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set()) // 완료 세트를 펼쳐 둔 단원
     const [perfectIds, setPerfectIds] = useState<Set<number>>(new Set()) // 힌트·풀이 없이 끝낸 적이 있는 세트
 
     useEffect(() => {
@@ -102,9 +106,12 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
     // 분야 카드로 고른 분야 (고른 적이 없으면 이어서 학습할 분야). 마지막으로 고른 분야는 기억해 둔다.
     const selectedCategory = chosen && grouped[chosen] ? chosen : (recommendedCategory ?? categoryOrder[0])
 
-    function chooseCategory(category: string) {
-        setChosen(category)
-        try { localStorage.setItem('etude.category', category) } catch { /* 기억하지 못해도 화면은 그대로다 */ }
+    // 탭을 눌러 구경하는 것은 기억하지 않는다. 세트에 들어갈 때만 그 분야를 "마지막에 풀던 분야"로 기억한다 (docs/specs/spec_quest_layout_and_home.md).
+    function chooseCategory(category: string) { setChosen(category) }
+    function enterSet(setId: number, sandboxType: string) {
+        const category = sets.find((s) => s.id === setId)?.category
+        if (category) { try { localStorage.setItem('etude.category', category) } catch { /* 기억하지 못해도 화면은 그대로다 */ } }
+        onSelect(setId, sandboxType)
     }
 
     return (
@@ -138,7 +145,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
                                         <p className="mt-1 line-clamp-2 font-sans text-body-md text-on-surface-variant">{nextSet.description.split(/(?<=[.。])\s/)[0]}</p>
                                     </div>
                                     <button
-                                        onClick={() => onSelect(nextSet.id, nextSet.sandbox_type)}
+                                        onClick={() => enterSet(nextSet.id, nextSet.sandbox_type)}
                                         className="shrink-0 rounded-2xl bg-white px-7 py-3.5 font-sans text-body-lg font-extrabold text-[#3b1fa8] shadow-[0_5px_0_0_rgba(0,0,0,0.3)] hover:brightness-95 active:translate-y-[3px] active:shadow-[0_2px_0_0_rgba(0,0,0,0.3)] transition-all"
                                     >{stats.completed === 0 ? '시작하기' : '이어서 하기'} →</button>
                                 </div>
@@ -187,6 +194,11 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
                                         <div className="space-y-8">
                                             {groupByUnit(items, (s) => ({ unitId: s.unit_id, unitTitle: s.unit_title, unitOrder: s.unit_order })).map((g) => {
                                                 const done = g.items.filter((s) => (completedCount[s.id] ?? 0) > 0).length
+                                                // 끝낸 세트가 3개 이상이면 접어서 다음에 할 세트가 먼저 보이게 한다 (펼치면 전부 보인다)
+                                                const unitKey = `${category}-${g.unitId ?? 'none'}`
+                                                const collapsible = done >= COLLAPSE_DONE_FROM
+                                                const collapsed = collapsible && !expandedUnits.has(unitKey)
+                                                const shown = collapsed ? g.items.filter((s) => (completedCount[s.id] ?? 0) === 0) : g.items
                                                 return (
                                                     <div key={g.unitId ?? 'none'}>
                                                         {g.title && (
@@ -200,7 +212,13 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
                                                                 {done === g.items.length && <span className="px-2 py-0.5 rounded-full border border-success/50 bg-success/10 font-sans text-label-caps text-success">단원 완료</span>}
                                                             </div>
                                                         )}
-                                                        <SetPath items={g.items} completedCount={completedCount} perfectIds={perfectIds} nextId={nextSet?.id ?? null} firstTime={(stats?.completed ?? 0) === 0} tone={meta} onSelect={onSelect} />
+                                                        {collapsible && (
+                                                            <button
+                                                                onClick={() => setExpandedUnits((prev) => { const next = new Set(prev); if (next.has(unitKey)) next.delete(unitKey); else next.add(unitKey); return next })}
+                                                                className="mb-3 font-sans text-label-caps text-info hover:underline"
+                                                            >{collapsed ? `✅ 끝낸 ${done}개 펼치기` : '끝낸 세트 접기'}</button>
+                                                        )}
+                                                        <SetPath items={shown} hiddenDone={g.items.length - shown.length} completedCount={completedCount} perfectIds={perfectIds} nextId={nextSet?.id ?? null} firstTime={(stats?.completed ?? 0) === 0} tone={meta} onSelect={enterSet} />
                                                     </div>
                                                 )
                                             })}

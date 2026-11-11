@@ -45,7 +45,8 @@ function App() {
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null)
   const [quests, setQuests] = useState<Quest[]>([])
   const [questIndex, setQuestIndex] = useState(0)
-  const [containerId, setContainerId] = useState('')
+  // 연결된 터미널: 어느 터미널(termKey)에 연결됐는지와 컨테이너 ID. 지금 문제의 터미널이 아니면 아직 준비 중이다.
+  const [conn, setConn] = useState<{ key: string; id: string } | null>(null)
   const [sandboxType, setSandboxType] = useState<string>('linux')
   const [user, setUser] = useState<{id: number; name: string; email: string; role: string} | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
@@ -78,7 +79,6 @@ function App() {
   const [xpGain, setXpGain] = useState<CompletionXp | null>(null)
   const [sessionId, setSessionId] = useState('')
   const [resetKey, setResetKey] = useState(0)
-  const [preparing, setPreparing] = useState(false)
   const termFont = useTerminalFontSize()
   const [terminalStatus, setTerminalStatus] = useState<TerminalStatus>('connecting')
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
@@ -199,9 +199,7 @@ function App() {
     setQuests([])
     setQuestIndex(0)
     setSandboxType(sandboxType)
-    setContainerId('')
-    // 퀴즈 세트는 터미널과 컨테이너가 없어 환경 준비 단계가 없다
-    setPreparing(sandboxType !== 'quiz')
+    setConn(null)
   }
 
   // 세트의 모든 퀘스트를 통과하면 완료 기록을 저장한다. 서버가 이 세션의 채점 기록으로 확인하고, 같은 세션의 중복 요청은 한 번만 저장된다.
@@ -285,6 +283,11 @@ function App() {
 
   const quest = quests[questIndex] ?? null
   const isQuiz = sandboxType === 'quiz'
+  // 터미널 창: 지금 문제가 터미널 문제일 때만 (docs/specs/spec_quest_layout_and_home.md). docker-persistent 는 컨테이너 상태가 이어지므로 항상 둔다.
+  const showTerminal = !isQuiz && (sandboxType === 'docker-persistent' || !quest || quest.kind === 'terminal')
+  const termKey = `${sandboxType === 'docker-persistent' ? `set-${selectedSetId}` : questIndex}-${resetKey}`
+  const containerId = conn?.key === termKey ? conn.id : ''
+  const preparing = showTerminal && conn?.key !== termKey
 
   return (
     <div className="dark h-screen flex flex-col bg-surface overflow-hidden relative">
@@ -307,14 +310,14 @@ function App() {
           <SoundToggle />
         </div>
       </header>
-      <main ref={panesRef} className={isQuiz ? 'flex flex-1 overflow-hidden' : `flex flex-1 overflow-hidden bg-surface-container-lowest ${maximized ? 'p-0' : 'p-3'}`}>
+      <main ref={panesRef} className={!showTerminal ? 'flex flex-1 overflow-hidden' : `flex flex-1 overflow-hidden bg-surface-container-lowest ${maximized ? 'p-0' : 'p-3'}`}>
         <section
-          className={isQuiz
+          className={!showTerminal
             ? 'w-full max-w-5xl mx-auto flex flex-col bg-gradient-to-b from-accent/10 via-transparent to-transparent'
             : `flex flex-col overflow-hidden border border-outline-variant bg-surface ${maximized ? 'rounded-none' : 'rounded-2xl'} ${maximized === 'terminal' ? 'hidden' : ''}`}
-          style={isQuiz ? undefined : { width: maximized === 'task' ? '100%' : `calc(${splitPct}% - 6px)` }}
+          style={!showTerminal ? undefined : { width: maximized === 'task' ? '100%' : `calc(${splitPct}% - 6px)` }}
         >
-          {!isQuiz && (
+          {showTerminal && (
             <div className="h-9 border-b border-outline-variant flex items-center justify-between px-4 bg-surface shrink-0">
               <span className="font-sans text-label-caps text-on-surface flex items-center gap-2"><span className="material-symbols-outlined text-[16px]">assignment</span> 문제</span>
               <PaneToggle active={maximized === 'task'} onClick={() => setMaximized(maximized === 'task' ? null : 'task')} />
@@ -357,11 +360,7 @@ function App() {
               onFinish={() => setSummaryOpen(true)}
               run={run}
               onExpire={handleExpire}
-              onReset={() => {
-                setPreparing(true)
-                setContainerId('')
-                setResetKey(k => k + 1)
-              }}
+              onReset={() => setResetKey(k => k + 1)}
               onComplete={(i, record) => {
                 setCompletedIndices(prev => new Set(prev).add(i))
                 setRecords(prev => ({ ...prev, [i]: record }))
@@ -370,8 +369,8 @@ function App() {
             />
           )}
         </section>
-        {!isQuiz && !maximized && <SplitHandle value={splitPct} onChange={setSplitPct} containerRef={panesRef} />}
-        {!isQuiz && (
+        {showTerminal && !maximized && <SplitHandle value={splitPct} onChange={setSplitPct} containerRef={panesRef} />}
+        {showTerminal && (
           <section className={`relative flex flex-1 min-w-0 flex-col overflow-hidden border border-outline-variant bg-surface-container-lowest ${maximized ? 'rounded-none' : 'rounded-2xl'} ${maximized === 'task' ? 'hidden' : ''}`}>
             <div className="h-9 border-b border-outline-variant flex items-center px-4 bg-surface justify-between shrink-0">
               <div className="flex items-center gap-4">
@@ -401,13 +400,13 @@ function App() {
             </div>
             {quest
               ? <Terminal
-                  key={`${sandboxType === 'docker-persistent' ? `set-${selectedSetId}` : questIndex}-${resetKey}`}
+                  key={termKey}
                   questId={quest.id}
                   fontSize={termFont.fontSize}
-                  onConnected={(id) => { setContainerId(id); setPreparing(false) }}
+                  onConnected={(id) => setConn({ key: termKey, id })}
                   onStatus={(status) => {
                     setTerminalStatus(status)
-                    if (status === 'ended') setPreparing(false)
+                    if (status === 'ended') setConn({ key: termKey, id: '' })
                   }}
                 />
               : null

@@ -14,6 +14,7 @@ const OFFSETS = [0, 52, 84, 52, 0, -52, -84, -52] // 노드가 좌우로 굽이�
 
 interface Props {
     items: QuestSet[]
+    hiddenDone?: number // 접어서 그리지 않은 끝낸 세트 수 (단원 상자의 진행도에만 반영)
     completedCount: Record<number, number>
     perfectIds: Set<number> // 힌트·풀이 없이 끝낸 적이 있는 세트
     nextId: number | null // 이어서 할 세트 (마스코트가 서 있는 노드)
@@ -24,7 +25,7 @@ interface Props {
 
 const fallbackIcon = (s: QuestSet) => (s.is_review ? '🏆' : s.sandbox_type === 'quiz' ? '📝' : '💻')
 
-export function SetPath({ items, completedCount, perfectIds, nextId, firstTime, tone, onSelect }: Props) {
+export function SetPath({ items, hiddenDone = 0, completedCount, perfectIds, nextId, firstTime, tone, onSelect }: Props) {
     const [openId, setOpenId] = useState<number | 'chest' | null>(null)
 
     // 열린 설명 카드는 다른 곳을 누르거나 Esc 를 누르면 닫는다 (카드와 노드 안을 누를 때는 그대로)
@@ -40,7 +41,7 @@ export function SetPath({ items, completedCount, perfectIds, nextId, firstTime, 
     // 길의 점들: 세트마다 하나, 맨 끝에 보물상자 하나
     const n = items.length
     const pts = Array.from({ length: n + 1 }, (_, i) => ({ x: BASE_X + OFFSETS[i % OFFSETS.length]!, y: i * ROW + ROW / 2 }))
-    const allDone = n > 0 && items.every((s) => (completedCount[s.id] ?? 0) > 0)
+    const allDone = n + hiddenDone > 0 && items.every((s) => (completedCount[s.id] ?? 0) > 0)
     const lastDone = items.reduce((m, s, i) => ((completedCount[s.id] ?? 0) > 0 ? i : m), -1)
     const curve = (upTo: number) => {
         let d = `M ${pts[0]!.x} ${pts[0]!.y}`
@@ -126,9 +127,10 @@ export function SetPath({ items, completedCount, perfectIds, nextId, firstTime, 
             })}
 
             {/* 길 끝의 보물상자: 이 단원의 세트를 모두 끝내면 열린다. 누르면 무슨 상자인지 알려 준다. */}
-            {n > 0 && (() => {
+            {n + hiddenDone > 0 && (() => {
                 const { x, y } = pts[n]!
-                const doneCount = items.filter((s) => (completedCount[s.id] ?? 0) > 0).length
+                const doneCount = items.filter((s) => (completedCount[s.id] ?? 0) > 0).length + hiddenDone
+                const total = n + hiddenDone
                 const open = openId === 'chest'
                 return (
                     <>
@@ -136,20 +138,20 @@ export function SetPath({ items, completedCount, perfectIds, nextId, firstTime, 
                             data-setpath-node=""
                             onClick={() => setOpenId(open ? null : 'chest')}
                             aria-expanded={open}
-                            aria-label={allDone ? '단원 정복! 단원 상자를 열었어요' : `단원 상자: 세트를 모두 끝내면 열려요 (${doneCount}/${n})`}
+                            aria-label={allDone ? '단원 정복! 단원 상자를 열었어요' : `단원 상자: 세트를 모두 끝내면 열려요 (${doneCount}/${total})`}
                             className="fx-wiggle absolute z-10 flex items-center gap-3 text-left"
                             style={{ left: x - 36, top: y - 36 }}
                         >
                             <span className={`flex h-[72px] w-[72px] items-center justify-center rounded-full border-b-[7px] ${allDone ? 'fx-pop border-[#b45309] bg-gradient-to-br from-gold to-warning shadow-[0_0_34px_rgba(250,204,21,0.6)]' : 'border-black/50 bg-surface-container-high grayscale opacity-60'}`}>
                                 <span className="text-[36px] leading-none">{allDone ? '🏆' : '🎁'}</span>
                             </span>
-                            <span className={`whitespace-nowrap font-sans text-body-md font-bold ${allDone ? 'text-gold' : 'text-on-surface-variant/80'}`}>{allDone ? '단원 정복! 🎉' : `단원 상자 · ${doneCount}/${n}`}</span>
+                            <span className={`whitespace-nowrap font-sans text-body-md font-bold ${allDone ? 'text-gold' : 'text-on-surface-variant/80'}`}>{allDone ? '단원 정복! 🎉' : `단원 상자 · ${doneCount}/${total}`}</span>
                         </button>
                         {open && (
                             <div data-setpath-card="" className="fx-pop absolute z-30 w-[300px] max-w-[calc(100vw-4rem)] rounded-2xl border border-outline-variant bg-surface-container-low p-4 shadow-xl" style={{ left: Math.min(Math.max(8, x - 150), 150), top: y + 44 }}>
                                 <p className="font-sans text-body-md font-semibold text-on-surface">{allDone ? '🏆 단원 정복!' : '🎁 단원 상자'}</p>
                                 <p className="mt-1 font-sans text-code-sm leading-5 text-on-surface-variant">
-                                    {allDone ? '이 단원의 모든 세트를 끝냈어요. 단원 정복 배지를 받았고, 소식에도 축하가 올라가요.' : `이 단원의 세트를 모두 끝내면 열리는 상자예요. 지금 ${doneCount}/${n}개 끝냈어요. 순서는 상관없어요.`}
+                                    {allDone ? '이 단원의 모든 세트를 끝냈어요. 단원 정복 배지를 받았고, 소식에도 축하가 올라가요.' : `이 단원의 세트를 모두 끝내면 열리는 상자예요. 지금 ${doneCount}/${total}개 끝냈어요. 순서는 상관없어요.`}
                                 </p>
                             </div>
                         )}
