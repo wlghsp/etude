@@ -1,0 +1,14 @@
+{
+  "setId": 224,
+  "answers": {
+    "1": "kubectl get pods -n $NS -o json > /tmp/pods.json\nhead -n 20 /tmp/pods.json\n\n# 맨 위 \"kind\": \"List\", 그 아래 \"items\": [ Pod, Pod, ... ]\n# Pod 하나는 metadata(이름·레이블), spec(원하는 상태), status(현재 상태)로 나뉜다. 다음 문제부터는 이 구조에서 값 하나를 \"경로\"로 짚어 뽑는다",
+    "2": "kubectl get pods -n $NS -o jsonpath='{.items[0].metadata.name}' > /tmp/first.txt\ncat /tmp/first.txt; echo\n\n# {.items[0].metadata.name} : items 의 0번째 → metadata → name\n# 화면에 찍을 때는 뒤에 ; echo 를 붙이면 줄이 바뀐다",
+    "3": "kubectl get pods -n $NS -o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}' > /tmp/names.txt\ncat /tmp/names.txt\n\n# range 는 items 의 모든 원소를 하나씩 돌며 안쪽 식을 실행한다. {\"\\n\"} 가 없으면 이름이 한 줄에 붙는다",
+    "4": "kubectl get pods -n $NS -o jsonpath='{range .items[*]}{.metadata.name}{\"\\t\"}{.spec.containers[0].image}{\"\\n\"}{end}' > /tmp/images.txt\ncat /tmp/images.txt\n\n# {\"\\t\"} 는 탭. 이름 옆에 이미지가 오는 표 모양이 된다. 스크립트에서 awk 로 칸을 나눠 쓰기 좋다",
+    "6": "kubectl get pod web-1 -n $NS -o jsonpath='{.metadata.annotations.example\\.io/owner}' > /tmp/owner.txt\ncat /tmp/owner.txt; echo\n\n# 점(.)은 경로 구분자라서, 키 이름 안의 점은 \\. 로 막아야 한다\n# 레이블·어노테이션 키에는 kubernetes.io/... 처럼 점이 자주 들어간다",
+    "7": "kubectl get pods -n $NS -o jsonpath='{.items[?(@.status.phase==\"Running\")].metadata.name}' > /tmp/running.txt\ncat /tmp/running.txt; echo\n\n# [?(@.조건)] : 조건이 참인 원소만 고른다. 장애 때 \"안 뜨는 Pod 만\" 골라낼 때도 같은 식이다 (!= 로 바꾸면 된다)",
+    "8": "kubectl get pods -n $NS -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image > /tmp/table.txt\ncat /tmp/table.txt\n\n# 열제목:경로 를 쉼표로 이어 쓴다. 사람이 읽기 좋은 표가 필요할 때 jsonpath 보다 편하다",
+    "9": "kubectl get pods -n $NS --sort-by=.metadata.creationTimestamp -o name > /tmp/old.txt\ncat /tmp/old.txt\n\n# --sort-by=경로 : 그 값으로 오름차순 정렬. 거꾸로 보려면 뒤에 tac 같은 도구를 쓴다",
+    "11": "kubectl get secret db-pass -n $NS -o jsonpath='{.data.password}' | base64 -d > /tmp/pass.txt\ncat /tmp/pass.txt; echo\n\n# Secret 의 .data 값은 base64 로 적혀 있다 (암호화가 아니다!). base64 -d 로 풀면 평문이 나온다"
+  }
+}
