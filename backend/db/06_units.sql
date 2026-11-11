@@ -404,3 +404,4 @@ UPDATE quest_set SET unit_id = 35 WHERE id = 148;
 UPDATE quest_set SET unit_id = 35 WHERE id = 175;
 UPDATE quest_set SET unit_id = 35 WHERE id = 206;
 UPDATE quest_set SET unit_id = 6 WHERE id = 224;
+UPDATE quest_set SET unit_id = 32 WHERE id = 225;

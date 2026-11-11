@@ -1,0 +1,14 @@
+{
+  "setId": 225,
+  "answers": {
+    "1": "docker inspect web | head -n 30\ndocker inspect -f '{{.State.Status}}' web > /tmp/status.txt\ncat /tmp/status.txt\n\n# -f 는 Go 템플릿. {{.State.Status}} : State 안의 Status 값만 출력한다",
+    "2": "docker inspect -f '{{.Config.Image}}' web > /tmp/image.txt\ncat /tmp/image.txt\n\n# 상태는 State, 실행 설정(이미지·명령·환경 변수·레이블)은 Config 아래에 있다",
+    "3": "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' web > /tmp/ip.txt\ncat /tmp/ip.txt\n\n# 네트워크마다 주소가 따로라 Networks 를 range 로 돈다. 컨테이너끼리 연결할 때, 장애 때 \"어느 주소로 뜨나\" 볼 때 가장 자주 쓰는 값",
+    "4": "docker inspect -f '{{.State.ExitCode}}' job > /tmp/exit.txt\ncat /tmp/exit.txt\n\n# 0 은 정상 종료, 그 밖의 숫자는 오류 (137 = SIGKILL, 143 = SIGTERM)",
+    "6": "docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' web > /tmp/env.txt\ncat /tmp/env.txt\n\n# range 는 배열의 원소를 하나씩 돌며 안쪽 식을 실행한다 (kubectl jsonpath 의 range 와 같은 생각)",
+    "7": "docker inspect -f '{{index .Config.Labels \"tier\"}}' web > /tmp/tier.txt\ncat /tmp/tier.txt\n\n# 맵(키-값)은 index 맵 \"키\" 로 꺼낸다. com.example.app 처럼 점이 든 키도 같다",
+    "8": "docker ps -a --format '{{.Names}}' > /tmp/names.txt\ncat /tmp/names.txt\n\n# --format 으로 ps 의 열을 고른다. 쓸 수 있는 이름: .ID .Names .Image .Status .Ports 등",
+    "9": "docker ps -a --format 'table {{.Names}}\\t{{.Status}}' > /tmp/table.txt\ncat /tmp/table.txt\n\n# table 로 시작하면 제목 줄이 붙고 열이 정렬된다. 사람이 읽을 표가 필요할 때 쓴다",
+    "11": "docker ps -a --filter status=exited --format '{{.Names}}' > /tmp/exited.txt\ncat /tmp/exited.txt\n\n# --filter 는 \"어떤 컨테이너를\", --format 은 \"어떤 모양으로\". 둘을 같이 쓰면 장애 컨테이너만 뽑을 수 있다"
+  }
+}
