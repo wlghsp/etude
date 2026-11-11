@@ -1,0 +1,14 @@
+{
+  "setId": 231,
+  "answers": {
+    "1": "docker logs app > /tmp/all.txt\ncat /tmp/all.txt\n\n# docker logs 는 컨테이너가 남긴 표준 출력을 보여 준다",
+    "2": "docker logs --tail 2 app > /tmp/tail.txt\ncat /tmp/tail.txt\n\n# --tail N 은 마지막 N 줄만 보여 준다",
+    "3": "docker logs -t app > /tmp/ts.txt\ncat /tmp/ts.txt\n\n# -t 는 줄마다 시각(타임스탬프)을 앞에 붙인다. 언제 찍힌 로그인지 볼 때 쓴다",
+    "5": "docker exec box cat /srv/greeting > /tmp/greeting.txt\ncat /tmp/greeting.txt\n\n# exec 는 이미 실행 중인 컨테이너 안에서 명령을 하나 더 돌린다. 셸이 필요 없는 한 줄 확인에 편하다",
+    "6": "docker top app > /tmp/top.txt\ncat /tmp/top.txt\n\n# docker top 은 컨테이너의 프로세스 목록을 밖에서 보여 준다 (이 컨테이너는 sleep 3600 이 돌고 있다)",
+    "8": "docker stats --no-stream --format '{{.Name}}: {{.MemUsage}}' > /tmp/mem.txt\ncat /tmp/mem.txt\n\n# --no-stream 은 한 번만 출력하고 끝낸다. --format 으로 필요한 열만 고른다",
+    "9": "docker cp box:/srv/report.txt /tmp/report.txt\ncat /tmp/report.txt\n\n# 컨테이너:경로 가 원본이면 꺼내기, 대상이면 넣기다. 컨테이너가 멈춰 있어도 복사된다",
+    "10": "docker diff worker\ndocker diff worker | grep '^A' > /tmp/added.txt\ncat /tmp/added.txt\n\n# docker diff 는 이미지 대비 컨테이너 파일 시스템의 변화를 A(추가) C(변경) D(삭제) 로 보여 준다",
+    "11": "docker inspect -f '{{.State.Status}} {{.RestartCount}}' flaky > /tmp/flaky.txt\ncat /tmp/flaky.txt\n\n# RestartCount 가 계속 늘어났다면 컨테이너가 반복해서 죽고 있다는 신호다"
+  }
+}

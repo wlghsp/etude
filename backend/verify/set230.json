@@ -1,0 +1,14 @@
+{
+  "setId": 230,
+  "answers": {
+    "1": "kubectl create deployment web --image=nginx:1.25 --replicas=2 -n $NS\nkubectl rollout status deploy/web -n $NS\nkubectl get pods -n $NS\n\n# create deployment 는 Deployment 와 그 아래 ReplicaSet, Pod 까지 한 번에 만든다\n# READY 가 1/1 인 Pod 가 2개면 준비 끝",
+    "2": "kubectl scale deploy/web --replicas=4 -n $NS\nkubectl get pods -n $NS\n\n# scale 은 이미지를 건드리지 않고 Pod 개수만 바꾼다",
+    "3": "kubectl get deploy web -o wide -n $NS\nkubectl set image deploy/web nginx=nginx:1.27-alpine -n $NS\nkubectl rollout status deploy/web -n $NS\n\n# set image 는 Pod 템플릿을 바꾸므로 새 ReplicaSet 이 생기고 Pod 가 하나씩 교체된다\n# rollout status 는 교체가 끝나면 successfully rolled out 을 출력하고 돌아온다",
+    "4": "kubectl rollout history deploy/web -n $NS > /tmp/history.txt\ncat /tmp/history.txt\n\n# REVISION 1 은 처음 만든 버전, 2 는 이미지를 바꾼 뒤의 버전이다\n# CHANGE-CAUSE 가 <none> 이면 아무도 사유를 적지 않은 것이다",
+    "5": "kubectl get pods -n $NS > /tmp/pods.txt\ncat /tmp/pods.txt\n\n# 새 Pod 의 STATUS 가 ErrImagePull 또는 ImagePullBackOff 이다 (이미지를 받아 오지 못하는 중)\n# 이전 Pod 는 아직 Running 이라서 서비스가 바로 끊기지는 않는다",
+    "7": "kubectl rollout undo deploy/web -n $NS\nkubectl rollout status deploy/web -n $NS\nkubectl get pods -n $NS\n\n# undo 는 바로 앞 REVISION 의 Pod 템플릿으로 되돌린다\n# 막혀 있던 새 Pod 는 사라지고 이전 Pod 가 정상 개수로 복구된다",
+    "9": "kubectl rollout history deploy/web -n $NS\nkubectl annotate deploy/web kubernetes.io/change-cause=\"upgrade to 1.27\" -n $NS\nkubectl rollout history deploy/web -n $NS\n\n# annotate 전에는 CHANGE-CAUSE 가 <none>, 후에는 REVISION 2 줄에 사유가 보인다\n# 값에 공백이 있으면 따옴표로 감싼다",
+    "10": "kubectl rollout restart deploy/web -n $NS\nkubectl rollout status deploy/web -n $NS\nkubectl rollout history deploy/web -n $NS\n\n# restart 는 Pod 템플릿에 재시작 시각을 적어 새 ReplicaSet 을 만든다 (이미지는 그대로)\n# 그래서 REVISION 이 하나 늘어 2 가 된다",
+    "11": "kubectl rollout history deploy/web -n $NS\nkubectl rollout history deploy/web --revision=1 -n $NS\nkubectl rollout undo deploy/web --to-revision=1 -n $NS\nkubectl rollout status deploy/web -n $NS\nkubectl rollout history deploy/web -n $NS\n\n# --to-revision 없이 undo 하면 바로 앞(REVISION 2)으로만 간다\n# 되돌린 버전은 옛 번호를 버리고 새 번호(4)로 이력의 맨 끝에 올라간다"
+  }
+}
