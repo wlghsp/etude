@@ -1,0 +1,14 @@
+{
+  "setId": 237,
+  "answers": {
+    "1": "cd /tmp/stack\ncat > compose.yaml <<'EOF'\nservices:\n  web:\n    image: alpine\n    command: [\"sleep\", \"3600\"]\nEOF\ndocker compose up -d\ndocker compose ps\n\n# 프로젝트 이름은 기본적으로 디렉터리 이름(stack) 이다",
+    "2": "cd /tmp/stack\ndocker compose ps\ndocker compose ps --format '{{.Service}}' | sort > /tmp/svc.txt\ncat /tmp/svc.txt\n\n# 컨테이너 이름(stack-web-1)이 아니라 서비스 이름(web)을 뽑는다",
+    "3": "cd /tmp/stack\ndocker compose logs hello\ndocker compose logs --no-log-prefix hello > /tmp/log.txt\ncat /tmp/log.txt\n\n# --no-log-prefix 는 줄 앞의 컨테이너 이름 표시를 뺀다",
+    "4": "cd /tmp/stack\ndocker compose exec app sh -c 'echo done > /tmp/mark'\ndocker compose exec app cat /tmp/mark\n\n# 서비스 이름으로 지정하면 컨테이너 이름을 몰라도 된다",
+    "6": "cd /tmp/stack\ncat > compose.yaml <<'EOF'\nservices:\n  app:\n    image: alpine\n    command: [\"sleep\", \"3600\"]\n    environment:\n      - MODE=prod\nEOF\ndocker compose up -d\ndocker compose exec app printenv MODE\n\n# 파일만 고치면 안 되고 up 으로 컨테이너를 다시 만들어야 한다",
+    "7": "cd /tmp/stack\necho 'LEVEL=debug' > .env\ndocker compose config\ndocker compose up -d\ndocker compose exec app printenv LEVEL\n\n# compose.yaml 은 그대로 두고 .env 로 값만 바꿀 수 있다",
+    "8": "cd /tmp/stack\ndocker compose exec db sh -c 'echo keep > /data/note.txt'\ndocker compose down\ndocker compose up -d\ndocker compose exec db cat /data/note.txt\n\n# down 에 -v 를 붙이지 않으면 볼륨 데이터는 남는다",
+    "10": "cd /tmp/stack\ndocker compose -p second up -d\ndocker compose ls\ndocker compose -p second ps\n\n# -p 로 이름을 바꾸면 같은 파일에서 독립된 프로젝트가 하나 더 생긴다",
+    "11": "cd /tmp/stack\ncat > compose.yaml <<'EOF'\nservices:\n  db:\n    image: alpine\n    command: [\"sleep\", \"3600\"]\n  app:\n    image: alpine\n    command: [\"sleep\", \"3600\"]\n    depends_on:\n      - db\nEOF\ndocker compose config | grep -A2 depends_on\ndocker compose up -d\ndocker compose ps\n\n# depends_on 이 있으면 db 가 먼저 만들어지고 시작된 뒤 app 이 시작된다"
+  }
+}

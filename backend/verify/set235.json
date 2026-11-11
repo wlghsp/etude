@@ -1,0 +1,14 @@
+{
+  "setId": 235,
+  "answers": {
+    "1": "ip -br addr show lo > /tmp/lo.txt\ncat /tmp/lo.txt\n\n# 이름 / 상태 / 주소 순서. 전체를 보려면 ip -br a",
+    "2": "hostname > /tmp/myname.txt\ncat /tmp/myname.txt\n\n# 컨테이너에서는 보통 컨테이너 ID 앞부분이 이름이 된다",
+    "3": "ip route get 127.0.0.1 | awk '{for(i=1;i<=NF;i++) if($i==\"dev\") print $(i+1)}' > /tmp/dev.txt\ncat /tmp/dev.txt\n\n# 출력: local 127.0.0.1 dev lo src 127.0.0.1 ... 꼴이라 dev 뒤 단어를 뽑는다",
+    "4": "getent hosts api.example.test | awk '{print $1}' > /tmp/api_ip.txt\ncat /tmp/api_ip.txt\n\n# getent 는 /etc/hosts 와 DNS 를 시스템 설정 순서대로 따라간다",
+    "6": "awk '/^nameserver/{print $2; exit}' /etc/resolv.conf > /tmp/ns.txt\ncat /tmp/ns.txt\n\n# grep ^nameserver /etc/resolv.conf | head -1 | awk '{print $2}' 도 같다",
+    "8": "echo '127.0.0.1 web.example.test' >> /etc/hosts\ngetent hosts web.example.test\n\n# >> 는 덧붙이기, > 는 통째로 덮어쓰기라 기존 줄이 모두 사라진다",
+    "9": "nohup nc -l -p 9090 >/dev/null 2>&1 &\nsleep 1\nss -ltn | grep :9090\n\n# nc -l 은 연결이 한 번 오면 끝난다. -k 를 붙이면 계속 기다린다(이미지의 nc 지원 시)",
+    "10": "curl -s http://127.0.0.1:8099/\necho $? > /tmp/curl_rc.txt\ncat /tmp/curl_rc.txt\n\n# curl 종료 코드 7 은 Failed to connect(연결 실패). 6 은 이름 풀이 실패다",
+    "11": "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8088/ > /tmp/code.txt\ncat /tmp/code.txt\n\n# 200 정상, 404 없음, 503 서비스 불가. -I 로 헤더 첫 줄을 봐도 된다"
+  }
+}
