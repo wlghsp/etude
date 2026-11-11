@@ -1,0 +1,14 @@
+{
+  "setId": 341,
+  "answers": {
+    "1": "wc -l < /tmp/lab/access.log > /tmp/lab/total.txt\ncat /tmp/lab/total.txt\n\n# 파일 이름을 인자로 주면 '36 /tmp/lab/access.log' 처럼 이름이 같이 나온다. < 로 넣으면 숫자만 나온다",
+    "2": "grep -c ' 500 ' /tmp/lab/access.log > /tmp/lab/count500.txt\ncat /tmp/lab/count500.txt\n\n# -c 는 줄 수만 출력한다. 앞뒤 공백을 붙여 다른 칸의 500 과 구분한다",
+    "3": "awk '{print $1}' /tmp/lab/access.log > /tmp/lab/ips.txt\nhead -n 5 /tmp/lab/ips.txt\n\n# $1 은 공백으로 나눈 첫 번째 칸이다",
+    "6": "awk '{print $1}' /tmp/lab/access.log | sort | uniq -c > /tmp/lab/per_ip.txt\ncat /tmp/lab/per_ip.txt\n\n# sort 를 빼면 흩어진 같은 IP 가 여러 줄로 따로 세어진다",
+    "7": "awk '{print $1}' /tmp/lab/access.log | sort | uniq -c | sort -rn | head -3 > /tmp/lab/top3.txt\ncat /tmp/lab/top3.txt\n\n# -n 이 없으면 숫자를 글자로 비교해 9 가 12 보다 크다고 본다",
+    "9": "awk '$9==404' /tmp/lab/access.log > /tmp/lab/notfound.log\nwc -l /tmp/lab/notfound.log\n\n# 동작 { } 을 생략하면 조건에 맞는 줄 전체가 출력된다",
+    "10": "awk '$9==500 {print $7}' /tmp/lab/access.log | sort -u > /tmp/lab/err_paths.txt\ncat /tmp/lab/err_paths.txt\n\n# sort -u 는 sort | uniq 와 같은 일을 한 번에 한다",
+    "11": "awk '{s+=$10} END {print s}' /tmp/lab/access.log > /tmp/lab/bytes_total.txt\ncat /tmp/lab/bytes_total.txt\n\n# END 는 모든 줄을 읽은 뒤 한 번 실행된다. 처음 쓰는 변수는 0 으로 시작한다",
+    "12": "echo \"awk '\\$9==404 {print \\$7}' /tmp/lab/access.log | sort | uniq -c\" > /tmp/lab/notfound.sh\nsh /tmp/lab/notfound.sh\n\n# 파일에는 결과가 아니라 명령이 들어 있고, 실행할 때마다 로그를 다시 읽는다"
+  }
+}

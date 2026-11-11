@@ -1,0 +1,14 @@
+{
+  "setId": 343,
+  "answers": {
+    "1": "docker run -d --name app --health-cmd 'test -f /tmp/ok' --health-interval 2s --health-retries 1 alpine sleep 300\ndocker inspect -f '{{.State.Health.Status}}' app\n\n# /tmp/ok 가 아직 없으니 잠시 starting 이었다가 unhealthy 가 된다",
+    "3": "docker exec svc touch /tmp/ok\n# 2초 안팎으로 다음 검사가 돌고 나면 healthy\ndocker inspect -f '{{.State.Health.Status}}' svc\n\n# 파일을 지우면 다시 unhealthy 가 된다",
+    "4": "docker ps --filter health=unhealthy --format '{{.Names}}' > /tmp/work/bad.txt\ncat /tmp/work/bad.txt\n\n# health=healthy, health=starting 으로도 거를 수 있다",
+    "5": "cd /tmp/work\nprintf 'FROM alpine\\nHEALTHCHECK --interval=2s --retries=1 CMD test -f /tmp/ok\\nCMD [\"sleep\",\"300\"]\\n' > Dockerfile\ndocker build -t hc:1 .\ndocker run -d --name built hc:1\ndocker inspect -f '{{.State.Health.Status}}' built\n\n# docker run 의 --health-* 옵션은 이미지의 HEALTHCHECK 를 덮어쓴다",
+    "7": "docker run -d --name crash --restart on-failure:3 alpine sh -c 'exit 1'\ndocker inspect -f '{{.HostConfig.RestartPolicy.Name}} {{.HostConfig.RestartPolicy.MaximumRetryCount}} {{.RestartCount}}' crash\n\n# 3번 재시작해 본 뒤에는 포기하고 Exited 로 남는다",
+    "8": "docker run -d --name keep --restart unless-stopped alpine sleep 3\nsleep 6\ndocker inspect -f '{{.RestartCount}}' keep\n\n# on-failure 였다면 코드 0 으로 끝난 뒤 다시 시작하지 않는다. unless-stopped 는 stop 하기 전까지 계속 되살린다",
+    "9": "docker inspect -f '{{.RestartCount}}' loopy > /tmp/work/count.txt\ncat /tmp/work/count.txt\n\n# 최대 재시도 3 에 도달하면 더는 늘지 않는다",
+    "10": "docker stop guard\nsleep 3\ndocker inspect -f '{{.State.Status}} {{.HostConfig.RestartPolicy.Name}}' guard\n\n# 데몬(도커 서비스) 자체가 재시작되면 always 는 다시 띄우지만, unless-stopped 는 띄우지 않는다",
+    "11": "docker update --restart unless-stopped worker\ndocker inspect -f '{{.HostConfig.RestartPolicy.Name}}' worker\n\n# 같은 컨테이너(ID 그대로)에 설정만 바뀐다"
+  }
+}
