@@ -265,4 +265,5 @@ INSERT INTO quest_set (id, title, description, sandbox_type, category) VALUES
   (361, 'Keystone 기초: 도메인·프로젝트·사용자·역할과 토큰', 'OpenStack 의 인증과 권한을 맡는 Keystone 을 한 개념씩 익힙니다. 도메인, 프로젝트, 사용자, 그룹, 역할, 역할 부여의 관계와 이름 범위, 기본 토큰 형식, 프로젝트 만들기와 역할 주기 명령을 봅니다.', 'quiz', 'OpenStack'),
   (362, 'openstack 명령과 문제 살펴보기: 인증 정보·로그 위치·읽는 순서', 'openstack 명령에 인증 정보를 주는 방법(환경 변수, 명령행 옵션, clouds.yaml)과 인증 확인, 서비스 로그 위치와 로그 레벨, 문제가 생겼을 때 로그를 읽는 순서를 익힙니다.', 'quiz', 'OpenStack'),
   (363, 'Swift 기초: 계정·컨테이너·객체와 프록시·링', '파일을 객체로 저장하는 Swift 를 익힙니다. 계정·컨테이너·객체의 계층과 이름 공간, 객체 주소 형식, 크기 제한, 프록시 서버와 링의 역할, 기본 복제 횟수, 객체를 읽을 때의 흐름을 봅니다.', 'quiz', 'OpenStack'),
-  (364, 'Heat 와 Horizon 기초: 템플릿·스택과 대시보드', '여러 자원을 템플릿으로 한꺼번에 만드는 Heat 와 웹 대시보드 Horizon 을 익힙니다. HOT 템플릿의 항목(버전·parameters·resources·outputs), 스택 만들기·지우기 명령, 서버 자원 타입을 봅니다.', 'quiz', 'OpenStack');
+  (364, 'Heat 와 Horizon 기초: 템플릿·스택과 대시보드', '여러 자원을 템플릿으로 한꺼번에 만드는 Heat 와 웹 대시보드 Horizon 을 익힙니다. HOT 템플릿의 항목(버전·parameters·resources·outputs), 스택 만들기·지우기 명령, 서버 자원 타입을 봅니다.', 'quiz', 'OpenStack'),
+  (365, 'Git 기록 살펴보기: log 옵션, 파일·작성자로 거르기, show, diff, blame', '작은 Git 저장소의 기록을 읽는 법을 손에 익힙니다. log 를 한 줄 요약·개수·작성자·파일·이름 변경 추적으로 줄여 보고, show 로 한 커밋의 바뀐 파일을 보고, diff 로 고친 것과 올려 둔 것을 나눠 보고 두 커밋을 비교하며, blame 으로 줄마다 바꾼 사람을 확인합니다. 채점은 결과를 저장한 파일을 같은 git 명령의 실제 출력과 비교합니다.', 'linux', 'Git');

@@ -1,0 +1,14 @@
+{
+  "setId": 365,
+  "answers": {
+    "1": "cd /tmp/lab/proj\ngit log --oneline > /tmp/lab/log_all.txt\ncat /tmp/lab/log_all.txt\n\n# --oneline : 커밋을 한 줄씩",
+    "2": "cd /tmp/lab/proj\ngit log --oneline -2 > /tmp/lab/log_two.txt\ncat /tmp/lab/log_two.txt\n\n# -2 : 최근 2개",
+    "3": "cd /tmp/lab/proj\ngit log --oneline --author=Bob > /tmp/lab/by_bob.txt\ncat /tmp/lab/by_bob.txt\n\n# --author=이름 : 그 작성자의 커밋만",
+    "4": "cd /tmp/lab/proj\ngit log --oneline -- todo.txt > /tmp/lab/todo_log.txt\ncat /tmp/lab/todo_log.txt\n\n# -- 파일 : 그 파일을 바꾼 커밋만",
+    "5": "cd /tmp/lab/proj\ngit log --oneline --follow -- main.py > /tmp/lab/main_history.txt\ncat /tmp/lab/main_history.txt\n\n# --follow : 이름이 바뀌기 전 기록까지 따라간다",
+    "6": "cd /tmp/lab/proj\ngit show --name-only --format= HEAD > /tmp/lab/changed.txt\ncat /tmp/lab/changed.txt\n\n# --name-only : 바뀐 파일 이름만, --format= : 커밋 설명 줄을 뺀다",
+    "7": "cd /tmp/lab/proj\ngit diff > /tmp/lab/unstaged.txt\ngit diff --staged > /tmp/lab/staged.txt\ncat /tmp/lab/unstaged.txt /tmp/lab/staged.txt\n\n# git diff : 아직 add 안 한 변경, git diff --staged : add 한 변경",
+    "8": "cd /tmp/lab/proj\ngit diff HEAD~1 HEAD -- main.py > /tmp/lab/between.txt\ncat /tmp/lab/between.txt\n\n# git diff 커밋1 커밋2 : 두 커밋 사이의 차이",
+    "9": "cd /tmp/lab/proj\ngit blame main.py > /tmp/lab/blame.txt\ncat /tmp/lab/blame.txt\n\n# git blame : 줄마다 마지막으로 바꾼 커밋과 작성자"
+  }
+}

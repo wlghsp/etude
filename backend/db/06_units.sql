@@ -453,3 +453,5 @@ UPDATE quest_set SET unit_id = 40 WHERE id = 362;
 INSERT INTO unit (id, category, title, display_order) SELECT 41, 'OpenStack', '오브젝트와 자동화', 115 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 41);
 UPDATE quest_set SET unit_id = 41 WHERE id = 363;
 UPDATE quest_set SET unit_id = 41 WHERE id = 364;
+INSERT INTO unit (id, category, title, display_order) SELECT 42, 'Git', '기록 살펴보기', 45 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 42);
+UPDATE quest_set SET unit_id = 42 WHERE id = 365;
