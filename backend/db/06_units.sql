@@ -444,3 +444,6 @@ UPDATE quest_set SET unit_id = 37 WHERE id = 356;
 INSERT INTO unit (id, category, title, display_order) SELECT 38, 'OpenStack', '네트워크', 112 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 38);
 UPDATE quest_set SET unit_id = 38 WHERE id = 357;
 UPDATE quest_set SET unit_id = 38 WHERE id = 358;
+INSERT INTO unit (id, category, title, display_order) SELECT 39, 'OpenStack', '스토리지와 이미지', 113 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 39);
+UPDATE quest_set SET unit_id = 39 WHERE id = 359;
+UPDATE quest_set SET unit_id = 39 WHERE id = 360;
