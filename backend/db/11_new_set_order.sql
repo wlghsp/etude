@@ -475,3 +475,7 @@ UPDATE quest_set SET display_order = 225, unit_id = (SELECT id FROM unit WHERE i
 UPDATE quest_set SET display_order = 701 WHERE id = 353;
 -- 세트 354
 UPDATE quest_set SET display_order = 702 WHERE id = 354;
+-- 세트 355
+UPDATE quest_set SET display_order = 703 WHERE id = 355;
+-- 세트 356
+UPDATE quest_set SET display_order = 704 WHERE id = 356;
