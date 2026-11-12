@@ -491,3 +491,7 @@ UPDATE quest_set SET display_order = 708 WHERE id = 360;
 UPDATE quest_set SET display_order = 709 WHERE id = 361;
 -- 세트 362
 UPDATE quest_set SET display_order = 710 WHERE id = 362;
+-- 세트 363
+UPDATE quest_set SET display_order = 711 WHERE id = 363;
+-- 세트 364
+UPDATE quest_set SET display_order = 712 WHERE id = 364;

@@ -1,0 +1,54 @@
+-- OpenStack 세트 363. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_openstack_category.md
+INSERT INTO unit (id, category, title, display_order) SELECT 41, 'OpenStack', '오브젝트와 자동화', 115 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 41);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 363, 'Swift 기초: 계정·컨테이너·객체와 프록시·링', '파일을 객체로 저장하는 Swift 를 익힙니다. 계정·컨테이너·객체의 계층과 이름 공간, 객체 주소 형식, 크기 제한, 프록시 서버와 링의 역할, 기본 복제 횟수, 객체를 읽을 때의 흐름을 봅니다.', 'quiz', 'OpenStack'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 363);
+UPDATE quest_set SET unit_id = (SELECT id FROM unit WHERE id = 41), icon = '🪣', display_order = 711 WHERE id = 363;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 363, 1, '오브젝트 스토리지', 'OpenStack 의 **Swift** 는 어떤 종류의 저장소일까요?', '파일을 통째로 저장하는 쪽이에요.', NULL, NULL, '[]', 'choice', '["서버에 붙여 쓰는 블록 스토리지", "서버를 만드는 원본 이미지 저장소", "파일(객체)을 통째로 저장하는 오브젝트 스토리지", "사용자 비밀번호를 보관하는 저장소"]', 2, '보안 가이드는 Swift 를 객체(파일) 저장 서비스로, Cinder 를 블록 스토리지로 구분합니다. Swift 는 데이터를 객체 단위로 저장합니다.', NULL, NULL, NULL, '[{"title": "Swift 문서", "url": "https://docs.openstack.org/swift/latest/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 363 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 363, 2, '계정이란', 'Swift 의 **계정(account)** 은 계층에서 어디에 있을까요?', '가장 위에 있어요.', NULL, NULL, '[]', 'choice', '["계층의 맨 아래이며 객체 하나를 뜻한다", "계층의 최상위이며 프로젝트와 같은 뜻", "컨테이너 안에 들어 있는 하위 폴더다", "서버 한 대의 CPU 사용량을 뜻한다"]', 1, 'Swift API 문서는 계정을 "계층의 최상위"라고 하며, OpenStack 에서는 프로젝트(또는 테넌트)와 같은 뜻이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "Swift 오브젝트 스토리지 API 개요", "url": "https://docs.openstack.org/swift/latest/api/object_api_v1_overview.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 363 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 363, 3, '컨테이너란', 'Swift 의 **컨테이너(container)** 는 무엇일까요?', '객체를 담는 이름 공간이에요.', NULL, NULL, '[]', 'choice', '["객체를 담는 이름 공간(namespace)", "도커 컨테이너처럼 프로그램을 실행하는 격리 환경", "서버를 만드는 CPU·메모리 규격표", "사용자를 묶어 두는 그룹 한 개"]', 0, '문서는 컨테이너를 "객체의 이름 공간을 정의한다"고 설명합니다. 도커 컨테이너와는 이름만 같은 별개의 개념입니다.', NULL, NULL, NULL, '[{"title": "Swift 오브젝트 스토리지 API 개요", "url": "https://docs.openstack.org/swift/latest/api/object_api_v1_overview.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 363 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 363, 4, '객체란', 'Swift 의 **객체(object)** 에는 무엇이 저장될까요?', '문서나 이미지 같은 것이에요.', NULL, NULL, '[]', 'choice', '["서버의 CPU 와 메모리 설정 값만", "네트워크 패킷을 거르는 규칙 목록", "토큰 발급 기록과 로그인 시각", "문서·이미지 같은 데이터와 사용자 메타데이터"]', 3, '문서는 객체가 "문서, 이미지 같은 데이터 내용을 저장하며" 사용자 지정 메타데이터를 가질 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Swift 오브젝트 스토리지 API 개요", "url": "https://docs.openstack.org/swift/latest/api/object_api_v1_overview.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 363 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 363, 5, '같은 이름의 객체', '컨테이너 `a` 와 컨테이너 `b` 에 이름이 같은 객체가 각각 있으면 어떻게 될까요?', '컨테이너가 이름 공간이라는 점을 떠올려 보세요.', NULL, NULL, '[]', 'choice', '["나중에 만든 쪽이 먼저 것을 지운다", "이름이 겹치므로 둘 다 만들 수 없다", "서로 다른 두 객체로 다뤄진다", "자동으로 하나의 객체로 합쳐진다"]', 2, '문서는 컨테이너가 객체 이름 공간이어서 같은 객체 이름이 두 컨테이너에 있어도 서로 다른 객체라고 설명합니다.', NULL, NULL, NULL, '[{"title": "Swift 오브젝트 스토리지 API 개요", "url": "https://docs.openstack.org/swift/latest/api/object_api_v1_overview.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 363 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 363, 6, '이름 속의 슬래시', '객체 이름에 슬래시(`/`)를 넣어 `flowers/rose.jpg` 처럼 쓰면 어떻게 될까요?', '진짜 폴더가 생기는 건 아니에요.', NULL, NULL, '[]', 'choice', '["컨테이너 안에 실제 하위 컨테이너가 생긴다", "실제 하위 폴더는 아니고 의사(pseudo) 계층이다", "슬래시가 있는 이름은 오류로 거부된다", "객체가 자동으로 두 개로 나뉘어 저장된다"]', 1, '문서는 객체 이름 속 슬래시가 의사 계층 폴더를 만들 뿐 실제 하위 폴더는 아니라고 설명합니다.', NULL, NULL, NULL, '[{"title": "Swift 오브젝트 스토리지 API 개요", "url": "https://docs.openstack.org/swift/latest/api/object_api_v1_overview.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 363 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 363, 7, '프록시 서버의 일', 'Swift 의 **프록시 서버** 가 하는 일로 알맞은 것은 무엇일까요?', '요청을 받아 길을 안내해요.', NULL, NULL, '[]', 'choice', '["링에서 위치를 찾아 알맞은 서버로 연결한다", "모든 객체를 자기 디스크에 혼자 저장한다", "사용자 계정과 비밀번호를 발급한다", "가상 머신을 만들고 시작한다"]', 0, '문서는 프록시 서버가 요청마다 링에서 계정·컨테이너·객체의 위치를 찾아 요청을 보낸다고 설명합니다. 실패도 처리하고 객체를 스트리밍합니다.', NULL, NULL, NULL, '[{"title": "Swift 아키텍처 개요", "url": "https://docs.openstack.org/swift/latest/overview_architecture.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 363 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 363, 8, '링이란', 'Swift 의 **링(ring)** 은 무엇을 해 줄까요?', '이름을 가지고 위치를 찾는 거예요.', NULL, NULL, '[]', 'choice', '["사용자를 인증하고 토큰을 만들어 준다", "서버 사이의 네트워크 연결을 끊어 준다", "객체 내용을 압축해서 크기를 줄여 준다", "이름을 실제 저장 위치에 대응시켜 준다"]', 3, '문서는 링이 엔티티 이름을 물리적 위치에 대응시키며, 계정용·컨테이너용 링과 저장 정책마다 객체 링이 따로 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Swift 아키텍처 개요", "url": "https://docs.openstack.org/swift/latest/overview_architecture.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 363 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 363, 9, '기본 복제 횟수', 'Swift 는 데이터를 기본적으로 클러스터에 **몇 벌** 복제해 둘까요?', '"기본 3 벌"이라고 문서가 말해요.', NULL, NULL, '[]', 'choice', '["1 벌", "2 벌", "3 벌", "5 벌"]', 2, '문서는 각 파티션이 기본적으로 클러스터에 3 번 복제된다고 설명합니다. 복제본은 지역·존·서버·디스크를 가능한 만큼 나눠 둡니다.', NULL, NULL, NULL, '[{"title": "Swift 아키텍처 개요", "url": "https://docs.openstack.org/swift/latest/overview_architecture.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 363 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 363, 10, '객체 주소 만들기', 'Swift 의 객체 주소 형식입니다. 빈칸을 채우세요.', '계정 → 컨테이너 → 마지막은 무엇일까요?', NULL, NULL, '[]', 'fill', '["object", "volume", "image", "server"]', NULL, 'Swift API 의 자원 경로는 `/v1/{account}/{container}/{object}` 입니다.', '[0]', '/v1/<계정>/<컨테이너>/{0}', NULL, '[{"title": "Swift 오브젝트 스토리지 API 개요", "url": "https://docs.openstack.org/swift/latest/api/object_api_v1_overview.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 363 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 363, 11, '객체 크기 제한', '객체 하나의 **기본 최대 크기** 는 {0} GB 입니다. 빈칸을 채우세요.', '제공자가 바꿀 수도 있어요.', NULL, NULL, '[]', 'fill', '["5", "1", "50", "500"]', NULL, '문서는 객체 하나가 기본적으로 최대 5 GB 까지 가능하다고 설명하며 제공자가 설정을 바꿀 수 있다고 합니다. 더 큰 데이터는 큰 객체(large object) 기능으로 올립니다.', '[0]', '5', NULL, '[{"title": "Swift 오브젝트 스토리지 API 개요", "url": "https://docs.openstack.org/swift/latest/api/object_api_v1_overview.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 363 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 363, 12, '객체를 읽을 때의 흐름', 'Swift 에서 클라이언트가 객체를 요청했을 때의 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '프록시 → 링 → 저장 서버 순서예요.', NULL, NULL, '[]', 'order', '["클라이언트가 프록시 서버에 요청을 보낸다", "프록시 서버가 링에서 객체의 위치를 찾는다", "프록시 서버가 그 위치의 객체 서버에 요청한다", "객체 데이터를 클라이언트에게 전달한다"]', NULL, '프록시 서버는 링에서 위치를 찾아 알맞은 서버로 요청을 보내고 객체를 스트리밍합니다. 문서의 역할 설명을 이은 큰 줄기입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "Swift 아키텍처 개요", "url": "https://docs.openstack.org/swift/latest/overview_architecture.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 363 AND order_index = 12);
