@@ -1,0 +1,14 @@
+{
+  "setId": 367,
+  "answers": {
+    "1": "mariadb shop -e \"INSERT INTO customers VALUES (7, 'song', 'Daegu');\"\nmariadb shop -e 'SELECT * FROM customers;'\n\n# INSERT 로 행을 추가한다. 컬럼 순서(id, name, city)대로 값을 준다",
+    "2": "mariadb shop -e \"INSERT INTO products VALUES (6, 'cable', 2000, 'electronics'), (7, 'stapler', 5000, 'stationery');\"\n\n# VALUES (...), (...) 로 여러 행을 한 번에",
+    "3": "mariadb shop -e \"UPDATE products SET price = 1200 WHERE name = 'pen';\"\nmariadb shop -e 'SELECT * FROM products;'\n\n# WHERE 로 대상 행을 좁힌 뒤 SET 으로 바꾼다",
+    "4": "mariadb shop -e \"UPDATE products SET price = price + 1000 WHERE category = 'electronics';\"\n\n# SET price = price + 값 으로 현재 값 기준으로 바꾼다",
+    "5": "mariadb shop -e 'DELETE FROM orders WHERE id = 10;'\nmariadb shop -e 'SELECT id FROM orders;'\n\n# DELETE 는 WHERE 로 대상 행을 좁혀 지운다",
+    "6": "mariadb shop -e 'SELECT * FROM orders WHERE qty = 1;'\nmariadb shop -e 'DELETE FROM orders WHERE qty = 1;'\n\n# 지우기 전에 같은 WHERE 로 SELECT 해서 대상을 확인한다",
+    "7": "mariadb shop -e \"START TRANSACTION; UPDATE accounts SET balance = balance - 3000 WHERE owner = 'kim'; UPDATE accounts SET balance = balance + 3000 WHERE owner = 'lee'; COMMIT;\"\nmariadb shop -e 'SELECT * FROM accounts;'\n\n# 두 UPDATE 를 한 트랜잭션으로 묶고 COMMIT 으로 확정한다",
+    "8": "mariadb shop -e 'START TRANSACTION; UPDATE accounts SET balance = 0; SELECT SUM(balance) AS total FROM accounts; ROLLBACK;' > /tmp/q8.txt\ncat /tmp/q8.txt\nmariadb shop -e 'SELECT * FROM accounts;'\n\n# 트랜잭션 안에서는 0 으로 보이지만 ROLLBACK 하면 원래대로 돌아온다",
+    "9": "mariadb shop -e \"INSERT INTO customers_backup SELECT * FROM customers WHERE city = 'Seoul';\"\nmariadb shop -e 'SELECT * FROM customers_backup;'\n\n# INSERT ... SELECT 로 조회 결과를 다른 테이블에 복사한다"
+  }
+}

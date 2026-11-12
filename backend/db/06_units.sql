@@ -456,3 +456,4 @@ UPDATE quest_set SET unit_id = 41 WHERE id = 364;
 INSERT INTO unit (id, category, title, display_order) SELECT 42, 'Git', '기록 살펴보기', 45 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 42);
 UPDATE quest_set SET unit_id = 42 WHERE id = 365;
 UPDATE quest_set SET unit_id = 30 WHERE id = 366;
+UPDATE quest_set SET unit_id = 30 WHERE id = 367;
