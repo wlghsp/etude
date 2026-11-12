@@ -441,3 +441,6 @@ UPDATE quest_set SET unit_id = 36 WHERE id = 354;
 INSERT INTO unit (id, category, title, display_order) SELECT 37, 'OpenStack', '인스턴스', 111 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 37);
 UPDATE quest_set SET unit_id = 37 WHERE id = 355;
 UPDATE quest_set SET unit_id = 37 WHERE id = 356;
+INSERT INTO unit (id, category, title, display_order) SELECT 38, 'OpenStack', '네트워크', 112 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 38);
+UPDATE quest_set SET unit_id = 38 WHERE id = 357;
+UPDATE quest_set SET unit_id = 38 WHERE id = 358;
