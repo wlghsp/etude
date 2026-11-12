@@ -1,0 +1,14 @@
+{
+  "setId": 345,
+  "answers": {
+    "1": "kubectl set image deployment/ro-web nginx=nginx:1.25 -n $NS\nkubectl rollout status deployment/ro-web -n $NS > /tmp/status.txt\ncat /tmp/status.txt\n\n# 마지막 줄: deployment \"ro-web\" successfully rolled out\n# rollout status 는 끝날 때까지 붙잡고 기다린다. 막히면 계속 기다리므로 --timeout 으로 한도를 줄 수 있다",
+    "2": "kubectl scale deployment/ro-web --current-replicas=2 --replicas=5 -n $NS\nkubectl get deployment ro-web -n $NS\n\n# 현재 값이 2 가 아니면 'precondition failed' 로 거절된다\n# 이 안전장치로 \"내가 본 상태 그대로일 때만\" 바꿀 수 있다",
+    "3": "kubectl annotate deployment/ro-web -n $NS kubernetes.io/change-cause='initial 1.24' --overwrite\nkubectl set image deployment/ro-web nginx=nginx:1.25 -n $NS\nkubectl rollout status deployment/ro-web -n $NS\nkubectl annotate deployment/ro-web -n $NS kubernetes.io/change-cause='upgrade 1.25' --overwrite\nkubectl rollout history deployment/ro-web -n $NS\n\n# 1  initial 1.24\n# 2  upgrade 1.25\n# 사유는 \"그 순간의 버전\" 에 붙는다. 업데이트 전에는 옛 버전에, 후에는 새 버전에 적힌다",
+    "4": "kubectl rollout history deployment/ro-web -n $NS --revision=2\nkubectl rollout history deployment/ro-web -n $NS --revision=2 | grep 'Image:' | awk '{print $2}' > /tmp/rev2.txt\ncat /tmp/rev2.txt   # nginx:1.25\n\n# history 만 보는 읽기 작업이라 Deployment 는 바뀌지 않는다",
+    "7": "kubectl patch deployment ro-web -n $NS -p '{\"spec\":{\"strategy\":{\"rollingUpdate\":{\"maxSurge\":0,\"maxUnavailable\":1}}}}'\nkubectl get deployment ro-web -n $NS -o jsonpath='{.spec.strategy}'\n\n# patch 는 적은 필드만 바꾸고 나머지는 그대로 둔다\n# 템플릿이 아닌 strategy 만 바뀌므로 Pod 가 다시 뜨지는 않는다",
+    "8": "kubectl rollout pause deployment/ro-web -n $NS\nkubectl set image deployment/ro-web nginx=nginx:1.25 -n $NS\nkubectl set env deployment/ro-web APP_MODE=prod -n $NS\nkubectl rollout resume deployment/ro-web -n $NS\nkubectl rollout status deployment/ro-web -n $NS\nkubectl rollout history deployment/ro-web -n $NS   # 1, 2 두 줄뿐\n\n# 멈춘 동안에는 템플릿만 바뀌고 Pod 는 그대로다. resume 하면 한 번에 롤아웃된다",
+    "9": "kubectl get deployment ro-web -n $NS -o jsonpath='{.status.availableReplicas}' > /tmp/avail.txt\ncat /tmp/avail.txt   # 3\n\n# 새 Pod 는 ErrImagePull 로 못 뜨지만, maxUnavailable 0 이라 옛 Pod 3개는 지워지지 않고 서비스를 계속한다\n# 이것이 롤링 업데이트가 \"틀린 배포\" 에서도 서비스를 지켜 주는 이유다",
+    "10": "kubectl patch deployment ro-web -n $NS -p '{\"spec\":{\"progressDeadlineSeconds\":20}}'\nkubectl rollout status deployment/ro-web -n $NS --timeout=60s   # error: ... exceeded its progress deadline\nkubectl get deployment ro-web -n $NS -o jsonpath='{.status.conditions[?(@.type==\"Progressing\")].reason}'   # ProgressDeadlineExceeded\n\n# 한도가 지나도 Deployment 가 알아서 되돌리지는 않는다. \"실패\" 라고 표시해 줄 뿐이라 사람이나 CI 가 보고 undo 한다",
+    "11": "kubectl rollout history deployment/ro-web -n $NS\nkubectl rollout undo deployment/ro-web -n $NS --to-revision=1\nkubectl rollout status deployment/ro-web -n $NS\nkubectl get pods -n $NS -l app=ro-web\n\n# 옵션 없이 undo 하면 바로 전 버전이고, --to-revision 은 번호로 고른다\n# 되돌려도 번호는 줄지 않고 새 REVISION 으로 올라간다 (이전 번호는 이력에서 사라진다)"
+  }
+}

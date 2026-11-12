@@ -1,0 +1,14 @@
+{
+  "setId": 346,
+  "answers": {
+    "1": "cd /tmp/work\nprintf 'FROM alpine\\nRUN echo \"hello etude\" > /hello.txt\\nLABEL purpose=training\\n' > Dockerfile\ndocker build -t hello:1 .\ndocker run --rm hello:1 cat /hello.txt\ndocker image inspect -f '{{.Config.Labels}}' hello:1\n\n# RUN 은 빌드 때 실행되고 결과가 이미지에 남는다",
+    "2": "cd /tmp/work\nprintf 'FROM alpine\\nWORKDIR /srv/app\\nCOPY app.sh .\\n' > Dockerfile\ndocker build -t wd:1 .\ndocker run --rm wd:1 pwd\ndocker run --rm wd:1 ls\n\n# 이미지 설정의 Config.WorkingDir 에 기록된다",
+    "3": "docker run --rm cmd:1\ndocker run --rm cmd:1 echo changed > /tmp/work/out.txt\ncat /tmp/work/out.txt\n\n# CMD 는 기본값일 뿐이라 run 뒤의 명령이 이긴다",
+    "5": "docker run --name e1 -e MODE=dev env:1\ndocker logs e1 > /tmp/work/mode.txt\ncat /tmp/work/mode.txt\n\n# 이미지의 ENV 는 prod 그대로 남는다",
+    "6": "cd /tmp/work\ndocker build --build-arg VER=2.5 -t ver:1 .\ndocker run --rm ver:1\n\n# ARG 는 빌드 때만, ENV 는 실행 때도 보인다. VER 은 이미지 Env 에 없고 APP_VER 만 남는다",
+    "8": "cd /tmp/work\ncat Dockerfile\necho changed >> app.txt\ndocker build -t cache:2 .\ndocker history cache:2\n\n# 바뀐 줄 위쪽 단계는 그대로(CACHED) 재사용되고, 바뀐 줄부터 새로 만든다",
+    "9": "cd /tmp/work\nprintf '*.log\\n!important.log\\ntmp/\\n' > .dockerignore\ndocker build -t ign:1 .\ndocker run --rm ign:1 ls /data\n\n# 뺄 것을 먼저, 예외(!)는 그 뒤에 적는다",
+    "10": "cd /tmp/work\nprintf 'FROM alpine AS builder\\nRUN mkdir /out && echo built-in-stage-one > /out/result.txt\\nFROM alpine\\nCOPY --from=builder /out/result.txt /result.txt\\n' > Dockerfile\ndocker build -t ms:1 .\ndocker run --rm ms:1 cat /result.txt\n\n# 첫 단계의 나머지(/out 폴더 등)는 최종 이미지에 들어가지 않는다",
+    "11": "cd /tmp/work\nprintf 'FROM alpine\\nRUN adduser -D app\\nUSER app\\nCMD [\"id\",\"-un\"]\\n' > Dockerfile\ndocker build -t nonroot:1 .\ndocker run --rm nonroot:1\n\n# USER 를 쓰지 않으면 기본은 root"
+  }
+}

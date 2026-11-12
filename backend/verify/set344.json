@@ -1,0 +1,14 @@
+{
+  "setId": 344,
+  "answers": {
+    "1": "tr ',' ' ' < /tmp/lab/members.csv > /tmp/lab/members_space.txt\ncat /tmp/lab/members_space.txt\n\n# tr 은 글자 하나를 글자 하나로 바꾼다. 파일은 < 로 넣는다",
+    "2": "cut -d, -f2 /tmp/lab/members.csv > /tmp/lab/names.txt\ncat /tmp/lab/names.txt\n\n# -d 는 구분 문자, -f 는 꺼낼 칸 번호다",
+    "5": "sed 's/,/ | /g' /tmp/lab/members.csv > /tmp/lab/members_table.txt\ncat /tmp/lab/members_table.txt\n\n# g 가 없으면 각 줄의 첫 쉼표만 바뀐다",
+    "6": "sed -n '4p' /tmp/lab/members.csv > /tmp/lab/fourth.txt\ncat /tmp/lab/fourth.txt\n\n# -n 이 없으면 4번째 줄이 두 번 나오고 나머지 줄도 모두 나온다",
+    "7": "sed '/retired/d' /tmp/lab/members.csv > /tmp/lab/active.csv\ncat /tmp/lab/active.csv\n\n# /패턴/ 은 줄을 고르는 주소이고 d 는 그 줄을 지우는 명령이다",
+    "8": "sed -i 's/Seoul/Daejeon/' /tmp/lab/work.csv\ncat /tmp/lab/work.csv\n\n# -i 는 결과를 파일에 다시 써 넣는다. 처음 쓸 때는 cp 로 백업을 떠 두면 안전하다",
+    "9": "sort -t, -k5,5nr /tmp/lab/members.csv > /tmp/lab/by_score.csv\ncat /tmp/lab/by_score.csv\n\n# -n 이 없으면 100 이 91 보다 작다고 본다 (글자 비교)",
+    "10": "paste -d, /tmp/lab/members.csv /tmp/lab/bonus.txt > /tmp/lab/members_bonus.csv\ncat /tmp/lab/members_bonus.csv\n\n# 옵션 없이 쓰면 두 줄 사이에 탭이 들어간다",
+    "12": "echo 'name,score' > /tmp/lab/summary.csv\nsed '/retired/d' /tmp/lab/members.csv | cut -d, -f2,5 | sort -t, -k2,2nr >> /tmp/lab/summary.csv\ncat /tmp/lab/summary.csv\n\n# > 는 덮어쓰기, >> 는 이어 붙이기다. cut 뒤에는 점수가 2번째 칸이 된다"
+  }
+}
