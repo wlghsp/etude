@@ -497,3 +497,16 @@ UPDATE quest_set SET display_order = 711 WHERE id = 363;
 UPDATE quest_set SET display_order = 712 WHERE id = 364;
 -- 세트 365
 UPDATE quest_set SET display_order = 440 WHERE id = 365;
+-- 세트 366
+UPDATE quest_set SET display_order = 552 WHERE id = 158;
+UPDATE quest_set SET display_order = 553 WHERE id = 332;
+UPDATE quest_set SET display_order = 554 WHERE id = 59;
+UPDATE quest_set SET display_order = 555 WHERE id = 87;
+UPDATE quest_set SET display_order = 556 WHERE id = 91;
+UPDATE quest_set SET display_order = 557 WHERE id = 109;
+UPDATE quest_set SET display_order = 558 WHERE id = 60;
+UPDATE quest_set SET display_order = 559 WHERE id = 99;
+UPDATE quest_set SET display_order = 560 WHERE id = 83;
+UPDATE quest_set SET display_order = 561 WHERE id = 102;
+UPDATE quest_set SET display_order = 562 WHERE id = 118;
+UPDATE quest_set SET display_order = 550, unit_id = (SELECT id FROM unit WHERE id = 30), icon = '🔍' WHERE id = 366;

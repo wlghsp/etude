@@ -1,0 +1,14 @@
+{
+  "setId": 366,
+  "answers": {
+    "1": "mariadb shop -e \"SELECT name, city FROM customers WHERE city = 'Seoul'\" > /tmp/q1.txt\ncat /tmp/q1.txt\n\n# WHERE 조건에 맞는 행만 남긴다",
+    "2": "mariadb shop -e 'SELECT name, price FROM products ORDER BY price DESC LIMIT 3;' > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# 큰 값부터 정렬한 뒤 위 3개만",
+    "3": "mariadb shop -e 'SELECT name FROM products WHERE price BETWEEN 3000 AND 40000;' > /tmp/q3.txt\ncat /tmp/q3.txt\n\n# BETWEEN 은 양 끝을 포함한다",
+    "4": "mariadb shop -e 'SELECT COUNT(*) AS orders_cnt, SUM(qty) AS total_qty FROM orders;' > /tmp/q4.txt\ncat /tmp/q4.txt\n\n# COUNT(*) 는 행 수, SUM 은 합계, AS 는 결과 컬럼 이름",
+    "5": "mariadb shop -e 'SELECT city, COUNT(*) AS cnt FROM customers GROUP BY city;' > /tmp/q5.txt\ncat /tmp/q5.txt\n\n# GROUP BY 로 묶으면 집계가 묶음마다 계산된다",
+    "6": "mariadb shop -e 'SELECT customer_id, COUNT(*) AS cnt FROM orders GROUP BY customer_id HAVING COUNT(*) >= 2;' > /tmp/q6.txt\ncat /tmp/q6.txt\n\n# WHERE 는 묶기 전 행, HAVING 은 묶은 뒤 집계 결과를 거른다",
+    "7": "mariadb shop -e 'SELECT c.name, o.id AS order_id FROM customers c JOIN orders o ON o.customer_id = c.id;' > /tmp/q7.txt\ncat /tmp/q7.txt\n\n# JOIN ... ON 으로 같은 값을 가진 행끼리 잇는다",
+    "8": "mariadb shop -e 'SELECT c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE o.id IS NULL;' > /tmp/q8.txt\ncat /tmp/q8.txt\n\n# LEFT JOIN 후 오른쪽이 NULL 인 행이 짝 없는 행이다",
+    "9": "mariadb shop -e 'SELECT c.name, SUM(o.qty * p.price) AS total FROM customers c JOIN orders o ON o.customer_id = c.id JOIN products p ON p.id = o.product_id GROUP BY c.name;' > /tmp/q9.txt\ncat /tmp/q9.txt\n\n# JOIN 을 이어 붙이고 GROUP BY 로 고객별 합계를 낸다"
+  }
+}
