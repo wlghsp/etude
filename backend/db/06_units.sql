@@ -435,3 +435,6 @@ UPDATE quest_set SET unit_id = 32 WHERE id = 349;
 UPDATE quest_set SET unit_id = 2 WHERE id = 350;
 UPDATE quest_set SET unit_id = 7 WHERE id = 351;
 UPDATE quest_set SET unit_id = 34 WHERE id = 352;
+INSERT INTO unit (id, category, title, display_order) SELECT 36, 'OpenStack', '서비스 지도', 110 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 36);
+UPDATE quest_set SET unit_id = 36 WHERE id = 353;
+UPDATE quest_set SET unit_id = 36 WHERE id = 354;

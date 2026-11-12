@@ -28,6 +28,7 @@ export const GEAR: Record<string, { icon: string; name: string }> = {
   '미들웨어': { icon: '🎒', name: '도구 가방' },
   '데이터베이스': { icon: '📚', name: '지식 서고' },
   '인프라': { icon: '🔨', name: '망치' },
+  'OpenStack': { icon: '🪽', name: '구름 날개' },
 }
 
 /** 모든 세트를 한 번 이상 끝낸 분야 이름들 */

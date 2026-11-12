@@ -471,3 +471,7 @@ UPDATE quest_set SET display_order = 233 WHERE id = 38;
 UPDATE quest_set SET display_order = 234 WHERE id = 39;
 UPDATE quest_set SET display_order = 235 WHERE id = 97;
 UPDATE quest_set SET display_order = 225, unit_id = (SELECT id FROM unit WHERE id = 34), icon = '🧹' WHERE id = 352;
+-- 세트 353
+UPDATE quest_set SET display_order = 701 WHERE id = 353;
+-- 세트 354
+UPDATE quest_set SET display_order = 702 WHERE id = 354;
