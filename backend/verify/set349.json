@@ -1,0 +1,14 @@
+{
+  "setId": 349,
+  "answers": {
+    "1": "docker run --name wd -w /srv/data alpine pwd\ndocker logs wd\n\n# -w 는 이미지의 WORKDIR 을 이번 실행에서만 덮어쓴다",
+    "2": "docker run --name hn --hostname etude-box alpine hostname\ndocker logs hn\n\n# --name 은 도커가 부르는 이름, --hostname 은 컨테이너 안에서 보이는 이름",
+    "3": "docker run --name ef --env-file /tmp/work/app.env alpine sh -c 'echo $MODE-$REGION'\ndocker logs ef\n\n# 파일의 각 줄이 -e 이름=값 하나씩과 같다",
+    "4": "docker run --name ov --env-file /tmp/work/app.env -e MODE=dev alpine sh -c 'echo $MODE-$REGION'\ndocker logs ov\n\n# 옵션을 적는 순서와 상관없이 -e 가 이긴다. Env 목록에는 prod 도 보이지만 마지막 값(dev)이 쓰인다",
+    "6": "docker run --name ep --entrypoint /bin/echo alpine hello etude\ndocker logs ep\ndocker inspect -f '{{json .Config.Entrypoint}}' ep\n\n# 옵션은 이미지 이름 앞, 인자는 이미지 이름 뒤",
+    "7": "docker run --name ah --add-host mydb:host-gateway alpine grep mydb /etc/hosts\ndocker logs ah\n\n# DNS 없이도 mydb 라는 이름이 통한다",
+    "8": "docker run -d --name lb1 --label team=blue alpine sleep 300\ndocker run -d --name lb2 --label team=red alpine sleep 300\ndocker inspect -f '{{json .Config.Labels}}' lb1 lb2\n\n# 라벨은 이미지가 아니라 컨테이너에도 직접 붙일 수 있다",
+    "9": "docker ps -a --filter label=team=blue --format '{{.Names}}' > /tmp/work/blue.txt\ncat /tmp/work/blue.txt\n\n# 필터는 라벨 키=값 전체를 적는다. -a 가 없으면 종료된 f3 이 빠진다",
+    "11": "docker run -d --init --rm --name tmpc alpine sleep 300\ndocker inspect -f '{{.HostConfig.Init}} {{.HostConfig.AutoRemove}}' tmpc\n\n# 멈추면 (docker stop tmpc) 컨테이너가 알아서 사라진다"
+  }
+}

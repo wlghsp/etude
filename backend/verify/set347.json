@@ -1,0 +1,14 @@
+{
+  "setId": 347,
+  "answers": {
+    "1": "find /tmp/lab/src -type f -name '*.log' > /tmp/lab/logs.txt\ncat /tmp/lab/logs.txt\n\n# -type f 가 없으면 이름이 .log 인 폴더도 같이 나온다",
+    "2": "find /tmp/lab/src -maxdepth 1 -type f -name '*.log' | wc -l > /tmp/lab/top_count.txt\ncat /tmp/lab/top_count.txt\n\n# -maxdepth 가 없으면 하위 폴더의 .log 까지 세서 7 이 나온다",
+    "3": "find /tmp/lab/src -type f -size +1k > /tmp/lab/big.txt\ncat /tmp/lab/big.txt\n\n# +1k 는 1k 초과, -1k 는 미만이다",
+    "4": "find /tmp/lab/src -type f -mtime +30 > /tmp/lab/old.txt\ncat /tmp/lab/old.txt\n\n# +30 은 30일 초과, -30 은 30일 이내, 30 은 딱 30일 전이다",
+    "5": "find /tmp/lab/src -type f -name '*.tmp' -exec mv {} /tmp/lab/trash/ \\;\nls /tmp/lab/trash\n\n# {} 는 찾은 파일 하나로 바뀌고, \\; 는 명령의 끝을 뜻한다",
+    "7": "find /tmp/lab/src -type f -name '*.log' -exec cp -t /tmp/lab/backup {} +\nls /tmp/lab/backup\n\n# -t 는 목적지를 앞에 적게 해서 {} 를 맨 끝에 둘 수 있다",
+    "9": "find /tmp/lab/src -type f -name '* *' -print0 | xargs -0 rm\nfind /tmp/lab/src -type f\n\n# -print0 과 -0 이 짝이다. 하나만 쓰면 공백이 든 이름이 깨진다",
+    "10": "find /tmp/lab/src -type f -name '*.conf' | xargs -n1 basename > /tmp/lab/confnames.txt\ncat /tmp/lab/confnames.txt\n\n# -n1 은 xargs 가 명령을 한 번 실행할 때 인자를 하나만 준다",
+    "12": "grep -rl --include='*.conf' 'debug=true' /tmp/lab/src | xargs sed -i 's/debug=true/debug=false/'\ngrep -r 'debug=' /tmp/lab/src\n\n# -l 은 파일 이름만 출력, --include 는 검색할 파일 이름 패턴을 제한한다"
+  }
+}
