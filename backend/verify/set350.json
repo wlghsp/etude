@@ -1,0 +1,14 @@
+{
+  "setId": 350,
+  "answers": {
+    "1": "LAB_A=one\nexport LAB_B=two\nbash -c 'echo \"[$LAB_A]\"' > /tmp/lab/plain.txt\nbash -c 'echo \"[$LAB_B]\"' > /tmp/lab/exported.txt\ncat /tmp/lab/plain.txt /tmp/lab/exported.txt\n\n# export 하지 않은 변수는 자식에게 보이지 않아 [] 가 된다",
+    "2": "export LAB_TOKEN=k7x2\nprintenv LAB_TOKEN > /tmp/lab/value.txt\nenv | grep '^LAB_TOKEN=' > /tmp/lab/env_line.txt\ncat /tmp/lab/value.txt /tmp/lab/env_line.txt\n\n# printenv 이름 은 값만, env 는 이름=값 전체",
+    "3": "export PATH=$PATH:/tmp/lab/tools\nhello-lab > /tmp/lab/hello_out.txt\necho \"$PATH\" > /tmp/lab/path.txt\ncat /tmp/lab/hello_out.txt\n\n# $PATH:새폴더 : 기존 PATH 뒤에 새 폴더를 붙인다",
+    "4": "export PATH=/tmp/lab/new:/tmp/lab/old:$PATH\ncommand -v hello-lab > /tmp/lab/where.txt\nhello-lab > /tmp/lab/ver.txt\necho \"$PATH\" > /tmp/lab/path4.txt\ncat /tmp/lab/where.txt /tmp/lab/ver.txt\n\n# PATH 는 앞쪽 폴더가 먼저 이긴다. command -v 는 실행될 경로를 보여 준다",
+    "5": "APP_MODE=debug /tmp/lab/showenv.sh > /tmp/lab/once.txt\n/tmp/lab/showenv.sh > /tmp/lab/after.txt\ncat /tmp/lab/once.txt /tmp/lab/after.txt\n\n# 변수=값 명령 : 그 명령 한 번에만 적용, 다음 줄에는 남지 않는다",
+    "7": "export LAB_SECRET=s3\nprintenv LAB_SECRET > /tmp/lab/before.txt\nunset LAB_SECRET\nprintenv LAB_SECRET > /tmp/lab/after.txt\necho $? > /tmp/lab/status.txt\ncat /tmp/lab/before.txt /tmp/lab/status.txt\n\n# unset 은 변수를 없앤다. LAB_SECRET= 로 비우는 것과 다르다 (그러면 printenv 가 빈 줄을 출력하고 종료 코드 0)",
+    "9": "echo 'echo \"hello, ${NAME:-guest}\"' > /tmp/lab/greet.sh\nbash /tmp/lab/greet.sh\nNAME=Ann bash /tmp/lab/greet.sh\n\n# :- 는 변수가 없거나 빈 값일 때 기본값을 쓴다 (- 만 쓰면 빈 값은 그대로 통과)",
+    "11": "echo 'export LAB_COLOR=blue' >> /tmp/lab/my_bashrc\necho 'export PATH=$PATH:/tmp/lab/tools' >> /tmp/lab/my_bashrc\ncat /tmp/lab/my_bashrc\nsource /tmp/lab/my_bashrc\n\n# >> 는 이어쓰기. 작은따옴표로 감싸야 $PATH 가 파일에 글자 그대로 적힌다",
+    "12": "echo \"alias lt='ls -t'\" >> /tmp/lab/aliasrc\necho 'unalias rm' >> /tmp/lab/aliasrc\nbash -c 'source /tmp/lab/aliasrc; alias'\n\n# 파일 끝에 unalias 를 덧붙이면 source 할 때 앞에서 만든 rm 별칭이 사라진다"
+  }
+}

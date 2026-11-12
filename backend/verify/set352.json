@@ -1,0 +1,14 @@
+{
+  "setId": 352,
+  "answers": {
+    "1": "docker ps -a --filter status=exited --format '{{.Names}}' > /tmp/work/exited.txt\ncat /tmp/work/exited.txt\n\n# 필터 값은 running, exited, created ... 중 하나. -a 가 없으면 종료된 것은 안 보인다",
+    "2": "docker system df --format '{{.Type}}: {{.TotalCount}}' > /tmp/work/df.txt\ncat /tmp/work/df.txt\n\n# 크기(.Size)는 환경마다 달라서 채점하지 않는다. 개수는 정해져 있다",
+    "3": "docker container prune -f\ndocker ps -a\n\n# prune 은 멈춘 것만 지운다. 실행 중인 r1 은 남는다",
+    "4": "docker ps -aq --filter exited=1\ndocker rm $(docker ps -aq --filter exited=1)\ndocker ps -a\n\n# 필터로 대상을 좁힌 뒤 rm 에 넘긴다",
+    "5": "docker container prune -f --filter label=tier=tmp\ndocker ps -a --format '{{.Names}} {{.Status}}'\n\n# 필터가 범위를 줄이고, 실행 중인 r1 은 라벨이 맞아도 안전하다",
+    "7": "docker images --filter dangling=true\ndocker image prune -f\ndocker images\n\n# -a 를 붙이면 안 쓰는 태그 이미지까지 지워지니 여기서는 붙이지 않는다",
+    "8": "docker image prune -a -f\ndocker images\n\n# -a: 컨테이너가 하나도 안 쓰는 이미지 전부. r1 이 쓰는 alpine 은 남는다",
+    "9": "docker volume prune -a -f\ndocker volume ls\n\n# 컨테이너가(멈춘 것도) 연결한 볼륨은 남는다. data1 과 익명 볼륨만 사라진다",
+    "10": "docker network prune -f\ndocker network ls\n\n# 연결된 컨테이너가 있는 net-b 와 기본 네트워크는 남는다"
+  }
+}
