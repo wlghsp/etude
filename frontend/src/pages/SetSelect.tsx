@@ -10,6 +10,7 @@ import { groupByUnit } from "../units";
 import { SetPath } from "./SetPath";
 import { Logo } from "../components/Logo";
 import { ProgressRing } from "../components/ProgressRing";
+import { homeGreeting } from "../greeting";
 
 interface Props {
     onSelect: (setId: number, sandboxType: string) => void
@@ -44,6 +45,7 @@ interface Stats {
     streak: number // 연속 학습일 (오늘 또는 어제까지 이어진 날 수)
     lastCategory: string | null // 가장 최근에 세트를 끝낸 분야
     lastSetId: number | null // 가장 최근에 끝낸 세트 (추천은 그 다음부터 이어진다)
+    lastAt: Date | null // 가장 최근에 세트를 끝낸 시각 (인사 문구용)
     level: LevelInfo // 경험치와 레벨
 }
 
@@ -80,6 +82,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
                 streak: gami.streak,
                 lastCategory: latest?.category ?? null,
                 lastSetId: latest?.setId ?? null,
+                lastAt: latest?.at ?? null,
                 level: gami.level,
             })
         }).catch(() => { /* 완료 표시가 없어도 세트는 고를 수 있다 */ })
@@ -138,7 +141,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
                                 <div className="flex flex-col md:flex-row md:items-center gap-5">
                                     <Logo size={64} className="shrink-0 drop-shadow-[0_0_18px_rgba(129,140,248,0.5)]" />
                                     <div className="min-w-0 flex-1">
-                                        <p className="font-sans text-label-caps text-on-surface-variant">{stats.completed === 0 ? '첫 세트를 시작해 볼까요? 🙂' : '오늘은 이거 해 볼까요? 🙂'}</p>
+                                        <p className="truncate font-sans text-label-caps text-on-surface-variant">{homeGreeting({ lastAt: stats.lastAt, streak: stats.streak, completed: stats.completed, lastSetTitle: sets.find((s) => s.id === stats.lastSetId)?.title ?? null, now: new Date() })}</p>
                                         <h2 className="mt-1 font-sans text-headline-lg text-on-surface">{nextSet.title}</h2>
                                         <p className="mt-1 font-sans text-label-caps text-on-surface-variant">{setKind(nextSet).icon} {setKind(nextSet).label} · {setKind(nextSet).hint}</p>
                                         {(completedCount[nextSet.id] ?? 0) === 0 && firstXpLabel(nextSet) && <span className="mt-2 inline-block rounded-full border border-gold/50 bg-gold/10 px-3 py-0.5 font-sans text-label-caps text-gold">첫 완료 {firstXpLabel(nextSet)}</span>}
