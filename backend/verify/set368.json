@@ -1,0 +1,14 @@
+{
+  "setId": 368,
+  "answers": {
+    "1": "cd /tmp/lab/proj\ngit status --short\ngit stash\ngit status --short\n\n# git stash : 커밋하지 않은 변경을 보관함에 넣고 작업 폴더를 깨끗하게 한다",
+    "2": "cd /tmp/lab/proj\ngit stash\ngit stash list > /tmp/lab/stash_list.txt\ncat /tmp/lab/stash_list.txt\n\n# git stash list : 보관함에 든 항목들. stash@{0} 이 가장 최근",
+    "3": "cd /tmp/lab/proj\ngit stash\ngit status --short > /tmp/lab/clean.txt\ngit stash pop\ngit status --short > /tmp/lab/back.txt\ncat /tmp/lab/back.txt\n\n# git stash pop : 되살리고 보관함에서 지운다 (apply 는 되살리기만 한다)",
+    "4": "cd /tmp/lab/proj\ngit tag v1.0\ngit tag\n\n# git tag 이름 : 현재 커밋에 가벼운(lightweight) 태그",
+    "5": "cd /tmp/lab/proj\ngit tag -a v1.1 -m \"release 1.1\"\ngit tag -n1\n\n# -a : 메시지·작성자·날짜를 가진 태그 객체를 만든다",
+    "6": "cd /tmp/lab/proj\ngit log --oneline\ngit tag v0.5 HEAD~1\ngit log --oneline --decorate\n\n# git tag 이름 커밋 : 지정한 커밋에 태그를 단다",
+    "7": "cd /tmp/lab/proj\ngit tag -l \"v1.*\" > /tmp/lab/tags.txt\ncat /tmp/lab/tags.txt\n\n# git tag -l \"패턴\" : 패턴에 맞는 태그만",
+    "8": "cd /tmp/lab/proj\ngit log feature --oneline\ngit cherry-pick feature~1\ngit log --oneline -3\n\n# git cherry-pick 커밋 : 다른 브랜치의 커밋 하나를 현재 브랜치로 가져온다",
+    "9": "cd /tmp/lab/proj\ngit cherry-pick -x feature\ngit log -1\n\n# -x : 메시지에 원래 커밋 해시를 남겨 출처를 알 수 있게 한다"
+  }
+}
