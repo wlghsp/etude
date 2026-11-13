@@ -6,7 +6,7 @@ import {
   type AdminUser, type AdminQuestSet,
 } from "../api/admin"
 
-const CATEGORY_ORDER = ['리눅스', '도커', 'k8s', 'Git', '미들웨어', '데이터베이스', '인프라', 'OpenStack']
+const CATEGORY_ORDER = ['리눅스', '도커', 'k8s', 'Git', '미들웨어', '데이터베이스', '가상화', '스토리지', '네트워크', 'OpenStack']
 
 interface Props {
     onHome: () => void

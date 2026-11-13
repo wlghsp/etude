@@ -1,5 +1,5 @@
 -- 단원(unit): 분야 아래 세트 묶음. 한 단원의 세트는 quest_set.display_order 가 이어져야 한다. docs/specs/spec_units.md
-INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
+INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 1 · 조회', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
 INSERT INTO unit (id, category, title, display_order) SELECT 31, '데이터베이스', 'Redis', 30 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 31);
 INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
 INSERT INTO unit (id, category, title, display_order) SELECT 2, '리눅스', '도구 다루기', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 2);
@@ -42,7 +42,7 @@ INSERT INTO unit (id, category, title, display_order) SELECT 14, 'Git', '브랜�
 UPDATE quest_set SET unit_id = 14 WHERE id = 53;
 INSERT INTO unit (id, category, title, display_order) SELECT 15, 'Git', '원격과 협업', 30 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 15);
 UPDATE quest_set SET unit_id = 15 WHERE id = 54;
-INSERT INTO unit (id, category, title, display_order) SELECT 16, '인프라', '용어 지도', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 16);
+INSERT INTO unit (id, category, title, display_order) SELECT 16, '가상화', '용어 지도', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 16);
 UPDATE quest_set SET unit_id = 16 WHERE id = 55;
 INSERT INTO unit (id, category, title, display_order) SELECT 17, 'Git', '되돌리기와 복구', 40 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 17);
 UPDATE quest_set SET unit_id = 17 WHERE id = 56;
@@ -54,7 +54,7 @@ INSERT INTO unit (id, category, title, display_order) SELECT 20, '데이터베�
 UPDATE quest_set SET unit_id = 20 WHERE id = 59;
 INSERT INTO unit (id, category, title, display_order) SELECT 20, '데이터베이스', 'MariaDB 운영', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 20);
 UPDATE quest_set SET unit_id = 31 WHERE id = 60;
-INSERT INTO unit (id, category, title, display_order) SELECT 21, '인프라', '스토리지·네트워크·클라우드', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 21);
+INSERT INTO unit (id, category, title, display_order) SELECT 21, '스토리지', '스토리지 기초', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 21);
 UPDATE quest_set SET unit_id = 21 WHERE id = 61;
 INSERT INTO unit (id, category, title, display_order) SELECT 22, '미들웨어', '검색·로그 저장', 50 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 22);
 UPDATE quest_set SET unit_id = 22 WHERE id = 62;
@@ -157,8 +157,9 @@ INSERT INTO unit (id, category, title, display_order) SELECT 27, '미들웨어',
 UPDATE quest_set SET unit_id = 27 WHERE id = 115;
 INSERT INTO unit (id, category, title, display_order) SELECT 23, '미들웨어', 'CI/CD·레지스트리', 60 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 23);
 UPDATE quest_set SET unit_id = 23 WHERE id = 116;
-INSERT INTO unit (id, category, title, display_order) SELECT 21, '인프라', '스토리지·네트워크·클라우드', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 21);
-UPDATE quest_set SET unit_id = 21 WHERE id = 117;
+INSERT INTO unit (id, category, title, display_order) SELECT 21, '스토리지', '스토리지 기초', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 21);
+INSERT INTO unit (id, category, title, display_order) SELECT 43, '네트워크', '연결이 안 될 때', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 43);
+UPDATE quest_set SET unit_id = 43 WHERE id = 117;
 INSERT INTO unit (id, category, title, display_order) SELECT 20, '데이터베이스', 'MariaDB 운영', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 20);
 UPDATE quest_set SET unit_id = 31 WHERE id = 118;
 INSERT INTO unit (id, category, title, display_order) SELECT 29, 'k8s', '클러스터 운영·보안', 45 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 29);
@@ -201,11 +202,11 @@ INSERT INTO unit (id, category, title, display_order) SELECT 5, '도커', 'Docke
 UPDATE quest_set SET unit_id = 5 WHERE id = 137;
 INSERT INTO unit (id, category, title, display_order) SELECT 12, 'Git', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 12);
 UPDATE quest_set SET unit_id = 12 WHERE id = 138;
-INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
+INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 1 · 조회', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
 UPDATE quest_set SET unit_id = 30 WHERE id = 139;
-INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
+INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 1 · 조회', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
 UPDATE quest_set SET unit_id = 30 WHERE id = 140;
-INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
+INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 1 · 조회', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
 UPDATE quest_set SET unit_id = 30 WHERE id = 141;
 INSERT INTO unit (id, category, title, display_order) SELECT 5, '도커', 'Docker 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 5);
 UPDATE quest_set SET unit_id = 5 WHERE id = 142;
@@ -241,7 +242,7 @@ INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크�
 UPDATE quest_set SET unit_id = 7 WHERE id = 157;
 INSERT INTO unit (id, category, title, display_order) SELECT 20, '데이터베이스', 'MariaDB 운영', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 20);
 UPDATE quest_set SET unit_id = 20 WHERE id = 158;
-INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
+INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 1 · 조회', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
 UPDATE quest_set SET unit_id = 30 WHERE id = 159;
 INSERT INTO unit (id, category, title, display_order) SELECT 5, '도커', 'Docker 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 5);
 UPDATE quest_set SET unit_id = 5 WHERE id = 160;
@@ -251,7 +252,7 @@ INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '�
 UPDATE quest_set SET unit_id = 1 WHERE id = 162;
 INSERT INTO unit (id, category, title, display_order) SELECT 7, 'k8s', '워크로드와 설정', 20 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 7);
 UPDATE quest_set SET unit_id = 7 WHERE id = 163;
-INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
+INSERT INTO unit (id, category, title, display_order) SELECT 30, '데이터베이스', 'SQL 1 · 조회', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 30);
 UPDATE quest_set SET unit_id = 30 WHERE id = 164;
 INSERT INTO unit (id, category, title, display_order) SELECT 1, '리눅스', '기초', 10 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 1);
 UPDATE quest_set SET unit_id = 1 WHERE id = 165;
@@ -465,3 +466,26 @@ UPDATE quest_set SET unit_id = 30 WHERE id = 372;
 UPDATE quest_set SET unit_id = 14 WHERE id = 373;
 UPDATE quest_set SET unit_id = 30 WHERE id = 374;
 UPDATE quest_set SET unit_id = 7 WHERE id = 375;
+-- SQL 기초 단원을 주제별 4개로 나눈다 (docs/specs/spec_sql_unit_split.md)
+UPDATE unit SET title = 'SQL 1 · 조회', display_order = 10 WHERE id = 30;
+UPDATE quest_set SET unit_id = 30 WHERE id = 125;
+UPDATE quest_set SET unit_id = 30 WHERE id = 126;
+UPDATE quest_set SET unit_id = 30 WHERE id = 139;
+UPDATE quest_set SET unit_id = 30 WHERE id = 329;
+UPDATE quest_set SET unit_id = 30 WHERE id = 140;
+UPDATE quest_set SET unit_id = 30 WHERE id = 330;
+UPDATE quest_set SET unit_id = 30 WHERE id = 366;
+INSERT INTO unit (id, category, title, display_order) SELECT 44, '데이터베이스', 'SQL 2 · JOIN·서브쿼리·윈도', 11 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 44);
+UPDATE quest_set SET unit_id = 44 WHERE id = 141;
+UPDATE quest_set SET unit_id = 44 WHERE id = 331;
+UPDATE quest_set SET unit_id = 44 WHERE id = 372;
+UPDATE quest_set SET unit_id = 44 WHERE id = 374;
+INSERT INTO unit (id, category, title, display_order) SELECT 45, '데이터베이스', 'SQL 3 · 데이터 바꾸기', 12 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 45);
+UPDATE quest_set SET unit_id = 45 WHERE id = 159;
+UPDATE quest_set SET unit_id = 45 WHERE id = 333;
+UPDATE quest_set SET unit_id = 45 WHERE id = 367;
+INSERT INTO unit (id, category, title, display_order) SELECT 46, '데이터베이스', 'SQL 4 · 테이블과 인덱스', 13 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 46);
+UPDATE quest_set SET unit_id = 46 WHERE id = 164;
+UPDATE quest_set SET unit_id = 46 WHERE id = 334;
+UPDATE quest_set SET unit_id = 46 WHERE id = 371;
+UPDATE quest_set SET unit_id = 46 WHERE id = 369;

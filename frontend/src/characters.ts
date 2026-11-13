@@ -27,7 +27,9 @@ export const GEAR: Record<string, { icon: string; name: string }> = {
   'Git': { icon: '🧣', name: '망토' },
   '미들웨어': { icon: '🎒', name: '도구 가방' },
   '데이터베이스': { icon: '📚', name: '지식 서고' },
-  '인프라': { icon: '🔨', name: '망치' },
+  '가상화': { icon: '🔮', name: '수정구' },
+  '스토리지': { icon: '📦', name: '보관 상자' },
+  '네트워크': { icon: '🧭', name: '나침반' },
   'OpenStack': { icon: '🪽', name: '구름 날개' },
 }
 

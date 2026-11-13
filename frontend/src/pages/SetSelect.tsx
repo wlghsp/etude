@@ -35,7 +35,9 @@ const CATEGORY_META: Record<string, { icon: string; text: string; border: string
     'Git':    { icon: '🌿', text: 'text-lime', border: 'border-lime/60', ring: 'text-lime', grad: 'from-lime/15', bar: 'from-lime/70', nodeRing: 'ring-lime/60' },
     '미들웨어': { icon: '🧩', text: 'text-teal', border: 'border-teal/60', ring: 'text-teal', grad: 'from-teal/15', bar: 'from-teal/70', nodeRing: 'ring-teal/60' },
     '데이터베이스': { icon: '🗄️', text: 'text-rose', border: 'border-rose/60', ring: 'text-rose', grad: 'from-rose/15', bar: 'from-rose/70', nodeRing: 'ring-rose/60' },
-    '인프라':  { icon: '🏗️', text: 'text-coral', border: 'border-coral/60', ring: 'text-coral', grad: 'from-coral/15', bar: 'from-coral/70', nodeRing: 'ring-coral/60' },
+    '가상화':  { icon: '🖥️', text: 'text-coral', border: 'border-coral/60', ring: 'text-coral', grad: 'from-coral/15', bar: 'from-coral/70', nodeRing: 'ring-coral/60' },
+    '스토리지': { icon: '💾', text: 'text-gold', border: 'border-gold/60', ring: 'text-gold', grad: 'from-gold/15', bar: 'from-gold/70', nodeRing: 'ring-gold/60' },
+    '네트워크': { icon: '🌐', text: 'text-success', border: 'border-success/60', ring: 'text-success', grad: 'from-success/15', bar: 'from-success/70', nodeRing: 'ring-success/60' },
     'OpenStack': { icon: '☁️', text: 'text-info', border: 'border-info/60', ring: 'text-info', grad: 'from-info/15', bar: 'from-info/70', nodeRing: 'ring-info/60' },
 }
 const DEFAULT_META = { icon: '📁', text: 'text-info', border: 'border-info/60', ring: 'text-info', grad: 'from-info/15', bar: 'from-info/70', nodeRing: 'ring-info/60' }
