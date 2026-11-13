@@ -54,6 +54,28 @@ KUBECONFIG_PATH=$HOME/.kube/config-etude npm run dev
 IDE에서 실행한다면 실행 설정의 환경변수에 `KUBECONFIG_PATH`를 추가한다.
 자세한 배경은 [../glossary/kubeconfig.md](../glossary/kubeconfig.md)를 참고한다.
 
+### k8s 세트를 `verify:quests` 로 검증할 때
+
+검증 도구는 세션 네임스페이스를 만들 때 **호스트의 `kubectl` 기본 컨텍스트**를 쓴다. 다른 프로젝트
+때문에 기본 컨텍스트가 `k3d-etude` 가 아니면(예: `kind-...`) 모든 문제가 `answer-rejected` 로
+실패하고, 엉뚱한 클러스터에 세션을 만들려 할 수 있다. 검증 전에 확인한다.
+
+```bash
+kubectl config current-context        # k3d-etude 여야 한다
+```
+
+기본 컨텍스트를 바꾸고 싶지 않다면 검증 프로세스에만 k3d 용 kubeconfig 를 준다. 이 파일은 접속 정보가
+들어 있으므로 저장소 밖(예: 임시 폴더)에 두고 커밋하지 않는다.
+
+```bash
+k3d kubeconfig get etude > "$TMPDIR/k3d-host.yaml" && chmod 600 "$TMPDIR/k3d-host.yaml"
+cd backend
+KUBECONFIG="$TMPDIR/k3d-host.yaml" KUBECONFIG_PATH=$HOME/.kube/config-etude npm run -s verify:quests -- --set <번호>
+```
+
+`KUBECONFIG`(호스트 kubectl 용, 서버 주소 `0.0.0.0:포트`)와 `KUBECONFIG_PATH`(컨테이너용, 서버 주소
+`k3d-etude-server-0`)는 서로 다른 파일이다.
+
 ## DB 초기화 (스키마가 맞지 않을 때)
 
 초기화 SQL(`backend/db/*.sql`)은 **볼륨이 비어 있을 때만** 실행된다. 스키마를 처음부터
