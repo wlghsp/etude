@@ -494,3 +494,6 @@ UPDATE quest_set SET unit_id = 21 WHERE id = 377;
 INSERT INTO unit (id, category, title, display_order) SELECT 47, '네트워크', '네트워크 기초', 5 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 47);
 UPDATE quest_set SET unit_id = 47 WHERE id = 378;
 UPDATE quest_set SET unit_id = 47 WHERE id = 379;
+INSERT INTO unit (id, category, title, display_order) SELECT 48, '가상화', '가상화 기초', 5 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 48);
+UPDATE quest_set SET unit_id = 48 WHERE id = 380;
+UPDATE quest_set SET unit_id = 48 WHERE id = 381;

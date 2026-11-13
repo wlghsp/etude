@@ -1,0 +1,54 @@
+-- 가상화 퀴즈 세트 381. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_virt_quiz_sets.md
+INSERT INTO unit (id, category, title, display_order) SELECT 48, '가상화', '가상화 기초', 5 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unit WHERE id = 48);
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 381, 'virsh 로 VM 운영하기: 시작·종료·정지·정의와 삭제', 'virsh 로 가상 머신을 다루는 기본기를 익힙니다. list 의 범위, shutdown 과 destroy, suspend·resume, define·undefine, 스토리지가 남는 조건, autostart, save 가 저장하는 것, domstate 를 봅니다.', 'quiz', '가상화'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 381);
+UPDATE quest_set SET unit_id = (SELECT id FROM unit WHERE id = 48), icon = '🎛️', display_order = 628 WHERE id = 381;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 381, 1, 'list 의 기본 범위', '옵션 없이 `virsh list` 를 실행하면 무엇이 나올까요?', '꺼진 VM 은 안 보여요.', NULL, NULL, '[]', 'choice', '["등록된 모든 도메인이 나온다", "꺼진 도메인만 나온다", "실행 중인 도메인만 나온다", "호스트의 물리 서버 정보가 나온다"]', 2, 'virsh 문서는 옵션이 없으면 실행 중인 도메인 정보를 출력한다고 설명합니다. 꺼진 것까지 보려면 `--all` 을 씁니다.', NULL, NULL, NULL, '[{"title": "virsh 매뉴얼", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 381 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 381, 2, 'shutdown 과 destroy', '`virsh destroy vm1` 은 무엇을 할까요?', '이름이 무섭지만 디스크를 지우지는 않아요.', NULL, NULL, '[]', 'choice', '["VM 의 디스크와 설정을 모두 삭제해 버린다", "VM 을 즉시 강제 종료한다 (디스크는 지우지 않는다)", "게스트 OS 와 협의하여 정상적으로 종료한다", "VM 을 일시 정지 상태로만 바꾼다"]', 1, 'virsh 문서는 `destroy` 를 게스트에게 반응할 기회를 주지 않는 즉시 종료이며 전원 코드를 뽑는 것과 같다고 하고, 게스트가 사용하는 스토리지 볼륨은 지우지 않는다고 설명합니다. 보통은 `shutdown` 을 권합니다.', NULL, NULL, NULL, '[{"title": "virsh 매뉴얼", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 381 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 381, 3, 'shutdown 이 안 끝날 때', '`virsh shutdown vm1` 을 했는데 한참 지나도 꺼지지 않습니다. 이유로 알맞은 것은 무엇일까요?', '게스트의 협조가 필요해요.', NULL, NULL, '[]', 'choice', '["게스트 OS 의 협조가 필요해 성공이 보장되지 않는다", "virsh 가 고장 나서 어떤 명령도 안 먹는 상태다", "shutdown 은 원래 VM 을 지우는 명령이라 오래 걸린다", "호스트의 물리 전원이 꺼져야 시작되는 명령이다"]', 0, 'virsh 문서는 shutdown 이 게스트 OS 와 조율하므로 성공이 보장되지 않고 서비스 종료에 따라 걸리는 시간이 다르다고 설명합니다. 끝내 안 꺼지면 `destroy` 로 강제 종료합니다.', NULL, NULL, NULL, '[{"title": "virsh 매뉴얼", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 381 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 381, 4, 'suspend 와 resume', '`virsh suspend vm1` 을 하면 VM 은 어떻게 될까요?', '`virsh list` 에서 paused 로 보여요.', NULL, NULL, '[]', 'choice', '["호스트 전체가 절전 모드로 들어가 버린다", "VM 이 종료되고 할당된 메모리가 해제된다", "VM 설정이 삭제되어서 다시 만들어야 한다", "일시 정지(paused)되며 자원은 그대로 유지된다"]', 3, 'virsh 문서는 paused 를 보통 `virsh suspend` 로 생기는 상태이며 이때도 할당된 자원은 계속 쓴다고 설명합니다. `resume` 은 일시 정지에서 꺼내 하이퍼바이저가 다시 스케줄링하게 합니다.', NULL, NULL, NULL, '[{"title": "virsh 매뉴얼", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 381 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 381, 5, 'define 과 start', '`virsh define vm1.xml` 만 실행했습니다. VM 은 어떤 상태일까요?', '등록과 시작은 다른 단계예요.', NULL, NULL, '[]', 'choice', '["등록과 함께 바로 실행 중이다", "파일만 읽고 아무것도 기억하지 않는다", "등록만 되고 시작되지는 않은 상태다", "실행 중인 VM 을 정의 파일로 교체해 재시작한다"]', 2, 'virsh 문서는 `define` 이 도메인 정의를 등록하지만 시작하지 않는다고 설명합니다. 이미 실행 중이면 변경은 다음 부팅 때 반영됩니다. 시작은 `start` 입니다.', NULL, NULL, NULL, '[{"title": "virsh 매뉴얼", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 381 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 381, 6, 'undefine 의 범위', '`virsh undefine vm1` 만 실행하면 VM 의 디스크 파일은 어떻게 될까요?', '옵션이 있어야 스토리지도 지워요.', NULL, NULL, '[]', 'choice', '["디스크 파일도 항상 같이 완전히 지워진다", "옵션이 없으면 설정만 지워지고 스토리지는 남는다", "디스크 파일이 압축되어 따로 보관된다", "실행 중인 VM 이 즉시 강제로 종료된다"]', 1, 'virsh 문서의 undefine 문법은 `--storage`·`--remove-all-storage` 같은 옵션을 줄 때 스토리지를 지운다고 보여 줍니다. 옵션이 없으면 설정만 지웁니다. 실행 중이면 종료하지 않고 임시(transient) 도메인이 됩니다.', NULL, NULL, NULL, '[{"title": "virsh 매뉴얼", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 381 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 381, 7, 'autostart', '`virsh autostart vm1` 은 무엇을 설정할까요?', '호스트가 켜질 때예요.', NULL, NULL, '[]', 'choice', '["호스트가 부팅할 때 이 VM 을 자동으로 시작하도록 한다", "VM 안에서 서비스가 자동으로 시작되게 한다", "파일이 바뀌면 VM 을 자동으로 재시작한다", "VM 의 디스크를 자동으로 백업한다"]', 0, 'virsh 문서는 autostart 를 호스트가 부팅할 때마다 도메인이 자동으로 시작되도록 설정하는 것이라 설명하고 `--disable` 로 끕니다.', NULL, NULL, NULL, '[{"title": "virsh 매뉴얼", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 381 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 381, 8, 'save 가 저장하는 것', '`virsh save vm1 vm1.state` 가 파일에 저장하는 것은 무엇일까요?', '문서가 괄호로 알려 줘요.', NULL, NULL, '[]', 'choice', '["VM 의 디스크 전체와 메모리 상태를 모두", "VM 의 XML 정의와 네트워크 설정만 따로", "VM 안에 있는 사용자 파일들의 목록만", "메모리(RAM) 상태이며 디스크 내용은 포함하지 않는다"]', 3, 'virsh 문서는 save 를 "실행 중인 도메인(RAM, 디스크 상태 제외)을 상태 파일로 저장"하여 나중에 복원할 수 있게 하는 명령으로 설명합니다. 디스크 스냅샷은 `snapshot-create-as` 같은 별도 기능입니다.', NULL, NULL, NULL, '[{"title": "virsh 매뉴얼", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 381 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 381, 9, '콘솔 접속', 'SSH 가 안 되는 VM 에 **가상 시리얼 콘솔** 로 붙는 명령은 무엇일까요?', '이름 그대로예요.', NULL, NULL, '[]', 'choice', '["virsh screenshot vm1", "virsh send-key vm1", "virsh console vm1", "virsh domdisplay vm1"]', 2, 'virsh 문서는 `console` 을 게스트의 가상 시리얼 콘솔에 연결하는 명령으로 설명합니다. 네트워크 설정이 깨진 VM 에 들어갈 때 쓸 수 있습니다. `screenshot` 은 화면 캡처, `send-key` 는 키 입력 전달, `domdisplay` 는 화면 접속 주소 출력입니다.', NULL, NULL, NULL, '[{"title": "virsh 매뉴얼", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 381 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 381, 10, '상태 확인', 'VM 의 현재 상태(running, paused, shut off)만 보는 명령입니다. 빈칸을 채우세요.', 'dom 으로 시작해요.', NULL, NULL, '[]', 'fill', '["domstate", "dominfo", "domname", "domid"]', NULL, 'virsh 문서는 `domstate` 를 도메인의 상태를 돌려주는 명령으로 설명하며 `--reason` 으로 이유도 봅니다.', '[0]', 'virsh {0} vm1', NULL, '[{"title": "virsh 매뉴얼", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 381 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 381, 11, '자동 시작 설정', '호스트 부팅 때 VM 이 자동으로 시작되게 하는 명령입니다. 빈칸을 채우세요.', '"자동 시작"이에요.', NULL, NULL, '[]', 'fill', '["autostart", "start", "boot", "enable"]', NULL, 'virsh 문서의 `autostart [--disable] [--once] 도메인` 입니다. `--disable` 로 해제합니다.', '[0]', 'virsh {0} vm1', NULL, '[{"title": "virsh 매뉴얼", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 381 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 381, 12, 'VM 을 잠시 멈추고 되살리기', 'VM 을 일시 정지했다가 다시 돌리는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '정지 → 확인 → 재개 → 확인 순서예요.', NULL, NULL, '[]', 'order', '["`virsh suspend vm1` 으로 일시 정지한다", "`virsh domstate vm1` 으로 paused 인지 확인한다", "`virsh resume vm1` 으로 다시 돌린다", "`virsh domstate vm1` 으로 running 인지 확인한다"]', NULL, '`suspend` 로 paused 상태가 되고 `resume` 으로 일시 정지에서 꺼냅니다. 상태는 `domstate` 로 확인합니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "virsh 매뉴얼", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 381 AND order_index = 12);

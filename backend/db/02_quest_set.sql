@@ -280,4 +280,6 @@ INSERT INTO quest_set (id, title, description, sandbox_type, category) VALUES
   (376, '스토리지 개념 지도: 블록·파일·오브젝트, NFS·iSCSI, RAID', '저장 방식 세 가지(블록·파일·오브젝트)를 구분하고, 대표 프로토콜 NFS 와 iSCSI 의 차이, RAID 0·1·5 의 특징과 용량 계산, RAID 는 백업이 아니라는 점, 디스크 고장 뒤 복구 순서를 익힙니다.', 'quiz', '스토리지'),
   (377, 'LVM 과 Ceph 구조: PV·VG·LV 와 OSD·MON·쿼럼', '디스크를 유연하게 나눠 쓰는 LVM(PV·VG·LV, vgextend, lvextend, pvmove)과 분산 스토리지 Ceph 의 구조(블록·파일·오브젝트, OSD, 모니터와 쿼럼, 복제 3 벌, RGW)를 익힙니다.', 'quiz', '스토리지'),
   (378, '네트워크 연결 요소: VLAN·브리지·본딩·MTU', '같은 링크 안에서 일어나는 연결의 기본기를 익힙니다. VLAN 과 트렁크, 리눅스 브리지, 본딩 모드(balance-rr·active-backup·802.3ad)와 miimon, MTU 1500 과 점보 프레임, 관련 ip 명령을 봅니다.', 'quiz', '네트워크'),
-  (379, '네트워크 주소와 경로: 사설 주소·CIDR·게이트웨이·라우팅·ARP', '패킷이 목적지까지 가는 길을 읽습니다. 사설 주소 대역과 CIDR 호스트 수, 기본 게이트웨이와 default 경로, 가장 길게 일치하는 경로, metric, ip route get, ARP, ss 로 듣는 포트 확인을 익힙니다.', 'quiz', '네트워크');
+  (379, '네트워크 주소와 경로: 사설 주소·CIDR·게이트웨이·라우팅·ARP', '패킷이 목적지까지 가는 길을 읽습니다. 사설 주소 대역과 CIDR 호스트 수, 기본 게이트웨이와 default 경로, 가장 길게 일치하는 경로, metric, ip route get, ARP, ss 로 듣는 포트 확인을 익힙니다.', 'quiz', '네트워크'),
+  (380, '가상화 구조: KVM·QEMU·libvirt 와 디스크 이미지', '가상 머신이 돌아가는 층을 익힙니다. KVM 과 QEMU 의 관계, TCG, KVM API, libvirt 와 도메인, virtio, qcow2 와 VM 스냅샷, raw 이미지의 공간, 라이브 마이그레이션, virsh 기본 명령을 봅니다.', 'quiz', '가상화'),
+  (381, 'virsh 로 VM 운영하기: 시작·종료·정지·정의와 삭제', 'virsh 로 가상 머신을 다루는 기본기를 익힙니다. list 의 범위, shutdown 과 destroy, suspend·resume, define·undefine, 스토리지가 남는 조건, autostart, save 가 저장하는 것, domstate 를 봅니다.', 'quiz', '가상화');
