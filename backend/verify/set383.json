@@ -1,0 +1,14 @@
+{
+  "setId": 383,
+  "answers": {
+    "1": "cd /tmp/lab && helm create webapp\nls webapp webapp/templates\n\n# helm create 가 Chart.yaml, values.yaml, templates/ 를 만든다",
+    "2": "helm show values /tmp/lab/demo > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# show values 는 차트의 values.yaml 내용을 출력한다",
+    "3": "helm template rel3 /tmp/lab/demo > /tmp/q3.yaml\ncat /tmp/q3.yaml\n\n# template 은 렌더링만 한다. 릴리스 이름 rel3 이 ConfigMap 이름 rel3-config 에 들어간다",
+    "4": "helm template rel4 /tmp/lab/demo --set greeting=hi-etude > /tmp/q4.yaml\ncat /tmp/q4.yaml\n\n# --set 이 values.yaml 의 기본값보다 우선한다",
+    "5": "helm template rel5 /tmp/lab/demo -f /tmp/lab/prod.yaml > /tmp/q5.yaml\ncat /tmp/q5.yaml\n\n# -f 로 넘긴 값이 기본값을 덮어쓴다. 값 파일에 없는 키는 기본값이 그대로다",
+    "6": "helm lint /tmp/lab/broken      # [ERROR] Chart.yaml: version is required\necho 'version: 0.1.0' >> /tmp/lab/broken/Chart.yaml\nhelm lint /tmp/lab/broken\n\n# Chart.yaml 에는 apiVersion, name, version 이 필수다. 빠진 version 을 추가한다",
+    "7": "mkdir -p /tmp/pkg\nhelm package /tmp/lab/demo -d /tmp/pkg\nls /tmp/pkg\n\n# 이름-버전.tgz 가 만들어진다 (demo-0.1.0.tgz)",
+    "8": "helm install rel8 /tmp/lab/demo --set greeting=hi-etude\nhelm list\nkubectl get configmap rel8-config -o jsonpath='{.data.greeting}'\n\n# 릴리스 이름 rel8 → ConfigMap rel8-config. --set 으로 greeting 이 바뀐다",
+    "9": "helm history rel9\nhelm rollback rel9 1\nhelm history rel9\nkubectl get configmap rel9-config -o jsonpath='{.data.greeting}'\n\n# 리비전 1 로 rollback 하면 greeting 이 v1 로 돌아오고 이력에는 리비전 3 이 추가된다"
+  }
+}

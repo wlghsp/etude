@@ -498,3 +498,4 @@ INSERT INTO unit (id, category, title, display_order) SELECT 48, '가상화', '�
 UPDATE quest_set SET unit_id = 48 WHERE id = 380;
 UPDATE quest_set SET unit_id = 48 WHERE id = 381;
 UPDATE quest_set SET unit_id = 4 WHERE id = 382;
+UPDATE quest_set SET unit_id = 7 WHERE id = 383;
