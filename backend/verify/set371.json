@@ -1,0 +1,14 @@
+{
+  "setId": 371,
+  "answers": {
+    "1": "mariadb shop -e 'CREATE TABLE books (id INT PRIMARY KEY, title VARCHAR(50) NOT NULL, price INT);'\nmariadb shop -e 'DESCRIBE books;'\n\n# CREATE TABLE 에 컬럼과 제약을 괄호 안에 나열한다. DESCRIBE 로 구조를 확인한다",
+    "2": "mariadb shop -e 'DESCRIBE customers;' > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# DESCRIBE 테이블 로 구조를 본다. Key 칸의 PRI 가 기본 키다",
+    "3": "mariadb shop -e \"INSERT INTO customers VALUES (4, NULL, 'Daegu');\" 2> /tmp/q3.txt\ncat /tmp/q3.txt\n\n# NOT NULL 컬럼에 NULL 을 넣으면 cannot be null 오류가 나고 행은 들어가지 않는다",
+    "4": "mariadb shop -e \"ALTER TABLE customers ADD COLUMN status VARCHAR(10) NOT NULL DEFAULT 'active';\"\nmariadb shop -e 'SELECT * FROM customers;'\n\n# ADD COLUMN 에 NOT NULL DEFAULT 값을 주면 기존 행에도 기본값이 들어간다",
+    "5": "mariadb shop -e 'CREATE TABLE notes (id INT AUTO_INCREMENT PRIMARY KEY, body VARCHAR(100));'\nmariadb shop -e \"INSERT INTO notes (body) VALUES ('a'), ('b');\"\nmariadb shop -e 'SELECT * FROM notes;'\n\n# AUTO_INCREMENT 컬럼은 값을 안 넣으면 1, 2, ... 로 자동 채워진다. 넣을 컬럼만 (body) 로 적는다",
+    "6": "mariadb shop -e 'CREATE TABLE pets (id INT PRIMARY KEY, owner_id INT, name VARCHAR(30), FOREIGN KEY (owner_id) REFERENCES customers (id));'\nmariadb shop -e \"INSERT INTO pets VALUES (1, 99, 'rex');\" 2> /tmp/q6.txt\ncat /tmp/q6.txt\n\n# FOREIGN KEY ... REFERENCES 로 없는 값을 막는다. 위반하면 foreign key constraint fails 오류가 난다",
+    "7": "mariadb shop -e 'ALTER TABLE customers ADD COLUMN email VARCHAR(60) AFTER name;'\nmariadb shop -e 'DESCRIBE customers;'\n\n# AFTER 컬럼 으로 추가 위치를 지정한다",
+    "8": "mariadb shop -e 'ALTER TABLE customers DROP COLUMN city;'\nmariadb shop -e 'DESCRIBE customers;'\n\n# DROP COLUMN 은 컬럼과 그 안의 값을 함께 지운다",
+    "9": "mariadb shop -e 'DROP TABLE tmp_old;'\nmariadb shop -e 'TRUNCATE TABLE logs;'\nmariadb shop -e 'SHOW TABLES;'\n\n# DROP TABLE 은 테이블을 없애고, TRUNCATE TABLE 은 행만 모두 지운다"
+  }
+}
