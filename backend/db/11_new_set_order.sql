@@ -704,3 +704,13 @@ UPDATE quest_set SET display_order = 712 WHERE id = 362;
 UPDATE quest_set SET display_order = 713 WHERE id = 363;
 UPDATE quest_set SET display_order = 714 WHERE id = 364;
 UPDATE quest_set SET display_order = 708, unit_id = (SELECT id FROM unit WHERE id = 38), icon = '🕸️' WHERE id = 385;
+-- 세트 386
+UPDATE quest_set SET display_order = 712 WHERE id = 361;
+UPDATE quest_set SET display_order = 713 WHERE id = 362;
+UPDATE quest_set SET display_order = 714 WHERE id = 363;
+UPDATE quest_set SET display_order = 715 WHERE id = 364;
+UPDATE quest_set SET display_order = 711, unit_id = (SELECT id FROM unit WHERE id = 39), icon = '🔗' WHERE id = 386;
+-- 세트 387
+UPDATE quest_set SET display_order = 715 WHERE id = 363;
+UPDATE quest_set SET display_order = 716 WHERE id = 364;
+UPDATE quest_set SET display_order = 714, unit_id = (SELECT id FROM unit WHERE id = 40), icon = '🗝️' WHERE id = 387;

@@ -1,0 +1,59 @@
+-- OpenStack 퀴즈 세트 386. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_openstack_round3.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 386, 'Cinder 심화: 멀티어태치, 볼륨 마이그레이션, 백업(전체·증분·force)', '볼륨 운영의 심화를 익힙니다. 하나의 볼륨을 여러 서버에 붙이는 멀티어태치(볼륨 타입, 클러스터 파일시스템, 정책), 백엔드 사이 볼륨 마이그레이션과 붙은 볼륨의 복사 방식, 전체·증분 백업과 붙은 볼륨의 --force 백업을 봅니다.', 'quiz', 'OpenStack'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 386);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 386, 1, '멀티어태치 볼륨', 'Cinder 의 **멀티어태치(multi-attach)** 볼륨은 무엇을 가능하게 할까요?', '"멀티"라는 말 그대로예요.', NULL, NULL, '[]', 'choice', '["하나의 서버에 볼륨을 여러 개 자동으로 붙인다", "볼륨을 여러 백엔드에 동시에 복제해 준다", "하나의 볼륨을 여러 서버에 동시에 붙일 수 있게 한다", "볼륨 하나를 여러 조각으로 자동 분할해 준다"]', 2, 'Cinder 문서는 멀티어태치를 한 볼륨을 여러 서버 인스턴스에 붙일 수 있게 하는 기능으로 설명하며, Queens 릴리스부터 이를 위해 특별한 볼륨 타입이 필요하다고 합니다.', NULL, NULL, NULL, '[{"title": "Cinder 볼륨 멀티어태치", "url": "https://docs.openstack.org/cinder/latest/admin/volume-multiattach.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 386 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 386, 2, '멀티어태치 볼륨 만들기', '멀티어태치 볼륨을 만드는 **유일한 방법** 은 무엇일까요?', '볼륨 타입과 extra-spec 이 열쇠예요.', NULL, NULL, '[]', 'choice', '["볼륨을 만든 뒤 `--multiattach` 옵션으로 서버에 붙인다", "`multiattach=<is> True` 속성을 가진 볼륨 타입으로 볼륨을 만든다", "서버의 플레이버에 multiattach 속성을 준다", "이미지의 메타데이터에 multiattach 를 적는다"]', 1, '문서는 멀티어태치 볼륨을 만드는 유일한 방법이 멀티어태치 볼륨 타입을 만들고 그 타입으로 볼륨을 만드는 것이라고 설명합니다. 타입에는 `multiattach="<is> True"` extra-spec 을 둡니다. 새 볼륨 타입 생성은 기본적으로 관리자 전용입니다.', NULL, NULL, NULL, '[{"title": "Cinder 볼륨 멀티어태치", "url": "https://docs.openstack.org/cinder/latest/admin/volume-multiattach.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 386 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 386, 3, '멀티어태치의 주의', '여러 서버에 멀티어태치 볼륨을 붙일 때 **사용자가 책임져야 하는 것** 은 무엇일까요?', '문서에 데이터 손상 경고가 있어요.', NULL, NULL, '[]', 'choice', '["클러스터 파일시스템처럼 동시 쓰기를 관리하는 방식을 쓰는 것", "볼륨을 서버마다 서로 다른 크기로 나눠 두는 것", "볼륨의 암호화 키를 서버마다 따로 지정해 주는 것", "볼륨을 붙인 서버를 모두 같은 호스트에 모아 두는 것"]', 0, '문서는 멀티어태치 또는 클러스터 파일시스템을 쓰는 것이 사용자의 책임이며, 그렇지 않으면 데이터가 손상될 가능성이 높다고 경고합니다. 일반 ext4·xfs 를 여러 서버가 동시에 마운트하면 안 됩니다.', NULL, NULL, NULL, '[{"title": "Cinder 볼륨 멀티어태치", "url": "https://docs.openstack.org/cinder/latest/admin/volume-multiattach.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 386 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 386, 4, '보조 연결의 기본 모드', '멀티어태치 볼륨에서 **두 번째 이후 연결(secondary attachment)** 은 기본적으로 어떤 모드일까요?', '볼륨 마이그레이션 같은 작업에서 문제가 될 수 있다고 해요.', NULL, NULL, '[]', 'choice', '["읽기 전용(RO) 모드", "쓰기 전용 모드", "서버가 붙을 때마다 모드를 묻는다", "읽기/쓰기(RW) 모드"]', 3, '문서는 보조 볼륨 연결이 기본적으로 읽기/쓰기 모드로 만들어지며, 볼륨 마이그레이션 같은 작업에서 문제가 될 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Cinder 볼륨 멀티어태치", "url": "https://docs.openstack.org/cinder/latest/admin/volume-multiattach.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 386 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 386, 5, '부팅 볼륨의 멀티어태치', '부팅 가능(bootable)으로 표시된 볼륨에 **연결을 여러 개 만드는 것을 막는** 정책 이름은 무엇일까요?', '정책 이름에 bootable 이 들어가요.', NULL, NULL, '[]', 'choice', '["`volume:multiattach_encrypted_volume`", "`volume:attach_boot_disk`", "`volume:multiattach_bootable_volume`", "`volume:bootable_exclusive`"]', 2, '문서는 부팅 가능 볼륨에 여러 연결을 만들지 못하게 하는 정책으로 `volume:multiattach_bootable_volume` 을 소개합니다.', NULL, NULL, NULL, '[{"title": "Cinder 볼륨 멀티어태치", "url": "https://docs.openstack.org/cinder/latest/admin/volume-multiattach.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 386 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 386, 6, '볼륨 마이그레이션', 'Cinder 의 **볼륨 마이그레이션** 에 대한 설명으로 알맞은 것은 무엇일까요?', '백엔드 사이로 데이터를 옮겨요.', NULL, NULL, '[]', 'choice', '["사용자가 볼륨을 다른 프로젝트로 넘겨주는 기능이다", "관리자가 백엔드 사이로 볼륨 데이터를 투명하게 옮기는 기능이다", "볼륨을 다른 서버로 옮겨서 다시 붙이는 기능이다", "볼륨의 이름과 설명을 한꺼번에 바꾸는 기능이다"]', 1, '문서는 OpenStack 이 볼륨 타입을 지원하는 백엔드 사이에서 볼륨을 마이그레이션할 수 있다고 하며, 현재 백엔드의 데이터를 새 백엔드로 투명하게 옮기고 이는 관리자 기능이라고 설명합니다. 스토리지 비우기(점검·폐기)나 성능·신뢰성·비용 최적화에 씁니다.', NULL, NULL, NULL, '[{"title": "Cinder 볼륨 마이그레이션", "url": "https://docs.openstack.org/cinder/latest/admin/volume-migration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 386 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 386, 7, '붙은 볼륨의 마이그레이션', '백엔드가 스스로 마이그레이션하지 못할 때, **서버에 붙어 있는** 볼륨은 어떻게 옮겨질까요?', 'Compute 가 데이터를 복사해요.', NULL, NULL, '[]', 'choice', '["Cinder 가 새 볼륨을 만들고 Compute 가 데이터를 복사한다", "Cinder 가 서버를 끄고 디스크 파일을 그대로 옮겨 놓는다", "볼륨이 붙어 있으면 어떤 경우에도 마이그레이션을 거부한다", "Glance 가 이미지로 만든 뒤 새 볼륨으로 복원해 준다"]', 0, '문서는 붙지 않은 볼륨은 Cinder 가 새 볼륨을 만들어 데이터를 복사하고, VM 에 붙은 볼륨은 새 볼륨을 만든 뒤 Compute 를 불러 데이터를 복사하며 이 방식은 현재 Compute 의 libvirt 드라이버만 지원한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Cinder 볼륨 마이그레이션", "url": "https://docs.openstack.org/cinder/latest/admin/volume-migration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 386 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 386, 8, '백업의 기본 종류', '`openstack volume backup create 볼륨` 을 옵션 없이 실행하면 어떤 백업이 만들어질까요?', '`--incremental` 을 주지 않았어요.', NULL, NULL, '[]', 'choice', '["증분(incremental) 백업", "스냅샷 기반의 차이 백업", "이전 백업과의 변경분만 담은 백업", "전체(full) 백업"]', 3, '문서는 `incremental` 플래그가 없으면 기본으로 전체 백업이 만들어지고, 플래그를 주면 증분 백업이 만들어진다고 설명합니다. 증분 백업은 부모 백업에 기반합니다.', NULL, NULL, NULL, '[{"title": "Cinder 볼륨 백업과 복원", "url": "https://docs.openstack.org/cinder/latest/admin/volume-backups.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 386 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 386, 9, '붙은 볼륨의 백업', '서버에 **붙어 있는(in-use) 볼륨** 을 백업하려면 어떻게 해야 할까요?', '`--force` 의 기본값은 False 예요.', NULL, NULL, '[]', 'choice', '["붙어 있는 볼륨은 어떤 방법으로도 백업할 수 없다", "옵션 없이도 항상 가능하고 앱 일관성까지 보장된다", "`--force` 로 백업할 수 있으며 충돌 일관성 백업이 된다", "`--incremental` 을 주면 붙어 있어도 자동으로 허용된다"]', 2, '문서는 force 없이는 볼륨 상태가 available 일 때만 백업되고, force 를 주면 available 이든 in-use 든 백업되며 in-use 볼륨의 백업은 데이터가 충돌 일관성을 갖는다는 뜻이라고 설명합니다. force 기본값은 False 입니다.', NULL, NULL, NULL, '[{"title": "Cinder 볼륨 백업과 복원", "url": "https://docs.openstack.org/cinder/latest/admin/volume-backups.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 386 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 386, 10, '증분 백업 옵션', '직전 백업 이후 **바뀐 부분만** 백업하는 옵션입니다. 빈칸을 채우세요.', '"증분"의 영어예요.', NULL, NULL, '[]', 'fill', '["incremental", "delta", "diff", "partial"]', NULL, '문서 예시는 `openstack volume backup create [--incremental] [--force] VOLUME` 입니다. `delta`·`diff`·`partial` 은 이 명령의 옵션이 아닙니다.', '[0]', 'openstack volume backup create --{0} VOLUME', NULL, '[{"title": "Cinder 볼륨 백업과 복원", "url": "https://docs.openstack.org/cinder/latest/admin/volume-backups.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 386 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 386, 11, '백엔드 목록 보기', '마이그레이션할 대상을 고르기 위해 **사용 가능한 백엔드(풀) 목록** 을 보는 명령입니다. 빈칸을 채우세요.', '"풀(pool)"을 가져온다는 뜻이에요.', NULL, NULL, '[]', 'fill', '["get-pools", "list-backends", "show-hosts", "pool-list"]', NULL, '문서의 마이그레이션 흐름은 먼저 `cinder get-pools` 로 사용 가능한 백엔드를 나열하는 것으로 시작합니다. 나머지는 이 도구의 명령이 아닙니다.', '[0]', 'cinder {0}', NULL, '[{"title": "Cinder 볼륨 마이그레이션", "url": "https://docs.openstack.org/cinder/latest/admin/volume-migration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 386 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 386, 12, '멀티어태치 볼륨 쓰기', '볼륨 하나를 서버 두 대에 붙여 쓰는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '타입 → 볼륨 → 첫 서버 → 둘째 서버 순서예요.', NULL, NULL, '[]', 'order', '["`multiattach` 속성을 가진 볼륨 타입을 만든다", "그 타입으로 볼륨을 만든다", "첫 번째 서버에 볼륨을 붙인다", "두 번째 서버에도 같은 볼륨을 붙인다"]', NULL, '멀티어태치 볼륨은 특별한 볼륨 타입으로만 만들 수 있으므로 타입이 먼저입니다. 그 뒤 여러 서버에 붙이되, 서버들이 클러스터 파일시스템 같은 방식으로 동시 접근을 관리해야 합니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "Cinder 볼륨 멀티어태치", "url": "https://docs.openstack.org/cinder/latest/admin/volume-multiattach.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 386 AND order_index = 12);
+
+-- 배치: 단원 끝 (분할 마이그레이션 뒤에 적용되도록 2026-11-13 이름을 쓴다)
+UPDATE quest_set SET display_order = 712 WHERE id = 361;
+UPDATE quest_set SET display_order = 713 WHERE id = 362;
+UPDATE quest_set SET display_order = 714 WHERE id = 363;
+UPDATE quest_set SET display_order = 715 WHERE id = 364;
+UPDATE quest_set SET display_order = 711, unit_id = (SELECT id FROM unit WHERE id = 39), icon = '🔗' WHERE id = 386;

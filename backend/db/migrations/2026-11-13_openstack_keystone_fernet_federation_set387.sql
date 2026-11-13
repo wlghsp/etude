@@ -1,0 +1,57 @@
+-- OpenStack 퀴즈 세트 387. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_openstack_round3.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 387, 'Keystone 심화: Fernet 토큰과 키 회전, 토큰 범위, 애플리케이션 자격증명, 연합', '인증 서비스의 심화를 익힙니다. 저장이 필요 없는 Fernet 토큰과 기본·보조·대기 키, 키 회전, 프로젝트·도메인·시스템 토큰 범위, 비밀번호 대신 쓰는 애플리케이션 자격증명, 외부 ID 소스를 쓰는 연합(SAML 2.0, OpenID Connect)을 봅니다.', 'quiz', 'OpenStack'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 387);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 387, 1, 'Fernet 토큰', 'Keystone 의 **Fernet 토큰** 에 대한 설명으로 알맞은 것은 무엇일까요?', '저장소(DB)가 필요 없어요.', NULL, NULL, '[]', 'choice', '["발급할 때마다 데이터베이스에 반드시 저장해야 한다", "토큰이 만료되면 서버가 파일로 다시 만들어 보내 준다", "백엔드에 저장할 필요 없이 암호화된 내용에 정보를 담는다", "서비스마다 서로 다른 형식의 토큰을 따로 쓴다"]', 2, 'Keystone 문서는 Fernet 토큰이 Kilo 에서 도입되어 지금은 기본 토큰 공급자이며, 다른 토큰과 달리 백엔드에 영속 저장할 필요가 없다고 설명합니다. AES256 으로 정보를 보호하고 SHA256 HMAC 서명으로 무결성을 확인합니다.', NULL, NULL, NULL, '[{"title": "Keystone 토큰 개요", "url": "https://docs.openstack.org/keystone/latest/admin/tokens-overview.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 387 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 387, 2, '토큰의 범위', 'Keystone 토큰의 **범위(scope)** 에 대한 설명으로 알맞은 것은 무엇일까요?', '토큰 하나는 하나의 범위만 가져요.', NULL, NULL, '[]', 'choice', '["토큰 하나가 모든 프로젝트에 동시에 유효하다", "토큰은 프로젝트·도메인·시스템 중 하나의 범위에서 동작한다", "범위는 서버의 IP 주소로 정해진다", "범위가 없는 토큰이 기본이며 범위는 선택이다"]', 1, '문서는 사용자가 여러 역할 할당(프로젝트, 도메인, 시스템)을 가질 수 있으며 이를 권한 부여 범위라고 부르고, 토큰은 하나의 범위(프로젝트, 도메인 또는 시스템)에서만 동작한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Keystone 토큰 개요", "url": "https://docs.openstack.org/keystone/latest/admin/tokens-overview.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 387 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 387, 3, 'Fernet 키의 종류', 'Fernet 키 저장소에서 토큰을 **암호화하고 복호화할 수 있는 키** 는 몇 개일까요?', '이름이 primary 예요.', NULL, NULL, '[]', 'choice', '["기본(primary) 키 하나뿐이다", "저장소의 모든 키가 암호화와 복호화를 한다", "기본 키 둘이 번갈아 암호화한다", "암호화는 보조 키만 하고 복호화는 기본 키만 한다"]', 0, 'Fernet FAQ 는 키 저장소에 기본(primary) 키는 하나뿐이며, 기본 키는 토큰을 암호화하고 복호화할 수 있고 가장 높은 번호의 이름을 가진다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Keystone Fernet 토큰 FAQ", "url": "https://docs.openstack.org/keystone/latest/admin/fernet-token-faq.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 387 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 387, 4, '보조 키의 역할', 'Fernet 의 **보조(secondary) 키** 는 무엇을 할 수 있을까요?', '예전에 기본이었던 키예요.', NULL, NULL, '[]', 'choice', '["토큰을 암호화만 할 수 있다", "토큰을 암호화와 복호화 모두 할 수 있다", "아무것도 못 하며 삭제 대기 중인 키다", "토큰을 복호화만 할 수 있다 (과거에 기본이었던 키)"]', 3, 'FAQ 는 보조 키가 한때 기본이었다가 다른 기본 키로 대체된 것이며 복호화만 가능하다고 설명합니다. 이전에 발급된 토큰을 계속 검증하려면 보조 키가 필요합니다.', NULL, NULL, NULL, '[{"title": "Keystone Fernet 토큰 FAQ", "url": "https://docs.openstack.org/keystone/latest/admin/fernet-token-faq.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 387 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 387, 5, '키 회전과 노드', 'Keystone 노드가 여러 대일 때 **키 회전** 을 할 때 문서가 알려 주는 편의는 무엇일까요?', '새 키를 먼저 퍼뜨려 두는 방식이 있어요.', NULL, NULL, '[]', 'choice', '["모든 노드에서 정확히 같은 순간에 회전해야 한다", "노드마다 서로 다른 키를 써야 하며 공유하면 안 된다", "한 노드에서 회전한 뒤 새 키를 시간을 두고 나눠 줘도 된다", "키 회전은 노드가 한 대인 경우에만 가능하다"]', 2, 'FAQ 는 한 Keystone 노드에서 키를 회전하고 새 키 묶음을 시간 차를 두고 퍼뜨릴 수 있으며, 아주 짧은 기간에 배포할 필요가 없다고 설명합니다. 기본 키로 암호화된 토큰은 그 키가 대기(staged) 중인 다른 노드에서도 복호화됩니다.', NULL, NULL, NULL, '[{"title": "Keystone Fernet 토큰 FAQ", "url": "https://docs.openstack.org/keystone/latest/admin/fernet-token-faq.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 387 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 387, 6, '애플리케이션 자격증명', '**애플리케이션 자격증명(application credential)** 의 장점은 무엇일까요?', '비밀번호를 설정에 넣지 않아도 돼요.', NULL, NULL, '[]', 'choice', '["사용자의 모든 권한을 항상 그대로 물려받게 된다", "비밀번호 대신 자격증명 ID 와 비밀 문자열로 인증한다", "비밀번호가 필요 없도록 사용자 계정을 삭제해 준다", "발급된 토큰이 영구히 만료되지 않게 해 준다"]', 1, '문서는 사용자가 프로젝트 역할의 일부를 애플리케이션 자격증명에 위임할 수 있고, 애플리케이션은 비밀번호가 아닌 자격증명 ID 와 비밀 문자열로 인증하므로 설정에 비밀번호를 넣지 않아도 된다고 설명합니다. 외부 시스템(LDAP, SSO)으로 관리되는 사용자에게 특히 중요합니다.', NULL, NULL, NULL, '[{"title": "Keystone 애플리케이션 자격증명", "url": "https://docs.openstack.org/keystone/latest/user/application_credentials.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 387 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 387, 7, '위임 범위', '애플리케이션 자격증명에 **위임할 수 있는 권한** 은 어디까지일까요?', '사용자의 역할 중 일부예요.', NULL, NULL, '[]', 'choice', '["해당 프로젝트에서 사용자가 가진 역할의 부분집합까지", "사용자가 가진 역할보다 더 높은 역할도 줄 수 있다", "모든 프로젝트의 역할을 한 번에 줄 수 있다", "역할은 줄 수 없고 토큰 수명만 정한다"]', 0, '문서는 사용자가 프로젝트에 대한 역할 할당의 부분집합을 애플리케이션 자격증명에 위임해, 같은 권한 또는 제한된 권한을 줄 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Keystone 애플리케이션 자격증명", "url": "https://docs.openstack.org/keystone/latest/user/application_credentials.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 387 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 387, 8, '연합(federation)', 'Keystone **연합(federation)** 은 무엇을 위한 기능일까요?', '이미 쓰는 계정 시스템을 그대로 쓰는 거예요.', NULL, NULL, '[]', 'choice', '["여러 Keystone 의 데이터베이스를 하나로 합쳐 준다", "서비스 사이에 오가는 메시지를 암호화해 준다", "프로젝트를 여러 클라우드에 자동으로 복제해 준다", "외부 인증 시스템에서 인증한 사용자가 별도 자격증명 없이 쓴다"]', 3, '문서는 연합을 여러 ID 관리 시스템 사이에 ID 정보를 공유하는 능력으로, Keystone 에서는 다른 ID 소스로 직접 인증한 사용자의 속성을 받는 인증 방법으로 구현된다고 설명합니다. 조직에 이미 주 ID 소스가 있으면 사용자가 별도 자격증명을 가질 필요가 없습니다.', NULL, NULL, NULL, '[{"title": "Keystone 연합 소개", "url": "https://docs.openstack.org/keystone/latest/admin/federation/introduction.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 387 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 387, 9, 'Identity Provider', '연합에서 **Identity Provider(IdP)** 는 무엇일까요?', '자격증명을 확인해 주는 쪽이에요.', NULL, NULL, '[]', 'choice', '["Keystone 이 토큰을 발급해 주는 내부 서비스", "사용자가 쓰는 애플리케이션 서버 자체", "자격증명을 받아 검증하고 결과와 사용자 속성을 돌려주는 서비스", "연합 규칙을 데이터베이스에 보관하는 저장소"]', 2, 'Keystone 연합 문서는 IdP 를 자격증명을 받아 검증하고 예/아니오 응답과 함께 사용자 이름·표시 이름 같은 속성을 돌려주는 서비스라고 설명합니다. Keystone 쪽(토큰 서비스)이 서비스 공급자(SP)입니다.', NULL, NULL, NULL, '[{"title": "Keystone 연합 소개", "url": "https://docs.openstack.org/keystone/latest/admin/federation/introduction.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 387 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 387, 10, '토큰 공급자', 'Keystone 이 현재 **기본으로 쓰는 토큰 형식** 입니다. 빈칸을 채우세요.', '이름이 Fernet 이에요.', NULL, NULL, '[]', 'fill', '["fernet", "uuid", "pki", "saml"]', NULL, 'Keystone 문서는 지원하는 토큰 공급자가 fernet 과 jws 이며 fernet 이 기본이라고 설명합니다. uuid·pki 는 예전 형식입니다.', '[0]', '기본 토큰 공급자: {0}', NULL, '[{"title": "Keystone 토큰 개요", "url": "https://docs.openstack.org/keystone/latest/admin/tokens-overview.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 387 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 387, 11, '연합 프로토콜', 'JSON 기반이고 OAuth 2.0 위에 만든, 공개 서비스가 많이 쓰는 연합 프로토콜입니다. 빈칸을 채우세요.', '"OpenID ..." 예요.', NULL, NULL, '[]', 'fill', '["Connect", "Direct", "Federation", "Token"]', NULL, '문서는 OpenID Connect 를 OAuth 2.0 위에 만든 JSON 기반 연합 프로토콜로, Google 같은 공개 서비스가 많이 쓴다고 설명합니다. SAML 2.0 은 XML 기반이며 조직 내부용으로 흔합니다.', '[0]', 'OpenID {0}', NULL, '[{"title": "Keystone 연합 소개", "url": "https://docs.openstack.org/keystone/latest/admin/federation/introduction.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 387 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 387, 12, 'Fernet 키 회전의 큰 줄기', '새 기본 키를 도입하는 키 회전의 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '대기 → 기본으로 승격 → 이전 기본은 보조로 순서예요.', NULL, NULL, '[]', 'order', '["새 키가 대기(staged) 키로 만들어진다", "다른 노드들에도 새 키 묶음이 퍼진다", "새 키가 기본(primary) 키가 되어 새 토큰을 암호화한다", "이전 기본 키는 보조 키가 되어 복호화만 한다"]', NULL, 'Fernet FAQ 의 키 상태(대기·기본·보조)에 따른 큰 줄기입니다. 대기 키는 복호화만 가능한 새 키이고, 회전하면 대기 키가 기본으로 올라가며 이전 기본은 보조로 내려갑니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "Keystone Fernet 토큰 FAQ", "url": "https://docs.openstack.org/keystone/latest/admin/fernet-token-faq.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 387 AND order_index = 12);
+
+-- 배치: 단원 끝 (분할 마이그레이션 뒤에 적용되도록 2026-11-13 이름을 쓴다)
+UPDATE quest_set SET display_order = 715 WHERE id = 363;
+UPDATE quest_set SET display_order = 716 WHERE id = 364;
+UPDATE quest_set SET display_order = 714, unit_id = (SELECT id FROM unit WHERE id = 40), icon = '🗝️' WHERE id = 387;
