@@ -589,3 +589,10 @@ UPDATE quest_set SET display_order = 564 WHERE id = 83;
 UPDATE quest_set SET display_order = 565 WHERE id = 102;
 UPDATE quest_set SET display_order = 566 WHERE id = 118;
 UPDATE quest_set SET display_order = 554, unit_id = (SELECT id FROM unit WHERE id = 30), icon = '🔀' WHERE id = 372;
+-- 세트 373
+UPDATE quest_set SET display_order = 438 WHERE id = 54;
+UPDATE quest_set SET display_order = 439 WHERE id = 94;
+UPDATE quest_set SET display_order = 440 WHERE id = 56;
+UPDATE quest_set SET display_order = 441 WHERE id = 95;
+UPDATE quest_set SET display_order = 442 WHERE id = 365;
+UPDATE quest_set SET display_order = 437, unit_id = (SELECT id FROM unit WHERE id = 14), icon = '🔧' WHERE id = 373;
