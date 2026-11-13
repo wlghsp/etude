@@ -749,3 +749,7 @@ UPDATE quest_set SET display_order = 720, unit_id = (SELECT id FROM unit WHERE i
 UPDATE quest_set SET display_order = 721, unit_id = (SELECT id FROM unit WHERE id = 41), icon = '🧱' WHERE id = 392;
 -- 세트 393
 UPDATE quest_set SET display_order = 623, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '🩹' WHERE id = 393;
+-- 세트 394
+UPDATE quest_set SET display_order = 629, unit_id = (SELECT id FROM unit WHERE id = 48), icon = '📸' WHERE id = 394;
+-- 세트 395
+UPDATE quest_set SET display_order = 630, unit_id = (SELECT id FROM unit WHERE id = 48), icon = '🚚' WHERE id = 395;

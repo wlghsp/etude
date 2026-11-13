@@ -1,0 +1,55 @@
+-- 퀴즈 세트 394. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_openstack_round7.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 394, 'VM 상태 보존: 저장·스냅샷·체크포인트·백업과 백킹 체인', '가상 머신의 상태를 남기는 방법을 구분합니다. managed save 와 save, 스냅샷이 담는 것(메모리·디스크), 체크포인트와 백업의 차이, 게스트 입출력 동결과 에이전트, 메모리 없는 캡처의 성격, 오버레이와 qcow2 백킹 파일 형식을 익힙니다.', 'quiz', '가상화'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 394);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 394, 1, 'managedsave', 'libvirt 의 **managed save** (virDomainManagedSave) 는 무엇을 할까요?', '메모리를 저장하고 게스트를 멈춰요.', NULL, NULL, '[]', 'choice', '["디스크 상태만 저장하고 게스트는 계속 돌려 둔다", "변경된 디스크 영역만 추적해서 기록해 둔다", "메모리를 libvirt 가 저장하고 게스트를 멈춘다", "게스트를 다른 호스트로 옮기며 저장해 둔다"]', 2, '문서는 managed save 가 libvirt 가 저장 상태를 관리하며 게스트 메모리를 저장한 뒤 게스트를 멈추는 API 라고 설명합니다. 호스트 재부팅 전에 게스트를 잠시 멈춰 둘 때 알맞고, 임의 시점으로 되돌리는 용도로는 실용적이지 않습니다.', NULL, NULL, NULL, '[{"title": "libvirt 도메인 상태 포착", "url": "https://libvirt.org/kbase/domainstatecapture.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 394 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 394, 2, 'save 와 managedsave 의 차이', 'virDomainSave 가 managed save 와 **다른 점** 은 무엇일까요?', '메모리 파일을 누가 관리하느냐예요.', NULL, NULL, '[]', 'choice', '["메모리 대신 디스크만 저장한다", "저장된 메모리 상태의 관리를 사용자가 맡는다", "저장하는 동안 게스트가 멈추지 않는다", "저장 파일이 libvirt 안에서만 열린다"]', 1, '문서는 virDomainSave 가 같은 일을 하되 저장된 메모리 상태 관리 부담을 사용자에게 넘긴다고 설명합니다. 디스크 복사본과 함께 쓰면 임의의 저장 시점으로 되돌릴 수 있고, 둘 다 게스트 정지 시간이 길 수 있다는 단점이 있습니다.', NULL, NULL, NULL, '[{"title": "libvirt 도메인 상태 포착", "url": "https://libvirt.org/kbase/domainstatecapture.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 394 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 394, 3, '스냅샷이 잡는 것', '실행 중인 게스트의 **스냅샷** 은 무엇을 담을지 고를 수 있을까요?', '메모리와 디스크를 고를 수 있어요.', NULL, NULL, '[]', 'choice', '["메모리, 디스크, 또는 둘 다를 고를 수 있다", "항상 디스크만 담을 수 있다", "항상 메모리만 담을 수 있다", "항상 메모리와 디스크를 함께만 담는다"]', 0, '문서는 스냅샷이 현재 게스트 자원을 특정 시점에 고정하고 이후 변경을 위한 새 층을 열며, 실행 중인 게스트에서는 메모리·디스크·둘 다 중 무엇을 담을지 고를 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 도메인 상태 포착", "url": "https://libvirt.org/kbase/domainstatecapture.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 394 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 394, 4, '체크포인트', 'libvirt **체크포인트(checkpoint)** 는 무엇을 하나요?', '게스트 상태를 담지 않아요.', NULL, NULL, '[]', 'choice', '["메모리와 디스크를 함께 통째로 저장해 둔다", "게스트를 다른 호스트로 옮겨 주는 일을 한다", "게스트 입출력을 동결해 일관성을 맞춰 준다", "상태는 담지 않고 디스크의 변경 부분을 추적한다"]', 3, '문서는 체크포인트가 실제 게스트 상태는 담지 않고 디스크의 변경 부분을 추적할 수 있게 하며, 보통 증분 백업이나 외부 스냅샷과 함께 만든다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 도메인 상태 포착", "url": "https://libvirt.org/kbase/domainstatecapture.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 394 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 394, 5, '백업이 담는 것', 'libvirt **백업(virDomainBackupBegin)** 에 대한 설명으로 맞는 것은 무엇일까요?', '메모리는 따라오지 않아요.', NULL, NULL, '[]', 'choice', '["메모리와 디스크를 모두 함께 담아 둔다", "게스트를 반드시 꺼야만 만들 수 있다", "디스크 상태만 담고 메모리는 담지 않는다", "체크포인트 없이는 전체 백업을 못 만든다"]', 2, '문서는 백업이 실행 중 게스트의 디스크 상태를 담되 메모리 상태는 추적하지 않으며, 작업 시작 시점에 일관되고 게스트 디스크 이미지와 따로 저장된다고 설명합니다. 체크포인트와 함께 쓰면 증분 백업이 됩니다.', NULL, NULL, NULL, '[{"title": "libvirt 도메인 상태 포착", "url": "https://libvirt.org/kbase/domainstatecapture.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 394 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 394, 6, '동결의 조건', '백업 전 **게스트 입출력을 동결** (FSFreeze) 하려면 무엇이 필요할까요?', '게스트 안의 도우미가 있어야 해요.', NULL, NULL, '[]', 'choice', '["호스트에 별도 전원 장치가 연결되어 있어야 한다", "게스트 에이전트가 게스트 안에서 돌고 있어야 한다", "게스트가 반드시 꺼져 있는 상태여야 한다", "디스크 이미지가 raw 형식으로 되어 있어야 한다"]', 1, '문서는 게스트 입출력 동결이 게스트 에이전트가 실행 중인 신뢰할 수 있는 게스트에서만 가능하며, 동결은 상태를 담지 않고 캡처가 크래시 일관성이 아니라 완전한 일관성을 갖게 조율한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 도메인 상태 포착", "url": "https://libvirt.org/kbase/domainstatecapture.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 394 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 394, 7, '메모리 없는 캡처', '**메모리 없이** 디스크 상태만 잡은 것으로 부팅하면 어떤 것과 비슷할까요?', '갑자기 전원이 나간 경우예요.', NULL, NULL, '[]', 'choice', '["전원이 갑자기 꺼졌다가 다시 켜는 것", "정상 종료 후 다시 켜는 것", "실행 중이던 상태 그대로 이어 가는 것", "게스트를 새로 설치하는 것"]', 0, '문서는 메모리 없이 캡처한 디스크로 부팅하는 것이 전원 차단 뒤 재부팅과 비슷하다고 설명합니다. 저장·스냅샷은 메모리를 포함할 수 있지만 백업·체크포인트는 포함하지 않습니다.', NULL, NULL, NULL, '[{"title": "libvirt 도메인 상태 포착", "url": "https://libvirt.org/kbase/domainstatecapture.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 394 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 394, 8, '오버레이', '백킹 체인에서 **오버레이(overlay)** 란 무엇일까요?', '위에 얹는 새 이미지예요.', NULL, NULL, '[]', 'choice', '["이미지 두 개를 하나로 합쳐 둔 복사본 파일", "게스트의 메모리 내용을 담아 둔 덤프 파일", "이미지 전체를 압축해서 둔 보관용 파일", "기존 이미지 위에 얹어 새 쓰기를 받는 최상위 이미지"]', 3, '문서는 오버레이를 기존 이미지 위에 만들어 새 게스트 쓰기의 대상이 되는 새 최상위 이미지로 설명합니다. libvirt 는 최상위 이미지에서 시작해 백킹 참조를 따라 체인의 끝까지 읽습니다.', NULL, NULL, NULL, '[{"title": "libvirt 백킹 체인", "url": "https://libvirt.org/kbase/backing_chains.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 394 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 394, 9, '백킹 파일 형식', 'qcow2 오버레이를 만들 때 **백킹 이미지의 형식** 은 어떻게 다뤄질까요?', 'libvirt 는 추측하지 않아요.', NULL, NULL, '[]', 'choice', '["libvirt 가 이미지 내용을 읽어서 형식을 알아낸다", "형식은 항상 raw 형식이라고 가정해서 쓴다", "메타데이터에 형식이 있어야 하고 추측하지 않는다", "형식은 도메인 이름이 정하는 대로 정해진다"]', 2, '문서는 만들어진 이미지의 메타데이터에 백킹 이미지 형식이 있어야 한다고 하며, 악의적인 게스트가 호스트 파일을 노출시킬 수 있어 libvirt 가 백킹 파일 형식을 추측하지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 백킹 체인", "url": "https://libvirt.org/kbase/backing_chains.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 394 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 394, 10, '백킹 형식 옵션', 'qemu-img 로 오버레이를 만들 때 **백킹 형식을 기록** 하는 옵션입니다. 빈칸을 채우세요.', '대문자 F 예요.', NULL, NULL, '[]', 'fill', '["-F", "-f", "-o", "-t"]', NULL, '문서의 예시는 qemu-img create -f qcow2 -F qcow2 -b $BACKING_IMAGE_PATH $IMAGE_PATH 이며 -F 가 백킹 이미지의 형식을 기록합니다. 소문자 -f 는 새 이미지의 형식입니다.', '[0]', 'qemu-img create -f qcow2 {0} qcow2 -b base.qcow2 top.qcow2', NULL, '[{"title": "libvirt 백킹 체인", "url": "https://libvirt.org/kbase/backing_chains.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 394 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 394, 11, '디스크만 스냅샷', '메모리 없이 **디스크만** 스냅샷하는 libvirt 플래그의 끝 부분입니다. 빈칸을 채우세요.', '"디스크 전용"이에요.', NULL, NULL, '[]', 'fill', '["DISK_ONLY", "MEMORY_ONLY", "FULL_COPY", "QUIESCE_ALL"]', NULL, '문서는 디스크 전용 스냅샷의 예로 VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY 플래그를 듭니다. 이 플래그는 메모리 없이 디스크 상태만 담습니다.', '[0]', 'VIR_DOMAIN_SNAPSHOT_CREATE_{0}', NULL, '[{"title": "libvirt 도메인 상태 포착", "url": "https://libvirt.org/kbase/domainstatecapture.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 394 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 394, 12, '일관된 디스크 백업 순서', '실행 중 게스트의 디스크를 일관되게 백업하는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '동결 → 캡처 → 해동이에요.', NULL, NULL, '[]', 'order', '["게스트 에이전트가 돌고 있는지 확인한다", "게스트 입출력을 동결한다 (FSFreeze)", "백업 작업을 시작해 디스크 상태를 잡는다", "동결을 해제한다 (FSThaw)"]', NULL, '문서는 동결·해제가 상태를 담지 않고 캡처를 완전히 일관되게 조율하는 역할이라고 설명합니다. 에이전트 확인 → 동결 → 캡처 → 해제는 이를 이은 큰 줄기입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "libvirt 도메인 상태 포착", "url": "https://libvirt.org/kbase/domainstatecapture.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 394 AND order_index = 12);
+
+-- 배치: 단원 끝 (분할 마이그레이션 뒤에 적용되도록 2026-11-13 이름을 쓴다)
+UPDATE quest_set SET display_order = 629, unit_id = (SELECT id FROM unit WHERE id = 48), icon = '📸' WHERE id = 394;

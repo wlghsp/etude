@@ -1,0 +1,55 @@
+-- 퀴즈 세트 395. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_openstack_round7.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 395, 'libvirt 마이그레이션: 제어 방식, 터널링, 오프라인, 설정 옵션, 스토리지 복사', 'VM 을 호스트 사이에 옮기는 방법을 익힙니다. managed·p2p 제어, 터널링 전송, 오프라인 마이그레이션, --persistent·--undefinesource, 공유 스토리지 기본 가정과 --copy-storage-all·inc, qemu+ssh URI 를 봅니다.', 'quiz', '가상화'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 395);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 395, 1, 'p2p 마이그레이션', '**peer-to-peer(--p2p)** 마이그레이션에서 제어는 누가 맡을까요?', '클라이언트는 원본과만 말해요.', NULL, NULL, '[]', 'choice', '["클라이언트가 모든 단계를 직접 구동해서 진행한다", "하이퍼바이저의 관리 서비스에 모든 진행을 맡긴다", "원본 libvirtd 가 도착지에 연결해 제어한다", "도착지 libvirtd 가 원본에 연결해 끌어와서 진행한다"]', 2, '문서는 managed peer to peer 에서 원본 libvirtd 가 마이그레이션을 제어하며 도착지에 직접 연결하고 클라이언트는 원본하고만 통신한다고 설명합니다. 클라이언트가 모든 단계를 구동하는 것은 managed direct 입니다.', NULL, NULL, NULL, '[{"title": "libvirt 마이그레이션", "url": "https://libvirt.org/migration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 395 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 395, 2, '터널링 전송', '**--tunnelled** 마이그레이션의 특징은 무엇일까요?', '데이터가 libvirtd 를 지나가요.', NULL, NULL, '[]', 'choice', '["하이퍼바이저의 전용 전송로를 써서 가장 빠르게 보낸다", "libvirtd 를 거쳐 암호화는 되나 일부 기능을 못 쓴다", "디스크를 복사하는 마이그레이션에 꼭 필요하게 쓴다", "암호화를 쓸 수 없어서 폐쇄망에서만 쓰게 된다"]', 1, '문서는 터널링에서 데이터가 libvirtd 를 지나 암호화가 항상 가능하지만 데이터 복사가 늘고, 비공유 디스크·병렬·포스트카피 같은 기능을 지원하지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 마이그레이션", "url": "https://libvirt.org/migration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 395 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 395, 3, '오프라인 마이그레이션', '**오프라인 마이그레이션** 은 무엇을 옮길까요?', '실행 상태가 아니에요.', NULL, NULL, '[]', 'choice', '["도메인의 비활성 정의를 옮기고 비활성으로 둔다", "실행 중인 메모리 전체를 도착지로 옮겨 준다", "디스크 이미지를 복사해서 함께 옮겨 준다", "도착지에서 도메인을 곧바로 시작해 준다"]', 0, '문서는 오프라인 마이그레이션이 도메인의 비활성 정의를 옮기고 도착지에서 도메인은 정의만 되고 비활성이며, 비공유·파일 기반 스토리지 복사는 지원하지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 마이그레이션", "url": "https://libvirt.org/migration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 395 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 395, 4, '기본 설정 처리', '마이그레이션이 **성공해도 별도 옵션이 없으면** 양쪽 호스트의 설정 파일은 어떻게 될까요?', '아무것도 바꾸지 않아요.', NULL, NULL, '[]', 'choice', '["도착지에 영구 설정이 자동으로 만들어진다", "원본의 설정이 자동으로 삭제된다", "양쪽 모두에 설정이 복제된다", "어느 쪽 호스트의 설정 파일도 바꾸지 않는다"]', 3, '문서는 기본적으로 마이그레이션이 어느 호스트의 설정 파일도 바꾸지 않는다고 설명합니다. --persistent 와 --undefinesource 로 이를 바꿉니다.', NULL, NULL, NULL, '[{"title": "libvirt 마이그레이션", "url": "https://libvirt.org/migration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 395 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 395, 5, '--undefinesource', '**--undefinesource** 는 무엇을 할까요?', '원본의 정의예요.', NULL, NULL, '[]', 'choice', '["성공한 뒤 도착지에 설정을 만든다", "성공한 뒤 원본 디스크를 지운다", "성공한 뒤 원본의 설정을 지운다", "성공하기 전에 원본을 정지한다"]', 2, '문서는 --undefinesource 가 마이그레이션 성공 후 원본 설정을 제거하고, --persistent 는 성공 후 도착지에 설정을 만든다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 마이그레이션", "url": "https://libvirt.org/migration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 395 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 395, 6, '--persistent', '**--persistent** 는 무엇을 할까요?', '도착지의 정의예요.', NULL, NULL, '[]', 'choice', '["성공한 뒤 원본의 설정을 지운다", "성공한 뒤 도착지에 설정을 만든다", "도착지 도메인을 부팅 시 자동 시작하게 한다", "데이터를 터널링으로 암호화한다"]', 1, '문서는 --persistent 가 마이그레이션 성공 후 도착지에 설정을 만든다고 설명합니다. 원본 설정 제거는 --undefinesource 입니다.', NULL, NULL, NULL, '[{"title": "libvirt 마이그레이션", "url": "https://libvirt.org/migration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 395 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 395, 7, '공유 스토리지 기본 가정', 'libvirt 는 **네트워크로 접근하지 않는 디스크 이미지** 를 기본으로 어떻게 가정할까요?', '호스트 사이에 공유된다고 봐요.', NULL, NULL, '[]', 'choice', '["두 호스트가 공유하고 있다고 기본으로 가정한다", "각 호스트가 따로 가지고 있다고 가정한다", "마이그레이션 때 항상 자동으로 복사한다고 가정한다", "읽기 전용이라고 가정한다"]', 0, '문서는 libvirt 가 명시적으로 네트워크로 접근하지 않는 디스크 이미지를 기본적으로 호스트 사이에 공유되는 것으로 기대한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 마이그레이션", "url": "https://libvirt.org/migration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 395 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 395, 8, '--copy-storage-all', '**--copy-storage-all** 은 무엇을 할까요?', '로컬 이미지를 같이 옮겨요.', NULL, NULL, '[]', 'choice', '["백킹 체인의 최상위 이미지만 골라서 옮긴다", "디스크는 옮기지 않고 메모리만 옮겨 둔다", "디스크 이미지를 원본에서 삭제해 버린다", "로컬 이미지를 흐름에 포함해 옮긴다(읽기·쓰기 디스크 전부)"]', 3, '문서는 --copy-storage-all 이 로컬 이미지를 마이그레이션 흐름의 일부로 옮기며, --migrate-disks 가 없으면 읽기·쓰기 디스크를 모두 옮긴다고 설명합니다. 최상위 이미지만 옮기는 것은 --copy-storage-inc 입니다.', NULL, NULL, NULL, '[{"title": "libvirt 마이그레이션", "url": "https://libvirt.org/migration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 395 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 395, 9, '--copy-storage-inc', '**--copy-storage-inc** 는 무엇을 옮기고 무엇이 필요할까요?', '증분이에요.', NULL, NULL, '[]', 'choice', '["디스크 전체를 옮기고 도착지 이미지는 필요 없다", "메모리의 변경분만 옮기고 공유 스토리지가 필요 없다", "최상위 이미지만 옮기며 도착지 이미지를 미리 만들어야 한다", "이미지를 압축해 옮기고 TLS 가 반드시 필요하다"]', 2, '문서는 --copy-storage-inc 가 디스크 백킹 체인의 최상위 이미지만 옮기고 도착지 이미지는 미리 만들어 둬야 한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 마이그레이션", "url": "https://libvirt.org/migration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 395 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 395, 10, 'p2p 옵션', '원본 libvirtd 가 도착지에 직접 연결해 진행하게 하는 virsh 옵션입니다. 빈칸을 채우세요.', '"peer to peer" 의 줄임이에요.', NULL, NULL, '[]', 'fill', '["--p2p", "--tunnelled", "--persistent", "--undefinesource"]', NULL, 'virsh migrate --p2p GUESTNAME DEST-LIBVIRT-URI 는 QEMU 에서 지원되는 peer-to-peer 마이그레이션입니다.', '[0]', 'virsh migrate {0} GUESTNAME DEST-LIBVIRT-URI', NULL, '[{"title": "libvirt 마이그레이션", "url": "https://libvirt.org/migration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 395 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 395, 11, 'SSH 로 접속하는 URI', '도착지에 **SSH** 로 접속하는 libvirt URI 의 일부입니다(qemu+…://desthost/system). 빈칸을 채우세요.', '"secure shell" 이에요.', NULL, NULL, '[]', 'fill', '["ssh", "ftp", "nfs", "rdp"]', NULL, '문서는 qemu+ssh://desthost/system 과 qemu+tls://desthost/system 같은 URI 를 예로 듭니다.', '[0]', 'qemu+{0}://desthost/system', NULL, '[{"title": "libvirt 마이그레이션", "url": "https://libvirt.org/migration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 395 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 395, 12, '로컬 디스크 VM 을 옮기기', '공유 스토리지가 없는 VM 을 --copy-storage-inc 로 옮기는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '준비 → 이동 → 정리예요.', NULL, NULL, '[]', 'order', '["도착지에 같은 형식·크기의 이미지를 미리 만든다", "virsh migrate 에 --copy-storage-inc 를 붙여 실행한다", "도착지에서 도메인이 정상인지 확인한다", "필요하면 원본의 설정을 정리한다(--undefinesource 등)"]', NULL, '문서는 --copy-storage-inc 에서 도착지 이미지를 미리 만들어야 하고, 기본적으로 설정 파일이 바뀌지 않으며 --undefinesource 로 원본 설정을 지울 수 있다고 설명합니다. 순서는 이를 이은 큰 줄기입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "libvirt 마이그레이션", "url": "https://libvirt.org/migration.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 395 AND order_index = 12);
+
+-- 배치: 단원 끝 (분할 마이그레이션 뒤에 적용되도록 2026-11-13 이름을 쓴다)
+UPDATE quest_set SET display_order = 630, unit_id = (SELECT id FROM unit WHERE id = 48), icon = '🚚' WHERE id = 395;
