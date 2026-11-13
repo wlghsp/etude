@@ -1,0 +1,14 @@
+{
+  "setId": 372,
+  "answers": {
+    "1": "mariadb shop -e 'SELECT c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE o.id IS NULL;' > /tmp/q1.txt\ncat /tmp/q1.txt\n\n# 왼쪽(고객)은 모두 남고, 주문이 없는 고객은 o.id 가 NULL 이다",
+    "2": "mariadb shop -e \"SELECT c.name, p.name AS product, o.qty FROM orders o JOIN customers c ON c.id = o.customer_id JOIN products p ON p.id = o.product_id WHERE c.name = 'park'\" > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# orders 에 customers, products 를 각각 JOIN 하고 WHERE 로 고객을 좁힌다",
+    "3": "mariadb shop -e 'SELECT c.name, COUNT(*) AS cnt FROM orders o JOIN customers c ON c.id = o.customer_id GROUP BY c.id, c.name HAVING COUNT(*) >= 2;' > /tmp/q3.txt\ncat /tmp/q3.txt\n\n# 고객별로 묶은 뒤 HAVING 으로 건수 2 이상인 그룹만 남긴다",
+    "4": "mariadb shop -e 'SELECT name FROM products WHERE price > (SELECT AVG(price) FROM products);' > /tmp/q4.txt\ncat /tmp/q4.txt\n\n# 서브쿼리가 평균을 먼저 구하고, 바깥 쿼리가 그보다 비싼 행을 고른다",
+    "5": "mariadb shop -e \"SELECT name FROM customers WHERE id IN (SELECT o.customer_id FROM orders o JOIN products p ON p.id = o.product_id WHERE p.category = 'electronics')\" > /tmp/q5.txt\ncat /tmp/q5.txt\n\n# IN 서브쿼리로 electronics 를 주문한 고객 번호 목록을 만들고 그 안의 고객만 고른다",
+    "6": "mariadb shop -e \"SELECT name, CASE WHEN price >= 100000 THEN 'high' WHEN price >= 10000 THEN 'mid' ELSE 'low' END AS grade FROM products\" > /tmp/q6.txt\ncat /tmp/q6.txt\n\n# CASE 는 위에서부터 처음 맞는 WHEN 의 값을 쓰므로 큰 기준부터 적는다",
+    "7": "mariadb shop -e 'SELECT p.name, SUM(p.price * o.qty) AS revenue FROM orders o JOIN products p ON p.id = o.product_id GROUP BY p.id, p.name ORDER BY revenue DESC LIMIT 3;' > /tmp/q7.txt\ncat /tmp/q7.txt\n\n# JOIN 으로 가격과 수량을 이어 붙이고, 상품별 SUM 을 큰 순서로 3개만",
+    "8": "mariadb shop -e \"CREATE VIEW order_detail AS SELECT o.id, c.name AS customer, p.name AS product, o.qty FROM orders o JOIN customers c ON c.id = o.customer_id JOIN products p ON p.id = o.product_id;\"\nmariadb shop -e 'SELECT * FROM order_detail;'\n\n# CREATE VIEW 이름 AS SELECT ... 로 저장하고, 이후에는 테이블처럼 SELECT 한다",
+    "9": "mariadb shop -e 'SELECT COUNT(DISTINCT customer_id) AS buyers FROM orders;' > /tmp/q9.txt\ncat /tmp/q9.txt\n\n# COUNT(DISTINCT 컬럼) 은 서로 다른 값만 센다"
+  }
+}

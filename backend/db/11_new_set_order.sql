@@ -576,3 +576,16 @@ UPDATE quest_set SET display_order = 563 WHERE id = 83;
 UPDATE quest_set SET display_order = 564 WHERE id = 102;
 UPDATE quest_set SET display_order = 565 WHERE id = 118;
 UPDATE quest_set SET display_order = 553, unit_id = (SELECT id FROM unit WHERE id = 30), icon = '🏗️' WHERE id = 371;
+-- 세트 372
+UPDATE quest_set SET display_order = 556 WHERE id = 158;
+UPDATE quest_set SET display_order = 557 WHERE id = 332;
+UPDATE quest_set SET display_order = 558 WHERE id = 59;
+UPDATE quest_set SET display_order = 559 WHERE id = 87;
+UPDATE quest_set SET display_order = 560 WHERE id = 91;
+UPDATE quest_set SET display_order = 561 WHERE id = 109;
+UPDATE quest_set SET display_order = 562 WHERE id = 60;
+UPDATE quest_set SET display_order = 563 WHERE id = 99;
+UPDATE quest_set SET display_order = 564 WHERE id = 83;
+UPDATE quest_set SET display_order = 565 WHERE id = 102;
+UPDATE quest_set SET display_order = 566 WHERE id = 118;
+UPDATE quest_set SET display_order = 554, unit_id = (SELECT id FROM unit WHERE id = 30), icon = '🔀' WHERE id = 372;
