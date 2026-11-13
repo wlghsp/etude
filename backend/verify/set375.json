@@ -1,0 +1,14 @@
+{
+  "setId": 375,
+  "answers": {
+    "1": "kubectl apply -n $NS -f - <<'EOF'\napiVersion: v1\nkind: Pod\nmetadata:\n  name: mc375-two\nspec:\n  containers:\n  - name: web\n    image: nginx:1.25\n  - name: helper\n    image: busybox:1.36\n    command: [\"sh\", \"-c\", \"sleep 3600\"]\nEOF\nkubectl get pod mc375-two -n $NS   # READY 2/2\n\n# containers 목록에 항목을 둘 쓰면 한 Pod 에 컨테이너가 둘 뜬다",
+    "2": "kubectl get pod mc375-reader -n $NS -o jsonpath='{.spec.containers[*].name}' > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# containers[*] 는 모든 컨테이너, .name 은 이름이다",
+    "3": "kubectl logs mc375-logs -c b -n $NS > /tmp/q3.txt\ncat /tmp/q3.txt\n\n# -c 로 컨테이너를 고른다. 안 고르면 기본 컨테이너를 쓰거나 오류가 난다",
+    "4": "kubectl exec mc375-role -c sidecar -n $NS -- sh -c 'echo $ROLE' > /tmp/q4.txt\ncat /tmp/q4.txt\n\n# -c 로 컨테이너를 고르고, -- 뒤가 컨테이너 안에서 실행할 명령이다. 작은따옴표로 $ROLE 을 컨테이너 쉘에 넘긴다",
+    "5": "kubectl apply -n $NS -f - <<'EOF'\napiVersion: v1\nkind: Pod\nmetadata:\n  name: mc375-share\nspec:\n  volumes:\n  - name: shared\n    emptyDir: {}\n  containers:\n  - name: writer\n    image: busybox:1.36\n    command: [\"sh\", \"-c\", \"echo hello > /data/msg.txt; sleep 3600\"]\n    volumeMounts:\n    - name: shared\n      mountPath: /data\n  - name: reader\n    image: busybox:1.36\n    command: [\"sh\", \"-c\", \"sleep 3600\"]\n    volumeMounts:\n    - name: shared\n      mountPath: /data\nEOF\nkubectl exec mc375-share -c reader -n $NS -- cat /data/msg.txt\n\n# 같은 emptyDir 를 두 컨테이너가 마운트하면 한쪽이 쓴 파일을 다른 쪽이 읽는다",
+    "6": "kubectl apply -n $NS -f - <<'EOF'\napiVersion: v1\nkind: Pod\nmetadata:\n  name: mc375-init\nspec:\n  volumes:\n  - name: work\n    emptyDir: {}\n  initContainers:\n  - name: prep\n    image: busybox:1.36\n    command: [\"sh\", \"-c\", \"echo ready > /work/state.txt\"]\n    volumeMounts:\n    - name: work\n      mountPath: /work\n  containers:\n  - name: app\n    image: busybox:1.36\n    command: [\"sh\", \"-c\", \"cat /work/state.txt; sleep 3600\"]\n    volumeMounts:\n    - name: work\n      mountPath: /work\nEOF\nkubectl logs mc375-init -c app -n $NS\n\n# init 컨테이너가 끝난 뒤에야 app 이 시작되고, 같은 emptyDir 로 결과를 넘긴다",
+    "7": "kubectl get pod mc375-stuck -n $NS     # STATUS Init:0/1\nkubectl describe pod mc375-stuck -n $NS | grep -A6 'Init Containers'\nkubectl get pod mc375-stuck -n $NS -o jsonpath='{.spec.initContainers[0].name}' > /tmp/q7.txt\ncat /tmp/q7.txt\n\n# Init:0/1 은 init 컨테이너 1개 중 0개가 끝났다는 뜻이다",
+    "8": "kubectl get pod mc375-mixed -n $NS      # READY 1/2\nkubectl get pod mc375-mixed -n $NS -o jsonpath='{.status.containerStatuses[?(@.ready==true)].name}' > /tmp/q8.txt\ncat /tmp/q8.txt\n\n# containerStatuses 의 ready 가 true 인 컨테이너만 거른다",
+    "9": "kubectl logs mc375-all --all-containers=true -n $NS > /tmp/q9.txt\ncat /tmp/q9.txt\n\n# --all-containers 는 Pod 의 모든 컨테이너 로그를 이어서 보여 준다"
+  }
+}
