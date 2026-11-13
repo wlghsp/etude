@@ -1,0 +1,55 @@
+-- 퀴즈 세트 392. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_openstack_round6.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 392, 'Heat 심화: HOT 템플릿 구조, 파라미터 제약, 내장 함수, 삭제 정책, 환경 파일', '오케스트레이션 템플릿을 더 자세히 봅니다. 필수·선택 섹션, 파라미터 타입과 hidden·immutable·range·custom_constraint 제약, 내장 함수를 쓸 수 있는 곳, deletion_policy, 환경 파일의 resource_registry 로 템플릿을 조합하는 법을 익힙니다.', 'quiz', 'OpenStack'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 392);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 392, 1, 'HOT 의 필수 섹션', 'HOT 템플릿에서 **반드시 하나 이상 정의** 해야 한다고 문서가 말하는 섹션은 무엇일까요?', '실제로 만들 것들이에요.', NULL, NULL, '[]', 'choice', '["parameters (입력 값 목록)", "outputs (출력 값 목록)", "resources (리소스를 하나 이상)", "conditions (조건 목록)"]', 2, 'HOT 명세는 resources 섹션을 모든 HOT 템플릿에 리소스 하나 이상으로 정의해야 한다고 설명합니다. description·parameter_groups·parameters·outputs·conditions 는 선택입니다.', NULL, NULL, NULL, '[{"title": "Heat HOT 명세", "url": "https://docs.openstack.org/heat/latest/template_guide/hot_spec.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 392 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 392, 2, '파라미터 타입', 'HOT 파라미터가 지원하는 **타입** 은 무엇일까요?', '다섯 가지예요.', NULL, NULL, '[]', 'choice', '["string, integer, float, list, dict, bool", "string, number, comma_delimited_list, json, boolean", "text, number, array, object, bool, any", "str, int, set, tuple, map, null"]', 1, 'HOT 명세는 지원 타입을 string, number, comma_delimited_list, json, boolean 으로 열거합니다.', NULL, NULL, NULL, '[{"title": "Heat HOT 명세", "url": "https://docs.openstack.org/heat/latest/template_guide/hot_spec.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 392 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 392, 3, 'hidden 옵션', '파라미터의 **hidden: true** 는 무엇을 할까요?', '비밀번호에 쓰라고 만든 옵션이에요.', NULL, NULL, '[]', 'choice', '["스택 정보를 볼 때 값을 숨긴다", "값을 암호화해 DB 에 저장해 준다", "값을 템플릿 안에서 쓸 수 없게 한다", "값을 사용자가 바꿀 수 없게 막는다"]', 0, 'HOT 명세는 hidden 이 사용자가 스택 정보를 볼 때 파라미터가 숨겨질지를 정하며 기본은 false 이고 비밀번호 같은 값에 쓴다고 설명합니다. 변경을 막는 것은 immutable 입니다.', NULL, NULL, NULL, '[{"title": "Heat HOT 명세", "url": "https://docs.openstack.org/heat/latest/template_guide/hot_spec.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 392 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 392, 4, 'immutable 옵션', '파라미터의 **immutable: true** 이면 스택 업데이트에서 어떻게 될까요?', '값이 바뀌면 거부돼요.', NULL, NULL, '[]', 'choice', '["값이 바뀌어도 새 값이 무시되고 이전 값이 유지된다", "값이 바뀌면 스택이 자동으로 삭제되고 다시 만들어진다", "값을 바꿀 때 관리자 승인을 요구한다", "파라미터 값이 바뀌면 업데이트가 실패한다"]', 3, 'HOT 명세는 immutable 이 true 이면 파라미터 값이 바뀔 때 스택 업데이트가 실패한다고 설명합니다. 기본은 false 입니다.', NULL, NULL, NULL, '[{"title": "Heat HOT 명세", "url": "https://docs.openstack.org/heat/latest/template_guide/hot_spec.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 392 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 392, 5, 'range 제약', '파라미터 제약 **range** 의 경계는 어떻게 취급될까요?', '숫자 타입에 쓰는 제약이에요.', NULL, NULL, '[]', 'choice', '["min·max 경계 값을 포함하지 않는다", "min 만 포함하고 max 는 포함하지 않는다", "min·max 경계 값을 포함한다(inclusive)", "문자열 길이에 쓰며 숫자에는 쓸 수 없다"]', 2, 'HOT 명세는 range 가 number 에 적용되고 min·max 경계가 포함된다고 설명합니다. 문자열 길이는 length 제약입니다.', NULL, NULL, NULL, '[{"title": "Heat HOT 명세", "url": "https://docs.openstack.org/heat/latest/template_guide/hot_spec.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 392 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 392, 6, 'custom_constraint', '**custom_constraint** (예: nova.keypair) 는 무엇을 검사할까요?', '엔진에 등록된 검증 플러그인이에요.', NULL, NULL, '[]', 'choice', '["값이 올바른 정규식 모양인지 형식을 본다", "백엔드에 그 리소스가 있는지 검증", "값이 숫자 범위 안에 드는지 여부를 본다", "값이 템플릿에서 몇 번 쓰였는지 횟수를 센다"]', 1, 'HOT 명세는 custom_constraint 가 엔진에 등록된 검증 플러그인(예: nova.keypair)을 가리키며 보통 백엔드에 해당 리소스가 있는지 확인한다고 설명합니다. 정규식은 allowed_pattern 입니다.', NULL, NULL, NULL, '[{"title": "Heat HOT 명세", "url": "https://docs.openstack.org/heat/latest/template_guide/hot_spec.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 392 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 392, 7, '내장 함수를 쓸 수 있는 곳', 'get_param·get_attr 같은 **내장 함수** 를 쓸 수 있는 곳은 어디일까요?', '두 군데뿐이에요.', NULL, NULL, '[]', 'choice', '["리소스의 properties 섹션 또는 outputs 섹션 안", "템플릿 어디에서나 자유롭게 쓸 수 있다", "parameters 섹션 안에서만 쓸 수 있다", "description 과 resources 의 type 값 안에서만 쓸 수 있다"]', 0, 'HOT 명세는 내장 함수를 각 리소스의 properties 섹션 또는 outputs 섹션 안에서만 쓸 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Heat HOT 명세", "url": "https://docs.openstack.org/heat/latest/template_guide/hot_spec.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 392 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 392, 8, '삭제 정책', '리소스의 **deletion_policy** 로 허용되는 값은 무엇일까요?', '세 가지예요.', NULL, NULL, '[]', 'choice', '["Remove, Keep, Backup", "Delete, Archive, Restore", "Drop, Hold, Freeze", "Delete, Retain, Snapshot"]', 3, 'HOT 명세는 허용되는 삭제 정책을 Delete, Retain, Snapshot 으로 설명하며 기본은 실제 리소스를 삭제하는 것입니다.', NULL, NULL, NULL, '[{"title": "Heat HOT 명세", "url": "https://docs.openstack.org/heat/latest/template_guide/hot_spec.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 392 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 392, 9, 'resource_registry', '환경 파일의 **resource_registry** 는 무엇을 할까요?', '타입 이름에 템플릿을 연결해요.', NULL, NULL, '[]', 'choice', '["스택에 쓸 리소스의 수를 제한하는 일을 한다", "리소스가 만들어진 순서를 기록하는 일을 한다", "타입 이름을 템플릿에 매핑해 타입을 덮어쓴다", "사용자의 토큰을 리소스에 연결하는 일을 한다"]', 2, '템플릿 조합 문서는 환경의 resource_registry 가 리소스 타입 이름을 템플릿에 매핑하며(예: OS::Nova::Server 를 my_nova.yaml 로), 기본 타입을 덮어쓸 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Heat 템플릿 조합", "url": "https://docs.openstack.org/heat/latest/template_guide/composition.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 392 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 392, 10, '입력 값을 읽는 함수', '템플릿에서 **입력 파라미터의 런타임 값** 으로 풀리는 내장 함수입니다. 빈칸을 채우세요.', '"get_" 으로 시작해요.', NULL, NULL, '[]', 'fill', '["get_param", "get_attr", "get_resource", "get_file"]', NULL, 'get_param 은 입력 파라미터의 런타임 값으로 풀립니다. get_attr 는 리소스 속성, get_resource 는 같은 템플릿의 다른 리소스 ID 입니다.', '[0]', '{0}: key_name', NULL, '[{"title": "Heat HOT 명세", "url": "https://docs.openstack.org/heat/latest/template_guide/hot_spec.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 392 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 392, 11, '리소스 ID 를 참조하는 함수', '같은 템플릿의 **다른 리소스** 를 참조해 그 ID 로 풀리는 내장 함수입니다. 빈칸을 채우세요.', '리소스를 가져와요.', NULL, NULL, '[]', 'fill', '["get_resource", "get_param", "get_attr", "get_file"]', NULL, 'get_resource 는 같은 템플릿의 다른 리소스를 참조하며 그 리소스의 타입별 ID 로 풀립니다.', '[0]', '{0}: my_server', NULL, '[{"title": "Heat HOT 명세", "url": "https://docs.openstack.org/heat/latest/template_guide/hot_spec.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 392 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 392, 12, '환경 파일로 템플릿 조합하기', '큰 템플릿을 나누고 환경 파일로 연결해 스택을 만드는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '나누기 → 매핑 → 전달이에요.', NULL, NULL, '[]', 'order', '["작은 템플릿(예: my_nova.yaml)을 따로 작성한다", "환경 파일 resource_registry 에서 타입을 그 템플릿에 매핑한다", "메인 템플릿에서 그 타입의 리소스를 선언하고 속성으로 파라미터를 넘긴다", "-e 로 환경 파일을 주며 openstack stack create 를 실행한다"]', NULL, '템플릿 조합 문서의 흐름을 정리한 큰 줄기입니다. 환경은 -e 로 전달하고, 리소스 속성이 템플릿 파라미터로 변환됩니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "Heat 템플릿 조합", "url": "https://docs.openstack.org/heat/latest/template_guide/composition.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 392 AND order_index = 12);
+
+-- 배치: 단원 끝 (분할 마이그레이션 뒤에 적용되도록 2026-11-13 이름을 쓴다)
+UPDATE quest_set SET display_order = 721, unit_id = (SELECT id FROM unit WHERE id = 41), icon = '🧱' WHERE id = 392;
