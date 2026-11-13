@@ -686,3 +686,21 @@ UPDATE quest_set SET display_order = 297 WHERE id = 120;
 UPDATE quest_set SET display_order = 298 WHERE id = 121;
 UPDATE quest_set SET display_order = 299 WHERE id = 14;
 UPDATE quest_set SET display_order = 277, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '⛵' WHERE id = 383;
+-- 세트 384
+UPDATE quest_set SET display_order = 706 WHERE id = 357;
+UPDATE quest_set SET display_order = 707 WHERE id = 358;
+UPDATE quest_set SET display_order = 708 WHERE id = 359;
+UPDATE quest_set SET display_order = 709 WHERE id = 360;
+UPDATE quest_set SET display_order = 710 WHERE id = 361;
+UPDATE quest_set SET display_order = 711 WHERE id = 362;
+UPDATE quest_set SET display_order = 712 WHERE id = 363;
+UPDATE quest_set SET display_order = 713 WHERE id = 364;
+UPDATE quest_set SET display_order = 705, unit_id = (SELECT id FROM unit WHERE id = 37), icon = '📍' WHERE id = 384;
+-- 세트 385
+UPDATE quest_set SET display_order = 709 WHERE id = 359;
+UPDATE quest_set SET display_order = 710 WHERE id = 360;
+UPDATE quest_set SET display_order = 711 WHERE id = 361;
+UPDATE quest_set SET display_order = 712 WHERE id = 362;
+UPDATE quest_set SET display_order = 713 WHERE id = 363;
+UPDATE quest_set SET display_order = 714 WHERE id = 364;
+UPDATE quest_set SET display_order = 708, unit_id = (SELECT id FROM unit WHERE id = 38), icon = '🕸️' WHERE id = 385;

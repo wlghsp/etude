@@ -1,0 +1,63 @@
+-- OpenStack 퀴즈 세트 384. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_openstack_round2.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 384, 'Nova 스케줄링과 인스턴스 이동: 필터·Placement, 호스트 집합, 가용 영역, 서버 그룹, resize·마이그레이션', '인스턴스가 어느 호스트에 놓이고 어떻게 옮겨지는지 익힙니다. 스케줄러의 필터와 가중치, Placement 의 리소스 공급자, 호스트 집합과 가용 영역, 서버 그룹의 affinity 와 anti-affinity, resize 의 VERIFY_RESIZE, 블록 마이그레이션, evacuate 의 전제를 봅니다.', 'quiz', 'OpenStack'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 384);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 384, 1, '스케줄러의 두 단계', 'Nova 스케줄러가 새 인스턴스를 놓을 호스트를 고르는 **두 단계** 는 무엇일까요?', '먼저 걸러 내고, 그다음 점수를 매겨요.', NULL, NULL, '[]', 'choice', '["가중치로 먼저 정렬한 뒤, 필터로 순서를 확정한다", "사용자가 호스트를 직접 고르고 스케줄러는 검사만 한다", "필터로 후보를 걸러 낸 뒤, 가중치로 순위를 매긴다", "무작위로 호스트를 하나 고르고 실패하면 다음을 고른다"]', 2, 'Nova 문서는 스케줄러가 필터링과 가중치로 인스턴스를 놓을 곳을 정한다고 설명합니다. 필터는 호스트를 통과/탈락(이진)시키고, 통과한 호스트는 가중치 알고리즘으로 순위를 매깁니다.', NULL, NULL, NULL, '[{"title": "Nova 스케줄러(필터와 가중치)", "url": "https://docs.openstack.org/nova/latest/admin/scheduling.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 384 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 384, 2, '필터의 성격', '스케줄러의 **필터** 는 호스트를 어떻게 다룰까요?', '이진이라는 말이 문서에 있어요.', NULL, NULL, '[]', 'choice', '["호스트마다 0~100 점의 점수를 매긴다", "통과하거나 탈락시키는 이진 판정을 한다", "호스트를 한 대씩 순서대로 켜 본다", "인스턴스의 크기를 자동으로 줄여 맞춘다"]', 1, '문서는 필터가 이진(binary)이라서 호스트가 필터에 받아들여지거나 거부된다고 설명합니다. 점수를 매기는 것은 이후의 가중치 단계입니다.', NULL, NULL, NULL, '[{"title": "Nova 스케줄러(필터와 가중치)", "url": "https://docs.openstack.org/nova/latest/admin/scheduling.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 384 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 384, 3, 'Placement 서비스', '**Placement** 서비스가 추적하는 것은 무엇일까요?', '"리소스 공급자"라는 말이 나와요.', NULL, NULL, '[]', 'choice', '["컴퓨트 노드 같은 공급자의 인벤토리와 사용량", "사용자의 로그인 기록과 발급된 토큰", "가상 머신 이미지 파일의 원본 데이터 전체", "인스턴스 안에서 도는 프로세스의 목록"]', 0, 'Placement 문서는 리소스 공급자(컴퓨트 노드, 공유 스토리지 풀, IP 할당 풀)의 인벤토리와 사용량을 추적하는 서비스라고 설명합니다. 인스턴스는 CPU·RAM·디스크 같은 자원의 소비자(consumer)로 기록됩니다.', NULL, NULL, NULL, '[{"title": "Placement 서비스", "url": "https://docs.openstack.org/placement/latest/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 384 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 384, 4, '호스트 집합이란', '**호스트 집합(host aggregate)** 의 쓰임으로 알맞은 것은 무엇일까요?', '메타데이터와 플레이버를 짝짓는 방식이에요.', NULL, NULL, '[]', 'choice', '["사용자 계정을 묶어 권한을 한꺼번에 준다", "네트워크 포트를 묶어 전송 속도를 늘린다", "볼륨을 묶어 하나의 큰 디스크처럼 쓴다", "호스트를 묶고 메타데이터로 플레이버와 짝지어 보낸다"]', 3, 'Nova 문서는 관리자가 호스트 집합의 메타데이터와 플레이버의 extra spec 을 맞춰 플레이버를 호스트 집합에 매핑한다고 설명합니다. 컴퓨트 노드는 여러 집합에 속할 수 있습니다.', NULL, NULL, NULL, '[{"title": "Nova 호스트 집합", "url": "https://docs.openstack.org/nova/latest/admin/aggregates.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 384 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 384, 5, '가용 영역이란', '**가용 영역(availability zone)** 에 대한 설명으로 알맞은 것은 무엇일까요?', '최종 사용자에게도 보이는 구분이에요.', NULL, NULL, '[]', 'choice', '["관리자만 볼 수 있는 호스트 내부 설정값", "인스턴스 안에서 보이는 시간대 설정값", "사용자에게도 보이는 논리적인 클라우드 구분", "볼륨 하나가 쓰는 디스크 공간의 이름"]', 2, 'Nova 문서는 가용 영역을 물리 인프라를 모르고도 클라우드를 나눌 수 있는 최종 사용자에게 보이는 논리적 추상화로 설명하며 위치·네트워크 구성·전원 같은 기준으로 나눌 수 있다고 합니다. 호스트는 하나의 가용 영역에만 속합니다.', NULL, NULL, NULL, '[{"title": "Nova 가용 영역", "url": "https://docs.openstack.org/nova/latest/admin/availability-zones.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 384 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 384, 6, '가용 영역 사이 이동', '이미 만든 인스턴스를 **다른 가용 영역으로 옮기는 것** 에 대해 문서가 알려 주는 것은 무엇일까요?', '집합에 호스트를 넣고 빼다 영역이 바뀌는 경우도 막아요.', NULL, NULL, '[]', 'choice', '["관리자가 명령 하나로 언제든 자유롭게 옮길 수 있다", "가용 영역 사이로 인스턴스를 옮기는 것은 허용되지 않는다", "같은 이름의 영역끼리만 옮길 수 있다", "인스턴스를 꺼 두면 영역을 바꿀 수 있다"]', 1, 'Nova 문서는 "가용 영역 사이로 인스턴스를 옮기는 것은 허용되지 않는다"고 하며, 호스트를 집합에 넣거나 빼는 작업 때문에 인스턴스가 영역을 옮기게 되는 경우에도 허용되지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Nova 호스트 집합", "url": "https://docs.openstack.org/nova/latest/admin/aggregates.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 384 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 384, 7, '서버 그룹 anti-affinity', '서버 그룹의 **anti-affinity** 정책은 무엇을 요구할까요?', 'affinity 의 반대예요.', NULL, NULL, '[]', 'choice', '["그룹의 인스턴스들을 서로 다른 호스트에 두려 한다", "그룹의 인스턴스들을 모두 같은 호스트에 둔다", "그룹의 인스턴스들을 같은 가용 영역에만 둔다", "그룹의 인스턴스들이 같은 플레이버를 쓰게 한다"]', 0, 'Nova 문서는 affinity 가 같은 호스트, anti-affinity 가 서로 다른 호스트를 뜻한다고 설명합니다. affinity 는 네트워크 지연을 줄이고 anti-affinity 는 장애 허용과 부하 분산에 도움이 됩니다. 서버 그룹을 고가용성의 근거로 삼지 말고 가용 영역을 고려하라고 덧붙입니다.', NULL, NULL, NULL, '[{"title": "Nova 서버 그룹", "url": "https://docs.openstack.org/nova/latest/user/server-groups.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 384 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 384, 8, 'resize 뒤의 상태', '`openstack server resize --flavor 새플레이버 SERVER` 뒤 인스턴스가 **VERIFY_RESIZE** 상태입니다. 다음에 할 일로 알맞은 것은 무엇일까요?', '확정하거나 되돌려요.', NULL, NULL, '[]', 'choice', '["아무것도 하지 않으면 영원히 이 상태로 남는다고 문서가 보장한다", "서버를 삭제하고 새 플레이버로 처음부터 다시 만들어야 한다", "`server reboot` 만 하면 자동으로 확정되어 ACTIVE 가 된다", "`resize confirm` 으로 확정하거나 `resize revert` 로 되돌린다"]', 3, 'Nova 문서는 resize 뒤 상태가 VERIFY_RESIZE 이며 `openstack server resize confirm SERVER` 로 확정하면 ACTIVE 가 되고, 문제가 있으면 `resize revert` 로 이전 플레이버로 되돌릴 수 있다고 설명합니다. 배포 설정에 따라 자동 확정되기도 합니다.', NULL, NULL, NULL, '[{"title": "인스턴스 크기 변경(resize)", "url": "https://docs.openstack.org/nova/latest/user/resize.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 384 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 384, 9, 'evacuate 의 전제', '컴퓨트 노드가 고장 났을 때 쓰는 **evacuate** 가 성공하려면 무엇이 맞아야 할까요?', '원래 호스트의 상태가 핵심이에요.', NULL, NULL, '[]', 'choice', '["원래 호스트가 정상 동작 중이어야 한다", "인스턴스가 반드시 SHUTOFF 상태여야 한다", "원래 인스턴스가 있던 호스트가 동작하지 않는 상태여야 한다", "인스턴스의 볼륨을 모두 삭제해야 한다"]', 2, 'Nova 문서는 evacuate 때 현재 VM 호스트가 동작하지 않는 상태임을 확인해야 하고, 아니면 evacuate 가 실패한다고 설명합니다. 사용자 데이터를 보존하려면 대상 호스트에 공유 스토리지를 구성합니다.', NULL, NULL, NULL, '[{"title": "인스턴스 대피(evacuate)", "url": "https://docs.openstack.org/nova/latest/admin/evacuate.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 384 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 384, 10, 'resize 확정', 'resize 한 인스턴스를 **새 플레이버로 확정** 하는 명령입니다. 빈칸을 채우세요.', '반대는 revert 예요.', NULL, NULL, '[]', 'fill', '["confirm", "revert", "cancel", "commit"]', NULL, '문서 예시는 `openstack server resize confirm SERVER` 입니다. `revert` 는 이전 플레이버로 되돌립니다. `cancel`·`commit` 은 이 명령의 하위 동작이 아닙니다.', '[0]', 'openstack server resize {0} SERVER', NULL, '[{"title": "인스턴스 크기 변경(resize)", "url": "https://docs.openstack.org/nova/latest/user/resize.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 384 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 384, 11, '디스크도 함께 옮기기', '공유 스토리지가 없을 때 디스크까지 함께 옮기는 라이브 마이그레이션 옵션 이름입니다. 빈칸을 채우세요.', '"block" 이 들어가요.', NULL, NULL, '[]', 'fill', '["block-migration", "full-copy", "disk-sync", "no-share"]', NULL, 'Nova 문서는 블록 마이그레이션을 하려면 `openstack server migrate` 명령에 `--block-migration` 옵션을 붙이라고 설명합니다. 공유 스토리지나 볼륨 기반 인스턴스는 디스크를 옮기지 않습니다.', '[0]', 'openstack server migrate --{0}', NULL, '[{"title": "인스턴스 라이브 마이그레이션", "url": "https://docs.openstack.org/nova/latest/admin/live-migration-usage.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 384 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 384, 12, 'resize 의 흐름', '인스턴스 크기를 바꾸고 확정하기까지의 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '요청 → 확인 상태 → 확정 → 정상 순서예요.', NULL, NULL, '[]', 'order', '["`openstack server resize --flavor` 로 새 플레이버를 요청한다", "인스턴스 상태가 `VERIFY_RESIZE` 가 된다", "`openstack server resize confirm` 으로 확정한다", "인스턴스 상태가 `ACTIVE` 로 돌아온다"]', NULL, 'resize 요청 뒤 VERIFY_RESIZE 에서 확정하면 ACTIVE 가 됩니다. 확정 대신 `resize revert` 를 하면 이전 플레이버로 돌아가며 역시 ACTIVE 가 됩니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "인스턴스 크기 변경(resize)", "url": "https://docs.openstack.org/nova/latest/user/resize.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 384 AND order_index = 12);
+
+-- 배치: 단원 끝 (분할 마이그레이션 뒤에 적용되도록 2026-11-13 이름을 쓴다)
+UPDATE quest_set SET display_order = 706 WHERE id = 357;
+UPDATE quest_set SET display_order = 707 WHERE id = 358;
+UPDATE quest_set SET display_order = 708 WHERE id = 359;
+UPDATE quest_set SET display_order = 709 WHERE id = 360;
+UPDATE quest_set SET display_order = 710 WHERE id = 361;
+UPDATE quest_set SET display_order = 711 WHERE id = 362;
+UPDATE quest_set SET display_order = 712 WHERE id = 363;
+UPDATE quest_set SET display_order = 713 WHERE id = 364;
+UPDATE quest_set SET display_order = 705, unit_id = (SELECT id FROM unit WHERE id = 37), icon = '📍' WHERE id = 384;
