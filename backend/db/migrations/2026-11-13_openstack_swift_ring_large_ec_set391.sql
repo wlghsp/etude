@@ -1,0 +1,55 @@
+-- OpenStack 퀴즈 세트 391. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_openstack_round5.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 391, 'Swift 깊게: 링과 파티션, 핸드오프, 대용량 객체(DLO·SLO), 만료, 이레이저 코딩', '오브젝트 스토리지의 구조를 더 봅니다. 링의 파티션 파워·레플리카·가중치·링 빌더, 프록시의 핸드오프, 5GB 제한과 DLO·SLO, X-Delete-After 만료, 이레이저 코딩의 성격과 제약을 익힙니다.', 'quiz', 'OpenStack'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 391);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 391, 1, '링이 정하는 것', 'Swift 의 **링(ring)** 은 무엇을 정할까요?', '데이터가 어디에 있어야 하는지예요.', NULL, NULL, '[]', 'choice', '["어느 사용자가 객체를 올릴 수 있는지", "객체를 어떤 압축 형식으로 저장할지", "데이터가 클러스터의 어느 장치에 있어야 하는지", "컨테이너 이름이 중복되는지 여부"]', 2, 'Swift 문서는 링이 클러스터에서 데이터가 어디에 있어야 하는지를 정한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Swift 링", "url": "https://docs.openstack.org/swift/latest/overview_ring.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 391 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 391, 2, '파티션 수', '링에서 **파티션 파워(partition power) P** 가 정하는 파티션 수는 얼마일까요?', '2 의 거듭제곱이에요.', NULL, NULL, '[]', 'choice', '["P 의 두 배", "2 의 P 제곱", "P 의 제곱", "P 에 레플리카 수를 곱한 값"]', 1, '문서는 "2 의 파티션 파워 제곱이 파티션 수"라고 설명합니다. 아이템의 MD5 해시에서 가져온 비트 수가 파티션 인덱스가 됩니다.', NULL, NULL, NULL, '[{"title": "Swift 링", "url": "https://docs.openstack.org/swift/latest/overview_ring.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 391 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 391, 3, '장치와 레플리카 수', '링에서 **레플리카 수와 장치 수** 의 관계로 맞는 것은 무엇일까요?', '한 장치에는 한 복제본만 가요.', NULL, NULL, '[]', 'choice', '["복제본은 장치당 하나뿐이라 장치가 레플리카 수 이상 필요하다", "장치 하나에 모든 복제본을 몰아 넣을 수 있다", "장치 수가 레플리카 수보다 적어도 문제없다", "레플리카 수는 반드시 정수여야 한다 (소수 불가)"]', 0, '문서는 한 파티션의 복제본이 한 장치에 하나만 놓일 수 있으므로 레플리카 이상의 장치가 필요하다고 설명합니다. 소수 레플리카(예: 3.25)도 가능하며 일부 파티션만 복제본이 하나 더 생깁니다.', NULL, NULL, NULL, '[{"title": "Swift 링", "url": "https://docs.openstack.org/swift/latest/overview_ring.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 391 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 391, 4, '장치 가중치', '링에서 장치의 **가중치(weight)** 는 무엇을 뜻할까요?', '용량 비율이에요.', NULL, NULL, '[]', 'choice', '["장치의 읽기 속도를 매긴 순위 값", "장치가 놓인 서버 장비의 물리적 무게", "장치에 쓸 수 있는 최대 객체 크기", "다른 장치 대비 그 장치의 상대적 저장 용량"]', 3, '문서는 가중치를 다른 장치와 견준 그 장치의 상대적인 저장 용량으로 설명합니다. 기본 오버로드 값은 0이라 가중치를 엄격히 따릅니다.', NULL, NULL, NULL, '[{"title": "Swift 링", "url": "https://docs.openstack.org/swift/latest/overview_ring.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 391 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 391, 5, '링 파일 관리', 'Swift **링 파일** 은 어떻게 만들고 서버가 어떻게 쓸까요?', '서버는 링을 수정하지 않아요.', NULL, NULL, '[]', 'choice', '["서버가 상태를 보고 링을 스스로 다시 계산해 둔다", "프록시가 요청이 올 때마다 링을 새로 만들어 쓴다", "링 빌더로 만들어 배포하고, 서버는 수정 시각을 보고 다시 읽는다", "링은 한 번 만들고 나면 영구히 바꿀 수 없다"]', 2, '문서는 링을 링 빌더 유틸리티로 직접 만들어 압축된 링 파일을 서버에 배포하며, 서버 프로세스는 파일 수정 시각을 가끔 확인해 메모리 사본을 다시 읽는다고 설명합니다. 서버는 링을 고치지 않습니다.', NULL, NULL, NULL, '[{"title": "Swift 링", "url": "https://docs.openstack.org/swift/latest/overview_ring.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 391 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 391, 6, '빌더 파일 분실', '링 **빌더 파일을 잃어버리면** 어떻게 될까요?', '문서가 백업을 여러 개 두라고 해요.', NULL, NULL, '[]', 'choice', '["서버의 링 파일에서 빌더가 자동으로 복구된다", "링을 처음부터 다시 만들어 거의 모든 파티션이 재배정된다", "아무 영향 없이 변경 없이 그대로 쓸 수 있다", "컨테이너 데이터베이스에서 링을 되살려 쓴다"]', 1, '문서는 빌더 파일에 미래의 링을 만드는 데 필요한 정보가 있어 백업을 여러 개 두라고 권하며, 잃으면 링을 처음부터 만들어 거의 모든 파티션이 재배정되고 대부분의 데이터를 다시 복제해야 한다고 경고합니다.', NULL, NULL, NULL, '[{"title": "Swift 링", "url": "https://docs.openstack.org/swift/latest/overview_ring.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 391 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 391, 7, '프록시의 핸드오프', '객체를 PUT 하는데 **담당 서버 하나가 죽어** 있으면 프록시는 어떻게 할까요?', '링이 대안도 알려 줘요.', NULL, NULL, '[]', 'choice', '["링에 핸드오프 서버를 물어 그쪽으로 보낸다", "PUT 요청 전체를 즉시 실패로 돌려보낸다", "죽은 서버가 살아날 때까지 대기한다", "데이터를 프록시 디스크에 영구 저장한다"]', 0, 'Swift 아키텍처 문서는 객체 PUT 중 서버가 죽어 있으면 프록시가 링에 핸드오프 서버를 물어 대신 그쪽으로 보낸다고 설명합니다. 링이 핸드오프에 쓸 장치도 정합니다.', NULL, NULL, NULL, '[{"title": "Swift 아키텍처", "url": "https://docs.openstack.org/swift/latest/overview_architecture.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 391 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 391, 8, '5GB 제한', 'Swift 에서 업로드하는 단일 객체의 **기본 최대 크기** 입니다. 빈칸을 채우세요.', '그보다 큰 파일은 세그먼트로 나눠요.', NULL, NULL, '[]', 'fill', '["5GB", "1GB", "50GB", "5TB"]', NULL, 'Swift 는 단일 업로드 객체의 크기를 기본 5GB 로 제한합니다. 더 큰 것은 대용량 객체(DLO·SLO)로 나눠 올립니다.', '[0]', '{0}', NULL, '[{"title": "Swift 대용량 객체", "url": "https://docs.openstack.org/swift/latest/overview_large_objects.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 391 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 391, 9, '삭제 예약 헤더', '객체를 올리면서 **지금부터 몇 초 뒤에 지워지도록** 정하는 헤더 이름입니다. 빈칸을 채우세요.', '"X-Delete-" 로 시작해요.', NULL, NULL, '[]', 'fill', '["X-Delete-After", "X-Delete-At", "X-Expire-In", "X-Remove-After"]', NULL, 'X-Delete-After 는 양의 정수 초를 받아 프록시가 요청 시각에 더해 X-Delete-At 로 바꿉니다. X-Delete-At 은 Unix 시각을 직접 받는 헤더입니다.', '[0]', '{0}', NULL, '[{"title": "Swift 만료 객체", "url": "https://docs.openstack.org/swift/latest/overview_expiring_objects.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 391 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 391, 10, 'DLO 와 SLO', '**동적 대용량 객체(DLO)** 와 **정적 대용량 객체(SLO)** 의 차이로 맞는 것은 무엇일까요?', '매니페스트를 누가 어떻게 주느냐예요.', NULL, NULL, '[]', 'choice', '["DLO 는 5GB 이하만 되고 SLO 는 무제한이다", "DLO 는 컨테이너 목록, SLO 는 사용자가 준 매니페스트를 쓴다", "DLO 는 서로 다른 컨테이너를, SLO 는 한 컨테이너만 쓴다", "둘 다 매니페스트 없이 세그먼트 이름만으로 합쳐진다"]', 1, '문서는 DLO 가 컨테이너 목록에, SLO 가 사용자가 준 매니페스트 파일에 의존한다고 설명합니다. SLO 는 서로 다른 컨테이너의 세그먼트를 가리킬 수 있고 DLO 는 한 컨테이너여야 합니다.', NULL, NULL, NULL, '[{"title": "Swift 대용량 객체", "url": "https://docs.openstack.org/swift/latest/overview_large_objects.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 391 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 391, 11, '이레이저 코딩', 'Swift 의 **이레이저 코딩(EC)** 은 복제와 비교해 어떤 성격일까요?', 'CPU 를 더 쓰는 대신 조각으로 나눠요.', NULL, NULL, '[]', 'choice', '["CPU 를 더 쓰며 큰 객체나 백업 같은 데이터에 어울린다", "CPU 를 덜 쓰고 작은 객체를 자주 읽는 데 가장 어울린다", "복제보다 항상 빠르고 비용도 적게 든다", "객체를 쪼개지 않고 통째로 여러 곳에 둔다"]', 0, '문서는 EC 가 읽고 쓰는 데 CPU 가 훨씬 더 필요하고, 크고 자주 접근하지 않는 객체(백업 등)에 어울린다고 설명합니다. 객체를 N 개의 조각(데이터와 패리티)으로 나눕니다.', NULL, NULL, NULL, '[{"title": "Swift 이레이저 코딩", "url": "https://docs.openstack.org/swift/latest/overview_erasure_code.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 391 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 391, 12, '큰 파일을 SLO 로 올리기', '5GB 보다 큰 파일을 정적 대용량 객체(SLO)로 올리는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '조각 → 목록 → 합치기예요.', NULL, NULL, '[]', 'order', '["파일을 세그먼트 크기로 나눈다", "세그먼트를 각각 객체로 올린다", "세그먼트 목록을 담은 매니페스트를 만든다", "?multipart-manifest=put 으로 매니페스트를 PUT 한다"]', NULL, '세그먼트를 올린 뒤 사용자가 만든 매니페스트를 ?multipart-manifest=put 을 붙여 PUT 하면 SLO 가 만들어집니다. 문서가 제시한 순서의 큰 줄기를 정리한 것입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "Swift 대용량 객체", "url": "https://docs.openstack.org/swift/latest/overview_large_objects.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 391 AND order_index = 12);
+
+-- 배치: 단원 끝 (분할 마이그레이션 뒤에 적용되도록 2026-11-13 이름을 쓴다)
+UPDATE quest_set SET display_order = 720, unit_id = (SELECT id FROM unit WHERE id = 41), icon = '🧬' WHERE id = 391;
