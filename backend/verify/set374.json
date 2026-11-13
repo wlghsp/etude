@@ -1,0 +1,14 @@
+{
+  "setId": 374,
+  "answers": {
+    "1": "mariadb shop -e 'SELECT id, amount, ROW_NUMBER() OVER (ORDER BY amount DESC, id) AS rn FROM sales ORDER BY rn;' > /tmp/q1.txt\ncat /tmp/q1.txt\n\n# OVER (ORDER BY ...) 의 순서대로 1, 2, 3 ... 번호가 붙는다",
+    "2": "mariadb shop -e 'SELECT id, amount, RANK() OVER (ORDER BY amount DESC) AS rk FROM sales ORDER BY rk, id;' > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# RANK 는 동점에 같은 순위를 주고 다음 순위는 건너뛴다 (1, 1, 3, ...)",
+    "3": "mariadb shop -e 'SELECT id, amount, DENSE_RANK() OVER (ORDER BY amount DESC) AS dr FROM sales ORDER BY dr, id;' > /tmp/q3.txt\ncat /tmp/q3.txt\n\n# DENSE_RANK 는 동점 뒤에도 순위를 건너뛰지 않는다 (1, 1, 2, 3, ...)",
+    "4": "mariadb shop -e 'SELECT region, id, amount, ROW_NUMBER() OVER (PARTITION BY region ORDER BY amount DESC, id) AS rn FROM sales ORDER BY region, rn;' > /tmp/q4.txt\ncat /tmp/q4.txt\n\n# PARTITION BY 로 지역마다 따로 번호를 매긴다. 행은 합쳐지지 않는다",
+    "5": "mariadb shop -e 'WITH r AS (SELECT region, rep, amount, ROW_NUMBER() OVER (PARTITION BY region ORDER BY amount DESC, id) AS rn FROM sales) SELECT region, rep, amount FROM r WHERE rn = 1 ORDER BY region;' > /tmp/q5.txt\ncat /tmp/q5.txt\n\n# 윈도 함수 결과는 WHERE 에 못 쓰니 WITH 로 이름을 붙이고 바깥에서 rn = 1 만 거른다",
+    "6": "mariadb shop -e 'SELECT id, sold_on, amount, SUM(amount) OVER (ORDER BY sold_on, id) AS running FROM sales ORDER BY sold_on, id;' > /tmp/q6.txt\ncat /tmp/q6.txt\n\n# SUM(...) OVER (ORDER BY ...) 는 지금 행까지의 누적 합이다",
+    "7": "mariadb shop -e 'SELECT id, region, amount, SUM(amount) OVER (PARTITION BY region) AS region_total FROM sales ORDER BY id;' > /tmp/q7.txt\ncat /tmp/q7.txt\n\n# PARTITION BY 만 쓰면 묶음 전체의 합을 각 행 옆에 붙인다. GROUP BY 와 달리 행이 남는다",
+    "8": "mariadb shop -e 'SELECT id, amount, LAG(amount) OVER (ORDER BY id) AS prev_amount FROM sales ORDER BY id;' > /tmp/q8.txt\ncat /tmp/q8.txt\n\n# LAG 는 바로 앞 행의 값을 가져온다. 첫 행은 앞이 없어 NULL 이다",
+    "9": "mariadb shop -e 'WITH t AS (SELECT region, SUM(amount) AS total FROM sales GROUP BY region) SELECT region, total FROM t WHERE total > (SELECT AVG(total) FROM t) ORDER BY region;' > /tmp/q9.txt\ncat /tmp/q9.txt\n\n# WITH 로 붙인 이름은 아래 쿼리에서 여러 번 쓸 수 있다. 평균(약 783)보다 큰 합계는 west(1100) 뿐이다"
+  }
+}
