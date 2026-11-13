@@ -1,0 +1,60 @@
+-- OpenStack 퀴즈 세트 388. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_openstack_round4.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 388, 'Glance 심화: 이미지 가져오기 방식, 상태(deactivated·killed), 이미지 공유와 멤버', '이미지 서비스의 심화를 익힙니다. glance-direct·web-download·glance-download·copy-image 가져오기 방식과 URL 허용·차단 목록, deactivated 와 killed 상태, 이미지를 다른 프로젝트와 공유할 때의 멤버 상태(pending·accepted·rejected)와 권한, 공통 이미지 속성을 봅니다.', 'quiz', 'OpenStack'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 388);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 388, 1, '가져오기 방식의 수', 'Glance 가 제공하는 **이미지 가져오기(import) 방식** 은 모두 몇 가지이며 무엇일까요?', '이름이 모두 하이픈이 들어가요.', NULL, NULL, '[]', 'choice', '["두 가지(upload 와 download 뿐)", "세 가지(local, remote, cache)", "네 가지(glance-direct, web-download 등)", "한 가지(glance-direct 뿐)"]', 2, 'Glance 문서는 사용자에게 열어 줄 수 있는 가져오기 방식이 glance-direct, web-download, glance-download, copy-image 네 가지라고 설명합니다. 기본으로 켜진 것은 glance-direct 와 web-download 이고 glance-download 는 기본으로 꺼져 있습니다.', NULL, NULL, NULL, '[{"title": "Glance 이미지 가져오기", "url": "https://docs.openstack.org/glance/latest/admin/interoperable-image-import.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 388 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 388, 2, 'glance-direct', '**glance-direct** 가져오기 방식은 무엇을 할까요?', '내 PC 의 파일을 Glance 로 올려요.', NULL, NULL, '[]', 'choice', '["원격 URL 에서 이미지를 받아 와 저장한다", "사용자가 이미지 데이터를 Glance 로 직접 올리게 한다", "다른 Glance 서버에서 이미지를 가져온다", "같은 이미지를 다른 스토어로 복제한다"]', 1, '문서는 glance-direct 를 사용자가 이미지 데이터를 Glance 에 직접 올릴 수 있게 하는 방식으로 설명합니다. 원격 URL 에서 가져오는 것은 web-download, 다른 Glance 에서 가져오는 것은 glance-download 입니다.', NULL, NULL, NULL, '[{"title": "Glance 이미지 가져오기", "url": "https://docs.openstack.org/glance/latest/admin/interoperable-image-import.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 388 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 388, 3, 'web-download', '**web-download** 가져오기 방식은 무엇을 할까요?', '예전의 copy-from 을 대신해요.', NULL, NULL, '[]', 'choice', '["원격 URL 에서 이미지 데이터를 받아 Glance 백엔드에 저장한다", "사용자의 PC 에서 이미지 파일을 직접 올리게 한다", "이미지를 웹 브라우저로 내려받을 수 있게 해 준다", "이미지를 웹 서버로 자동으로 공개해 준다"]', 0, '문서는 web-download 가 원격 URL 에서 이미지 데이터를 가져와 Glance 백엔드에 저장하는 방식이며(copy-from 연산), Image API v1 에 있던 copy-from 기능을 대신한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Glance 이미지 가져오기", "url": "https://docs.openstack.org/glance/latest/admin/interoperable-image-import.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 388 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 388, 4, 'URL 허용 목록', 'web-download 에서 URL 검사를 **허용 목록과 차단 목록 둘 다** 지정하면 어떻게 처리될까요?', '문서가 "화이트리스트"를 존중한다고 해요.', NULL, NULL, '[]', 'choice', '["차단 목록이 우선이고 허용 목록은 무시된다", "둘 다 통과해야만 허용된다", "둘이 충돌하면 오류가 나고 가져오기가 막힌다", "허용 목록이 적용되고 차단 목록은 무시된다"]', 3, '문서는 스킴·호스트·포트의 세 수준에서 허용/차단 목록을 둘 수 있고, 같은 수준에 둘 다 지정하면 허용 목록이 적용되고 차단 목록은 무시된다고 설명합니다. 그래도 둘 다 두는 이유는 서로 다른 수준에서 조합하기 위해서입니다.', NULL, NULL, NULL, '[{"title": "Glance 이미지 가져오기", "url": "https://docs.openstack.org/glance/latest/admin/interoperable-image-import.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 388 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 388, 5, 'deactivated 상태', '이미지 상태가 **deactivated** 이면 어떻게 될까요?', '이미지 데이터에 대한 접근이 막혀요.', NULL, NULL, '[]', 'choice', '["이미지가 영구히 삭제될 예정인 상태가 된다", "이미지 업로드가 진행 중이라는 뜻이 된다", "관리자가 아닌 사용자는 이미지 데이터에 접근할 수 없다", "이미지가 모든 사용자에게 공개된 상태가 된다"]', 2, 'Glance 문서는 deactivated 를 관리자가 아닌 사용자에게 이미지 데이터 접근이 허용되지 않는 상태라고 설명하며, 다운로드를 막으면 내보내기·복제처럼 데이터가 필요한 작업도 막힌다고 합니다.', NULL, NULL, NULL, '[{"title": "Glance 이미지 상태", "url": "https://docs.openstack.org/glance/latest/user/statuses.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 388 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 388, 6, 'killed 상태', '이미지 상태 **killed** 는 무엇을 뜻할까요?', '업로드 중에 문제가 생겼어요.', NULL, NULL, '[]', 'choice', '["이미지가 의도적으로 삭제되어 곧 지워질 상태", "이미지 데이터 업로드 중 오류가 나서 읽을 수 없는 상태", "이미지 데이터가 업로드되어 완전히 사용 가능한 상태", "이미지 번호만 예약되고 데이터가 없는 상태"]', 1, '문서는 killed 를 이미지 데이터를 올리는 중 오류가 발생해 이미지를 읽을 수 없는 상태로 설명합니다. 데이터가 없이 번호만 예약된 상태는 queued 입니다.', NULL, NULL, NULL, '[{"title": "Glance 이미지 상태", "url": "https://docs.openstack.org/glance/latest/user/statuses.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 388 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 388, 7, '이미지 멤버 상태', '이미지를 **다른 프로젝트와 공유** 하면 새로 만들어진 멤버의 상태는 무엇일까요?', '상대가 받아들이기 전이에요.', NULL, NULL, '[]', 'choice', '["pending (대기)", "accepted (수락)", "rejected (거절)", "active (활성)"]', 0, 'Glance 문서는 멤버 상태가 pending, accepted, rejected 중 하나이며 새로 만든 멤버의 상태는 pending 이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "Glance 이미지 API", "url": "https://docs.openstack.org/glance/latest/user/glanceapi.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 388 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 388, 8, '공유 이미지가 보이는 조건', '다른 프로젝트가 공유해 준 이미지가 **기본 이미지 목록에 나오는** 조건은 무엇일까요?', '멤버 상태가 관건이에요.', NULL, NULL, '[]', 'choice', '["공유되자마자 항상 보인다", "이미지 소유자가 공개(public) 표시를 해 주었을 때", "멤버 상태가 pending 일 때만 보인다", "멤버 상태가 accepted 일 때"]', 3, '문서는 기본적으로 상태가 accepted 인 공유 이미지만 이미지 멤버의 이미지 목록에 포함된다고 설명합니다. 멤버 상태는 이미지 멤버 본인만 바꿀 수 있고 소유자는 바꿀 수 없습니다.', NULL, NULL, NULL, '[{"title": "Glance 이미지 API", "url": "https://docs.openstack.org/glance/latest/user/glanceapi.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 388 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 388, 9, '멤버를 만드는 사람', '이미지의 **멤버를 만들 수 있는 사람** 은 누구일까요?', '이미지의 주인이에요.', NULL, NULL, '[]', 'choice', '["공유 받는 프로젝트의 사용자가 직접 만든다", "프로젝트에 속한 모든 사용자가 만들 수 있다", "이미지 소유자만 만들 수 있다", "관리자만 만들 수 있고 소유자는 만들 수 없다"]', 2, '문서는 이미지 소유자만 이미지에 멤버를 만들 수 있고, 멤버 본인만 자신의 멤버십 상태를 바꿀 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Glance 이미지 API", "url": "https://docs.openstack.org/glance/latest/user/glanceapi.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 388 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 388, 10, '가져오기 방식 이름', '원격 URL 에서 이미지를 받아 오는 가져오기 방식입니다. 빈칸을 채우세요.', '"웹에서 내려받기"예요.', NULL, NULL, '[]', 'fill', '["web-download", "glance-direct", "copy-image", "glance-download"]', NULL, 'web-download 는 원격 URL 에서 이미지를 가져옵니다. glance-direct 는 직접 업로드, glance-download 는 다른 Glance 에서 가져오기, copy-image 는 스토어 사이 복제입니다.', '[0]', '{0}', NULL, '[{"title": "Glance 이미지 가져오기", "url": "https://docs.openstack.org/glance/latest/admin/interoperable-image-import.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 388 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 388, 11, '공통 속성의 이름', '이미지의 **운영체제 배포판 이름** 을 적는 공통 이미지 속성입니다. 빈칸을 채우세요.', '"os_" 로 시작해요.', NULL, NULL, '[]', 'fill', '["os_distro", "os_name", "os_family", "os_brand"]', NULL, 'Glance 공통 이미지 속성 문서는 `os_distro` 를 운영체제 배포판의 일반 이름으로, `os_version` 을 배포자가 정한 OS 버전으로 설명합니다.', '[0]', '{0}', NULL, '[{"title": "Glance 공통 이미지 속성", "url": "https://docs.openstack.org/glance/latest/user/common-image-properties.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 388 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 388, 12, '이미지를 공유하고 쓰기까지', '다른 프로젝트에 이미지를 공유해 그쪽에서 쓰기까지의 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '만들기 → 공유 → 수락 → 사용 순서예요.', NULL, NULL, '[]', 'order', '["소유자가 이미지를 올려 active 상태로 만든다", "소유자가 대상 프로젝트를 이미지 멤버로 추가한다 (pending)", "대상 프로젝트가 멤버 상태를 accepted 로 바꾼다", "대상 프로젝트에서 이미지로 서버를 만든다"]', NULL, '소유자만 멤버를 만들 수 있고 새 멤버는 pending 입니다. 멤버 본인이 accepted 로 바꿔야 이미지 목록에 보이며 서버를 만들 수 있습니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "Glance 이미지 API", "url": "https://docs.openstack.org/glance/latest/user/glanceapi.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 388 AND order_index = 12);
+
+-- 배치: 단원 끝 (분할 마이그레이션 뒤에 적용되도록 2026-11-13 이름을 쓴다)
+UPDATE quest_set SET display_order = 713 WHERE id = 361;
+UPDATE quest_set SET display_order = 714 WHERE id = 362;
+UPDATE quest_set SET display_order = 715 WHERE id = 387;
+UPDATE quest_set SET display_order = 716 WHERE id = 363;
+UPDATE quest_set SET display_order = 717 WHERE id = 364;
+UPDATE quest_set SET display_order = 712, unit_id = (SELECT id FROM unit WHERE id = 39), icon = '📥' WHERE id = 388;
