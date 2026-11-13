@@ -1,0 +1,14 @@
+{
+  "setId": 369,
+  "answers": {
+    "1": "mariadb shop -e 'CREATE INDEX idx_city ON members (city);'\nmariadb shop -e 'SHOW INDEX FROM members;'\n\n# CREATE INDEX 이름 ON 테이블 (컬럼) 으로 만들고 SHOW INDEX 로 확인한다",
+    "2": "mariadb shop -e 'SHOW INDEX FROM members;' > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# SHOW INDEX FROM 테이블 로 인덱스 목록을 본다. PRIMARY 키도 인덱스로 나온다",
+    "3": "mariadb shop -e 'EXPLAIN SELECT * FROM members WHERE age = 30;' > /tmp/q3.txt\ncat /tmp/q3.txt\n\n# EXPLAIN 결과의 key 컬럼에 idx_age 가 보이면 그 인덱스를 쓴 것이다",
+    "4": "mariadb shop -e \"EXPLAIN SELECT * FROM members WHERE email = 'user500@example.com';\" > /tmp/before.txt\nmariadb shop -e 'CREATE INDEX idx_email ON members (email);'\nmariadb shop -e \"EXPLAIN SELECT * FROM members WHERE email = 'user500@example.com';\" > /tmp/after.txt\ncat /tmp/before.txt /tmp/after.txt\n\n# 같은 쿼리의 EXPLAIN 을 인덱스 전후로 비교한다. 전에는 type ALL, 후에는 key 에 인덱스가 나온다",
+    "5": "mariadb shop -e 'CREATE UNIQUE INDEX uq_email ON members (email);'\nmariadb shop -e \"INSERT INTO members VALUES (1001, 'dup', 'user1@example.com', 'Seoul', 25);\" 2> /tmp/q5.txt\ncat /tmp/q5.txt\n\n# UNIQUE 인덱스는 같은 값의 삽입을 거부한다. 오류는 stderr 라 2> 로 저장한다",
+    "6": "mariadb shop -e 'CREATE INDEX idx_city_age ON members (city, age);'\nmariadb shop -e 'SHOW INDEX FROM members;'\n\n# 여러 컬럼을 괄호 안에 순서대로 나열하면 복합 인덱스가 된다",
+    "7": "mariadb shop -e 'CREATE INDEX idx_email ON members (email);'\nmariadb shop -e \"EXPLAIN SELECT * FROM members WHERE email LIKE 'user77%';\" > /tmp/q7a.txt\nmariadb shop -e \"EXPLAIN SELECT * FROM members WHERE email LIKE '%77@example.com';\" > /tmp/q7b.txt\ncat /tmp/q7a.txt /tmp/q7b.txt\n\n# 앞부분이 정해진 LIKE 는 인덱스를 쓰고, 맨 앞이 % 인 LIKE 는 인덱스를 쓰지 못한다",
+    "8": "mariadb shop -e 'DROP INDEX idx_age ON members;'\nmariadb shop -e 'SHOW INDEX FROM members;'\n\n# DROP INDEX 이름 ON 테이블 로 인덱스만 지운다. 데이터는 그대로다",
+    "9": "mariadb shop -e 'EXPLAIN SELECT age FROM members WHERE age = 30;' > /tmp/q9.txt\ncat /tmp/q9.txt\n\n# 인덱스에 있는 컬럼만 조회하면 Extra 에 Using index 가 나온다(테이블 행을 읽지 않는다)"
+  }
+}
