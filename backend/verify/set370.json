@@ -1,0 +1,14 @@
+{
+  "setId": 370,
+  "answers": {
+    "1": "ln -s /tmp/lab/app/config.txt /tmp/lab/current.conf\nls -l /tmp/lab/current.conf\n\n# ln -s 대상 링크이름. ls -l 에 current.conf -> /tmp/lab/app/config.txt 로 보인다",
+    "2": "readlink /tmp/lab/latest > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# readlink 는 링크가 가리키는 경로를 그대로 출력한다 (상대 경로면 상대 경로 그대로)",
+    "3": "ln /tmp/lab/data/list.txt /tmp/lab/data/list.hard\nls -li /tmp/lab/data/list.txt /tmp/lab/data/list.hard\n\n# -s 없는 ln 은 하드 링크. ls -li 에서 두 이름의 inode 번호가 같다",
+    "4": "stat -c %h /tmp/lab/data/shared.txt > /tmp/q4.txt\ncat /tmp/q4.txt\n\n# stat -c %h 는 하드 링크 개수를 숫자로 출력한다 (ls -l 의 둘째 칸과 같다)",
+    "5": "rm /tmp/lab/data/orig.txt\ncat /tmp/lab/data/hard.txt > /tmp/q5.txt\nls -l /tmp/lab/data\n\n# 원본을 지워도 하드 링크는 내용을 그대로 갖고, 심볼릭 링크 soft.txt 는 가리키는 곳이 없어 끊어진다",
+    "6": "diff /tmp/lab/data/list.txt /tmp/lab/data/list.other > /tmp/q6.txt\ncat /tmp/q6.txt\n\n# diff 앞파일 뒷파일. < 는 앞 파일, > 는 뒤 파일의 줄이다. 다르면 종료 코드가 1 이다",
+    "7": "diff -u /tmp/lab/app/config.txt /tmp/lab/app/config.new > /tmp/q7.patch\ncat /tmp/q7.patch\n\n# diff -u 옛파일 새파일 > 패치. 파일명 헤더(---, +++)와 변경 줄(+, -)이 들어간다",
+    "8": "patch /tmp/lab/app/config.txt < /tmp/lab/config.patch\ncat /tmp/lab/app/config.txt\ncmp /tmp/lab/app/config.txt /tmp/lab/app/config.new && echo 같음\n\n# patch 대상 < 패치. 대상 파일이 패치 내용대로 수정되어 config.new 와 같아진다",
+    "9": "{ cmp -s /tmp/lab/data/list.txt /tmp/lab/data/list.copy && echo same || echo different\n  cmp -s /tmp/lab/data/list.txt /tmp/lab/data/list.other && echo same || echo different; } > /tmp/q9.txt\ncat /tmp/q9.txt\n\n# cmp -s 는 종료 코드만 돌려준다. && 와 || 로 같음/다름을 글자로 바꿔 모은다"
+  }
+}
