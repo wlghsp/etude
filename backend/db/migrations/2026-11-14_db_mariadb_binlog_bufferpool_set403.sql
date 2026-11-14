@@ -1,0 +1,62 @@
+-- 퀴즈 세트 403. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_openstack_round11.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 403, 'MariaDB 바이너리 로그 형식과 InnoDB 버퍼 풀: STATEMENT·ROW·MIXED, LRU, 덤프', '바이너리 로그 형식과 버퍼 풀을 익힙니다. STATEMENT·ROW·MIXED 의 차이와 기본 MIXED, 안전하지 않은 문장과 ROW 의 비용, 형식 설정이 서버마다 따로인 점, 버퍼 풀 LRU 의 old 37%, 종료 때 덤프와 시작 때 로드를 봅니다.', 'quiz', '데이터베이스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 403);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 403, 1, '바이너리 로그 형식', 'MariaDB 바이너리 로그의 **binlog_format** 값은 무엇일까요?', '세 가지예요.', NULL, NULL, '[]', 'choice', '["TEXT, BINARY, HYBRID", "SQL, DATA, AUTO", "STATEMENT, ROW, MIXED", "STATEMENT, ROW, JSON"]', 2, '문서는 바이너리 로그 형식을 STATEMENT, ROW, MIXED 로 열거합니다.', NULL, NULL, NULL, '[{"title": "MariaDB 바이너리 로그 형식", "url": "https://mariadb.com/kb/en/binary-log-formats/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 403 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 403, 2, '기본 형식', '바이너리 로그 형식의 **기본** 은 무엇일까요?', '두 방식을 섞어요.', NULL, NULL, '[]', 'choice', '["STATEMENT", "MIXED", "ROW", "지정하지 않으면 바이너리 로그가 꺼진다"]', 1, '문서는 Mixed Logging 을 기본으로 표시합니다. 버전별 변경 이력은 해당 페이지에서 확인되지 않았습니다.', NULL, NULL, NULL, '[{"title": "MariaDB 바이너리 로그 형식", "url": "https://mariadb.com/kb/en/binary-log-formats/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 403 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 403, 3, 'MIXED 의 전환', '**MIXED** 로깅은 언제 ROW 방식으로 바꿔 기록할까요?', '안전하지 않을 때예요.', NULL, NULL, '[]', 'choice', '["문장이 안전하지 않다고 판단될 때", "모든 UPDATE 문을 실행할 때마다 항상", "로그 파일이 가득 차서 넘칠 때마다", "서버가 재시작될 때마다 한 번씩"]', 0, '문서는 MIXED 가 가능하면 문장 기반으로 기록하다가, 서버가 문장이 STATEMENT 로 기록하기에 안전하지 않다고 판단하면 행 기반으로 기록한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB 바이너리 로그 형식", "url": "https://mariadb.com/kb/en/binary-log-formats/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 403 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 403, 4, 'STATEMENT 의 위험', '**STATEMENT** 형식이 위험할 수 있는 문장은 무엇일까요?', '결과가 매번 같지 않아요.', NULL, NULL, '[]', 'choice', '["항상 같은 결과를 내는 단순 SELECT", "이미 암호화된 연결로 보낸 문장", "인덱스가 있는 테이블에 대한 문장", "LIMIT 이 있는 문장처럼 결정적이지 않은 문장"]', 3, '문서는 문장이 결정적이지 않으면 복제에 안전하지 않으며 예로 LIMIT 절이 있는 문장을 들고, 그런 경우 MIXED 나 ROW 가 더 안전하다고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB 바이너리 로그 형식", "url": "https://mariadb.com/kb/en/binary-log-formats/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 403 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 403, 5, 'ROW 의 대가', '**ROW** 형식의 특징으로 맞는 것은 무엇일까요?', '안전하지만 커요.', NULL, NULL, '[]', 'choice', '["가장 작은 로그를 만들지만 안전하지 않다", "저장 공간은 같고 속도만 느려진다", "가장 안전하나 저장 공간을 더 쓴다", "읽기 쿼리도 빠짐없이 모두 기록한다"]', 2, '문서는 행 기반 로깅이 다른 형식보다 저장 공간을 더 쓰지만 가장 안전하다고, MIXED 는 행 기반보다 공간이 덜 든다고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB 바이너리 로그 형식", "url": "https://mariadb.com/kb/en/binary-log-formats/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 403 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 403, 6, 'WHERE 없는 DELETE', 'ROW 형식에서 **WHERE 없는 DELETE** 는 어떻게 기록될까요?', '행 단위예요.', NULL, NULL, '[]', 'choice', '["항상 TRUNCATE 한 번으로 간단히 기록된다", "행 단위로 기록되어 느리고 로그가 커질 수 있다", "바이너리 로그에는 전혀 기록되지 않는다", "문장 한 줄로만 기록되어 아주 작아진다"]', 1, '문서는 행 기반 DELETE(WHERE 없음)가 행을 하나씩 지워 느리고 로그가 클 수 있으며, STATEMENT·MIXED 는 가능하면 TRUNCATE 를 쓸 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB 바이너리 로그 형식", "url": "https://mariadb.com/kb/en/binary-log-formats/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 403 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 403, 7, '형식 설정의 범위', '한 서버에서 **binlog_format 을 바꾸면** 복제 서버에는 어떤 영향이 있을까요?', '서버마다 따로예요.', NULL, NULL, '[]', 'choice', '["그 서버에만 적용되고 복제 서버는 바뀌지 않는다", "복제 서버도 자동으로 같은 형식으로 바뀐다", "복제가 중단되어 다시 설정해야 한다", "복제 서버에서 형식을 바꾸는 것은 금지된다"]', 0, '문서는 설정이 그것을 바꾼 서버에만 적용되며 프라이머리의 변경이 레플리카의 형식을 바꾸지 않는다고 설명합니다. 전역 변경에는 SUPER 권한이 필요합니다.', NULL, NULL, NULL, '[{"title": "MariaDB 바이너리 로그 형식", "url": "https://mariadb.com/kb/en/binary-log-formats/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 403 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 403, 8, '버퍼 풀의 old 영역', '**InnoDB 버퍼 풀** 의 LRU 에서 기본으로 **old 목록이 차지하는 비율** 은 얼마일까요?', '37% 예요.', NULL, NULL, '[]', 'choice', '["10%", "50%", "90%", "37%"]', 3, 'InnoDB 버퍼 풀 문서는 버퍼 풀이 new·old 두 하위 목록으로 나뉘며 기본으로 목록의 37% 가 old 용이고 새 페이지는 old 목록의 머리로 들어간다고 설명합니다.', NULL, NULL, NULL, '[{"title": "InnoDB 버퍼 풀", "url": "https://mariadb.com/kb/en/innodb-buffer-pool/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 403 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 403, 9, '버퍼 풀 덤프', '**innodb_buffer_pool_dump_at_shutdown** 과 **load_at_startup** 은 무엇을 위한 것일까요?', '캐시 워밍업이에요.', NULL, NULL, '[]', 'choice', '["버퍼 풀의 크기를 시작 때 자동으로 늘려 준다", "종료 때 모든 데이터를 디스크에 압축해 둔다", "종료 때 저장하고 시작 때 불러 캐시를 빨리 데운다", "버퍼 풀을 항상 비운 채로 시작하게 한다"]', 2, '문서는 두 변수로 종료 시 덤프와 시작 시 복원을 제어하며 innodb_buffer_pool_dump_now 로 수동 덤프도 가능하다고 설명합니다.', NULL, NULL, NULL, '[{"title": "InnoDB 버퍼 풀", "url": "https://mariadb.com/kb/en/innodb-buffer-pool/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 403 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 403, 10, '가장 안전한 형식', '가장 안전하지만 저장 공간을 더 쓰는 형식을 지정합니다. 빈칸을 채우세요.', '"행" 이에요.', NULL, NULL, '[]', 'fill', '["ROW", "STATEMENT", "MIXED", "RAW"]', NULL, 'ROW 는 행 기반 로깅으로 가장 안전하지만 저장 공간을 더 씁니다. 전역 설정에는 SUPER 권한이 필요합니다.', '[0]', 'SET GLOBAL binlog_format = ''{0}'';', NULL, '[{"title": "MariaDB 바이너리 로그 형식", "url": "https://mariadb.com/kb/en/binary-log-formats/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 403 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 403, 11, '버퍼 풀 종료 시 덤프', '서버 종료 때 버퍼 풀 내용을 **덤프** 하게 하는 변수의 이름 일부입니다. 빈칸을 채우세요.', '"…_at_shutdown" 앞에 와요.', NULL, NULL, '[]', 'fill', '["dump", "save", "flush", "keep"]', NULL, 'innodb_buffer_pool_dump_at_shutdown 은 종료 때 버퍼 풀을 덤프하고, innodb_buffer_pool_load_at_startup 은 시작 때 불러옵니다.', '[0]', 'innodb_buffer_pool_{0}_at_shutdown', NULL, '[{"title": "InnoDB 버퍼 풀", "url": "https://mariadb.com/kb/en/innodb-buffer-pool/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 403 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 403, 12, 'binlog 형식 바꾸기', 'binlog_format 을 ROW 로 바꾸는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '확인 → 변경 → 영구화 → 복제 서버예요.', NULL, NULL, '[]', 'order', '["SHOW VARIABLES LIKE ''binlog_format'' 으로 현재 형식을 확인한다", "SET GLOBAL binlog_format=''ROW'' 로 바꾼다(SUPER 필요)", "옵션 파일에 binlog_format=ROW 를 적어 영구로 만든다", "복제 서버의 형식은 따로 확인한다"]', NULL, '문서가 설명한 확인·설정·범위를 이은 큰 줄기입니다. 설정은 서버마다 따로 적용됩니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "MariaDB 바이너리 로그 형식", "url": "https://mariadb.com/kb/en/binary-log-formats/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 403 AND order_index = 12);
+
+-- 배치: 단원 끝 (분할 마이그레이션 뒤에 적용되도록 2026-11-13 이름을 쓴다)
+UPDATE quest_set SET display_order = 565 WHERE id = 60;
+UPDATE quest_set SET display_order = 566 WHERE id = 99;
+UPDATE quest_set SET display_order = 567 WHERE id = 83;
+UPDATE quest_set SET display_order = 568 WHERE id = 102;
+UPDATE quest_set SET display_order = 569 WHERE id = 118;
+UPDATE quest_set SET display_order = 570 WHERE id = 400;
+UPDATE quest_set SET display_order = 571 WHERE id = 401;
+UPDATE quest_set SET display_order = 564, unit_id = (SELECT id FROM unit WHERE id = 20), icon = '📼' WHERE id = 403;
