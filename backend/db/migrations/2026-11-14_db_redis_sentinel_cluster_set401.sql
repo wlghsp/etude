@@ -1,0 +1,55 @@
+-- 퀴즈 세트 401. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_openstack_round10.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 401, 'Redis Sentinel 과 Cluster: quorum·과반수, 설정, 해시 슬롯, 해시 태그', 'Redis 고가용성과 확장을 익힙니다. Sentinel 포트 26379·최소 3개, quorum 과 과반수 승인, down-after-milliseconds·parallel-syncs, Cluster 의 16384 슬롯과 CRC16, 해시 태그, 클러스터 버스 포트, 생성 순서를 봅니다.', 'quiz', '데이터베이스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 401);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 401, 1, 'Sentinel 포트', 'Sentinel 이 기본으로 **연결을 받는 TCP 포트** 는 무엇일까요?', '26 천대의 번호예요.', NULL, NULL, '[]', 'choice', '["6379", "16379", "26379", "36379"]', 2, 'Redis Sentinel 문서는 Sentinel 이 기본으로 TCP 포트 26379 에서 연결을 받으므로 이 포트가 열려 있어야 한다고 설명합니다. 6379 는 데이터 노드 포트입니다.', NULL, NULL, NULL, '[{"title": "Redis Sentinel", "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 401 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 401, 2, 'Sentinel 최소 수', '견고한 배포를 위해 **Sentinel 인스턴스는 최소 몇 개** 필요할까요?', '다수결이 가능한 수예요.', NULL, NULL, '[]', 'choice', '["한 개", "세 개 이상", "두 개", "반드시 짝수 개"]', 1, 'Sentinel 문서는 견고한 배포에 Sentinel 이 최소 세 개 필요하며, 서로 독립적으로 장애가 나는 서버(다른 서버나 가용 영역)에 두라고 설명합니다.', NULL, NULL, NULL, '[{"title": "Redis Sentinel", "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 401 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 401, 3, 'quorum 의 역할', 'Sentinel 의 **quorum** 은 무엇에 쓰일까요?', '장애 감지용이에요.', NULL, NULL, '[]', 'choice', '["마스터 도달 불가에 합의할 Sentinel 수(감지 전용)", "장애 조치를 실제로 수행하는 데 필요한 표 수다", "관리할 수 있는 마스터의 최대 개수를 정한다", "replica 에 복제를 허용할 최소 개수를 정한다"]', 0, 'Sentinel 문서는 quorum 이 마스터가 도달 불가임을 합의해야 하는 Sentinel 수이며 장애 감지에만 쓰인다고 설명합니다. 실제 장애 조치는 과반수 표로 선출된 리더가 수행합니다.', NULL, NULL, NULL, '[{"title": "Redis Sentinel", "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 401 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 401, 4, '장애 조치 승인', '실제로 **장애 조치를 시작** 하려면 무엇이 필요할까요?', '과반수예요.', NULL, NULL, '[]', 'choice', '["quorum 만큼의 Sentinel 이 동의하면 충분하다", "관리자가 직접 승인해야만 시작된다", "모든 Sentinel 의 만장일치가 있어야 한다", "과반수 표로 리더가 선출되어 승인받아야 한다"]', 3, 'Sentinel 문서는 장애 조치를 하려면 한 Sentinel 이 리더로 선출되어 승인되어야 하며 이는 Sentinel 프로세스 과반수의 표로 이뤄진다고 설명합니다. 소수 파티션에서는 장애 조치가 시작되지 않습니다.', NULL, NULL, NULL, '[{"title": "Redis Sentinel", "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 401 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 401, 5, 'down-after-milliseconds', '**down-after-milliseconds** 는 무엇일까요?', '시간(ms)이에요.', NULL, NULL, '[]', 'choice', '["장애 조치가 끝나야 하는 제한 시간을 뜻한다", "replica 가 재동기화에 쓸 수 있는 최대 시간", "응답이 없을 때 다운으로 보기 시작하는 시간", "Sentinel 이 설정 파일을 다시 쓰는 주기"]', 2, 'Sentinel 문서는 down-after-milliseconds 를 인스턴스가 PING 에 응답하지 않거나 오류로 응답하는 상태가 지속되어 Sentinel 이 다운이라고 생각하기 시작하는 시간(ms)으로 설명합니다.', NULL, NULL, NULL, '[{"title": "Redis Sentinel", "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 401 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 401, 6, 'parallel-syncs', '**parallel-syncs** 는 무엇을 정할까요?', '장애 조치 뒤 replica 재설정이에요.', NULL, NULL, '[]', 'choice', '["동시에 감시할 수 있는 마스터의 최대 수", "새 마스터로 동시에 재설정할 replica 수", "장애 조치를 동시에 수행하는 Sentinel 수", "동시에 허용되는 클라이언트 연결 수"]', 1, 'Sentinel 문서는 parallel-syncs 가 장애 조치 후 새 마스터를 쓰도록 동시에 재설정되는 replica 수이며, 낮을수록 장애 조치가 오래 걸리지만 오래된 데이터를 서빙하는 replica 가 한꺼번에 재동기화되지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Redis Sentinel", "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 401 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 401, 7, '해시 슬롯', 'Redis Cluster 에서 **키가 속할 슬롯** 은 어떻게 정해질까요?', '해시 함수와 슬롯 수가 정해져 있어요.', NULL, NULL, '[]', 'choice', '["키의 CRC16 을 16384 로 나눈 나머지", "키의 MD5 를 1024 로 나눈 나머지", "키 이름의 첫 글자를 숫자로 바꾼 값", "쓰기 요청이 도착한 순서대로 번갈아 배정"]', 0, 'Redis Cluster 문서는 클러스터에 16384 개의 해시 슬롯이 있으며 키의 슬롯은 CRC16(키) 을 16384 로 나눈 나머지라고 설명합니다.', NULL, NULL, NULL, '[{"title": "Redis Cluster 확장", "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/scaling/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 401 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 401, 8, '해시 태그', 'Redis Cluster 의 **해시 태그** ({…}) 는 어떤 효과가 있을까요?', '같은 슬롯에 모아요.', NULL, NULL, '[]', 'choice', '["키를 암호화해서 저장해 준다", "키를 모든 노드에 복제해 준다", "키의 만료 시간을 자동으로 늘려 준다", "같은 태그의 키들을 같은 슬롯에 놓는다"]', 3, 'Redis Cluster 문서는 해시 태그가 중괄호 안의 문자열만 해시하게 해, user:{123}:profile 과 user:{123}:account 처럼 같은 태그의 키를 같은 슬롯에 두어 다중 키 작업을 가능하게 한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Redis Cluster 확장", "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/scaling/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 401 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 401, 9, '클러스터 버스 포트', 'Redis Cluster 노드는 데이터 포트 외에 **클러스터 버스 포트** 를 쓴다. 기본값은 어떻게 정해질까요?', '데이터 포트에 더해요.', NULL, NULL, '[]', 'choice', '["데이터 포트에 1000 을 더한 번호", "데이터 포트에서 10000 을 뺀 번호", "데이터 포트에 10000 을 더한 번호", "언제나 고정된 26379 번"]', 2, 'Redis Cluster 문서는 각 노드가 클라이언트용 포트와 클러스터 버스 포트 두 개의 TCP 포트를 열며, 버스 포트 기본값은 데이터 포트에 10000 을 더한 값(예: 16379)이고 cluster-port 로 바꿀 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Redis Cluster 확장", "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/scaling/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 401 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 401, 10, '감시 등록 지시어', 'Sentinel 설정에서 **마스터를 감시 대상으로 등록** 하는 지시어입니다. 빈칸을 채우세요.', '마스터를 지켜봐요.', NULL, NULL, '[]', 'fill', '["monitor", "watch", "failover", "quorum"]', NULL, 'sentinel monitor <master-name> <ip> <port> <quorum> 형식으로 감시할 마스터와 quorum 을 지정합니다.', '[0]', 'sentinel {0} mymaster 127.0.0.1 6379 2', NULL, '[{"title": "Redis Sentinel", "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 401 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 401, 11, '마스터당 복제본 수', 'redis-cli 로 클러스터를 만들 때 **마스터마다 복제본 수** 를 정하는 옵션입니다. 빈칸을 채우세요.', '"replicas" 예요.', NULL, NULL, '[]', 'fill', '["replicas", "slaves", "shards", "copies"]', NULL, '문서는 --cluster-replicas 1 이 생성되는 마스터마다 replica 하나를 두겠다는 뜻이라고 설명합니다.', '[0]', 'redis-cli --cluster create ... --cluster-{0} 1', NULL, '[{"title": "Redis Cluster 확장", "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/scaling/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 401 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 401, 12, 'Redis Cluster 만들기', 'Redis Cluster 를 만드는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '설정 → 기동 → 생성 → 확인이에요.', NULL, NULL, '[]', 'order', '["각 노드 설정에 cluster-enabled yes 를 넣는다", "노드들을 기동한다", "redis-cli --cluster create 로 클러스터를 만든다", "모든 슬롯이 할당되었는지(16384 slots covered) 확인한다"]', NULL, 'Redis Cluster 문서의 설정·생성 안내를 이은 큰 줄기입니다. 최소 마스터 3개를 권하며 6노드(마스터 3 + replica 3)를 권장합니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "Redis Cluster 확장", "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/scaling/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 401 AND order_index = 12);
+
+-- 배치: 단원 끝 (분할 마이그레이션 뒤에 적용되도록 2026-11-13 이름을 쓴다)
+UPDATE quest_set SET display_order = 569, unit_id = (SELECT id FROM unit WHERE id = 31), icon = '🛡️' WHERE id = 401;
