@@ -1,0 +1,55 @@
+-- 퀴즈 세트 398. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_openstack_round9.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 398, 'NFS 서버 내보내기: exports 형식, ro·sync, squash, 포트, exportfs', 'NFS 로 디렉터리를 내보내는 설정을 익힙니다. /etc/exports 표기 규칙, exportfs -ra, 읽기 전용 기본, sync·async, root_squash·all_squash 와 익명 uid 65534, no_subtree_check 기본, secure 포트를 봅니다.', 'quiz', '스토리지'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 398);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 398, 1, 'exports 옵션 쓰는 법', '/etc/exports 에서 클라이언트와 **옵션 목록** 의 표기 규칙은 무엇일까요?', '괄호가 바로 붙어요.', NULL, NULL, '[]', 'choice', '["클라이언트와 괄호 사이에 공백을 한 칸 두어야 한다", "옵션은 반드시 별도 줄에 따로 적어야 한다", "클라이언트 바로 뒤 괄호, 공백 없이 붙인다", "옵션은 반드시 대괄호로 묶어서 적어야 한다"]', 2, 'exports(5) 는 클라이언트와 옵션 목록 사이에 공백이 허용되지 않는다고 설명합니다. 공백이 있으면 뒤 옵션이 다른 클라이언트에 대한 것으로 해석됩니다.', NULL, NULL, NULL, '[{"title": "exports(5) 매뉴얼", "url": "https://man7.org/linux/man-pages/man5/exports.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 398 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 398, 2, '변경 적용', '/etc/exports 를 고친 뒤 **변경을 적용** 하는 방법은 무엇일까요?', '재시작 없이도 돼요.', NULL, NULL, '[]', 'choice', '["파일을 저장하면 즉시 자동으로 반영된다", "exportfs -ra 실행 또는 NFS 서버 재시작", "클라이언트에서 다시 마운트해야만 반영된다", "서버를 통째로 재부팅해야만 반영된다"]', 1, 'exports(5) 는 이 파일의 변경을 적용하려면 exportfs -ra 를 실행하거나 NFS 서버를 재시작하라고 설명합니다.', NULL, NULL, NULL, '[{"title": "exports(5) 매뉴얼", "url": "https://man7.org/linux/man-pages/man5/exports.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 398 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 398, 3, '읽기 전용 기본', '옵션을 적지 않았을 때 NFS 내보내기는 **읽기·쓰기** 중 어느 쪽이 기본일까요?', '변경하는 요청을 막는 쪽이에요.', NULL, NULL, '[]', 'choice', '["읽기 전용(ro) 이 기본이다", "읽기·쓰기(rw) 가 기본이다", "클라이언트 종류에 따라 다르다", "쓰기 전용이 기본이다"]', 0, 'exports(5) 는 기본이 파일 시스템을 변경하는 요청을 허용하지 않는 것(ro)이므로 ro 를 명시하는 것은 선택이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "exports(5) 매뉴얼", "url": "https://man7.org/linux/man-pages/man5/exports.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 398 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 398, 4, 'sync 와 async', '**sync** 와 **async** 의 차이로 맞는 것은 무엇일까요?', '응답 시점이 달라요.', NULL, NULL, '[]', 'choice', '["sync 는 클라이언트마다, async 는 서버 전체에 적용된다", "sync 는 읽기에만, async 는 쓰기에만 적용되는 옵션이다", "sync 는 UDP 에서만, async 는 TCP 에서만 동작하는 옵션이다", "sync 는 저장 후 응답, async 는 먼저 응답해 장애 시 손실 위험"]', 3, 'exports(5) 는 sync 를 변경이 안정 저장소에 커밋된 뒤에야 응답하는 옵션(1.0.0 이후 기본)으로, async 는 그 전에 응답해 성능은 좋아지지만 크래시 때 데이터를 잃을 위험이 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "exports(5) 매뉴얼", "url": "https://man7.org/linux/man-pages/man5/exports.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 398 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 398, 5, 'root_squash', '**root_squash** (기본값) 는 무엇을 할까요?', 'root 를 익명으로 바꿔요.', NULL, NULL, '[]', 'choice', '["모든 사용자의 요청을 익명 uid 로 매핑한다", "root 의 접근을 완전히 차단한다", "uid/gid 0 의 요청을 익명 uid/gid 로 매핑한다", "root 를 클라이언트 root 와 같게 둔다"]', 2, 'exports(5) 는 root_squash 가 uid/gid 0 요청을 익명 uid/gid 로 매핑하며 기본이라고 설명합니다. 모든 사용자를 매핑하는 것은 all_squash, 끄는 것은 no_root_squash 입니다.', NULL, NULL, NULL, '[{"title": "exports(5) 매뉴얼", "url": "https://man7.org/linux/man-pages/man5/exports.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 398 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 398, 6, 'all_squash', '**all_squash** 는 무엇을 할까요?', '모든 사용자에게 적용돼요.', NULL, NULL, '[]', 'choice', '["uid/gid 0 만 익명 사용자로 매핑한다", "모든 uid·gid 를 익명 사용자로 매핑한다", "모든 사용자를 root 로 승격한다", "익명 접근을 모두 거부한다"]', 1, 'exports(5) 는 all_squash 가 모든 uid·gid 를 익명 사용자로 매핑한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "exports(5) 매뉴얼", "url": "https://man7.org/linux/man-pages/man5/exports.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 398 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 398, 7, '익명 uid 기본값', '**squash 된 접근** 에 쓰이는 기본 익명 uid·gid 는 얼마일까요?', '65 천대의 큰 수예요.', NULL, NULL, '[]', 'choice', '["65534", "0", "1000", "99999"]', 0, 'exports(5) 는 exportfs 가 squash 된 접근에 uid·gid 65534 를 고르며, anonuid·anongid 로 직접 정할 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "exports(5) 매뉴얼", "url": "https://man7.org/linux/man-pages/man5/exports.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 398 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 398, 8, 'subtree_check 기본', 'nfs-utils 1.1.0 이후 **subtree_check** 의 기본은 무엇일까요?', '신뢰성 문제 때문에 바뀌었어요.', NULL, NULL, '[]', 'choice', '["subtree_check 가 기본이다", "파일 시스템마다 자동으로 정해진다", "두 옵션 모두 폐지되었다", "no_subtree_check 가 기본이다"]', 3, 'exports(5) 는 subtree_check 가 신뢰성 문제를 일으킬 수 있어 nfs-utils 1.1.0 이후 기본이 no_subtree_check 이며, 이전 릴리스는 subtree_check 가 기본이었다고 설명합니다.', NULL, NULL, NULL, '[{"title": "exports(5) 매뉴얼", "url": "https://man7.org/linux/man-pages/man5/exports.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 398 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 398, 9, 'secure 포트', '**secure**(기본) 옵션은 클라이언트 요청에 무엇을 요구할까요?', '특권 포트예요.', NULL, NULL, '[]', 'choice', '["요청이 TLS 로 암호화되어 있어야 한다는 조건", "요청에 Kerberos 티켓이 들어 있어야 한다는 조건", "요청이 1024 미만 포트에서 와야 한다", "요청이 서버와 같은 서브넷에서 와야 한다는 조건"]', 2, 'exports(5) 는 기본인 secure 가 요청이 IPPORT_RESERVED(1024) 미만의 인터넷 포트에서 오기를 요구하고, insecure 는 비예약 포트의 요청도 허용한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "exports(5) 매뉴얼", "url": "https://man7.org/linux/man-pages/man5/exports.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 398 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 398, 10, 'root 요청만 익명으로', 'uid/gid 0 의 요청만 **익명으로 매핑** 하는 기본 옵션입니다. 빈칸을 채우세요.', '"…_squash" 예요.', NULL, NULL, '[]', 'fill', '["root", "all", "no_root", "sub"]', NULL, 'root_squash 는 uid/gid 0 의 요청을 익명으로 매핑하는 기본 옵션입니다. all_squash 는 모든 사용자를 익명으로 매핑합니다.', '[0]', '{0}_squash', NULL, '[{"title": "exports(5) 매뉴얼", "url": "https://man7.org/linux/man-pages/man5/exports.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 398 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 398, 11, '변경 적용 명령', 'exports 변경을 적용하는 **명령의 옵션** 입니다. 빈칸을 채우세요.', 'r 과 a 를 함께 써요.', NULL, NULL, '[]', 'fill', '["ra", "xa", "qa", "za"]', NULL, '문서는 변경 적용을 위해 exportfs -ra 를 실행하라고 설명합니다.', '[0]', 'exportfs -{0}', NULL, '[{"title": "exports(5) 매뉴얼", "url": "https://man7.org/linux/man-pages/man5/exports.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 398 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 398, 12, 'NFS 디렉터리를 내보내기', 'NFS 로 디렉터리를 내보내는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '준비 → 설정 → 적용 → 마운트예요.', NULL, NULL, '[]', 'order', '["내보낼 디렉터리를 준비한다", "/etc/exports 에 경로와 클라이언트·옵션을 적는다", "exportfs -ra 로 변경을 적용한다", "클라이언트에서 마운트해 접근을 확인한다"]', NULL, 'exports(5) 가 설명한 파일 형식과 적용 방법(exportfs -ra)을 이은 큰 줄기입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "exports(5) 매뉴얼", "url": "https://man7.org/linux/man-pages/man5/exports.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 398 AND order_index = 12);
+
+-- 배치: 단원 끝 (분할 마이그레이션 뒤에 적용되도록 2026-11-13 이름을 쓴다)
+UPDATE quest_set SET display_order = 624, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '📤' WHERE id = 398;
