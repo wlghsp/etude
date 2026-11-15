@@ -1,0 +1,55 @@
+-- 퀴즈 세트 410. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_storage_round4.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 410, 'LVM 논리 볼륨 다루기: lvcreate, lvextend, lvreduce', 'LV 를 만들고 늘리고 줄이는 명령을 읽습니다. -L 기본 단위와 -l 의 %FREE·%VG, 기본 이름 lvol#, 스냅샷, thin pool, lvextend 의 + 와 -r, lvreduce 의 파일 시스템 선축소와 - 접두사를 봅니다.', 'quiz', '스토리지'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 410);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 410, 1, '-L 의 기본 단위', '`lvcreate -L 500` 처럼 **단위 없이** 크기를 주면 무엇으로 볼까요?', '접미사가 없을 때의 기본이에요.', NULL, NULL, '[]', 'choice', '["바이트", "기가바이트(GB)", "메가바이트(MB)", "논리 extent 개수"]', 2, 'lvcreate 문서는 -L 의 기본 단위가 메가바이트이며 K, M, G, T, P, E 접미사를 선택으로 붙일 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "lvcreate(8) man page", "url": "https://linux.die.net/man/8/lvcreate"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 410 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 410, 2, '-l %FREE', '`lvcreate -l 100%FREE` 에서 **%FREE** 는 무엇을 기준으로 할까요?', '남은 공간이에요.', NULL, NULL, '[]', 'choice', '["볼륨 그룹 전체 공간", "볼륨 그룹의 남은 여유 공간", "원본 논리 볼륨 전체 공간", "이미 만들어진 논리 볼륨들의 합"]', 1, '문서는 -l 의 %VG 가 볼륨 그룹 전체, %FREE 가 볼륨 그룹의 남은 여유 공간, %PVS 가 지정한 PV 의 남은 공간, %ORIGIN 이 스냅샷의 원본 전체 기준이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "lvcreate(8) man page", "url": "https://linux.die.net/man/8/lvcreate"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 410 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 410, 3, '-n 생략', '`lvcreate` 에서 **-n 을 생략** 하면 이름은 어떻게 될까요?', '번호가 붙은 기본 이름이에요.', NULL, NULL, '[]', 'choice', '["lvol# 형식의 기본 이름이 생긴다", "명령이 오류로 거부된다", "VG 이름과 같은 이름을 쓴다", "임의의 UUID 가 이름이 된다"]', 0, '문서는 이름을 지정하지 않으면 lvol# 형식의 기본 이름이 생성되며 #은 LVM 내부 번호라고 설명합니다.', NULL, NULL, NULL, '[{"title": "lvcreate(8) man page", "url": "https://linux.die.net/man/8/lvcreate"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 410 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 410, 4, '스냅샷의 용도', '`lvcreate -s` 로 만드는 **스냅샷** 의 설명으로 맞는 것은 무엇일까요?', '특정 시점을 유지해요.', NULL, NULL, '[]', 'choice', '["원본과 실시간으로 똑같이 갱신되는 복사본이다", "원본 볼륨을 삭제하면 스냅샷이 원본이 된다", "스냅샷은 읽기 전용으로만 만들 수 있다", "원본은 계속 갱신되고 스냅샷은 특정 시점의 내용을 유지한다"]', 3, '문서는 스냅샷이 원본을 계속 갱신할 수 있으면서 특정 시점의 내용을 유지해 일관된 백업이나 삭제·덮어쓴 데이터 복구에 쓸 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "lvcreate(8) man page", "url": "https://linux.die.net/man/8/lvcreate"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 410 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 410, 5, 'thin pool 생성', '`lvcreate -T` 에서 **--size** 만 주면 무엇이 만들어질까요?', 'pool 쪽이에요.', NULL, NULL, '[]', 'choice', '["thin 논리 볼륨만 만들어진다", "pool 과 thin 볼륨이 함께 만들어진다", "thin pool 논리 볼륨이 만들어진다", "일반 선형 볼륨이 만들어진다"]', 2, '문서는 --size 를 주면 thin pool 이, --virtualsize 를 주면 그 pool 에서 thin 논리 볼륨이, 둘 다 주면 둘 다 만들어진다고 설명합니다.', NULL, NULL, NULL, '[{"title": "lvcreate(8) man page", "url": "https://linux.die.net/man/8/lvcreate"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 410 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 410, 6, 'lvextend 의 + 접두사', '`lvextend -L +10G` 에서 **+** 의 의미는 무엇일까요?', '더한다는 뜻이에요.', NULL, NULL, '[]', 'choice', '["새 크기를 10G 로 맞춘다", "현재 크기에 10G 를 더한다", "여유 공간의 10% 를 더한다", "10G 이하일 때만 확장한다"]', 1, 'lvextend 문서는 + 를 붙이면 값이 현재 크기에 더해지고, 붙이지 않으면 절대 크기로 취급된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "lvextend(8) man page", "url": "https://linux.die.net/man/8/lvextend"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 410 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 410, 7, 'lvextend -r', '`lvextend -r` 은 무엇을 함께 할까요?', 'resizefs 의 약자예요.', NULL, NULL, '[]', 'choice', '["LV 위 파일 시스템도 함께 확장한다", "확장 전에 LV 를 먼저 백업한다", "확장한 LV 를 즉시 읽기 전용으로 바꾼다", "확장 뒤에 PV 를 자동으로 추가한다"]', 0, '문서는 -r/--resizefs 가 논리 볼륨을 확장할 때 그 위의 파일 시스템도 fsadm(8) 으로 함께 확장한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "lvextend(8) man page", "url": "https://linux.die.net/man/8/lvextend"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 410 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 410, 8, 'lvreduce 전에', '`lvreduce` 로 LV 를 줄이기 **전에** 해야 할 일은 무엇일까요?', '데이터가 잘리지 않도록요.', NULL, NULL, '[]', 'choice', '["해당 LV 를 먼저 삭제해 둔다", "VG 전체를 먼저 비활성화한다", "스냅샷을 모두 병합해 둔다", "그 위의 파일 시스템을 먼저 줄인다"]', 3, 'lvreduce 문서는 줄이면 줄어드는 부분의 데이터가 손실되므로 제거될 extent 를 쓰지 않도록 실행 전에 파일 시스템 크기를 먼저 줄여야 한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "lvreduce(8) man page", "url": "https://linux.die.net/man/8/lvreduce"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 410 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 410, 9, 'lvreduce 의 - 접두사', '`lvreduce -L -2G` 의 의미는 무엇일까요?', '빼라는 뜻이에요.', NULL, NULL, '[]', 'choice', '["새 크기를 -2G 로 맞춘다", "2G 를 뺀 뒤 되돌려 놓는다", "현재 크기에서 2G 를 뺀다", "2G 단위로 반복해서 줄인다"]', 2, '문서는 -L 값 앞에 - 를 붙이면 현재 크기에서 그만큼 빼고, 붙이지 않으면 절대 크기로 설정한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "lvreduce(8) man page", "url": "https://linux.die.net/man/8/lvreduce"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 410 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 410, 10, '확장 옵션', 'LV 를 **절대 크기나 + 증분** 으로 늘릴 때 크기를 주는 옵션입니다. 빈칸을 채우세요.', '대문자 L 이에요.', NULL, NULL, '[]', 'fill', '["-L", "-l", "-i", "-m"]', NULL, '-L 은 크기(단위 접미사)로, -l 은 extent 개수나 비율로 지정합니다. 이 문제는 G 단위의 크기이므로 -L 입니다.', '[0]', 'lvextend {0} +10G /dev/vg0/data', NULL, '[{"title": "lvextend(8) man page", "url": "https://linux.die.net/man/8/lvextend"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 410 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 410, 11, '남은 공간 전부', '볼륨 그룹의 **남은 여유 공간 전부** 를 쓰는 비율 표기입니다. 빈칸을 채우세요.', '"여유" 라는 이름이에요.', NULL, NULL, '[]', 'fill', '["FREE", "VG", "PVS", "ORIGIN"]', NULL, '%FREE 는 볼륨 그룹의 남은 여유 공간, %VG 는 볼륨 그룹 전체 공간 기준입니다.', '[0]', 'lvcreate -l 100%{0} -n data vg0', NULL, '[{"title": "lvcreate(8) man page", "url": "https://linux.die.net/man/8/lvcreate"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 410 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 410, 12, 'LV 늘리기', 'LV 와 그 위의 파일 시스템을 늘리는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '확인 → 확장 → 파일 시스템이에요.', NULL, NULL, '[]', 'order', '["VG 에 여유 공간이 있는지 확인한다", "`lvextend` 로 LV 를 늘린다", "그 위의 파일 시스템도 늘린다(`-r` 이면 함께 처리)"]', NULL, '문서의 lvextend 와 -r 설명을 이은 일반 절차입니다.', '[0, 1, 2]', NULL, NULL, '[{"title": "lvextend(8) man page", "url": "https://linux.die.net/man/8/lvextend"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 410 AND order_index = 12);
+
+-- 배치: 단원 끝 (분할 마이그레이션 뒤에 적용되도록 2026-11-13 이름을 쓴다)
+UPDATE quest_set SET display_order = 626, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '📐' WHERE id = 410;
