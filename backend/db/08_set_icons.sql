@@ -319,3 +319,5 @@ UPDATE quest_set SET icon = '🌉' WHERE id = 416;
 UPDATE quest_set SET icon = '🏊' WHERE id = 417;
 UPDATE quest_set SET icon = '⏱️' WHERE id = 418;
 UPDATE quest_set SET icon = '🏠' WHERE id = 419;
+UPDATE quest_set SET icon = '🎖️' WHERE id = 420;
+UPDATE quest_set SET icon = '🪜' WHERE id = 421;

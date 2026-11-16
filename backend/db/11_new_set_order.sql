@@ -867,3 +867,47 @@ UPDATE quest_set SET display_order = 633, unit_id = (SELECT id FROM unit WHERE i
 -- 세트 419
 UPDATE quest_set SET display_order = 638 WHERE id = 117;
 UPDATE quest_set SET display_order = 634, unit_id = (SELECT id FROM unit WHERE id = 47), icon = '🏠' WHERE id = 419;
+-- 세트 420
+UPDATE quest_set SET display_order = 281 WHERE id = 80;
+UPDATE quest_set SET display_order = 282 WHERE id = 13;
+UPDATE quest_set SET display_order = 283 WHERE id = 122;
+UPDATE quest_set SET display_order = 284 WHERE id = 25;
+UPDATE quest_set SET display_order = 285 WHERE id = 108;
+UPDATE quest_set SET display_order = 286 WHERE id = 37;
+UPDATE quest_set SET display_order = 287 WHERE id = 26;
+UPDATE quest_set SET display_order = 288 WHERE id = 348;
+UPDATE quest_set SET display_order = 289 WHERE id = 23;
+UPDATE quest_set SET display_order = 290 WHERE id = 31;
+UPDATE quest_set SET display_order = 291 WHERE id = 29;
+UPDATE quest_set SET display_order = 292 WHERE id = 227;
+UPDATE quest_set SET display_order = 293 WHERE id = 230;
+UPDATE quest_set SET display_order = 294 WHERE id = 233;
+UPDATE quest_set SET display_order = 295 WHERE id = 339;
+UPDATE quest_set SET display_order = 296 WHERE id = 345;
+UPDATE quest_set SET display_order = 297 WHERE id = 119;
+UPDATE quest_set SET display_order = 298 WHERE id = 120;
+UPDATE quest_set SET display_order = 299 WHERE id = 121;
+UPDATE quest_set SET display_order = 300 WHERE id = 14;
+UPDATE quest_set SET display_order = 278, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '🎖️' WHERE id = 420;
+-- 세트 421
+UPDATE quest_set SET display_order = 282 WHERE id = 80;
+UPDATE quest_set SET display_order = 283 WHERE id = 13;
+UPDATE quest_set SET display_order = 284 WHERE id = 122;
+UPDATE quest_set SET display_order = 285 WHERE id = 25;
+UPDATE quest_set SET display_order = 286 WHERE id = 108;
+UPDATE quest_set SET display_order = 287 WHERE id = 37;
+UPDATE quest_set SET display_order = 288 WHERE id = 26;
+UPDATE quest_set SET display_order = 289 WHERE id = 348;
+UPDATE quest_set SET display_order = 290 WHERE id = 23;
+UPDATE quest_set SET display_order = 291 WHERE id = 31;
+UPDATE quest_set SET display_order = 292 WHERE id = 29;
+UPDATE quest_set SET display_order = 293 WHERE id = 227;
+UPDATE quest_set SET display_order = 294 WHERE id = 230;
+UPDATE quest_set SET display_order = 295 WHERE id = 233;
+UPDATE quest_set SET display_order = 296 WHERE id = 339;
+UPDATE quest_set SET display_order = 297 WHERE id = 345;
+UPDATE quest_set SET display_order = 298 WHERE id = 119;
+UPDATE quest_set SET display_order = 299 WHERE id = 120;
+UPDATE quest_set SET display_order = 300 WHERE id = 121;
+UPDATE quest_set SET display_order = 301 WHERE id = 14;
+UPDATE quest_set SET display_order = 279, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '🪜' WHERE id = 421;
