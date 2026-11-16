@@ -1,0 +1,55 @@
+-- 퀴즈 세트 427. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_linux_round_a.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 427, 'POSIX ACL 읽기: 항목 종류, mask, default ACL, 권한 검사 순서', '파일 ACL 을 읽습니다. USER_OBJ·USER·GROUP_OBJ·GROUP·MASK·OTHER 항목, mask 가 정하는 최대 권한과 적용되지 않는 항목, 디렉터리 default ACL 의 상속, 권한 검사 순서, 필수 항목과 mask 필수 조건, ls -l 의 + 표시를 봅니다.', 'quiz', '리눅스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 427);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 427, 1, 'ACL 항목 종류', 'POSIX ACL 의 **항목 종류** 로 맞는 묶음은 무엇일까요?', '여섯 가지예요.', NULL, NULL, '[]', 'choice', '["OWNER, MEMBER, GUEST, MASK, DENY, ALLOW", "READ, WRITE, EXECUTE, MASK, USER, OTHER", "USER_OBJ, USER, GROUP_OBJ, GROUP, MASK, OTHER", "ROOT, USER, GROUP, DEFAULT, MASK, NONE"]', 2, 'acl(5) 문서는 ACL_USER_OBJ(소유자), ACL_USER, ACL_GROUP_OBJ(파일 그룹), ACL_GROUP, ACL_MASK, ACL_OTHER 여섯 종류를 설명합니다.', NULL, NULL, NULL, '[{"title": "acl(5) man page", "url": "https://man7.org/linux/man-pages/man5/acl.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 427 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 427, 2, 'mask 의 역할', 'ACL 의 **mask** 는 무엇을 정할까요?', '상한이에요.', NULL, NULL, '[]', 'choice', '["파일 소유자의 최대 권한", "부여할 수 있는 최대 권한", "새로 만드는 파일의 기본 권한", "other 항목의 최소 권한"]', 1, '문서는 mask 가 ACL_USER, ACL_GROUP_OBJ, ACL_GROUP 항목이 부여할 수 있는 최대 권한이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "acl(5) man page", "url": "https://man7.org/linux/man-pages/man5/acl.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 427 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 427, 3, 'mask 의 제외', 'mask 가 **적용되지 않는** 항목은 무엇일까요?', '소유자와 기타예요.', NULL, NULL, '[]', 'choice', '["소유자와 other 항목", "명명 사용자(USER) 항목", "명명 그룹(GROUP) 항목", "파일 그룹(GROUP_OBJ) 항목"]', 0, '문서는 mask 가 소유자 항목과 other 항목에는 적용되지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "acl(5) man page", "url": "https://man7.org/linux/man-pages/man5/acl.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 427 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 427, 4, 'default ACL', '디렉터리의 **default ACL** 은 무엇을 정할까요?', '새로 만드는 것의 초기값이에요.', NULL, NULL, '[]', 'choice', '["그 디렉터리 자신의 접근 권한", "그 디렉터리를 지울 수 있는 사용자", "이미 있는 하위 객체의 권한", "새 객체의 초기 접근 ACL"]', 3, '문서는 디렉터리의 기본 ACL 이 안에 새로 만들어지는 객체의 초기 접근 ACL 을 정하며, 새 객체는 이를 상속받은 뒤 mode 에 맞게 항목이 줄어든다고 설명합니다.', NULL, NULL, NULL, '[{"title": "acl(5) man page", "url": "https://man7.org/linux/man-pages/man5/acl.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 427 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 427, 5, 'default 가 없을 때', '디렉터리에 default ACL 이 **없을 때** 새 객체의 권한은 어떻게 정해질까요?', 'umask 와 관련 있어요.', NULL, NULL, '[]', 'choice', '["항상 root 소유로 777 이 된다", "부모 디렉터리의 접근 ACL 을 그대로 복사한다", "mode 인자와 umask 로 정해진다", "생성이 거부된다"]', 2, '문서는 기본 ACL 이 없으면 새 객체의 권한이 mode 와 umask 로 결정된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "acl(5) man page", "url": "https://man7.org/linux/man-pages/man5/acl.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 427 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 427, 6, '검사 순서', 'ACL 권한 검사에서 **처음 확인하는** 것은 무엇일까요?', '소유자부터예요.', NULL, NULL, '[]', 'choice', '["other 항목", "소유자(USER_OBJ) 항목", "일치하는 GROUP 항목과 mask", "mask 항목 하나만"]', 1, '문서는 검사 순서를 (1) 유효 UID 가 소유자와 같으면 ACL_USER_OBJ, (2) 일치하는 ACL_USER 와 mask, (3) 그룹 항목과 mask, (4) ACL_OTHER, (5) 모두 실패하면 거부로 설명합니다.', NULL, NULL, NULL, '[{"title": "acl(5) man page", "url": "https://man7.org/linux/man-pages/man5/acl.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 427 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 427, 7, '필수 항목', '유효한 ACL 에 **반드시 하나씩** 있어야 하는 항목은 무엇일까요?', '세 가지예요.', NULL, NULL, '[]', 'choice', '["USER_OBJ, GROUP_OBJ, OTHER", "USER, GROUP, MASK", "USER_OBJ, USER, MASK", "GROUP_OBJ, GROUP, OTHER"]', 0, '문서는 유효한 ACL 에 ACL_USER_OBJ, ACL_GROUP_OBJ, ACL_OTHER 가 각각 정확히 하나씩 있어야 한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "acl(5) man page", "url": "https://man7.org/linux/man-pages/man5/acl.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 427 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 427, 8, 'mask 필수', '**mask 항목이 반드시 있어야** 하는 경우는 언제일까요?', '이름을 가진 항목이 있을 때예요.', NULL, NULL, '[]', 'choice', '["항상 필요하지 않다", "default ACL 이 있을 때만", "ACL_OTHER 가 rwx 일 때만", "USER 또는 GROUP 항목이 있을 때"]', 3, '문서는 ACL_USER 또는 ACL_GROUP 항목이 있으면 mask 가 반드시 있어야 한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "acl(5) man page", "url": "https://man7.org/linux/man-pages/man5/acl.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 427 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 427, 9, 'chmod 와 mask', 'mask 가 있는 파일에서 **그룹 권한 비트** 는 무엇에 대응할까요?', 'chmod g 를 바꾸면 달라져요.', NULL, NULL, '[]', 'choice', '["ACL_GROUP_OBJ 항목", "ACL_OTHER 항목", "mask 항목", "ACL_USER_OBJ 항목"]', 2, '문서는 그룹 권한 비트가 mask 항목이 있으면 mask 에, mask 가 없을 때만 ACL_GROUP_OBJ 에 대응한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "acl(5) man page", "url": "https://man7.org/linux/man-pages/man5/acl.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 427 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 427, 10, 'mask 항목', 'ACL 의 **유효 권한 상한** 을 정하는 항목 태그입니다. 빈칸을 채우세요.', '"가면" 이라는 뜻이에요.', NULL, NULL, '[]', 'fill', '["mask", "user", "group", "other"]', NULL, 'mask 는 명명 사용자·그룹과 파일 그룹 항목이 부여할 수 있는 최대 권한입니다.', '[0]', '{0}::r--', NULL, '[{"title": "acl(5) man page", "url": "https://man7.org/linux/man-pages/man5/acl.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 427 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 427, 11, 'ACL 표시', 'ACL 이 있는 파일의 `ls -l` 권한 문자열 뒤에 붙는 **기호** 입니다. 빈칸을 채우세요.', '더하기 기호예요.', NULL, NULL, '[]', 'fill', '["+", "@", ".", "*"]', NULL, '문서는 기본 ACL 이 있거나 접근 ACL 항목이 필수 3개보다 많으면 ls -l 의 권한 문자열 뒤에 + 가 붙는다고 설명합니다.', '[0]', '-rw-r--r--{0} 1 root root 0 file', NULL, '[{"title": "acl(5) man page", "url": "https://man7.org/linux/man-pages/man5/acl.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 427 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 427, 12, 'ACL 권한 검사', 'ACL 로 접근 권한을 검사하는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '소유자 → 사용자 → 그룹 → 기타예요.', NULL, NULL, '[]', 'order', '["유효 UID 가 소유자와 같으면 USER_OBJ 항목을 본다", "일치하는 USER 항목을 mask 와 함께 본다", "일치하는 그룹 항목을 mask 와 함께 본다", "그 밖에는 OTHER 항목을 보고 모두 실패하면 거부한다"]', NULL, '문서의 권한 검사 알고리즘 설명을 요약한 순서입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "acl(5) man page", "url": "https://man7.org/linux/man-pages/man5/acl.5.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 427 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 110, unit_id = (SELECT id FROM unit WHERE id = 4), icon = '🗂️' WHERE id = 427;

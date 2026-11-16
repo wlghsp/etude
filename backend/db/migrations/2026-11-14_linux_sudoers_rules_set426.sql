@@ -1,0 +1,55 @@
+-- 퀴즈 세트 426. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_linux_round_a.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 426, 'sudoers 규칙 읽기: 형식, NOPASSWD, 마지막 일치, %group, includedir, 기본값', 'sudo 권한 규칙을 읽습니다. user host = (runas) command 형식, ALL 의 위험, NOPASSWD, 마지막으로 일치한 항목이 이기는 규칙, %group 표기, includedir 의 무시 파일, timestamp_timeout 5분·env_reset 기본값, 와일드카드의 / 처리를 봅니다.', 'quiz', '리눅스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 426);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 426, 1, '규칙 형식', 'sudoers 의 사용자 지정 **규칙 형식** 은 무엇일까요?', '누가 어디서 누구로 무엇을이에요.', NULL, NULL, '[]', 'choice', '["command host = (user) runas", "host user = command (runas)", "user host = (runas) command", "runas = user host command"]', 2, 'sudoers 문서는 규칙을 who where = (as_whom) what 구조(사용자, 호스트, 실행 대상 사용자, 명령)로 설명합니다.', NULL, NULL, NULL, '[{"title": "sudoers(5) 매뉴얼", "url": "https://www.sudo.ws/docs/man/sudoers.man/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 426 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 426, 2, 'ALL 의 위험', '명령 자리에 쓴 `ALL` 에 대한 문서의 경고는 무엇일까요?', '아무 명령이나 돼요.', NULL, NULL, '[]', 'choice', '["모든 호스트에서 규칙이 무시된다", "아무 명령이나 실행할 수 있어 위험", "모든 사용자가 자동으로 root 가 된다", "규칙이 실행되지 않는다"]', 1, '문서는 ALL 이 항상 일치하는 내장 별칭이며 명령 자리에 쓰면 사용자가 시스템의 아무 명령이나 실행할 수 있어 위험하다고 경고합니다.', NULL, NULL, NULL, '[{"title": "sudoers(5) 매뉴얼", "url": "https://www.sudo.ws/docs/man/sudoers.man/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 426 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 426, 3, 'NOPASSWD', '`NOPASSWD:` 태그는 무엇을 할까요?', '암호와 관련 있어요.', NULL, NULL, '[]', 'choice', '["뒤따르는 명령에 암호 인증을 생략한다", "명령 실행 기록을 남기지 않는다", "명령을 비밀번호 없이 root 로만 실행한다", "모든 명령의 암호 인증을 영구히 끈다"]', 0, '문서는 NOPASSWD 가 뒤따르는 명령의 암호 인증을 생략하는 기본값을 설정하고 PASSWD 가 이를 되돌린다고 설명합니다.', NULL, NULL, NULL, '[{"title": "sudoers(5) 매뉴얼", "url": "https://www.sudo.ws/docs/man/sudoers.man/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 426 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 426, 4, '마지막 일치', '여러 항목이 일치할 때 sudoers 는 **어느 것** 을 쓸까요?', '순서가 중요해요.', NULL, NULL, '[]', 'choice', '["가장 구체적인 항목", "처음 일치한 항목", "허용 항목 중 임의의 하나", "마지막으로 일치한 항목"]', 3, '문서는 여러 항목이 일치하면 순서대로 적용되며 마지막 일치(last match)가 쓰이고 이것이 반드시 가장 구체적인 항목은 아니라고 설명합니다.', NULL, NULL, NULL, '[{"title": "sudoers(5) 매뉴얼", "url": "https://www.sudo.ws/docs/man/sudoers.man/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 426 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 426, 5, '그룹 표기', 'sudoers 에서 **그룹 이름** 을 쓰는 표기는 무엇일까요?', '퍼센트 기호예요.', NULL, NULL, '[]', 'choice', '["@group", "+group", "%group", "#group"]', 2, '문서는 %group 이 시스템 그룹 이름, %#group-ID 가 그룹 ID 를 뜻한다고 설명합니다. +netgroup 은 넷그룹입니다.', NULL, NULL, NULL, '[{"title": "sudoers(5) 매뉴얼", "url": "https://www.sudo.ws/docs/man/sudoers.man/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 426 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 426, 6, 'includedir 규칙', '`@includedir` 디렉터리에서 **무시되는 파일** 은 무엇일까요?', '이름 규칙이에요.', NULL, NULL, '[]', 'choice', '["이름이 .conf 로 끝나지 않는 파일", "이름이 ~ 로 끝나거나 . 을 포함한 파일", "크기가 0 인 파일", "이름이 숫자로 시작하는 파일"]', 1, '문서는 @includedir 가 이름이 ~ 로 끝나거나 . 을 포함한 파일을 건너뛴다고 설명합니다. #include·#includedir 는 1.9.1 이전 호환용입니다.', NULL, NULL, NULL, '[{"title": "sudoers(5) 매뉴얼", "url": "https://www.sudo.ws/docs/man/sudoers.man/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 426 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 426, 7, 'timestamp_timeout', '`timestamp_timeout` 의 **기본값** 은 얼마일까요?', '분 단위예요.', NULL, NULL, '[]', 'choice', '["5분", "15분", "1분", "무제한"]', 0, '문서는 timestamp_timeout 옵션으로 바꾸기 전까지 기본 5분이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "sudoers(5) 매뉴얼", "url": "https://www.sudo.ws/docs/man/sudoers.man/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 426 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 426, 8, 'env_reset', '`env_reset` 의 **기본값** 은 무엇일까요?', '환경을 초기화해요.', NULL, NULL, '[]', 'choice', '["꺼짐(off)", "켜짐이지만 root 에게만 적용", "설정할 수 없다", "켜짐(on)"]', 3, '문서는 env_reset 의 기본값이 켜짐이라고 설명하고, requiretty 는 설정 항목이지만 기본값이 꺼짐이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "sudoers(5) 매뉴얼", "url": "https://www.sudo.ws/docs/man/sudoers.man/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 426 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 426, 9, '와일드카드', '명령 **경로** 의 `*` 가 `/` 와 일치하는지에 대한 설명으로 맞는 것은 무엇일까요?', '경로와 인자가 달라요.', NULL, NULL, '[]', 'choice', '["경로와 인자 모두에서 / 와 일치한다", "경로와 인자 모두에서 / 와 일치하지 않는다", "경로에서는 / 와 일치하지 않지만 인자에서는 일치한다", "경로에서는 일치하고 인자에서는 일치하지 않는다"]', 2, '문서는 * 가 명령 파일명 부분에서는 / 와 일치하지 않지만(/usr/bin/* 은 /usr/bin/X11/xterm 과 일치하지 않는다) 명령 인자에서는 / 도 일치한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "sudoers(5) 매뉴얼", "url": "https://www.sudo.ws/docs/man/sudoers.man/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 426 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 426, 10, '암호 생략', 'wheel 그룹이 **암호 없이** 모든 명령을 실행하게 하는 태그입니다. 빈칸을 채우세요.', '"암호 없음" 이에요.', NULL, NULL, '[]', 'fill', '["NOPASSWD", "PASSWD", "SETENV", "NOEXEC"]', NULL, 'NOPASSWD 태그가 뒤따르는 명령의 암호 인증을 생략합니다. PASSWD 는 이를 되돌립니다.', '[0]', '%wheel ALL=(ALL) {0}: ALL', NULL, '[{"title": "sudoers(5) 매뉴얼", "url": "https://www.sudo.ws/docs/man/sudoers.man/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 426 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 426, 11, '암호 캐시 시간', '암호를 다시 묻기까지의 **기본 시간(분)** 입니다. 빈칸을 채우세요.', '5 로 시작하는 숫자예요.', NULL, NULL, '[]', 'fill', '["5", "15", "0", "60"]', NULL, 'timestamp_timeout 의 기본값은 5분입니다.', '[0]', 'Defaults timestamp_timeout={0}', NULL, '[{"title": "sudoers(5) 매뉴얼", "url": "https://www.sudo.ws/docs/man/sudoers.man/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 426 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 426, 12, 'sudoers 규칙 추가', 'sudoers 에 규칙을 추가하고 확인하는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '편집 → 규칙 → 확인이에요.', NULL, NULL, '[]', 'order', '["`visudo` 로 sudoers 를 연다", "`user host = (runas) command` 형식으로 규칙을 추가한다", "`sudo -l` 로 허용된 명령을 확인한다"]', NULL, '문서의 규칙 형식과 sudo -l 설명을 이은 일반 절차입니다. visudo 의 문법 검사·잠금은 읽은 범위의 원문에 없습니다.', '[0, 1, 2]', NULL, NULL, '[{"title": "sudoers(5) 매뉴얼", "url": "https://www.sudo.ws/docs/man/sudoers.man/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 426 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 109, unit_id = (SELECT id FROM unit WHERE id = 4), icon = '🔏' WHERE id = 426;
