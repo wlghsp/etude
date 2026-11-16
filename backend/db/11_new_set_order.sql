@@ -839,3 +839,21 @@ UPDATE quest_set SET display_order = 721 WHERE id = 364;
 UPDATE quest_set SET display_order = 722 WHERE id = 391;
 UPDATE quest_set SET display_order = 723 WHERE id = 392;
 UPDATE quest_set SET display_order = 708, unit_id = (SELECT id FROM unit WHERE id = 37), icon = '🧲' WHERE id = 413;
+-- 세트 414
+UPDATE quest_set SET display_order = 566 WHERE id = 60;
+UPDATE quest_set SET display_order = 567 WHERE id = 99;
+UPDATE quest_set SET display_order = 568 WHERE id = 83;
+UPDATE quest_set SET display_order = 569 WHERE id = 102;
+UPDATE quest_set SET display_order = 570 WHERE id = 118;
+UPDATE quest_set SET display_order = 571 WHERE id = 400;
+UPDATE quest_set SET display_order = 572 WHERE id = 401;
+UPDATE quest_set SET display_order = 565, unit_id = (SELECT id FROM unit WHERE id = 20), icon = '🆔' WHERE id = 414;
+-- 세트 415
+UPDATE quest_set SET display_order = 567 WHERE id = 60;
+UPDATE quest_set SET display_order = 568 WHERE id = 99;
+UPDATE quest_set SET display_order = 569 WHERE id = 83;
+UPDATE quest_set SET display_order = 570 WHERE id = 102;
+UPDATE quest_set SET display_order = 571 WHERE id = 118;
+UPDATE quest_set SET display_order = 572 WHERE id = 400;
+UPDATE quest_set SET display_order = 573 WHERE id = 401;
+UPDATE quest_set SET display_order = 566, unit_id = (SELECT id FROM unit WHERE id = 20), icon = '🤝' WHERE id = 415;

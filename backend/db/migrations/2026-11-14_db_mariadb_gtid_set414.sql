@@ -1,0 +1,62 @@
+-- 퀴즈 세트 414. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_mariadb_round3.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 414, 'MariaDB GTID: 형식, gtid_slave_pos, MASTER_USE_GTID, 프라이머리 전환', 'GTID 로 복제를 읽습니다. domain_id-server_id-sequence_number 형식, gtid_slave_pos·gtid_current_pos, slave_pos 권장과 current_pos 의 위험, 프라이머리를 바꾸기 쉬운 이유, crash-safe 저장, MySQL 과의 비호환을 봅니다.', 'quiz', '데이터베이스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 414);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 414, 1, 'GTID 형식', 'MariaDB 의 **GTID 형식** 은 무엇일까요?', '숫자 세 개를 이어요.', NULL, NULL, '[]', 'choice', '["server_id-binlog_file-position", "uuid:sequence_number", "domain_id-server_id-sequence_number", "domain_id-transaction_id"]', 2, 'MariaDB 문서는 GTID 가 domain_id-server_id-sequence_number 세 숫자를 - 로 구분한 형식(예: 0-1-10)이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB GTID", "url": "https://mariadb.com/kb/en/gtid/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 414 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 414, 2, 'server_id 부분', 'GTID 의 **server_id** 는 어떤 서버의 ID 일까요?', '처음 기록한 서버예요.', NULL, NULL, '[]', 'choice', '["지금 복제를 받는 레플리카", "처음 binlog 에 기록한 서버", "연결된 클라이언트의 서버", "가장 최근에 승격된 서버"]', 1, '문서는 server_id 가 기존 복제와 같은 서버 ID 이며 이벤트 그룹이 처음 바이너리 로그에 기록된 서버의 ID 라고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB GTID", "url": "https://mariadb.com/kb/en/gtid/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 414 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 414, 3, 'sequence_number', 'GTID 의 **sequence_number** 는 어떻게 변할까요?', '64비트 정수예요.', NULL, NULL, '[]', 'choice', '["이벤트 그룹이 기록될 때마다 증가한다", "서버가 재시작할 때마다 1 로 돌아간다", "바이너리 로그 파일이 바뀔 때마다 증가한다", "레플리카가 연결될 때마다 증가한다"]', 0, '문서는 sequence_number 가 64비트 부호 없는 정수로 이벤트 그룹이 바이너리 로그에 기록될 때마다 증가하며, GTID 는 binlog_format 과 관계없이 모든 이벤트 그룹에 생성된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB GTID", "url": "https://mariadb.com/kb/en/gtid/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 414 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 414, 4, 'gtid_slave_pos', '**gtid_slave_pos** 는 무엇일까요?', '레플리카가 적용한 것이에요.', NULL, NULL, '[]', 'choice', '["프라이머리가 마지막으로 기록한 GTID", "바이너리 로그 파일의 크기", "복제 지연 시간(초)", "레플리카가 마지막으로 적용한 GTID 위치"]', 3, '문서는 gtid_slave_pos 를 레플리카가 마지막으로 적용한 GTID 위치로, gtid_current_pos 를 서버가 primary 였을 때 binlog 에 기록된 GTID 까지 반영한 값으로 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB GTID", "url": "https://mariadb.com/kb/en/gtid/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 414 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 414, 5, 'slave_pos 권장', 'MASTER_USE_GTID 에서 **문서가 권장하는 값** 은 무엇일까요?', 'gtid_slave_pos 부터 시작해요.', NULL, NULL, '[]', 'choice', '["current_pos", "master_pos", "slave_pos", "binlog_pos"]', 2, '문서는 slave_pos 방식을 권장하고, current_pos 는 레플리카의 binlog 에 복제 대상이 아닌 트랜잭션이 섞이면 문제가 될 수 있어 권장하지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB GTID", "url": "https://mariadb.com/kb/en/gtid/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 414 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 414, 6, 'current_pos 위험', 'MASTER_USE_GTID=**current_pos** 를 권장하지 않는 이유는 무엇일까요?', '레플리카의 binlog 에 다른 것이 섞여요.', NULL, NULL, '[]', 'choice', '["프라이머리가 GTID 를 지원하지 않기 때문이다", "레플리카 binlog 에 섞인 트랜잭션이 문제가 될 수 있다", "반드시 파일명과 위치를 함께 적어야 하기 때문이다", "항상 전체 복제를 처음부터 다시 하기 때문이다"]', 1, '문서는 current_pos 가 레플리카에 복제 대상이 아닌 트랜잭션이 바이너리 로그에 섞이면 문제가 될 수 있어 권장하지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB GTID", "url": "https://mariadb.com/kb/en/gtid/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 414 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 414, 7, 'GTID 의 이점', 'GTID 를 쓸 때 **프라이머리를 바꾸기** 가 쉬운 이유는 무엇일까요?', '위치가 자동으로 정해져요.', NULL, NULL, '[]', 'choice', '["GTID 가 복제 계층 전체에서 같아 올바른 위치를 자동으로 찾는다", "레플리카의 데이터를 전부 새로 복사해 오기 때문이다", "프라이머리가 자동으로 모든 레플리카를 재시작하기 때문이다", "바이너리 로그 파일명이 항상 서로 같기 때문이다"]', 0, '문서는 GTID 가 복제 계층 전체에서 동일해서 레플리카를 다른 primary 에 연결해도 올바른 위치가 자동으로 정해진다고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB GTID", "url": "https://mariadb.com/kb/en/gtid/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 414 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 414, 8, 'crash-safe', 'GTID 사용 시 레플리카의 위치가 **비정상 종료 후에도 일관** 되는 이유는 무엇일까요?', '테이블에 저장해요.', NULL, NULL, '[]', 'choice', '["위치를 텍스트 파일에 한 줄씩 덧붙인다", "프라이머리가 위치를 대신 저장해 둔다", "위치를 메모리에만 두고 매번 다시 읽는다", "위치 테이블이 데이터와 같은 트랜잭션에서 갱신된다"]', 3, '문서는 위치가 mysql.gtid_slave_pos 테이블에 저장되고, 트랜잭션 엔진(기본 InnoDB)이면 데이터 변경과 같은 트랜잭션으로 갱신되어 비정상 종료 후에도 일관성이 유지된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB GTID", "url": "https://mariadb.com/kb/en/gtid/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 414 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 414, 9, 'MySQL 호환', 'MariaDB 와 MySQL 의 **GTID 호환** 에 대한 설명으로 맞는 것은 무엇일까요?', '한쪽 방향만 돼요.', NULL, NULL, '[]', 'choice', '["두 GTID 구현은 완전히 호환되어 서로 복제할 수 있다", "MySQL 이 MariaDB 의 레플리카가 될 수 있지만 반대는 안 된다", "MariaDB 는 MySQL 의 레플리카가 될 수 있지만 반대는 안 된다", "두 제품은 서로 어떤 방향으로도 복제할 수 없다"]', 2, '문서는 두 GTID 구현이 서로 호환되지 않으며 MariaDB 는 MySQL primary 의 레플리카가 될 수 있지만 MySQL 은 MariaDB primary 의 레플리카가 될 수 없다고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB GTID", "url": "https://mariadb.com/kb/en/gtid/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 414 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 414, 10, 'GTID 로 복제', '레플리카가 **gtid_slave_pos** 부터 복제를 시작하게 하는 권장 값입니다. 빈칸을 채우세요.', '위치 이름과 같아요.', NULL, NULL, '[]', 'fill', '["slave_pos", "current_pos", "no", "master_pos"]', NULL, 'slave_pos 는 gtid_slave_pos 위치부터 복제를 시작하며 문서가 권장하는 방식입니다.', '[0]', 'CHANGE MASTER TO MASTER_USE_GTID = {0}', NULL, '[{"title": "MariaDB GTID", "url": "https://mariadb.com/kb/en/gtid/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 414 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 414, 11, 'domain_id 기본', '단순한 구성에서 `gtid_domain_id` 를 그대로 둘 때의 **기본값** 입니다. 빈칸을 채우세요.', '숫자 0 이에요.', NULL, NULL, '[]', 'fill', '["0", "1", "10", "100"]', NULL, '문서는 gtid_domain_id 가 바이너리 로그를 도메인별 스트림으로 나누는 용도이며 단순 구성에서는 기본값 0 을 그대로 둘 수 있다고 설명합니다.', '[0]', 'gtid_domain_id = {0}', NULL, '[{"title": "MariaDB GTID", "url": "https://mariadb.com/kb/en/gtid/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 414 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 414, 12, 'GTID 로 복제 시작', 'GTID 방식으로 복제를 시작하는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '위치 확인 → 설정 → 시작 → 확인이에요.', NULL, NULL, '[]', 'order', '["레플리카의 `gtid_slave_pos` 를 확인한다", "`CHANGE MASTER TO ... MASTER_USE_GTID=slave_pos` 를 설정한다", "`START SLAVE` 로 복제를 시작한다", "`SHOW SLAVE STATUS` 로 상태를 확인한다"]', NULL, '문서의 gtid_slave_pos 와 MASTER_USE_GTID 설명을 이은 일반 절차입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "MariaDB GTID", "url": "https://mariadb.com/kb/en/gtid/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 414 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 566 WHERE id = 60;
+UPDATE quest_set SET display_order = 567 WHERE id = 99;
+UPDATE quest_set SET display_order = 568 WHERE id = 83;
+UPDATE quest_set SET display_order = 569 WHERE id = 102;
+UPDATE quest_set SET display_order = 570 WHERE id = 118;
+UPDATE quest_set SET display_order = 571 WHERE id = 400;
+UPDATE quest_set SET display_order = 572 WHERE id = 401;
+UPDATE quest_set SET display_order = 565, unit_id = (SELECT id FROM unit WHERE id = 20), icon = '🆔' WHERE id = 414;

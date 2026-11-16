@@ -1,0 +1,62 @@
+-- 퀴즈 세트 415. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_mariadb_round3.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 415, 'MariaDB 반동기 복제와 mariadb-dump: 타임아웃, AFTER_SYNC, single-transaction', '반동기 복제와 논리 백업을 읽습니다. 레플리카 확인 대기, 기본 OFF·타임아웃 10초와 비동기 전환, AFTER_SYNC, 보장 범위, mariadb-dump 의 --single-transaction·--master-data·--routines 를 봅니다.', 'quiz', '데이터베이스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 415);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 415, 1, '반동기 복제 동작', '**반동기 복제** 에서 프라이머리는 무엇을 기다릴까요?', '레플리카의 확인이에요.', NULL, NULL, '[]', 'choice', '["모든 레플리카가 이벤트를 적용했다는 확인", "클라이언트가 커밋을 재요청하는 것", "최소 한 레플리카가 이벤트를 받아 기록했다는 확인", "백업 서버의 디스크 동기화"]', 2, 'MariaDB 문서는 프라이머리가 최소 한 개의 레플리카가 이벤트를 받아 기록했다고 확인할 때까지 기다린다고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB 반동기 복제", "url": "https://mariadb.com/kb/en/semisynchronous-replication/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 415 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 415, 2, '활성화 기본값', '`rpl_semi_sync_master_enabled` 와 `rpl_semi_sync_slave_enabled` 의 **기본값** 은 무엇일까요?', '꺼져 있어요.', NULL, NULL, '[]', 'choice', '["둘 다 ON", "둘 다 OFF", "프라이머리만 ON", "레플리카만 ON"]', 1, '문서는 프라이머리는 rpl_semi_sync_master_enabled, 레플리카는 rpl_semi_sync_slave_enabled 를 ON 으로 설정해야 하며 기본값은 둘 다 OFF 라고 설명합니다. 기능은 서버에 내장되어 별도 설치가 필요 없습니다.', NULL, NULL, NULL, '[{"title": "MariaDB 반동기 복제", "url": "https://mariadb.com/kb/en/semisynchronous-replication/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 415 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 415, 3, '타임아웃 기본', '`rpl_semi_sync_master_timeout` 의 **기본값** 은 무엇일까요?', '밀리초 단위예요.', NULL, NULL, '[]', 'choice', '["10000 ms (10초)", "1000 ms (1초)", "100 ms", "60000 ms (60초)"]', 0, '문서는 rpl_semi_sync_master_timeout 의 기본값이 10000ms(10초)라고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB 반동기 복제", "url": "https://mariadb.com/kb/en/semisynchronous-replication/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 415 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 415, 4, '타임아웃 초과', '확인 응답이 **타임아웃을 넘기면** 프라이머리는 어떻게 할까요?', '복제 방식이 바뀌어요.', NULL, NULL, '[]', 'choice', '["트랜잭션을 모두 롤백한다", "쓰기를 영구히 막는다", "레플리카를 복제에서 제거한다", "비동기 복제로 전환한다"]', 3, '문서는 타임아웃을 넘기면 프라이머리가 비동기 복제로 전환하고 레플리카가 따라잡으면 반동기 복제가 재개되며, Rpl_semi_sync_master_status 가 OFF·ON 으로 바뀐다고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB 반동기 복제", "url": "https://mariadb.com/kb/en/semisynchronous-replication/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 415 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 415, 5, 'AFTER_SYNC', '`AFTER_SYNC` 모드의 특징으로 맞는 것은 무엇일까요?', '커밋 전에 기다려요.', NULL, NULL, '[]', 'choice', '["커밋 후에 확인을 기다려 프라이머리 장애 시 손실이 생길 수 있다", "확인을 기다리지 않고 바로 응답한다", "커밋 전에 확인을 기다려 프라이머리 장애 시 손실이 없어야 한다", "모든 레플리카의 적용을 기다린다"]', 2, '문서는 AFTER_SYNC 에서는 커밋 전에 확인을 기다려 프라이머리 장애 시 손실이 없어야 하고, AFTER_COMMIT 에서는 커밋 후 확인을 기다리며 손실이 생길 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB 반동기 복제", "url": "https://mariadb.com/kb/en/semisynchronous-replication/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 415 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 415, 6, '반동기의 보장', '반동기 복제가 **보장하는 범위** 는 무엇일까요?', '적용이 아니라 도달이에요.', NULL, NULL, '[]', 'choice', '["모든 레플리카에서 트랜잭션이 적용되어 있다", "커밋된 트랜잭션이 최소 한 레플리카 릴레이 로그에 도달", "레플리카가 쓰기 디스크에 완전히 동기화했다", "프라이머리와 레플리카의 데이터가 항상 같다"]', 1, '문서는 보장 범위가 커밋된 트랜잭션이 확인 전에 최소 한 레플리카의 릴레이 로그에 도달한다는 것이며 적용 완료를 뜻하지는 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "MariaDB 반동기 복제", "url": "https://mariadb.com/kb/en/semisynchronous-replication/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 415 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 415, 7, 'single-transaction', '`mariadb-dump --single-transaction` 의 일관성은 어떤 엔진에서 보장될까요?', '트랜잭션을 지원해야 해요.', NULL, NULL, '[]', 'choice', '["InnoDB 같은 트랜잭션 엔진", "MyISAM 과 MEMORY 테이블 모두", "모든 엔진에서 똑같이 보장", "읽기 잠금을 건 MyISAM 에서만"]', 0, '문서는 --single-transaction 이 START TRANSACTION 으로 BEGIN 시점의 일관된 상태를 덤프하며, MyISAM·MEMORY 테이블은 덤프 중 바뀔 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "mariadb-dump", "url": "https://mariadb.com/kb/en/mariadb-dumpmysqldump/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 415 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 415, 8, 'master-data', '`--master-data=2` 는 덤프에 무엇을 기록할까요?', '1 과 2 는 주석 여부가 달라요.', NULL, NULL, '[]', 'choice', '["binlog 를 삭제하는 명령을 기록한다", "레플리카의 GTID 를 새로 만드는 명령을 기록", "아무것도 기록하지 않고 그냥 넘어간다", "binlog 위치를 주석 CHANGE MASTER 로 적음"]', 3, '문서는 --master-data 가 덤프에 binlog 파일명과 위치를 기록하며 값 1 은 CHANGE MASTER 명령으로, 값 2 는 주석 기호로 시작해 출력한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "mariadb-dump", "url": "https://mariadb.com/kb/en/mariadb-dumpmysqldump/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 415 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 415, 9, '--routines', '`--routines` 를 주지 않으면 저장 프로시저와 함수는 어떻게 될까요?', '기본값이 FALSE 예요.', NULL, NULL, '[]', 'choice', '["항상 덤프에 포함된다", "구조만 덤프에 포함된다", "덤프에 포함되지 않는다", "오류로 덤프가 중단된다"]', 2, '문서는 --routines 가 저장 프로시저와 함수를 덤프에 포함하며 기본값은 FALSE 라고 설명합니다. 트리거는 기본으로 포함됩니다.', NULL, NULL, NULL, '[{"title": "mariadb-dump", "url": "https://mariadb.com/kb/en/mariadb-dumpmysqldump/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 415 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 415, 10, '반동기 활성화', '프라이머리에서 반동기 복제를 **켜는** 변수 이름의 마지막 부분입니다. 빈칸을 채우세요.', '"사용 가능" 이에요.', NULL, NULL, '[]', 'fill', '["enabled", "timeout", "status", "trace_level"]', NULL, 'rpl_semi_sync_master_enabled 를 ON 으로 설정하면 프라이머리에서 반동기 복제가 켜집니다. 기본값은 OFF 입니다.', '[0]', 'SET GLOBAL rpl_semi_sync_master_{0} = ON', NULL, '[{"title": "MariaDB 반동기 복제", "url": "https://mariadb.com/kb/en/semisynchronous-replication/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 415 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 415, 11, '일관된 덤프', 'InnoDB 에서 **서버를 막지 않고 일관된 덤프** 를 받는 옵션입니다. 빈칸을 채우세요.', '"단일 트랜잭션" 이에요.', NULL, NULL, '[]', 'fill', '["single-transaction", "lock-all-tables", "no-data", "databases"]', NULL, '--single-transaction 은 BEGIN 시점의 일관된 상태를 다른 애플리케이션을 막지 않고 덤프합니다. --lock-all-tables 는 전역 읽기 잠금을 겁니다.', '[0]', 'mariadb-dump --{0} --all-databases > all.sql', NULL, '[{"title": "mariadb-dump", "url": "https://mariadb.com/kb/en/mariadb-dumpmysqldump/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 415 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 415, 12, '덤프로 레플리카 만들기', '덤프로 레플리카를 만드는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '덤프 → 복원 → 복제 시작이에요.', NULL, NULL, '[]', 'order', '["`--single-transaction --master-data=1` 로 덤프한다", "덤프를 레플리카에 복원한다", "덤프에 기록된 CHANGE MASTER 로 복제를 시작한다"]', NULL, '문서의 --master-data 설명(복제본 구성의 시작 좌표)을 이은 일반 절차입니다.', '[0, 1, 2]', NULL, NULL, '[{"title": "mariadb-dump", "url": "https://mariadb.com/kb/en/mariadb-dumpmysqldump/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 415 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 567 WHERE id = 60;
+UPDATE quest_set SET display_order = 568 WHERE id = 99;
+UPDATE quest_set SET display_order = 569 WHERE id = 83;
+UPDATE quest_set SET display_order = 570 WHERE id = 102;
+UPDATE quest_set SET display_order = 571 WHERE id = 118;
+UPDATE quest_set SET display_order = 572 WHERE id = 400;
+UPDATE quest_set SET display_order = 573 WHERE id = 401;
+UPDATE quest_set SET display_order = 566, unit_id = (SELECT id FROM unit WHERE id = 20), icon = '🤝' WHERE id = 415;
