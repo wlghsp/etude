@@ -1,0 +1,70 @@
+-- 퀴즈 세트 413. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_openstack_round7.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 413, 'Nova CPU 고정과 NUMA: cpu_policy, thread policy, 토폴로지, PCPU·VCPU', 'CPU 고정과 NUMA 를 읽습니다. hw:cpu_policy 세 값과 기본 shared, thread policy, hw:numa_nodes, 소켓·코어·스레드 곱 조건, cpu_dedicated_set 과 cpu_shared_set, PCPU·VCPU 오버커밋을 봅니다.', 'quiz', 'OpenStack'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 413);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 413, 1, 'cpu_policy 값', '`hw:cpu_policy` 의 값과 **기본값** 으로 맞는 것은 무엇일까요?', '세 가지이고 하나가 기본이에요.', NULL, NULL, '[]', 'choice', '["dedicated, shared 둘뿐이며 기본은 dedicated", "pinned, floating, auto 이며 기본은 auto", "dedicated, mixed, shared 이며 기본은 shared", "static, dynamic 이며 기본은 static"]', 2, 'Nova 문서는 hw:cpu_policy 가 dedicated·mixed·shared 이며 기본값은 shared 라고 설명합니다.', NULL, NULL, NULL, '[{"title": "Nova CPU 토폴로지", "url": "https://docs.openstack.org/nova/latest/admin/cpu-topologies.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 413 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 413, 2, 'dedicated 정책', '`hw:cpu_policy=dedicated` 는 무엇을 뜻할까요?', '고정이에요.', NULL, NULL, '[]', 'choice', '["인스턴스가 고정 CPU 를 쓰지 않는다", "모든 CPU 를 고정 CPU 로 쓴다", "고정 CPU 와 비고정 CPU 를 섞어 쓴다", "호스트의 CPU 를 모두 혼자 차지한다"]', 1, '문서는 dedicated 가 인스턴스의 모든 CPU 를 고정 CPU 로 쓰고, shared 는 쓰지 않으며, mixed 는 둘을 함께 쓴다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Nova CPU 토폴로지", "url": "https://docs.openstack.org/nova/latest/admin/cpu-topologies.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 413 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 413, 3, 'thread policy 기본', '`hw:cpu_thread_policy` 의 **기본값** 과 의미로 맞는 것은 무엇일까요?', '가능하면 쓰는 쪽이에요.', NULL, NULL, '[]', 'choice', '["prefer: 스레드 형제 CPU 가 있으면 쓰고 없으면 대체", "require: 하이퍼스레딩이 없는 호스트만 요청", "isolate: 하이퍼스레딩이 있는 호스트만 요청", "avoid: 스레드 형제 CPU 를 절대 쓰지 않음"]', 0, '문서는 thread policy 의 기본이 prefer 이며, require 는 SMT 호스트를, isolate 는 SMT 가 없는 호스트를 요청한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Nova CPU 토폴로지", "url": "https://docs.openstack.org/nova/latest/admin/cpu-topologies.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 413 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 413, 4, 'numa 기본', '`hw:numa_nodes` 를 **지정하지 않으면** 인스턴스는 어떻게 놓일까요?', '떠다녀요.', NULL, NULL, '[]', 'choice', '["항상 NUMA 노드 하나에 고정된다", "노드 두 개로 자동 분산된다", "NUMA 가 없는 호스트에만 놓인다", "호스트의 모든 NUMA 노드에 걸쳐 떠다닌다"]', 3, '문서는 기본적으로 인스턴스가 호스트의 모든 NUMA 노드에 걸쳐 떠다닌다(float)고 설명합니다.', NULL, NULL, NULL, '[{"title": "Nova CPU 토폴로지", "url": "https://docs.openstack.org/nova/latest/admin/cpu-topologies.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 413 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 413, 5, 'numa_nodes=1', '`hw:numa_nodes=1` 은 무엇을 뜻할까요?', '노드 하나예요.', NULL, NULL, '[]', 'choice', '["호스트 NUMA 노드를 1번으로 지정한다", "NUMA 기능을 끈다", "vCPU 를 NUMA 노드 한 개로 제한", "게스트 노드를 1개 더 늘린다"]', 2, '문서는 hw:numa_nodes=1 이 vCPU 를 호스트 NUMA 노드 하나로 제한하고 2 는 두 노드에 분산한다고 설명합니다. {num} 은 게스트 노드 인덱스라 호스트 노드를 특정하지 못합니다.', NULL, NULL, NULL, '[{"title": "Nova CPU 토폴로지", "url": "https://docs.openstack.org/nova/latest/admin/cpu-topologies.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 413 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 413, 6, '소켓·코어·스레드', '`hw:cpu_sockets`, `hw:cpu_cores`, `hw:cpu_threads` 를 **모두 지정** 하면 어떤 조건이 있을까요?', '곱이 중요해요.', NULL, NULL, '[]', 'choice', '["세 값의 합이 vCPU 수와 같아야 한다", "세 값의 곱이 인스턴스 vCPU 수와 같아야 한다", "세 값이 모두 같아야 한다", "이미지 값이 반드시 더 커야 한다"]', 1, '문서는 세 값을 모두 지정하면 곱이 인스턴스 vCPU 수와 같아야 하며, 이미지 값은 플레이버 값을 넘을 수 없다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Nova CPU 토폴로지", "url": "https://docs.openstack.org/nova/latest/admin/cpu-topologies.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 413 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 413, 7, '기본 토폴로지', 'NUMA 배치를 지정하지 않았을 때 **기본 CPU 토폴로지** 는 무엇일까요?', '소켓이 많아요.', NULL, NULL, '[]', 'choice', '["vCPU 수만큼의 소켓에 각 1코어·1스레드", "소켓 1개에 vCPU 수만큼의 코어", "소켓 1개 1코어에 vCPU 수만큼의 스레드", "호스트의 소켓·코어 구성과 같음"]', 0, '문서는 NUMA 배치를 지정하지 않으면 기본 토폴로지가 vCPU 수만큼의 소켓에 각각 1코어·1스레드라고 설명합니다.', NULL, NULL, NULL, '[{"title": "Nova CPU 토폴로지", "url": "https://docs.openstack.org/nova/latest/admin/cpu-topologies.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 413 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 413, 8, 'cpu_dedicated_set', '`[compute] cpu_dedicated_set` 에 지정한 호스트 CPU 는 어떻게 보고될까요?', '고정용 인벤토리예요.', NULL, NULL, '[]', 'choice', '["VCPU 인벤토리로 보고된다", "보고되지 않고 숨겨진다", "MEMORY_MB 인벤토리에 합산된다", "PCPU 인벤토리로 보고된다"]', 3, '문서는 cpu_dedicated_set 이 고정 인스턴스용 호스트 CPU 를 지정해 PCPU 로, cpu_shared_set 이 비고정용을 지정해 VCPU 로 보고된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Nova CPU 토폴로지", "url": "https://docs.openstack.org/nova/latest/admin/cpu-topologies.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 413 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 413, 9, '고정 CPU 와 오버커밋', '고정(PCPU)과 비고정(VCPU)의 **오버커밋** 에 대한 설명으로 맞는 것은 무엇일까요?', '예시에 8.0 과 1.0 이 나와요.', NULL, NULL, '[]', 'choice', '["PCPU 도 VCPU 와 같은 비율로 오버할당한다", "두 인벤토리 모두 오버할당할 수 없다", "비고정 VCPU 만 오버할당 가능, PCPU 는 1.0", "PCPU 만 오버할당할 수 있다"]', 2, '문서는 비고정 CPU 가 VCPU 로 추적되어 오버커밋할 수 있고, 예시에서 cpu_allocation_ratio=8.0 일 때 VCPU 는 8.0, PCPU 는 1.0 으로 보고된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "Nova CPU 토폴로지", "url": "https://docs.openstack.org/nova/latest/admin/cpu-topologies.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 413 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 413, 10, '고정 정책', 'vCPU 를 호스트 CPU 에 **고정** 하게 하는 `hw:cpu_policy` 값입니다. 빈칸을 채우세요.', '"전용" 이에요.', NULL, NULL, '[]', 'fill', '["dedicated", "shared", "static", "isolate"]', NULL, 'dedicated 는 인스턴스의 모든 CPU 를 고정 CPU 로 씁니다. isolate 는 hw:cpu_thread_policy 의 값입니다.', '[0]', 'openstack flavor set --property hw:cpu_policy={0} m1.pinned', NULL, '[{"title": "Nova CPU 토폴로지", "url": "https://docs.openstack.org/nova/latest/admin/cpu-topologies.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 413 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 413, 11, 'NUMA 노드 수', 'vCPU 를 **호스트 NUMA 노드 하나** 로 제한하는 값입니다. 빈칸을 채우세요.', '숫자 하나예요.', NULL, NULL, '[]', 'fill', '["1", "0", "2", "4"]', NULL, 'hw:numa_nodes=1 은 vCPU 를 호스트 NUMA 노드 하나로 제한하고 2 는 두 노드에 분산합니다.', '[0]', 'openstack flavor set --property hw:numa_nodes={0} m1.numa', NULL, '[{"title": "Nova CPU 토폴로지", "url": "https://docs.openstack.org/nova/latest/admin/cpu-topologies.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 413 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 413, 12, 'CPU 고정 플레이버 준비', 'CPU 를 고정해 쓰는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '호스트 → 플레이버 → 서버예요.', NULL, NULL, '[]', 'order', '["컴퓨트 노드의 `cpu_dedicated_set` 에 고정용 CPU 를 지정한다", "플레이버에 `hw:cpu_policy=dedicated` 를 설정한다", "그 플레이버로 서버를 만든다"]', NULL, '문서가 설명한 cpu_dedicated_set 과 hw:cpu_policy 를 이은 일반 절차입니다. 이 기능은 대부분 libvirt/KVM 드라이버에서만 지원됩니다.', '[0, 1, 2]', NULL, NULL, '[{"title": "Nova CPU 토폴로지", "url": "https://docs.openstack.org/nova/latest/admin/cpu-topologies.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 413 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 709 WHERE id = 357;
+UPDATE quest_set SET display_order = 710 WHERE id = 358;
+UPDATE quest_set SET display_order = 711 WHERE id = 385;
+UPDATE quest_set SET display_order = 712 WHERE id = 359;
+UPDATE quest_set SET display_order = 713 WHERE id = 360;
+UPDATE quest_set SET display_order = 714 WHERE id = 386;
+UPDATE quest_set SET display_order = 715 WHERE id = 388;
+UPDATE quest_set SET display_order = 716 WHERE id = 361;
+UPDATE quest_set SET display_order = 717 WHERE id = 362;
+UPDATE quest_set SET display_order = 718 WHERE id = 387;
+UPDATE quest_set SET display_order = 719 WHERE id = 389;
+UPDATE quest_set SET display_order = 720 WHERE id = 363;
+UPDATE quest_set SET display_order = 721 WHERE id = 364;
+UPDATE quest_set SET display_order = 722 WHERE id = 391;
+UPDATE quest_set SET display_order = 723 WHERE id = 392;
+UPDATE quest_set SET display_order = 708, unit_id = (SELECT id FROM unit WHERE id = 37), icon = '🧲' WHERE id = 413;

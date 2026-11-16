@@ -527,3 +527,5 @@ UPDATE quest_set SET unit_id = 47 WHERE id = 408;
 UPDATE quest_set SET unit_id = 47 WHERE id = 409;
 UPDATE quest_set SET unit_id = 21 WHERE id = 410;
 UPDATE quest_set SET unit_id = 21 WHERE id = 411;
+UPDATE quest_set SET unit_id = 37 WHERE id = 412;
+UPDATE quest_set SET unit_id = 37 WHERE id = 413;
