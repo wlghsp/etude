@@ -1,0 +1,56 @@
+-- 퀴즈 세트 437. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_network_round7.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 437, 'tc 로 트래픽 제어하기: qdisc·class·filter, handle, ingress, add·change·replace·delete', '트래픽 제어 도구를 읽습니다. qdisc·class·filter 세 객체, major:minor 식별자(handle·classid), ingress, 기본 pfifo_fast, delete 가 하위를 함께 지우는 점, change 의 한계, replace, 속도 단위(bit·bps), netem 을 봅니다.', 'quiz', '네트워크'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 437);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 437, 1, '세 가지 객체', 'tc 가 트래픽을 제어할 때 쓰는 **세 가지 객체** 는 무엇일까요?', 'qdisc 가 첫째예요.', NULL, NULL, '[]', 'choice', '["queue, route, policy", "chain, table, rule", "qdisc, class, filter", "device, address, link"]', 2, 'tc 문서는 트래픽 처리를 qdisc, class, filter 세 종류의 객체가 제어한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "tc(8) man page", "url": "https://man7.org/linux/man-pages/man8/tc.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 437 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 437, 2, 'major:minor', 'tc 의 `major:minor` 식별자는 **어떤 형식** 일까요?', '16진수예요.', NULL, NULL, '[]', 'choice', '["각각 8비트 이하의 10진수", "각각 16비트 이하의 16진수", "각각 32비트의 16진수", "이름 문자열과 숫자"]', 1, '문서는 ID 가 major:minor 형식이고 둘 다 16진수이며 16비트로 제한된다고 설명합니다. qdisc 의 major 가 handle, class 의 minor 가 classid 입니다.', NULL, NULL, NULL, '[{"title": "tc(8) man page", "url": "https://man7.org/linux/man-pages/man8/tc.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 437 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 437, 3, 'handle 과 classid', 'qdisc 의 번호(`10:`)와 그 안 class 의 번호는 어떻게 이어질까요?', 'major 를 공유해요.', NULL, NULL, '[]', 'choice', '["qdisc 와 major 를 공유하고 자기 minor 를 가진다", "qdisc 와 무관한 자기 번호를 쓴다", "class 의 minor 를 qdisc 가 그대로 상속한다", "major 와 minor 가 항상 같은 값이어야 한다"]', 0, '문서는 qdisc 가 major 번호(handle)를 갖고 그 class 들이 같은 major 에 각자의 minor(classid)를 가진다고 설명합니다.', NULL, NULL, NULL, '[{"title": "tc(8) man page", "url": "https://man7.org/linux/man-pages/man8/tc.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 437 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 437, 4, 'ingress', '`ingress` qdisc 는 **어느 방향** 의 트래픽에 적용될까요?', '들어오는 쪽이에요.', NULL, NULL, '[]', 'choice', '["나가는 트래픽 (셰이핑)", "양방향 모두", "루프백 트래픽만", "들어오는 트래픽"]', 3, '문서는 ingress 를 인터페이스의 들어오는 트래픽에 적용되는 특별한 qdisc 로, 필터링과 폴리싱을 할 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "tc(8) man page", "url": "https://man7.org/linux/man-pages/man8/tc.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 437 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 437, 5, '기본 qdisc', '따로 설정하지 않았을 때 **자동 기본** qdisc 는 무엇일까요?', '3 밴드 큐예요.', NULL, NULL, '[]', 'choice', '["fq_codel", "tbf 토큰 버킷", "pfifo_fast", "htb 계층 큐"]', 2, '문서는 pfifo_fast 를 설정된 qdisc 가 없을 때의 자동 기본값이라고 설명하며, ToS 와 패킷 우선순위를 존중하는 3밴드 큐입니다.', NULL, NULL, NULL, '[{"title": "tc(8) man page", "url": "https://man7.org/linux/man-pages/man8/tc.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 437 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 437, 6, 'delete 범위', '`tc qdisc delete` 로 qdisc 를 지우면 그 **하위** 는 어떻게 될까요?', '함께 사라져요.', NULL, NULL, '[]', 'choice', '["하위는 그대로 남아 있다", "하위 노드가 함께 제거된다", "하위 class 만 남아 있다", "하위 filter 만 남아 있다"]', 1, '문서는 delete 가 qdisc 를 지우면 하위 class 와 그 leaf qdisc, 붙은 filter 도 함께 제거된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "tc(8) man page", "url": "https://man7.org/linux/man-pages/man8/tc.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 437 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 437, 7, 'change 한계', '`tc ... change` 로 **바꿀 수 없는 것** 은 무엇일까요?', '위치를 못 옮겨요.', NULL, NULL, '[]', 'choice', '["handle 과 parent", "rate 같은 파라미터 값", "limit 같은 큐 길이 값", "노드의 설정 전체 값"]', 0, '문서는 change 가 기존 노드를 제자리에서 수정하지만 handle 이나 parent 는 바꿀 수 없어 노드를 옮길 수 없다고 설명합니다.', NULL, NULL, NULL, '[{"title": "tc(8) man page", "url": "https://man7.org/linux/man-pages/man8/tc.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 437 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 437, 8, 'replace 동작', '`tc ... replace` 는 **대상이 없으면** 어떻게 될까요?', '만들어 줘요.', NULL, NULL, '[]', 'choice', '["오류를 내고 끝낸다", "아무것도 하지 않는다", "상위 노드를 지운다", "노드를 새로 만든다"]', 3, '문서는 replace 가 기존 ID 를 거의 원자적으로 지우고 다시 추가하며, 노드가 없으면 생성한다고 설명합니다. link 는 노드가 이미 있어야 합니다.', NULL, NULL, NULL, '[{"title": "tc(8) man page", "url": "https://man7.org/linux/man-pages/man8/tc.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 437 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 437, 9, 'bps 단위', 'tc 의 속도 단위에서 `bps` 는 무엇일까요?', '비트가 아니에요.', NULL, NULL, '[]', 'choice', '["초당 비트", "초당 패킷", "초당 바이트", "초당 킬로비트"]', 2, '문서는 숫자만 쓰거나 bit 를 쓰면 초당 비트이고, bps 는 초당 바이트(Bytes per second)라고 설명합니다. kbit·mbit 는 비트, kbps·mbps 는 바이트 단위입니다.', NULL, NULL, NULL, '[{"title": "tc(8) man page", "url": "https://man7.org/linux/man-pages/man8/tc.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 437 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 437, 10, '지연 에뮬레이션', '지연·손실을 흉내 내는 **네트워크 에뮬레이터** qdisc 입니다. 빈칸을 채우세요.', 'network emulator 예요.', NULL, NULL, '[]', 'fill', '["netem", "tbf", "sfq", "htb"]', NULL, 'netem 은 네트워크 에뮬레이터로 지연, 손실, 중복 같은 효과를 더합니다.', '[0]', 'tc qdisc add dev eth0 root {0} delay 100ms', NULL, '[{"title": "tc(8) man page", "url": "https://man7.org/linux/man-pages/man8/tc.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 437 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 437, 11, '없으면 생성', '노드가 **있으면 바꾸고 없으면 만드는** 하위 명령입니다. 빈칸을 채우세요.', '"교체" 예요.', NULL, NULL, '[]', 'fill', '["replace", "change", "delete", "link"]', NULL, 'replace 는 거의 원자적인 삭제 후 추가이고 노드가 없으면 만듭니다. change 는 제자리 수정만 하고 link 는 노드가 이미 있어야 합니다.', '[0]', 'tc qdisc {0} dev eth0 root netem delay 50ms', NULL, '[{"title": "tc(8) man page", "url": "https://man7.org/linux/man-pages/man8/tc.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 437 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 437, 12, '클래스 구성', 'qdisc 에 class 와 filter 를 구성하는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', 'qdisc → class → filter → 삭제예요.', NULL, NULL, '[]', 'order', '["root 에 handle 을 붙여 classful qdisc 를 추가한다", "그 qdisc 아래에 classid 를 붙여 class 를 추가한다", "filter 로 패킷이 들어갈 class 를 정한다", "필요 없으면 qdisc 를 지워 하위를 함께 제거한다"]', NULL, '문서의 qdisc·class·filter 와 delete 설명을 이은 일반 절차입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "tc(8) man page", "url": "https://man7.org/linux/man-pages/man8/tc.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 437 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 642 WHERE id = 117;
+UPDATE quest_set SET display_order = 638, unit_id = (SELECT id FROM unit WHERE id = 47), icon = '🚰' WHERE id = 437;
