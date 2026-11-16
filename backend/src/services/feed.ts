@@ -1,3 +1,4 @@
+import { publicSet } from './visibility.js'
 import { db } from '../db.js'
 import { cheersFor, type Cheer, type CompletionRec, type SetInfo } from './feed-cheers.js'
 
@@ -64,7 +65,7 @@ export async function getFeed(userId: number, role: string, opts: { before?: num
         FROM set_completion c
         JOIN user u ON u.id = c.user_id
         JOIN quest_set s ON s.id = c.quest_set_id
-        WHERE u.role = 'member' AND s.is_public = TRUE ${beforeSql}
+        WHERE u.role = 'member' AND ${publicSet('s')} ${beforeSql}
         ORDER BY c.id DESC
         LIMIT ?`, params) as any[]
     const rows = events as any[]
@@ -85,7 +86,7 @@ export async function getFeed(userId: number, role: string, opts: { before?: num
     const [historyRows] = await db.query(`
         SELECT id, user_id, quest_set_id, DATE_FORMAT(completed_at, '%Y-%m-%d') AS day, quest_count, hint_free_count, solution_free_count
         FROM set_completion WHERE user_id IN (?) ORDER BY id`, [userIds]) as any[]
-    const [setRows] = await db.query('SELECT id, category, unit_id FROM quest_set WHERE is_public = TRUE') as any[]
+    const [setRows] = await db.query(`SELECT s.id, s.category, s.unit_id FROM quest_set s WHERE ${publicSet('s')}`) as any[]
     const sets: SetInfo[] = (setRows as any[]).map((s) => ({ id: s.id, category: s.category, unitId: s.unit_id ?? null }))
     const history = new Map<number, CompletionRec[]>()
     for (const h of historyRows as any[]) {

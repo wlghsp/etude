@@ -20,7 +20,7 @@ describe('getSetProgress', () => {
         const [setSql, setParams] = vi.mocked(db.query).mock.calls[0] as any
         expect(setSql).toContain('is_public = TRUE')
         expect(setSql).toContain('quest_set_access')
-        expect(setParams).toEqual(['member', 7])
+        expect(setParams).toEqual(['member', 7, 'member', 7]) // 세트 조건(role,userId) + 대분류 조건(role,userId)
         expect(vi.mocked(db.query).mock.calls[1]![1]).toEqual([7])
         expect(r[0]!.completions.map((c) => c.id)).toEqual([9, 8])
         expect(r[0]!.completions[0]!.detail![0]).toMatchObject({ questId: 1, seconds: 40 })

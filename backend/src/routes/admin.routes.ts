@@ -3,6 +3,7 @@ import { adminMiddleware } from "../plugins/auth-guard.js";
 import { createUser, getAllUsers, resetPassword } from "../services/user.js";
 import { getFeedbackList } from "../services/feedback.js";
 import { deleteAttachment, deleteFeedbackAttachments, getAttachment } from "../services/feedback-attachments.js";
+import { categoryExists, getCategoriesForAdmin, grantCategoryAccess, revokeCategoryAccess, setCategoryPublic } from "../services/category-access.js";
 import { getQuestSetsForAdmin, grantQuestSetAccess, revokeQuestSetAccess, setQuestSetPublic } from "../services/quest.js";
 
 
@@ -67,6 +68,32 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
     app.delete<{ Params: { id: string; userId: string }}>('/admin/quest-sets/:id/access/:userId', { preHandler: adminMiddleware }, async (request) => {
         const { id, userId } = request.params
         await revokeQuestSetAccess(Number(id), Number(userId))
+        return { ok: true }
+    })
+
+    // 대분류 공개 제어 (docs/specs/spec_visibility_categories.md)
+    app.get('/admin/categories', { preHandler: adminMiddleware }, async () => getCategoriesForAdmin())
+
+    app.patch<{ Params: { category: string } }>('/admin/categories/:category', { preHandler: adminMiddleware }, async (request, reply) => {
+        const { is_public } = (request.body ?? {}) as { is_public?: unknown }
+        if (typeof is_public !== 'boolean') return reply.code(400).send({ error: 'is_public 은 true/false 여야 합니다.' })
+        if (!(await categoryExists(request.params.category))) return reply.code(404).send({ error: '없는 대분류입니다.' })
+        await setCategoryPublic(request.params.category, is_public)
+        return { ok: true }
+    })
+
+    app.post<{ Params: { category: string } }>('/admin/categories/:category/access', { preHandler: adminMiddleware }, async (request, reply) => {
+        const { userId } = (request.body ?? {}) as { userId?: unknown }
+        if (!Number.isInteger(userId)) return reply.code(400).send({ error: 'userId 가 올바르지 않습니다.' })
+        if (!(await categoryExists(request.params.category))) return reply.code(404).send({ error: '없는 대분류입니다.' })
+        await grantCategoryAccess(request.params.category, userId as number)
+        return { ok: true }
+    })
+
+    app.delete<{ Params: { category: string; userId: string } }>('/admin/categories/:category/access/:userId', { preHandler: adminMiddleware }, async (request, reply) => {
+        const userId = Number(request.params.userId)
+        if (!Number.isInteger(userId)) return reply.code(400).send({ error: 'userId 가 올바르지 않습니다.' })
+        await revokeCategoryAccess(request.params.category, userId)
         return { ok: true }
     })
 

@@ -2,6 +2,7 @@ import Docker from 'dockerode'
 import { XP_PER_QUEST } from './xp.js'
 import { db } from '../db.js'
 import type { Quest, QuestSet } from '../types.js'
+import { visibleSet } from './visibility.js'
 
 async function execCheck(container: Docker.Container, cmd: string[], timeoutMs = 15000): Promise<boolean> {
   const exec = await container.exec({ Cmd: cmd })
@@ -16,18 +17,11 @@ async function execCheck(container: Docker.Container, cmd: string[], timeoutMs =
 }
 
 export async function canAccessQuestSet(userId: number, role: string, questSetId: number) {
+  const v = visibleSet('qs', userId, role)
   const [rows] = await db.query<any[]>(`
     SELECT 1
     FROM quest_set qs
-    WHERE qs.id = ?
-      AND (
-        qs.is_public = TRUE
-        OR ? = 'admin'
-        OR EXISTS (
-          SELECT 1 FROM quest_set_access qsa
-          WHERE qsa.quest_set_id = qs.id AND qsa.user_id = ?
-        )
-      )`, [questSetId, role, userId])
+    WHERE qs.id = ? AND ${v.sql}`, [questSetId, ...v.params])
   return rows.length > 0
 }
 
@@ -43,18 +37,14 @@ export async function getQuestContext(questId: number): Promise<{ questSetId: nu
 }
 
 export async function getQuestSets(userId: number, role: string): Promise<QuestSet[]> {
+  const v = visibleSet('qs', userId, role)
   const [rows] = await db.query(`
     SELECT qs.id, qs.title, qs.description, qs.sandbox_type, qs.category, qs.is_review, qs.icon, qs.time_limit_sec, qs.unit_id, u.title AS unit_title, u.display_order AS unit_order,
       (SELECT COUNT(*) FROM quest q WHERE q.quest_set_id = qs.id) AS quest_count
     FROM quest_set qs
     LEFT JOIN unit u ON u.id = qs.unit_id
-    WHERE qs.is_public = TRUE
-      OR ? = 'admin'
-      OR EXISTS (
-        SELECT 1 FROM quest_set_access qsa
-        WHERE qsa.quest_set_id = qs.id AND qsa.user_id = ?
-    )
-    ORDER BY qs.display_order, qs.id`, [role, userId]
+    WHERE ${v.sql}
+    ORDER BY qs.display_order, qs.id`, v.params
   )
   // MariaDB 의 BOOLEAN 은 0/1 로 오므로 화면이 쓰기 쉽게 boolean 으로 바꾼다
   return (rows as any[]).map((r) => ({ ...r, is_review: Boolean(r.is_review), quest_count: Number(r.quest_count), first_xp: Number(r.quest_count) * XP_PER_QUEST })) as QuestSet[]

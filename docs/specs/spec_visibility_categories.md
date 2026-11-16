@@ -1,6 +1,6 @@
 # 명세 (초안) — 대분류·퀘스트 단위 공개 제어와 코스 선택
 
-> 상태: **초안 — 결정 대기** (2026-10-31). 코드 변경 없음.
+> 상태: **대분류 공개 제어(구현 순서 1~2단계, 백엔드) 구현됨** (2026-11-16, 사용자 "진행" 승인). 결정 1~3은 추천안으로 확정(코스 선택은 localStorage·개별 접근·퀘스트 숨김은 초안 숨김 용도). 남은 것: 관리 화면(프론트), 퀘스트 `is_public`, 홈 코스 선택기.
 > 계기: "자신에게 허용된 대분류 중 필요한 대분류만 선택해서 보여준다", "지금은 세트별로 공개 여부를 선택하는데 대분류, 세트, 퀘스트 별로 공개 여부를 선택할 필요도 있음."
 > 이 문서는 [spec_phase7_quest_access.md](spec_phase7_quest_access.md)의 "범위 밖"(퀘스트 단위 제어, 그룹 단위 할당)을 새로 다룬다. 인증·인가를 바꾸므로 구현 전 사용자 승인과 리뷰 대상이다.
 
@@ -74,6 +74,14 @@ ALTER TABLE quest ADD COLUMN is_public BOOLEAN NOT NULL DEFAULT TRUE;
 2. **대분류 접근 단위:** 사용자 개별(세트와 동일) vs 그룹/역할. 추천: 개별로 시작(현재 규모에 충분).
 3. **퀘스트 숨김의 용도:** 작성 중 초안 숨김 용도로 한정(추천) vs 학습자별 맞춤 노출. 후자는 범위가 크므로 제외.
 4. **관리 화면:** 대분류 목록과 공개 토글, 접근 사용자 지정을 기존 세트 관리 화면 위에 추가.
+
+## 구현 현황 (2026-11-16)
+
+- `services/visibility.ts` 가 가시성 규칙의 단일 출처다 (`visibleSet`: 사용자별, `publicSet`: 소식·배지 같은 사용자 무관 집계). `quest.ts`·`progress.ts`·`gamification.ts`·`feed.ts` 가 이를 쓴다.
+- 테이블 `category_setting`, `category_access` (마이그레이션 `2026-11-16_category_visibility.sql`, 행이 없으면 공개).
+- 관리자 API: `GET /admin/categories`, `PATCH /admin/categories/:category`, `POST /admin/categories/:category/access`, `DELETE /admin/categories/:category/access/:userId`. 존재하는 대분류만, 정수 userId 만 받는다.
+- 소식·배지는 사용자 무관 집계라 비공개 대분류의 활동을 접근 권한이 있는 사용자에게도 보이지 않는다(의도적 단순화).
+- 검증됨: 백엔드 테스트 375개 통과, 실제 DB 에서 비공개 시 member 0 / admin 전체 / 접근 허용 시 member 복구를 확인했다. 미검증: 관리 화면 없음, 터미널·채점 경로의 실서버 확인.
 
 ## 구현 순서 (결정 후)
 

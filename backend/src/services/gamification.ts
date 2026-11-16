@@ -1,3 +1,4 @@
+import { publicSet } from './visibility.js'
 import { db } from '../db.js'
 import { streakFromDays } from './streak.js'
 import { TITLES, isPerfect, levelOf, xpOf, type CompletionRec } from './xp.js'
@@ -67,7 +68,7 @@ export async function getGamification(userId: number): Promise<Gamification> {
     const [rows] = await db.query(`
         SELECT id, quest_set_id, DATE_FORMAT(completed_at, '%Y-%m-%d') AS day, quest_count, hint_free_count, solution_free_count
         FROM set_completion WHERE user_id = ? ORDER BY id`, [userId]) as any[]
-    const [setRows] = await db.query('SELECT id, category, unit_id FROM quest_set WHERE is_public = TRUE') as any[]
+    const [setRows] = await db.query(`SELECT s.id, s.category, s.unit_id FROM quest_set s WHERE ${publicSet('s')}`) as any[]
     const recs: CompletionRec[] = (rows as any[]).map((r) => ({ id: r.id, questSetId: r.quest_set_id, day: r.day, questCount: Number(r.quest_count), hintFree: Number(r.hint_free_count), solutionFree: Number(r.solution_free_count) }))
     const sets: SetInfo[] = (setRows as any[]).map((s) => ({ id: s.id, category: s.category, unitId: s.unit_id ?? null }))
     const snap = snapshot(recs, sets, (todayRows as any[])[0].today)

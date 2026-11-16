@@ -1,3 +1,4 @@
+import { visibleSet } from './visibility.js'
 import { db } from '../db.js'
 
 // 리더보드는 "완료한 세트 수"로 순위를 매긴다 (세트 완료가 기록의 단위). 시간은 넣지 않는다.
@@ -98,15 +99,14 @@ function parseDetail(raw: unknown): CompletionRecord['detail'] {
 
 /** 사용자가 볼 수 있는 세트(공개/관리자/접근 권한)와 각 세트의 완료 기록. */
 export async function getSetProgress(userId: number, role: string): Promise<SetProgress[]> {
+    const v = visibleSet('qs', userId, role)
     const [setRows] = await db.query(`
         SELECT qs.id, qs.title, qs.category, qs.is_review, qs.unit_id, u.title AS unit_title, u.display_order AS unit_order
         FROM quest_set qs
         LEFT JOIN unit u ON u.id = qs.unit_id
-        WHERE qs.is_public = TRUE
-           OR ? = 'admin'
-           OR EXISTS (SELECT 1 FROM quest_set_access qsa WHERE qsa.quest_set_id = qs.id AND qsa.user_id = ?)
+        WHERE ${v.sql}
         ORDER BY qs.display_order, qs.id
-    `, [role, userId]) as any[]
+    `, v.params) as any[]
     const [doneRows] = await db.query(`
         SELECT id, quest_set_id, completed_at, total_seconds, quest_count, hint_free_count, solution_free_count, detail
         FROM set_completion WHERE user_id = ? ORDER BY completed_at DESC, id DESC

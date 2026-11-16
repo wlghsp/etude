@@ -71,6 +71,19 @@ CREATE TABLE quest_set_access (
   FOREIGN KEY (user_id)      REFERENCES user(id)
 );
 
+-- 대분류 공개 제어. 행이 없으면 공개로 본다. (docs/specs/spec_visibility_categories.md)
+CREATE TABLE category_setting (
+  category  VARCHAR(50) PRIMARY KEY,
+  is_public BOOLEAN NOT NULL DEFAULT TRUE
+);
+CREATE TABLE category_access (
+  category   VARCHAR(50) NOT NULL,
+  user_id    INT NOT NULL,
+  granted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (category, user_id),
+  FOREIGN KEY (user_id) REFERENCES user(id)
+);
+
 -- 중복 허용 — 반복 시도가 쌓이는 구조 (Phase 9 분석의 원본 데이터)
 CREATE TABLE quest_attempt (
   id             INT AUTO_INCREMENT PRIMARY KEY,
