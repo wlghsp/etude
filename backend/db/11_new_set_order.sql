@@ -911,3 +911,23 @@ UPDATE quest_set SET display_order = 299 WHERE id = 120;
 UPDATE quest_set SET display_order = 300 WHERE id = 121;
 UPDATE quest_set SET display_order = 301 WHERE id = 14;
 UPDATE quest_set SET display_order = 279, unit_id = (SELECT id FROM unit WHERE id = 7), icon = '🪜' WHERE id = 421;
+-- 세트 422
+UPDATE quest_set SET display_order = 291 WHERE id = 23;
+UPDATE quest_set SET display_order = 292 WHERE id = 31;
+UPDATE quest_set SET display_order = 293 WHERE id = 29;
+UPDATE quest_set SET display_order = 294 WHERE id = 227;
+UPDATE quest_set SET display_order = 295 WHERE id = 230;
+UPDATE quest_set SET display_order = 296 WHERE id = 233;
+UPDATE quest_set SET display_order = 297 WHERE id = 339;
+UPDATE quest_set SET display_order = 298 WHERE id = 345;
+UPDATE quest_set SET display_order = 299 WHERE id = 119;
+UPDATE quest_set SET display_order = 300 WHERE id = 120;
+UPDATE quest_set SET display_order = 301 WHERE id = 121;
+UPDATE quest_set SET display_order = 302 WHERE id = 14;
+UPDATE quest_set SET display_order = 290, unit_id = (SELECT id FROM unit WHERE id = 8), icon = '📛' WHERE id = 422;
+-- 세트 423
+UPDATE quest_set SET display_order = 300 WHERE id = 119;
+UPDATE quest_set SET display_order = 301 WHERE id = 120;
+UPDATE quest_set SET display_order = 302 WHERE id = 121;
+UPDATE quest_set SET display_order = 303 WHERE id = 14;
+UPDATE quest_set SET display_order = 299, unit_id = (SELECT id FROM unit WHERE id = 9), icon = '🏁' WHERE id = 423;
