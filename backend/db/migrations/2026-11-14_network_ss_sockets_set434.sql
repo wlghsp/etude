@@ -1,0 +1,56 @@
+-- 퀴즈 세트 434. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_network_round6.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 434, 'ss 로 소켓 살펴보기: -l·-a·-n·-p·-s, 연결 상태 필터, 포트 조건', '소켓 조회 도구를 읽습니다. 리스닝 소켓이 기본에서 빠지는 점, -a·-l, -n·-r 이름 풀이, -p 프로세스, -s 요약, -x·-4·-6 별칭, state 필터(connected·synchronized·bucket), dport·sport 조건식을 봅니다.', 'quiz', '네트워크'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 434);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 434, 1, '-l 기본값', '`ss` 를 옵션 없이 실행하면 **리스닝 소켓** 은 어떻게 될까요?', '기본은 빠져 있어요.', NULL, NULL, '[]', 'choice', '["항상 맨 위에 표시된다", "UDP 소켓만 표시된다", "기본 출력에서 빠진다", "프로세스 이름과 함께 표시된다"]', 2, 'ss 문서는 -l 이 리스닝 소켓만 보여 주며 리스닝 소켓은 기본적으로 생략된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "ss(8) man page", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 434 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 434, 2, '-a 옵션', '`ss -a` 는 무엇을 보여 줄까요?', 'all 이에요.', NULL, NULL, '[]', 'choice', '["리스닝 소켓만 보여 준다", "리스닝과 비리스닝 소켓 모두", "TCP 소켓만 골라 보여 준다", "프로세스가 있는 소켓만 보여 준다"]', 1, '문서는 -a 가 리스닝과 비리스닝(TCP 는 연결된 소켓) 소켓을 모두 보여 준다고 설명합니다.', NULL, NULL, NULL, '[{"title": "ss(8) man page", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 434 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 434, 3, '-n 옵션', '`ss -n` 은 무엇을 할까요?', '이름 풀이를 끄는 쪽이에요.', NULL, NULL, '[]', 'choice', '["서비스 이름을 풀이하지 않는다", "숫자 주소를 이름으로 바꾼다", "프로세스 이름을 숨긴다", "소켓 개수만 출력한다"]', 0, '문서는 -n 이 서비스 이름을 풀이하지 않고 정확한 대역폭 값을 보여 준다고 설명합니다. 반대로 -r 은 숫자 주소와 포트를 이름으로 풀이합니다.', NULL, NULL, NULL, '[{"title": "ss(8) man page", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 434 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 434, 4, '-p 옵션', '`ss -p` 는 무엇을 보여 줄까요?', 'process 예요.', NULL, NULL, '[]', 'choice', '["소켓의 포트 번호만", "소켓의 프로토콜 이름", "소켓의 메모리 사용량", "소켓을 쓰는 프로세스"]', 3, '문서는 -p 가 소켓을 사용하는 프로세스를 보여 준다고 설명합니다. 보안 컨텍스트까지 보려면 -Z 입니다.', NULL, NULL, NULL, '[{"title": "ss(8) man page", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 434 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 434, 5, '-s 옵션', '`ss -s` 는 무엇을 할까요?', '요약이에요.', NULL, NULL, '[]', 'choice', '["소켓을 크기순으로 정렬해서 보여 준다", "조건에 맞는 소켓을 강제로 닫는다", "요약 통계를 내고 목록은 파싱하지 않는다", "소켓 하나를 한 줄에 모두 출력한다"]', 2, '문서는 -s 가 요약 통계를 출력하며 소켓 목록을 파싱하지 않아 소켓이 매우 많을 때 유용하다고 설명합니다.', NULL, NULL, NULL, '[{"title": "ss(8) man page", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 434 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 434, 6, '-x 옵션', '`ss -x` 는 어느 옵션의 별칭일까요?', '유닉스 도메인 소켓이에요.', NULL, NULL, '[]', 'choice', '["-f inet", "-f unix", "-f inet6", "-f netlink"]', 1, '문서는 -x 가 유닉스 도메인 소켓을 보여 주며 -f unix 의 별칭이라고 설명합니다. -4 는 -f inet, -6 은 -f inet6 의 별칭입니다.', NULL, NULL, NULL, '[{"title": "ss(8) man page", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 434 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 434, 7, '-4 옵션', '`ss -4` 는 무엇만 보여 줄까요?', '버전 4 예요.', NULL, NULL, '[]', 'choice', '["IPv4 소켓", "TCP 소켓", "연결된 소켓", "루프백 소켓"]', 0, '문서는 -4 가 IPv4 소켓만 보여 주며 -f inet 의 별칭이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "ss(8) man page", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 434 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 434, 8, 'connected 상태', '`state connected` 필터에는 **어떤 상태** 가 포함될까요?', 'listening 과 closed 가 빠져요.', NULL, NULL, '[]', 'choice', '["established 상태만", "syn-sent 를 뺀 연결 상태", "time-wait 와 syn-recv 만", "리스닝과 closed 를 뺀 모든 상태"]', 3, '문서는 connected 가 listening 과 closed 를 제외한 모든 상태이고, synchronized 는 connected 에서 syn-sent 를 뺀 상태라고 설명합니다.', NULL, NULL, NULL, '[{"title": "ss(8) man page", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 434 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 434, 9, 'bucket 상태', '`state bucket` 은 **어떤 상태** 를 가리킬까요?', '미니소켓으로 유지돼요.', NULL, NULL, '[]', 'choice', '["established 와 close-wait", "listening 과 closed", "time-wait 와 syn-recv", "fin-wait-1 과 fin-wait-2"]', 2, '문서는 bucket 이 미니소켓으로 유지되는 상태, 즉 time-wait 와 syn-recv 이고 big 은 그 반대라고 설명합니다.', NULL, NULL, NULL, '[{"title": "ss(8) man page", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 434 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 434, 10, '리스닝만', '**리스닝 소켓만** 보여 주는 옵션입니다. 빈칸을 채우세요.', 'listen 의 l 이에요.', NULL, NULL, '[]', 'fill', '["-l", "-a", "-s", "-e"]', NULL, '-l 은 리스닝 소켓만 보여 줍니다. 기본 출력에는 리스닝 소켓이 빠집니다.', '[0]', 'ss -t {0}', NULL, '[{"title": "ss(8) man page", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 434 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 434, 11, '상태 필터', '연결 상태로 거르는 **키워드** 입니다. 빈칸을 채우세요.', '상태를 뜻하는 영어 단어예요.', NULL, NULL, '[]', 'fill', '["state", "dport", "src", "dev"]', NULL, '문서의 예시는 state established 와 dport·sport 조건을 괄호로 묶어 연결된 ssh 소켓을 보여 줍니다.', '[0]', 'ss -o {0} established ''( dport = :ssh or sport = :ssh )''', NULL, '[{"title": "ss(8) man page", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 434 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 434, 12, 'ssh 연결 조회', '연결된 ssh 소켓의 타이머를 보는 명령을 조립하는 순서입니다. 순서에 맞게 놓아 보세요.', 'TCP → 타이머 → 상태 → 포트 조건이에요.', NULL, NULL, '[]', 'order', '["`-t` 로 TCP 소켓만 고른다", "`-o` 로 타이머 정보를 요청한다", "`state established` 로 연결된 상태만 고른다", "`dport = :ssh or sport = :ssh` 조건을 괄호로 묶어 준다"]', NULL, '문서의 -o 설명과 state·dport·sport 예시를 이은 조립 순서입니다. 옵션 순서 규칙은 원문이 직접 정하지 않습니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "ss(8) man page", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 434 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 639 WHERE id = 117;
+UPDATE quest_set SET display_order = 635, unit_id = (SELECT id FROM unit WHERE id = 47), icon = '🔍' WHERE id = 434;
