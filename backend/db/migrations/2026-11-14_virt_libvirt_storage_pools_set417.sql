@@ -1,0 +1,55 @@
+-- 퀴즈 세트 417. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_virt_round4.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 417, 'libvirt 스토리지 풀: 풀과 볼륨, dir·fs·netfs·logical·disk·iscsi·rbd', 'libvirt 스토리지 풀 유형을 읽습니다. 풀과 볼륨의 관계, dir·fs·netfs·logical·disk·iscsi·rbd 풀의 성격, iSCSI 볼륨은 서버에서 미리 할당, rbd 는 raw 만, dir 풀의 raw·qcow2 포맷을 봅니다.', 'quiz', '가상화'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 417);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 417, 1, '풀과 볼륨', '스토리지 **풀** 과 **볼륨** 의 관계로 맞는 것은 무엇일까요?', '큰 것과 나눈 것이에요.', NULL, NULL, '[]', 'choice', '["볼륨은 풀을 묶은 단위이고 풀은 VM 하나에 대응한다", "풀은 네트워크 설정이고 볼륨은 CPU 설정이다", "풀은 VM 용으로 떼어 둔 스토리지이고 볼륨은 풀을 나눈 단위", "둘은 같은 개념의 다른 이름이다"]', 2, 'libvirt 문서는 풀을 관리자가 VM 용으로 떼어 둔 스토리지, 볼륨을 풀을 나눈 단위로 VM 에 블록 장치로 할당된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 스토리지 풀", "url": "https://libvirt.org/storage.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 417 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 417, 2, 'dir 풀', '**dir** 풀은 무엇을 관리할까요?', '디렉터리예요.', NULL, NULL, '[]', 'choice', '["LVM 볼륨 그룹의 논리 볼륨", "디렉터리 안의 파일", "원격 iSCSI 타깃의 LUN", "Ceph RADOS 풀의 이미지"]', 1, '문서는 dir 풀이 디렉터리 안의 파일을 관리하며 완전·희소 할당 raw 파일과 qemu-img 가 지원하는 특수 디스크 포맷을 다룬다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 스토리지 풀", "url": "https://libvirt.org/storage.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 417 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 417, 3, 'fs 풀', '**fs** 풀은 dir 풀과 무엇이 다를까요?', '블록 장치를 지정해요.', NULL, NULL, '[]', 'choice', '["블록 장치를 마운트해 파일 관리", "원격 호스트의 내보내기 디렉터리를 지정", "LVM 볼륨 그룹 이름을 지정", "RADOS 풀 이름을 지정"]', 0, '문서는 fs 풀이 dir 풀의 변형으로 기존 마운트 디렉터리 대신 소스 블록 장치를 지정하면 마운트해 그 지점의 파일을 관리한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 스토리지 풀", "url": "https://libvirt.org/storage.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 417 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 417, 4, 'netfs 풀', '**netfs** 풀의 기본 프로토콜은 무엇일까요?', '자동 선택이에요.', NULL, NULL, '[]', 'choice', '["항상 CIFS 만 쓴다", "항상 iSCSI 만 쓴다", "항상 NFS 만 쓴다", "auto(보통 NFS 먼저)"]', 3, '문서는 netfs 풀이 fs 풀의 변형으로 호스트명과 내보내기 디렉터리를 지정하며 기본 프로토콜은 auto 이고 보통 NFS 를 먼저 시도한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 스토리지 풀", "url": "https://libvirt.org/storage.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 417 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 417, 5, 'logical 풀', '**logical** 풀은 무엇을 기반으로 할까요?', 'LVM 이에요.', NULL, NULL, '[]', 'choice', '["디렉터리 하나", "물리 디스크의 파티션 테이블", "LVM 볼륨 그룹", "iSCSI 타깃"]', 2, '문서는 logical 풀이 LVM 볼륨 그룹 기반이며 볼륨은 볼륨 그룹에서 덩어리를 잘라 할당되고 포맷은 lvm2 라고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 스토리지 풀", "url": "https://libvirt.org/storage.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 417 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 417, 6, 'disk 풀', '**disk** 풀에서 볼륨은 어떻게 만들어질까요?', '파티션이에요.', NULL, NULL, '[]', 'choice', '["디렉터리에 파일을 만드는 방식", "디스크에 파티션을 추가하는 방식", "LVM 볼륨 그룹에서 자르는 방식", "RBD 이미지를 만드는 방식"]', 1, '문서는 disk 풀이 물리 디스크 기반이며 볼륨은 디스크에 파티션을 추가하는 방식으로 만들어지고 기본 소스 포맷은 dos 라고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 스토리지 풀", "url": "https://libvirt.org/storage.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 417 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 417, 7, 'iscsi 풀', '**iscsi** 풀의 볼륨에 대한 설명으로 맞는 것은 무엇일까요?', '서버에서 미리 만들어져야 해요.', NULL, NULL, '[]', 'choice', '["서버에서 미리 할당, API 로 생성 불가", "libvirt API 로 언제든 새로 만들 수 있다", "항상 qcow2 포맷으로 만들어진다", "호스트 디렉터리의 파일로 보인다"]', 0, '문서는 iscsi 풀이 iSCSI 타깃 기반이며 볼륨은 서버에서 미리 할당되어 있어야 하고 libvirt API 로 만들 수 없다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 스토리지 풀", "url": "https://libvirt.org/storage.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 417 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 417, 8, 'rbd 풀', '**rbd** 풀의 특징으로 맞는 것은 무엇일까요?', 'Ceph 이고 raw 만 돼요.', NULL, NULL, '[]', 'choice', '["모든 디스크 포맷을 지원하고 커널 RBD 를 쓴다", "qcow2 볼륨만 지원한다", "NFS 서버 위에 만든다", "raw 볼륨만 지원, 커널 RBD 미지원"]', 3, '문서는 rbd 풀이 RADOS 풀 안의 모든 RBD 이미지를 담고 raw 볼륨만 지원하며 QEMU 가 RBD 지원으로 빌드된 경우에만 쓸 수 있고 커널 RBD 는 지원되지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 스토리지 풀", "url": "https://libvirt.org/storage.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 417 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 417, 9, 'dir 풀 포맷', 'dir 풀에서 **항상 사용 가능** 한 볼륨 포맷은 무엇일까요?', '가장 단순한 포맷이에요.', NULL, NULL, '[]', 'choice', '["qcow2", "vmdk", "raw", "qed"]', 2, '문서는 dir 풀의 포맷 중 raw 는 항상 사용 가능하고 qcow2 는 qemu-img 가 있으면 생성할 수 있으며 나머지는 qemu-img 지원에 따라 달라진다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 스토리지 풀", "url": "https://libvirt.org/storage.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 417 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 417, 10, '풀 유형', '디렉터리 안의 파일을 볼륨으로 관리하는 **풀 유형** 입니다. 빈칸을 채우세요.', '"디렉터리" 의 줄임이에요.', NULL, NULL, '[]', 'fill', '["dir", "fs", "logical", "rbd"]', NULL, 'dir 풀은 디렉터리 안의 파일을 관리합니다. fs 는 블록 장치를 마운트하고 logical 은 LVM 을 씁니다.', '[0]', '<pool type=''{0}''>', NULL, '[{"title": "libvirt 스토리지 풀", "url": "https://libvirt.org/storage.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 417 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 417, 11, 'rbd 볼륨 포맷', 'rbd 풀이 **지원하는 유일한 볼륨 포맷** 입니다. 빈칸을 채우세요.', '가공하지 않은 이름이에요.', NULL, NULL, '[]', 'fill', '["raw", "qcow2", "vmdk", "lvm2"]', NULL, '문서는 rbd 풀이 raw 볼륨만 지원한다고 설명합니다. lvm2 는 logical 풀의 소스 포맷입니다.', '[0]', '<format type=''{0}''/>', NULL, '[{"title": "libvirt 스토리지 풀", "url": "https://libvirt.org/storage.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 417 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 417, 12, 'iSCSI 풀 쓰기', 'iSCSI 풀의 볼륨을 VM 에 쓰는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '서버 준비 → 풀 → 볼륨 → VM 이에요.', NULL, NULL, '[]', 'order', '["iSCSI 서버에서 볼륨(LUN)을 미리 할당해 둔다", "iscsi 풀을 정의해 시작한다", "풀에 나타난 볼륨을 확인한다", "볼륨을 VM 에 블록 장치로 할당한다"]', NULL, '문서의 iscsi 풀(볼륨은 서버에서 미리 할당)과 풀·볼륨 설명을 이은 일반 절차입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "libvirt 스토리지 풀", "url": "https://libvirt.org/storage.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 417 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 634, unit_id = (SELECT id FROM unit WHERE id = 48), icon = '🏊' WHERE id = 417;

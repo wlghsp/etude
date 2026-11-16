@@ -1,0 +1,55 @@
+-- 퀴즈 세트 416. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_virt_round4.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 416, 'libvirt 가상 네트워크: forward 모드(nat·route·open·bridge), 격리, default', 'libvirt 가상 네트워크 XML 을 읽습니다. forward 모드 생략 시 nat 과 요소 없음 시 격리의 차이, nat·route·open·bridge·passthrough·hostdev, default 네트워크(virbr0, 192.168.122.0/24), DHCP range 를 봅니다.', 'quiz', '가상화'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 416);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 416, 1, 'forward 모드 생략', '`<forward>` 요소는 있지만 **mode 를 지정하지 않으면** 어떻게 볼까요?', '가장 흔한 모드예요.', NULL, NULL, '[]', 'choice', '["route 로 본다", "bridge 로 본다", "nat 으로 본다", "isolated 로 본다"]', 2, 'libvirt 문서는 forward 에 mode 를 지정하지 않으면 nat 으로 간주한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 네트워크 XML 형식", "url": "https://libvirt.org/formatnetwork.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 416 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 416, 2, 'forward 요소 없음', '`<forward>` 요소 **자체가 없는** 네트워크는 어떤 네트워크일까요?', '밖으로 연결되지 않아요.', NULL, NULL, '[]', 'choice', '["NAT 로 외부와 연결되는 네트워크", "다른 네트워크와 연결되지 않는 격리 네트워크", "호스트 브리지에 붙는 네트워크", "기본 네트워크 default"]', 1, '문서는 forward 가 없으면 다른 네트워크와 연결되지 않는 격리 네트워크가 되며, 게스트끼리와 호스트와는 통신하지만 LAN 의 다른 장비에는 접근할 수 없다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 네트워크 XML 형식", "url": "https://libvirt.org/formatnetwork.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 416 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 416, 3, 'nat 모드', '`mode=nat` 의 설명으로 맞는 것은 무엇일까요?', '주소를 변환해요.', NULL, NULL, '[]', 'choice', '["게스트 주소를 호스트 주소로 변환, 외부 연결은 차단", "NAT 없이 호스트 라우팅으로 나가며 방화벽 규칙을 더하지 않는다", "외부에서 만든 브리지를 그대로 쓴다", "SR-IOV VF 를 게스트에 직접 할당한다"]', 0, '문서는 nat 이 호스트의 IP 라우팅으로 나가며 게스트 주소를 호스트 주소로 변환하고 외부에서 들어오는 연결은 차단한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 네트워크 XML 형식", "url": "https://libvirt.org/formatnetwork.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 416 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 416, 4, 'route 모드', '`mode=route` 를 쓸 때 **필요한 조건** 은 무엇일까요?', '돌아오는 길이 있어야 해요.', NULL, NULL, '[]', 'choice', '["게스트마다 공인 IP 를 받아야 한다", "호스트에 Open vSwitch 가 있어야 한다", "호스트에 SR-IOV 장치가 있어야 한다", "로컬 LAN 라우터에 이 대역으로 돌아오는 경로가 있어야 한다"]', 3, '문서는 route 가 NAT 없이 호스트 라우팅으로 포워딩하며 로컬 LAN 라우터에 이 대역으로 돌아오는 경로가 있어야 한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 네트워크 XML 형식", "url": "https://libvirt.org/formatnetwork.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 416 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 416, 5, 'open 모드', '`mode=open` 이 route 와 다른 점은 무엇일까요?', '방화벽과 관련 있어요.', NULL, NULL, '[]', 'choice', '["NAT 로 주소를 변환한다", "게스트마다 별도 브리지를 만든다", "방화벽 규칙을 추가하지 않는다", "dev 를 반드시 지정해야 한다"]', 2, '문서는 open 이 route 와 비슷하지만 libvirt 가 방화벽 규칙을 추가하지 않으며 이 모드에서는 dev 를 설정할 수 없다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 네트워크 XML 형식", "url": "https://libvirt.org/formatnetwork.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 416 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 416, 6, 'bridge 모드', '`mode=bridge` 네트워크에서 `stp`·`delay` 속성이 **허용되지 않는** 이유는 무엇일까요?', '브리지를 누가 만들었는지가 관건이에요.', NULL, NULL, '[]', 'choice', '["bridge 모드는 STP 를 지원하지 않는 커널을 쓰기 때문", "libvirt 가 그 브리지를 직접 관리하지 않기 때문", "브리지가 NAT 를 쓰기 때문", "delay 는 IPv6 에서만 쓰기 때문"]', 1, '문서는 bridge 모드가 외부에서 만든 호스트 브리지 등을 쓰며 libvirt 가 이 브리지를 직접 관리하지 않으므로 stp 와 delay 속성이 허용되지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 네트워크 XML 형식", "url": "https://libvirt.org/formatnetwork.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 416 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 416, 7, 'passthrough 모드', '`mode=passthrough` 에 대한 설명으로 맞는 것은 무엇일까요?', 'macvtap 의 한 모드예요.', NULL, NULL, '[]', 'choice', '["macvtap 모드이고 게스트 하나만 쓴다", "PCI passthrough 와 같은 개념이며 여러 게스트가 공유한다", "호스트 브리지를 만들어 게스트를 연결한다", "NAT 로 외부와 연결한다"]', 0, '문서는 passthrough 가 macvtap direct 연결의 passthrough 모드이며 PCI passthrough 와 다른 개념이고 물리 인터페이스 하나는 게스트 하나만 쓸 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 네트워크 XML 형식", "url": "https://libvirt.org/formatnetwork.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 416 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 416, 8, 'hostdev 모드', '`mode=hostdev` 로 할당할 수 있는 장치는 무엇일까요?', 'SR-IOV 와 관련 있어요.', NULL, NULL, '[]', 'choice', '["모든 PCI 장치", "모든 네트워크 인터페이스", "가상 브리지 장치만", "SR-IOV VF 장치만"]', 3, '문서는 hostdev 가 네트워크 장치의 PCI passthrough 이며 SR-IOV VF 장치만 이 방식으로 할당할 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 네트워크 XML 형식", "url": "https://libvirt.org/formatnetwork.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 416 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 416, 9, 'default 네트워크', '기본으로 제공되는 **default 네트워크** 의 구성으로 맞는 것은 무엇일까요?', 'virbr0 와 192.168.122 대역이에요.', NULL, NULL, '[]', 'choice', '["route 모드, 브리지 br0, 10.0.0.1/24, DHCP 사용 안 함", "격리 모드, 브리지 virbr1, 192.168.0.1/16", "nat 모드, 브리지 virbr0, 192.168.122.1/24, DHCP 192.168.122.2~254", "bridge 모드, 브리지 virbr0, DHCP 192.168.122.100~200"]', 2, '문서는 default 네트워크가 nat 모드, 브리지 virbr0, IPv4 192.168.122.1/255.255.255.0, DHCP 범위 192.168.122.2~192.168.122.254 라고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt 네트워크 XML 형식", "url": "https://libvirt.org/formatnetwork.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 416 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 416, 10, 'NAT 모드', '게스트 주소를 **호스트 주소로 변환** 해 외부로 나가게 하는 forward 모드입니다. 빈칸을 채우세요.', '주소 변환의 약자예요.', NULL, NULL, '[]', 'fill', '["nat", "route", "open", "bridge"]', NULL, 'nat 은 게스트 주소를 호스트 주소로 변환합니다. route 는 NAT 없이, open 은 방화벽 규칙 없이 라우팅합니다.', '[0]', '<forward mode=''{0}''/>', NULL, '[{"title": "libvirt 네트워크 XML 형식", "url": "https://libvirt.org/formatnetwork.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 416 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 416, 11, 'DHCP 범위 시작', 'DHCP 주소 풀의 **시작 주소** 를 지정하는 속성입니다. 빈칸을 채우세요.', '"시작" 이에요.', NULL, NULL, '[]', 'fill', '["start", "from", "begin", "first"]', NULL, 'dhcp 의 range 는 start 와 end 로 할당할 주소 풀의 범위를 지정하며 부모 ip 의 대역 안에 있어야 합니다.', '[0]', '<range {0}=''192.168.122.100'' end=''192.168.122.200''/>', NULL, '[{"title": "libvirt 네트워크 XML 형식", "url": "https://libvirt.org/formatnetwork.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 416 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 416, 12, '격리 네트워크 정의', '격리 네트워크 XML 을 정의하는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '이름 → 주소 → 임대예요.', NULL, NULL, '[]', 'order', '["`<network>` 에 이름을 정하고 forward 를 두지 않는다", "`<ip>` 에 브리지 주소와 netmask 를 정한다", "`<dhcp>` 의 range 로 주소 풀 범위를 정한다"]', NULL, '문서의 forward·ip·dhcp 요소 설명을 이은 일반 절차입니다.', '[0, 1, 2]', NULL, NULL, '[{"title": "libvirt 네트워크 XML 형식", "url": "https://libvirt.org/formatnetwork.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 416 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 633, unit_id = (SELECT id FROM unit WHERE id = 48), icon = '🌉' WHERE id = 416;
