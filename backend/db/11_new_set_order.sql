@@ -931,3 +931,13 @@ UPDATE quest_set SET display_order = 301 WHERE id = 120;
 UPDATE quest_set SET display_order = 302 WHERE id = 121;
 UPDATE quest_set SET display_order = 303 WHERE id = 14;
 UPDATE quest_set SET display_order = 299, unit_id = (SELECT id FROM unit WHERE id = 9), icon = '🏁' WHERE id = 423;
+-- 세트 424
+UPDATE quest_set SET display_order = 304 WHERE id = 14;
+UPDATE quest_set SET display_order = 303, unit_id = (SELECT id FROM unit WHERE id = 29), icon = '🚔' WHERE id = 424;
+-- 세트 425
+UPDATE quest_set SET display_order = 301 WHERE id = 119;
+UPDATE quest_set SET display_order = 302 WHERE id = 120;
+UPDATE quest_set SET display_order = 303 WHERE id = 121;
+UPDATE quest_set SET display_order = 304 WHERE id = 424;
+UPDATE quest_set SET display_order = 305 WHERE id = 14;
+UPDATE quest_set SET display_order = 300, unit_id = (SELECT id FROM unit WHERE id = 9), icon = '🔭' WHERE id = 425;

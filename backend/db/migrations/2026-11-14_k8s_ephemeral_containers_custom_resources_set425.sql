@@ -1,0 +1,60 @@
+-- 퀴즈 세트 425. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_k8s_round_c.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 425, '임시 컨테이너와 커스텀 리소스: 디버깅용 컨테이너, 서브리소스 권한, Operator 패턴', '임시(ephemeral) 컨테이너와 커스텀 리소스를 읽습니다. 재시작되지 않고 ports·probe·resources 가 없는 점, 추가 후 변경·제거 불가, ephemeralcontainers 서브리소스와 기본 edit 에 없는 권한, 정적 Pod 미지원, 커스텀 리소스와 컨트롤러가 합쳐진 Operator 패턴을 봅니다.', 'quiz', 'k8s'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 425);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 425, 1, '임시 컨테이너란', '**임시(ephemeral) 컨테이너** 는 무엇일까요?', '점검용이에요.', NULL, NULL, '[]', 'choice', '["애플리케이션을 배포하려고 만드는 일반 컨테이너", "노드에서 실행되는 시스템 데몬", "트러블슈팅용으로 잠시 실행하는 컨테이너", "이미지를 빌드하는 보조 컨테이너"]', 2, '쿠버네티스 문서는 임시 컨테이너를 기존 Pod 에서 트러블슈팅 같은 사용자 주도 작업을 위해 일시적으로 실행하는 특수 컨테이너이며 애플리케이션 구축이 아니라 서비스 점검에 쓴다고 설명합니다.', NULL, NULL, NULL, '[{"title": "임시 컨테이너", "url": "https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 425 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 425, 2, '재시작', '임시 컨테이너는 **재시작** 될까요?', '자동으로는 안 돼요.', NULL, NULL, '[]', 'choice', '["실패하면 항상 자동으로 재시작된다", "자동으로 재시작되지 않는다", "restartPolicy 가 Always 일 때만 재시작된다", "Pod 가 재시작될 때마다 새로 만들어진다"]', 1, '문서는 임시 컨테이너가 자동으로 재시작되지 않는다(never automatically restarted)고 설명합니다.', NULL, NULL, NULL, '[{"title": "임시 컨테이너", "url": "https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 425 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 425, 3, '쓸 수 없는 필드', '임시 컨테이너에 **허용되지 않는** 것은 무엇일까요?', '포트와 점검, 자원이에요.', NULL, NULL, '[]', 'choice', '["ports 와 probe, resources", "command, args, image", "env, workingDir, volumeMounts", "name, stdin, tty"]', 0, '문서는 임시 컨테이너에서 ports, livenessProbe, readinessProbe 와 resources 설정을 허용하지 않으며 리소스·실행 보장도 없다고 설명합니다.', NULL, NULL, NULL, '[{"title": "임시 컨테이너", "url": "https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 425 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 425, 4, '추가와 제거', '임시 컨테이너를 **추가한 뒤** 에 대한 설명으로 맞는 것은 무엇일까요?', '실행 중인 Pod 에 더해요.', NULL, NULL, '[]', 'choice', '["추가 후 언제든 변경하고 제거할 수 있다", "Pod 를 만들 때만 추가할 수 있다", "추가 후 변경은 되지만 제거는 안 된다", "추가만 가능하고 변경·제거는 불가"]', 3, '문서는 임시 컨테이너를 실행 중인 Pod 에 추가할 수 있고 일반 컨테이너처럼 추가 후 변경하거나 제거할 수 없다고 설명합니다.', NULL, NULL, NULL, '[{"title": "임시 컨테이너", "url": "https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 425 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 425, 5, '추가 방법', '임시 컨테이너를 **추가하는 방법** 으로 맞는 것은 무엇일까요?', 'spec 이 아니에요.', NULL, NULL, '[]', 'choice', '["kubectl edit 로 pod.spec 에 컨테이너를 추가한다", "Pod 를 삭제하고 다시 만들 때만 추가한다", "ephemeralcontainers 서브리소스로 추가", "ConfigMap 에 컨테이너 정의를 넣는다"]', 2, '문서는 임시 컨테이너가 pod.spec 이 아니라 ephemeralcontainers 핸들러(서브리소스)로 추가되므로 kubectl edit 로는 추가할 수 없다고 설명합니다.', NULL, NULL, NULL, '[{"title": "임시 컨테이너", "url": "https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 425 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 425, 6, '권한', '`pods/ephemeralcontainers` 서브리소스의 **기본 권한** 은 어떨까요?', 'edit 에는 없어요.', NULL, NULL, '[]', 'choice', '["기본 edit ClusterRole 에 포함되어 있다", "admin·edit 에 없어 명시적 부여 필요", "모든 인증된 사용자가 기본으로 쓸 수 있다", "view ClusterRole 에만 포함되어 있다"]', 1, '문서는 pods/ephemeralcontainers 서브리소스가 기본 admin·edit ClusterRole 에 포함되지 않아 관리자가 patch(보통 update 도) 권한을 명시적으로 부여해야 한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "임시 컨테이너", "url": "https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 425 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 425, 7, '정적 Pod', '**정적 Pod** 에 대한 설명으로 맞는 것은 무엇일까요?', '지원하지 않는 경우예요.', NULL, NULL, '[]', 'choice', '["임시 컨테이너를 지원하지 않는다", "임시 컨테이너를 항상 지원한다", "임시 컨테이너를 노드 관리자만 추가할 수 있다", "임시 컨테이너가 자동으로 붙는다"]', 0, '문서는 정적 Pod 에서는 임시 컨테이너를 지원하지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "임시 컨테이너", "url": "https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 425 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 425, 8, '커스텀 리소스만', '**커스텀 리소스만** 있고 컨트롤러가 없으면 무엇을 할 수 있을까요?', '저장과 조회예요.', NULL, NULL, '[]', 'choice', '["선언적으로 상태를 맞춘다", "컨트롤러 없이도 Pod 를 자동으로 만든다", "아무것도 할 수 없다", "구조화된 데이터를 저장하고 조회할 수 있다"]', 3, '문서는 커스텀 리소스만으로는 구조화된 데이터를 저장하고 조회할 수 있고, 커스텀 컨트롤러와 합치면 진정한 선언적 API 가 된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "커스텀 리소스", "url": "https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 425 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 425, 9, 'Operator 패턴', '**Operator 패턴** 은 무엇을 합친 것일까요?', '두 가지예요.', NULL, NULL, '[]', 'choice', '["Deployment 와 Service", "ConfigMap 과 Secret", "커스텀 리소스와 커스텀 컨트롤러", "Pod 와 임시 컨테이너"]', 2, '문서는 Operator 패턴이 커스텀 리소스와 커스텀 컨트롤러를 결합한 것이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "커스텀 리소스", "url": "https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 425 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 425, 10, '서브리소스 이름', '임시 컨테이너를 추가할 때 쓰는 서브리소스 이름입니다. 빈칸을 채우세요.', '"임시 컨테이너들" 이에요.', NULL, NULL, '[]', 'fill', '["ephemeralcontainers", "ephemeral", "debug", "exec"]', NULL, 'pods/ephemeralcontainers 서브리소스에 patch 권한이 있어야 임시 컨테이너를 추가할 수 있습니다.', '[0]', 'pods/{0}', NULL, '[{"title": "임시 컨테이너", "url": "https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 425 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 425, 11, 'Operator 의 구성', 'Operator 패턴 = 커스텀 리소스 + 커스텀 ○○ 입니다. 빈칸을 채우세요.', '"조절기" 라는 뜻이에요.', NULL, NULL, '[]', 'fill', '["컨트롤러", "스케줄러", "웹훅", "드라이버"]', NULL, 'Operator 패턴은 커스텀 리소스와 커스텀 컨트롤러를 결합한 것입니다.', '[0]', '커스텀 리소스 + 커스텀 {0}', NULL, '[{"title": "커스텀 리소스", "url": "https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 425 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 425, 12, '임시 컨테이너로 점검', '임시 컨테이너로 문제를 점검하는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '권한 → 추가 → 점검이에요.', NULL, NULL, '[]', 'order', '["`pods/ephemeralcontainers` 에 patch 권한이 있는지 확인한다", "`ephemeralcontainers` 서브리소스로 실행 중인 Pod 에 임시 컨테이너를 추가한다", "임시 컨테이너 안에서 도구로 문제를 점검한다"]', NULL, '문서의 권한과 추가 방식 설명을 이은 일반 절차입니다.', '[0, 1, 2]', NULL, NULL, '[{"title": "임시 컨테이너", "url": "https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 425 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 301 WHERE id = 119;
+UPDATE quest_set SET display_order = 302 WHERE id = 120;
+UPDATE quest_set SET display_order = 303 WHERE id = 121;
+UPDATE quest_set SET display_order = 304 WHERE id = 424;
+UPDATE quest_set SET display_order = 305 WHERE id = 14;
+UPDATE quest_set SET display_order = 300, unit_id = (SELECT id FROM unit WHERE id = 9), icon = '🔭' WHERE id = 425;
