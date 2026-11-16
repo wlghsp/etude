@@ -1,0 +1,55 @@
+-- 퀴즈 세트 444. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_storage_round6.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 444, 'fsck 로 파일시스템 점검하기: -A·-R·-N·-s, 종료 코드, fs_passno, 유형 결정', '파일시스템 점검 도구를 읽습니다. -A 로 /etc/fstab 순회, -R 루트 제외, -N 시험, -s 직렬화, 종료 코드 0·1·2·4·8·16·32·128, fs_passno 0·1·2, 유형을 fstab 에서 정하는 순서를 봅니다.', 'quiz', '스토리지'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 444);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 444, 1, '-A 옵션', '`fsck -A` 는 무엇을 할까요?', '모두예요.', NULL, NULL, '[]', 'choice', '["지정한 파일시스템 하나만 점검한다", "점검 없이 곧바로 마운트만 한다", "/etc/fstab 을 훑어 모두 점검한다", "이전 점검 결과를 모두 지운다"]', 2, 'fsck 문서는 -A 가 /etc/fstab 을 훑으며 한 번에 모든 파일시스템을 점검하려 한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fsck(8) man page", "url": "https://man7.org/linux/man-pages/man8/fsck.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 444 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 444, 2, '-R 옵션', '`fsck -A -R` 의 `-R` 은 무엇을 할까요?', '루트를 빼요.', NULL, NULL, '[]', 'choice', '["루트 파일시스템만 점검한다", "루트 파일시스템을 건너뛴다", "읽기 전용으로 점검한다", "결과를 보고서로 저장한다"]', 1, '문서는 -A 와 함께 쓰는 -R 이 루트 파일시스템을 건너뛴다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fsck(8) man page", "url": "https://man7.org/linux/man-pages/man8/fsck.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 444 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 444, 3, '-N 옵션', '`fsck -N` 은 무엇을 할까요?', '시험이에요.', NULL, NULL, '[]', 'choice', '["할 일만 보여 준다", "시작 제목 출력을 끈다", "작업을 직렬로 실행한다", "자세한 출력을 모두 켠다"]', 0, '문서는 -N 이 실행하지 않고 할 일만 보여 준다고 설명합니다. -T 는 제목 출력을, -V 는 자세한 출력을 다룹니다.', NULL, NULL, NULL, '[{"title": "fsck(8) man page", "url": "https://man7.org/linux/man-pages/man8/fsck.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 444 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 444, 4, '-s 옵션', '`fsck -s` 는 무엇을 할까요?', '순서대로예요.', NULL, NULL, '[]', 'choice', '["점검을 건너뛴다", "표준 출력을 끈다", "여러 장치를 동시에 점검한다", "fsck 작업을 직렬화한다"]', 3, '문서는 -s 가 fsck 작업을 직렬화한다고 설명합니다. -P 는 -A 와 함께 루트를 다른 파일시스템과 병렬로 점검합니다.', NULL, NULL, NULL, '[{"title": "fsck(8) man page", "url": "https://man7.org/linux/man-pages/man8/fsck.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 444 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 444, 5, '종료 코드 1', 'fsck 종료 코드 `1` 은 무엇을 뜻할까요?', '고쳤어요.', NULL, NULL, '[]', 'choice', '["오류가 없다", "오류가 수정되지 않고 남았다", "파일시스템 오류가 수정되었다", "재부팅이 필요하다"]', 2, '문서는 종료 코드 0 이 오류 없음, 1 이 오류 수정됨이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "fsck(8) man page", "url": "https://man7.org/linux/man-pages/man8/fsck.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 444 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 444, 6, '종료 코드 4', 'fsck 종료 코드 `4` 는 무엇을 뜻할까요?', '못 고쳤어요.', NULL, NULL, '[]', 'choice', '["파일시스템 오류가 수정되었다", "오류가 수정되지 않고 남았다", "운영 오류가 났다", "사용자가 점검을 취소했다"]', 1, '문서는 종료 코드 4 가 파일시스템 오류가 수정되지 않고 남았음을 뜻한다고 설명합니다. 8 은 운영 오류, 32 는 사용자 취소입니다.', NULL, NULL, NULL, '[{"title": "fsck(8) man page", "url": "https://man7.org/linux/man-pages/man8/fsck.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 444 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 444, 7, '종료 코드 2', 'fsck 종료 코드 `2` 는 무엇을 뜻할까요?', '다시 켜야 해요.', NULL, NULL, '[]', 'choice', '["시스템을 재부팅해야 한다", "사용법 오류가 났다", "공유 라이브러리 오류가 났다", "점검할 파일시스템이 없다"]', 0, '문서는 종료 코드 2 가 시스템을 재부팅해야 함을 뜻한다고 설명합니다. 16 은 사용법·문법 오류, 128 은 공유 라이브러리 오류입니다.', NULL, NULL, NULL, '[{"title": "fsck(8) man page", "url": "https://man7.org/linux/man-pages/man8/fsck.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 444 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 444, 8, 'passno 0', '/etc/fstab 의 `fs_passno` 가 `0` 이면 어떻게 될까요?', '건너뛰어요.', NULL, NULL, '[]', 'choice', '["가장 먼저 점검한다", "마지막에 점검한다", "루트로 취급해 점검한다", "점검하지 않고 건너뛴다"]', 3, '문서는 fs_passno 가 0 인 파일시스템은 건너뛰고 전혀 점검하지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fsck(8) man page", "url": "https://man7.org/linux/man-pages/man8/fsck.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 444 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 444, 9, '유형 결정', 'fsck 는 점검할 **파일시스템 유형** 을 어떻게 정할까요?', 'fstab 을 먼저 봐요.', NULL, NULL, '[]', 'choice', '["항상 ext2 로 가정하고 점검한다", "장치 이름에서 유형을 유추한다", "/etc/fstab 의 항목에서 유형을 쓴다", "항상 -t 옵션을 직접 줘야 한다"]', 2, '문서는 보통 /etc/fstab 에서 파일시스템을 찾아 맞는 항목의 유형을 쓰고, 실패하면 -t 로 준 유형을, 그것도 없으면 기본(현재 ext2)을 쓴다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fsck(8) man page", "url": "https://man7.org/linux/man-pages/man8/fsck.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 444 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 444, 10, '할 일만 보기', '점검을 **실행하지 않고** 할 일만 보여 주는 옵션입니다. 빈칸을 채우세요.', '대문자 N 이에요.', NULL, NULL, '[]', 'fill', '["-N", "-A", "-R", "-V"]', NULL, '-N 은 실행하지 않고 할 일만 보여 줍니다. -A 는 /etc/fstab 의 모든 파일시스템을 점검합니다.', '[0]', 'fsck {0} -t ext4 /dev/sdb1', NULL, '[{"title": "fsck(8) man page", "url": "https://man7.org/linux/man-pages/man8/fsck.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 444 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 444, 11, '루트의 passno', '루트 파일시스템에 **흔히 쓰는** fs_passno 값입니다. 빈칸을 채우세요.', '0 은 건너뛰는 값이에요.', NULL, NULL, '[]', 'fill', '["1", "0", "2", "3"]', NULL, '문서는 루트에 1, 나머지에 2 를 쓰는 구성이 매우 흔하다고 설명합니다. 0 은 점검하지 않습니다.', '[0]', '/dev/sda1 / ext4 defaults 0 {0}', NULL, '[{"title": "fsck(8) man page", "url": "https://man7.org/linux/man-pages/man8/fsck.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 444 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 444, 12, '부팅 시 점검', '`fsck -A` 가 파일시스템을 점검하는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '훑기 → 0 제외 → 낮은 번호 → 종료 코드예요.', NULL, NULL, '[]', 'order', '["`-A` 로 `/etc/fstab` 을 훑는다", "`fs_passno` 가 0 인 항목은 건너뛴다", "0 보다 큰 값은 낮은 번호부터 점검한다", "여러 파일시스템을 점검했으면 종료 코드를 비트 OR 로 합친다"]', NULL, '문서의 -A 와 fs_passno, 종료 코드 설명을 이은 일반 절차입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "fsck(8) man page", "url": "https://man7.org/linux/man-pages/man8/fsck.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 444 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 632, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '🩺' WHERE id = 444;
