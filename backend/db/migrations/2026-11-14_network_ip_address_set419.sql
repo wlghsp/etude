@@ -1,0 +1,56 @@
+-- 퀴즈 세트 419. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_network_round5.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 419, 'ip address 깊게: scope, label, valid_lft·preferred_lft, 여러 주소, show 옵션', '인터페이스 주소를 ip address 로 읽습니다. scope(global·site·link·host)의 의미, label 15자, valid_lft·preferred_lft 와 기본 forever, 한 장치의 여러 주소, show 의 up·scope·to 옵션을 봅니다.', 'quiz', '네트워크'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 419);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 419, 1, '주소 라벨', '`ip address add ... label` 의 라벨 문자열은 **최대 몇 자**일까요?', '15 로 시작해요.', NULL, NULL, '[]', 'choice', '["8자", "31자", "15자", "255자"]', 2, 'ip-address 문서는 주소에 라벨 문자열을 붙이며 전체 길이는 최대 15자라고 설명합니다.', NULL, NULL, NULL, '[{"title": "ip-address(8) man page", "url": "https://man7.org/linux/man-pages/man8/ip-address.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 419 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 419, 2, 'valid_lft', '`valid_lft` 가 만료되면 어떻게 될까요?', '주소 자체가 사라져요.', NULL, NULL, '[]', 'choice', '["새 발신 연결에만 쓰이지 않는다", "커널이 주소를 제거한다", "주소가 link scope 로 바뀐다", "장치가 다운된다"]', 1, '문서는 valid_lft 가 만료되면 커널이 주소를 제거하고, preferred_lft 가 만료되면 새 발신 연결에 더는 쓰이지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "ip-address(8) man page", "url": "https://man7.org/linux/man-pages/man8/ip-address.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 419 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 419, 3, 'preferred_lft', '`preferred_lft` 가 만료되면 어떻게 될까요?', '더는 선호되지 않아요.', NULL, NULL, '[]', 'choice', '["새 발신 연결에 더 이상 쓰이지 않는다", "커널이 주소를 즉시 제거한다", "기존 연결이 모두 끊어진다", "주소가 다른 장치로 옮겨진다"]', 0, '문서는 preferred_lft 가 만료되면 주소가 새 발신 연결에 더 이상 쓰이지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "ip-address(8) man page", "url": "https://man7.org/linux/man-pages/man8/ip-address.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 419 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 419, 4, 'lft 기본값', '`valid_lft` 와 `preferred_lft` 의 **기본값** 은 무엇일까요?', '만료가 없어요.', NULL, NULL, '[]', 'choice', '["never", "infinity", "3600초", "forever"]', 3, '문서는 두 값 모두 기본이 forever 이며 값은 forever 또는 초 단위 숫자라고 설명합니다.', NULL, NULL, NULL, '[{"title": "ip-address(8) man page", "url": "https://man7.org/linux/man-pages/man8/ip-address.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 419 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 419, 5, 'scope host', '`scope host` 주소는 어디에서 유효할까요?', '자기 자신 안이에요.', NULL, NULL, '[]', 'choice', '["그 장치(링크)에서만", "전역적으로", "그 호스트 내부에서만", "같은 사이트 안에서만"]', 2, '문서는 host 가 해당 호스트 내부에서만, link 가 해당 장치에서만 유효하고 global 은 전역적으로 유효하다고 설명합니다.', NULL, NULL, NULL, '[{"title": "ip-address(8) man page", "url": "https://man7.org/linux/man-pages/man8/ip-address.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 419 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 419, 6, 'scope link', '`scope link` 주소는 어디에서 유효할까요?', '장치 하나예요.', NULL, NULL, '[]', 'choice', '["그 호스트 내부에서만", "그 장치(링크)에서만", "전역적으로", "모든 장치에서"]', 1, '문서는 link 가 해당 장치에서만 유효하다고 설명합니다.', NULL, NULL, NULL, '[{"title": "ip-address(8) man page", "url": "https://man7.org/linux/man-pages/man8/ip-address.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 419 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 419, 7, 'scope site', '`scope site` 에 대한 설명으로 맞는 것은 무엇일까요?', 'IPv6 전용이고 낡았어요.', NULL, NULL, '[]', 'choice', '["IPv6 전용 deprecated 주소", "IPv4 전용이며 사설 주소 대역", "전역적으로 유효한 주소 대역", "호스트 내부에서만 유효한 주소"]', 0, '문서는 site 가 IPv6 전용이며 deprecated 로 표시된 사이트 로컬 주소라고 설명합니다.', NULL, NULL, NULL, '[{"title": "ip-address(8) man page", "url": "https://man7.org/linux/man-pages/man8/ip-address.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 419 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 419, 8, '여러 주소', '한 인터페이스에 주소를 **여러 개** 붙일 수 있을까요?', '가능해요.', NULL, NULL, '[]', 'choice', '["불가능하다(인터페이스당 하나)", "프로토콜마다 정확히 하나만 가능", "IPv6 에서만 가능", "가능하다(프로토콜당 최소 하나 필요)"]', 3, '문서는 한 장치에 여러 개의 다른 주소를 붙일 수 있고 각 프로토콜을 쓰려면 장치에 최소 하나의 주소가 있어야 한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "ip-address(8) man page", "url": "https://man7.org/linux/man-pages/man8/ip-address.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 419 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 419, 9, 'show up', '`ip address show up` 은 무엇을 나열할까요?', '실행 중인 것이에요.', NULL, NULL, '[]', 'choice', '["꺼진 인터페이스만", "주소가 없는 인터페이스만", "실행 중인 인터페이스만", "link scope 주소만"]', 2, '문서는 show 의 up 이 실행 중인 인터페이스만 나열하고, scope 는 지정한 scope 의 주소만, to PREFIX 는 prefix 와 일치하는 주소만 나열한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "ip-address(8) man page", "url": "https://man7.org/linux/man-pages/man8/ip-address.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 419 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 419, 10, 'lft 기본', '`valid_lft` 의 **기본값** 입니다. 빈칸을 채우세요.', '"영원히" 예요.', NULL, NULL, '[]', 'fill', '["forever", "0", "infinity", "never"]', NULL, 'valid_lft 와 preferred_lft 의 기본은 forever 입니다.', '[0]', 'ip address add 10.0.0.5/24 dev eth0 valid_lft {0}', NULL, '[{"title": "ip-address(8) man page", "url": "https://man7.org/linux/man-pages/man8/ip-address.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 419 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 419, 11, '실행 중만', '**실행 중인 인터페이스만** 나열하게 하는 show 옵션입니다. 빈칸을 채우세요.', '"켜짐" 이에요.', NULL, NULL, '[]', 'fill', '["up", "down", "active", "link"]', NULL, 'show 의 up 은 실행 중인 인터페이스만 나열합니다.', '[0]', 'ip address show {0}', NULL, '[{"title": "ip-address(8) man page", "url": "https://man7.org/linux/man-pages/man8/ip-address.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 419 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 419, 12, '주소 추가와 제거', '인터페이스 주소를 추가하고 확인하고 제거하는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '추가 → 확인 → 제거예요.', NULL, NULL, '[]', 'order', '["`ip address add` 로 장치에 주소를 추가한다", "`ip address show` 로 주소가 붙었는지 본다", "`ip address del` 로 주소를 삭제한다"]', NULL, '문서의 add·show·delete 설명을 이은 일반 절차입니다.', '[0, 1, 2]', NULL, NULL, '[{"title": "ip-address(8) man page", "url": "https://man7.org/linux/man-pages/man8/ip-address.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 419 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 638 WHERE id = 117;
+UPDATE quest_set SET display_order = 634, unit_id = (SELECT id FROM unit WHERE id = 47), icon = '🏠' WHERE id = 419;
