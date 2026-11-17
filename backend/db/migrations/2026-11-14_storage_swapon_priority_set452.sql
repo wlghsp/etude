@@ -1,0 +1,55 @@
+-- 퀴즈 세트 452. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_storage_round9.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 452, 'swapon·swapoff 로 스왑 켜고 끄기: -a, 우선순위, fstab pri=, --show', '스왑 제어 도구를 읽습니다. swapon·swapoff 의 역할, -a 와 noauto 제외, -e 없는 장치 건너뛰기, -p 우선순위와 fstab pri=, -d discard, --show 표, -f 페이지 크기 재초기화를 봅니다.', 'quiz', '스토리지'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 452);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 452, 1, 'swapon 역할', 'swapon 은 무엇을 할까요?', '켜요.', NULL, NULL, '[]', 'choice', '["스왑 영역을 새로 만들고 초기화한다", "메모리 사용량을 계속 감시한다", "페이징과 스왑에 쓸 장치와 파일을 지정한다", "스왑 영역을 삭제한다"]', 2, 'swapon 문서는 페이징과 스왑이 일어날 장치를 지정하는 명령이라고 설명합니다. 대상은 -L label 이나 -U uuid 로도 줄 수 있습니다.', NULL, NULL, NULL, '[{"title": "swapon(8) man page", "url": "https://man7.org/linux/man-pages/man8/swapon.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 452 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 452, 2, 'swapoff', '`swapoff -a` 는 어떤 장치의 스왑을 끌까요?', '알려진 전부예요.', NULL, NULL, '[]', 'choice', '["fstab 의 noauto 가 아닌 항목만", "알려진 모든 스왑 장치와 파일", "현재 사용률이 가장 높은 스왑만", "가장 낮은 우선순위의 스왑만"]', 1, '문서는 -a 를 주면 /proc/swaps 또는 /etc/fstab 에서 찾은 모든 알려진 스왑 장치와 파일의 스왑을 끈다고 설명합니다.', NULL, NULL, NULL, '[{"title": "swapon(8) man page", "url": "https://man7.org/linux/man-pages/man8/swapon.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 452 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 452, 3, '-a 옵션', '`swapon -a` 에서 **제외되는** 항목은 무엇일까요?', '일괄에서 빠져요.', NULL, NULL, '[]', 'choice', '["`noauto` 옵션이 붙은 항목", "nofail 옵션이 붙은 항목", "레이블로 적힌 항목", "우선순위가 지정된 항목"]', 0, '문서는 -a 가 fstab 의 swap 항목을 켜되 noauto 옵션이 있는 것은 제외하며, 이미 쓰이는 것은 조용히 건너뛴다고 설명합니다.', NULL, NULL, NULL, '[{"title": "swapon(8) man page", "url": "https://man7.org/linux/man-pages/man8/swapon.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 452 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 452, 4, '-e 옵션', '`swapon -e` 는 무엇을 할까요?', '없는 건 넘어가요.', NULL, NULL, '[]', 'choice', '["오류가 나면 즉시 중단한다", "모든 스왑을 두 번씩 켠다", "존재하지 않는 장치를 새로 만든다", "존재하지 않는 장치를 조용히 건너뛴다"]', 3, '문서는 -e/--ifexists 가 존재하지 않는 장치를 조용히 건너뛰게 하며, fstab 의 nofail 옵션도 같은 용도라고 설명합니다.', NULL, NULL, NULL, '[{"title": "swapon(8) man page", "url": "https://man7.org/linux/man-pages/man8/swapon.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 452 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 452, 5, '-p 범위', '`swapon -p` 의 **우선순위 범위** 와 의미는 무엇일까요?', '숫자가 커요.', NULL, NULL, '[]', 'choice', '["1~100 이며 숫자가 작을수록 우선순위가 높다", "-1~1 이며 0 이 가장 높다", "0~32767 이며 숫자가 클수록 우선순위가 높다", "0~255 이며 숫자가 클수록 먼저 해제된다"]', 2, '문서는 priority 가 0~32767 사이 값이고 높을수록 우선순위가 높으며, 정의하지 않으면 리눅스 커널이 음수 값을 기본으로 쓴다고 설명합니다.', NULL, NULL, NULL, '[{"title": "swapon(8) man page", "url": "https://man7.org/linux/man-pages/man8/swapon.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 452 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 452, 6, 'fstab 우선순위', 'fstab 의 swap 항목에서 **우선순위** 는 어떻게 지정할까요?', '옵션 필드예요.', NULL, NULL, '[]', 'choice', '["다섯째 필드에 숫자를 적는다", "옵션 필드에 pri=값 을 적는다", "장치 이름 뒤에 :값 을 붙인다", "둘째 필드에 우선순위를 적는다"]', 1, '문서는 swapon -a 에 쓸 우선순위를 fstab 의 옵션 필드에 pri=value 로 적는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "swapon(8) man page", "url": "https://man7.org/linux/man-pages/man8/swapon.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 452 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 452, 7, '-d 옵션', '`swapon -d` 는 무엇을 할까요?', '버리기예요.', NULL, NULL, '[]', 'choice', '["지원하면 스왑 discard 를 켠다", "스왑 영역을 삭제하고 해제한다", "스왑 영역의 중복 페이지를 제거한다", "스왑을 읽기 전용으로 켠다"]', 0, '문서는 -d/--discard 가 스왑 discard 를 켜며 SSD 에서 성능이 좋아질 수 있지만 대개 그렇지 않다고 설명합니다. 정책은 once 와 pages 입니다.', NULL, NULL, NULL, '[{"title": "swapon(8) man page", "url": "https://man7.org/linux/man-pages/man8/swapon.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 452 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 452, 8, '--show', '`swapon --show` 는 무엇을 할까요?', '표로 보여요.', NULL, NULL, '[]', 'choice', '["스왑 영역을 새로 만들어 보여 준다", "스왑 사용을 한 번 끄고 다시 켠다", "메모리 사용량의 변화를 실시간으로 보여 준다", "열을 정할 수 있는 스왑 영역 표를 보여 준다"]', 3, '문서는 --show 가 스왑 영역의 설정 가능한 표를 보여 주며, 폐기 예정인 -s(/proc/swaps 와 같음)를 대체한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "swapon(8) man page", "url": "https://man7.org/linux/man-pages/man8/swapon.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 452 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 452, 9, '-f 옵션', '`swapon -f` 는 어떤 경우에 쓰일까요?', '페이지 크기예요.', NULL, NULL, '[]', 'choice', '["스왑을 강제로 켜서 오류를 무시한다", "스왑의 우선순위를 가장 높게 바꾼다", "페이지 크기가 다를 때 다시 초기화한다", "디스크 포맷 후 스왑을 새로 만든다"]', 2, '문서는 -f/--fixpgsz 가 스왑의 페이지 크기가 현재 커널과 맞지 않을 때 mkswap 을 실행해 다시 초기화하며, 불량 블록은 검사하지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "swapon(8) man page", "url": "https://man7.org/linux/man-pages/man8/swapon.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 452 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 452, 10, '우선순위 옵션', '스왑 **우선순위** 를 정하는 옵션입니다. 빈칸을 채우세요.', 'priority 의 p 예요.', NULL, NULL, '[]', 'fill', '["-p", "-d", "-e", "-s"]', NULL, '-p/--priority 는 0~32767 사이 우선순위를 정합니다. -d 는 discard, -e 는 없는 장치 건너뛰기, -s 는 요약입니다.', '[0]', 'swapon {0} 10 /dev/sdb2', NULL, '[{"title": "swapon(8) man page", "url": "https://man7.org/linux/man-pages/man8/swapon.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 452 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 452, 11, '모두 끄기', '알려진 **모든 스왑을 끄는** 명령 구성입니다. 빈칸을 채우세요.', '끈다는 뜻이에요.', NULL, NULL, '[]', 'fill', '["swapoff", "swapon", "mkswap", "umount"]', NULL, 'swapoff -a 는 /proc/swaps 나 /etc/fstab 에서 찾은 모든 스왑을 끕니다. swapon -a 는 켭니다.', '[0]', '{0} -a', NULL, '[{"title": "swapon(8) man page", "url": "https://man7.org/linux/man-pages/man8/swapon.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 452 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 452, 12, '스왑 교체', '스왑 파일 크기를 바꾸는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '끄기 → 새로 만들기 → 켜기 → 확인이에요.', NULL, NULL, '[]', 'order', '["`swapoff` 로 기존 스왑을 끈다", "`mkswap` 으로 새 크기의 스왑을 만든다", "`swapon` 으로 새 스왑을 켠다", "`swapon --show` 로 결과를 확인한다"]', NULL, '문서의 swapoff, mkswap, swapon, --show 설명을 이은 일반 절차입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "swapon(8) man page", "url": "https://man7.org/linux/man-pages/man8/swapon.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 452 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 640, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '🔌' WHERE id = 452;

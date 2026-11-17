@@ -995,3 +995,11 @@ UPDATE quest_set SET display_order = 635, unit_id = (SELECT id FROM unit WHERE i
 UPDATE quest_set SET display_order = 636, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '🌳' WHERE id = 448;
 -- 세트 449
 UPDATE quest_set SET display_order = 637, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '⏏️' WHERE id = 449;
+-- 세트 450
+UPDATE quest_set SET display_order = 638, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '🔭' WHERE id = 450;
+-- 세트 451
+UPDATE quest_set SET display_order = 639, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '💤' WHERE id = 451;
+-- 세트 452
+UPDATE quest_set SET display_order = 640, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '🔌' WHERE id = 452;
+-- 세트 453
+UPDATE quest_set SET display_order = 641, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '🧽' WHERE id = 453;

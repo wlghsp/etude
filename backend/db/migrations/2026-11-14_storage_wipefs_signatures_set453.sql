@@ -1,0 +1,55 @@
+-- 퀴즈 세트 453. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_storage_round9.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 453, 'wipefs 로 시그니처 지우기: 조회, -a·-n·-b·-f, 파티션 테이블, 오프셋', '시그니처 삭제 도구를 읽습니다. 지우는 대상이 시그니처뿐이라는 점, 옵션 없는 조회, -a 전체 삭제와 파티션 디스크의 동작, -n 시험 실행, -b 백업, -f 강제, -o 오프셋, 여러 곳의 시그니처를 봅니다.', 'quiz', '스토리지'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 453);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 453, 1, 'wipefs 역할', 'wipefs 는 무엇을 지울까요?', '표식이에요.', NULL, NULL, '[]', 'choice', '["파일시스템 안의 모든 파일", "장치의 모든 블록 내용", "파일시스템 등의 시그니처", "마운트 설정 파일의 항목"]', 2, 'wipefs 문서는 libblkid 에 보이지 않게 시그니처를 지우며, 파일시스템 자체나 다른 데이터는 지우지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "wipefs(8) man page", "url": "https://man7.org/linux/man-pages/man8/wipefs.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 453 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 453, 2, '옵션 없이', '`wipefs /dev/sdb` 를 옵션 없이 실행하면 어떻게 될까요?', '조회만 해요.', NULL, NULL, '[]', 'choice', '["모든 시그니처를 즉시 지운다", "보이는 시그니처와 오프셋을 나열한다", "파일시스템을 새로 만든다", "장치를 읽기 전용으로 바꾼다"]', 1, '문서는 옵션 없이 쓰면 보이는 모든 파일시스템과 기본 시그니처의 오프셋을 나열한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "wipefs(8) man page", "url": "https://man7.org/linux/man-pages/man8/wipefs.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 453 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 453, 3, '-a 옵션', '`wipefs -a` 는 무엇을 할까요?', '전부예요.', NULL, NULL, '[]', 'choice', '["보이는 시그니처를 모두 지운다", "첫 번째 시그니처 하나만 지운다", "파일시스템의 내용까지 모두 지운다", "파티션 안의 파일시스템만 지운다"]', 0, '문서는 -a 가 libblkid 에 보이는 모든 시그니처를 지우고, 각 삭제 뒤 더 없을 때까지 다시 검사한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "wipefs(8) man page", "url": "https://man7.org/linux/man-pages/man8/wipefs.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 453 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 453, 4, '-a 와 파티션', '파티션된 **디스크 전체**(/dev/sdX)에 `wipefs -a` 를 하면 무엇이 지워질까요?', '표만 지워요.', NULL, NULL, '[]', 'choice', '["파티션 안의 내용까지 모두 지워진다", "첫 번째 파티션의 내용만 지워진다", "아무것도 지워지지 않는다", "파티션 테이블만 지우고 내용은 둔다"]', 3, '문서는 파티션된 전체 디스크에서 -a 를 하면 파티션 테이블만 지우고 파티션의 내용은 지우지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "wipefs(8) man page", "url": "https://man7.org/linux/man-pages/man8/wipefs.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 453 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 453, 5, '-n 옵션', '`wipefs -a -n` 은 무엇을 할까요?', '시험 실행이에요.', NULL, NULL, '[]', 'choice', '["쓰기를 하고 결과를 조용히 감춘다", "시그니처를 두 번 지운다", "쓰기만 빼고 모두 수행한다", "지운 뒤 자동으로 복원한다"]', 2, '문서는 -n/--no-act 가 write(2) 호출을 제외하고 모든 것을 수행한다고 설명합니다. 지우기 전에 확인하는 용도로 쓸 수 있습니다.', NULL, NULL, NULL, '[{"title": "wipefs(8) man page", "url": "https://man7.org/linux/man-pages/man8/wipefs.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 453 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 453, 6, '-b 백업', '`wipefs -b -a` 의 **-b** 는 무엇을 할까요?', '복구용이에요.', NULL, NULL, '[]', 'choice', '["장치 전체를 이미지로 복사한다", "지울 시그니처를 .bak 파일에 백업한다", "지운 뒤 자동으로 복원한다", "백업 장치를 따로 지정한다"]', 1, '문서는 -b/--backup 이 시그니처를 wipefs-<devname>-<offset>.bak 파일(기본 $HOME 또는 지정 디렉터리)에 백업한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "wipefs(8) man page", "url": "https://man7.org/linux/man-pages/man8/wipefs.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 453 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 453, 7, '-f 옵션', '`wipefs -f` 는 무엇을 허용할까요?', '강제예요.', NULL, NULL, '[]', 'choice', '["마운트된 상태나 중첩 파티션도 지운다", "쓰기를 하지 않고 결과만 보여 준다", "지울 때 자동으로 백업한다", "읽기 전용 장치도 쓰기 가능하게 바꾼다"]', 0, '문서는 -f/--force 가 파일시스템이 마운트된 경우에도 강제로 지우며, 전체 디스크가 아닌 장치의 중첩 파티션 테이블 시그니처를 지울 때도 필요하다고 설명합니다.', NULL, NULL, NULL, '[{"title": "wipefs(8) man page", "url": "https://man7.org/linux/man-pages/man8/wipefs.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 453 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 453, 8, '-o 옵션', '`wipefs -o 0x438` 의 **-o** 는 무엇을 지정할까요?', '위치예요.', NULL, NULL, '[]', 'choice', '["지울 파일시스템의 유형 이름", "지울 시그니처 개수", "백업을 저장할 디렉터리", "지울 시그니처의 바이트 오프셋"]', 3, '문서는 -o/--offset 이 지울 시그니처의 위치를 바이트로 지정하며 0x 접두어는 16진수이고 여러 번 줄 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "wipefs(8) man page", "url": "https://man7.org/linux/man-pages/man8/wipefs.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 453 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 453, 9, '여러 시그니처', 'FAT·ZFS·GPT 처럼 **여러 곳에 시그니처** 를 두는 경우를 wipefs 는 어떻게 다룰까요?', '전부 나열해요.', NULL, NULL, '[]', 'choice', '["첫 번째 오프셋만 나열한다", "백업 시그니처는 읽지 못한다", "감지된 모든 오프셋을 나열한다", "해당 시그니처는 지울 수 없다"]', 2, '문서는 일부 파일시스템과 파티션 테이블이 매직 스트링을 여러 곳에 저장하며, v2.31 부터 감지된 모든 오프셋을 나열한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "wipefs(8) man page", "url": "https://man7.org/linux/man-pages/man8/wipefs.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 453 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 453, 10, '모두 지우기', '장치의 **모든 시그니처** 를 지우는 옵션입니다. 빈칸을 채우세요.', 'all 의 a 예요.', NULL, NULL, '[]', 'fill', '["-a", "-n", "-b", "-f"]', NULL, '-a 는 보이는 모든 시그니처를 지웁니다. -n 은 시험 실행, -b 는 백업, -f 는 강제입니다.', '[0]', 'wipefs {0} /dev/sdb', NULL, '[{"title": "wipefs(8) man page", "url": "https://man7.org/linux/man-pages/man8/wipefs.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 453 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 453, 11, '시험 실행', '실제로 **쓰지 않고** 지울 결과만 확인하는 옵션입니다. 빈칸을 채우세요.', 'no-act 의 n 이에요.', NULL, NULL, '[]', 'fill', '["-n", "-b", "-f", "-q"]', NULL, '-n/--no-act 는 write(2) 를 제외한 모든 것을 수행하는 시험 실행입니다. -q 는 성공 후 메시지를 숨깁니다.', '[0]', 'wipefs -a {0} /dev/sdb', NULL, '[{"title": "wipefs(8) man page", "url": "https://man7.org/linux/man-pages/man8/wipefs.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 453 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 453, 12, '시그니처 정리', '디스크를 재사용하기 전 시그니처를 정리하는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '조회 → 시험 → 백업 → 삭제예요.', NULL, NULL, '[]', 'order', '["`wipefs` 로 남아 있는 시그니처를 조회한다", "`-a -n` 으로 시험 실행을 한다", "`-b` 로 시그니처를 백업하며 삭제를 준비한다", "`wipefs -a` 로 시그니처를 지운다"]', NULL, '문서의 조회, --no-act, --backup, -a 설명을 이은 일반 절차입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "wipefs(8) man page", "url": "https://man7.org/linux/man-pages/man8/wipefs.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 453 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 641, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '🧽' WHERE id = 453;
