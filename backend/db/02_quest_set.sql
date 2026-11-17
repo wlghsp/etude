@@ -359,4 +359,6 @@ INSERT INTO quest_set (id, title, description, sandbox_type, category) VALUES
   (455, 'xfs_repair 로 XFS 수리하기: 언마운트, -n, dirty log 와 -L, lost+found', 'XFS 수리 도구를 읽습니다. 언마운트 필수, -n 수정 없는 점검, 더러운 로그와 종료 코드 2, 마운트·언마운트로 로그 재생, -L 의 위험, lost+found, 보조 슈퍼블록, 디스크 오류 대응을 봅니다.', 'quiz', '스토리지'),
   (456, 'xfs_growfs 로 XFS 늘리기: 마운트 필요, -d·-D, -n 미리 보기, 논리 볼륨', 'XFS 확장 도구를 읽습니다. 마운트된 상태에서 확장하는 점, 대상 인자, -d 최대 확장과 -D 의 블록 단위, -n 미리 보기, -m inode 비율, 구현되지 않은 -i, 논리 볼륨과 함께 쓰는 사용을 봅니다.', 'quiz', '스토리지'),
   (457, 'fdisk 로 파티션 테이블 보기: 지원 형식, 섹터 0, 기본값 정렬, -l·-x·-o', '파티션 도구를 읽습니다. 대화형 도구라는 점, GPT·MBR 등 지원 형식, 섹터 0 에 기록되는 파티션 테이블, 기본값 정렬 권장, CHS 폐기, 스크립트에는 partx, -l·-x·-o 목록 옵션을 봅니다.', 'quiz', '스토리지'),
-  (458, 'fdisk 크기 표기와 시그니처: +/- 크기, 단위 접미사, 정렬, -w·-B·-n, 스크립트', '파티션 크기와 초기화를 읽습니다. + 와 - 접두의 기준, K·M·G 단위와 폐기 예정 KB·MB, +섹터 수 표기의 정렬 차이, -w 시그니처 삭제, -B·-n, I 명령의 스크립트 파일을 봅니다.', 'quiz', '스토리지');
+  (458, 'fdisk 크기 표기와 시그니처: +/- 크기, 단위 접미사, 정렬, -w·-B·-n, 스크립트', '파티션 크기와 초기화를 읽습니다. + 와 - 접두의 기준, K·M·G 단위와 폐기 예정 KB·MB, +섹터 수 표기의 정렬 차이, -w 시그니처 삭제, -B·-n, I 명령의 스크립트 파일을 봅니다.', 'quiz', '스토리지'),
+  (459, 'qemu-img 기본: 오프라인 원칙, info 의 virtual·disk size, check, resize 주의', '디스크 이미지 도구를 읽습니다. 오프라인에서만 수정해야 하는 이유, -U 공유 조회, 포맷 추정, info 의 virtual size 와 disk size, --backing-chain, check 종료 코드와 -r 수리, resize 의 축소 주의를 봅니다.', 'quiz', '가상화'),
+  (460, 'qemu-img 백킹 체인: create -b, commit, rebase, snapshot, compare, convert 압축', '이미지 체인을 다룹니다. create -b 의 차이 이미지, 백킹 파일 보호, commit 과 -b 의 무효화, rebase 의 지원 포맷과 -u, snapshot 의 -c·-a·-d·-l, compare 종료 코드, convert 압축의 한계를 봅니다.', 'quiz', '가상화');

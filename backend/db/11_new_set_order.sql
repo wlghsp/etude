@@ -1013,3 +1013,7 @@ UPDATE quest_set SET display_order = 644, unit_id = (SELECT id FROM unit WHERE i
 UPDATE quest_set SET display_order = 645, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '✂️' WHERE id = 457;
 -- 세트 458
 UPDATE quest_set SET display_order = 646, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '🧩' WHERE id = 458;
+-- 세트 459
+UPDATE quest_set SET display_order = 635, unit_id = (SELECT id FROM unit WHERE id = 48), icon = '🖼️' WHERE id = 459;
+-- 세트 460
+UPDATE quest_set SET display_order = 636, unit_id = (SELECT id FROM unit WHERE id = 48), icon = '🪆' WHERE id = 460;
