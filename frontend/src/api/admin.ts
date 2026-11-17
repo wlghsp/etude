@@ -50,3 +50,38 @@ export async function revokeAccess(questSetId: number, userId: number) {
         headers: authHeaders(),
     })
 }
+
+export interface AdminCategory {
+    category: string
+    setCount: number
+    is_public: boolean
+    accessUsers: { id: number; name: string; email: string }[]
+}
+
+export async function fetchAdminCategories(): Promise<AdminCategory[]> {
+    const res = await fetch(`${BASE}/admin/categories`, { headers: authHeaders() })
+    return res.json()
+}
+
+export async function setCategoryPublic(category: string, isPublic: boolean) {
+    await fetch(`${BASE}/admin/categories/${encodeURIComponent(category)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type' : 'application/json', ...authHeaders() },
+        body: JSON.stringify({ is_public: isPublic })
+    })
+}
+
+export async function grantCategoryAccess(category: string, userId: number) {
+    await fetch(`${BASE}/admin/categories/${encodeURIComponent(category)}/access`, {
+        method: 'POST',
+        headers: { 'Content-Type' : 'application/json', ...authHeaders() },
+        body: JSON.stringify({ userId })
+    })
+}
+
+export async function revokeCategoryAccess(category: string, userId: number) {
+    await fetch(`${BASE}/admin/categories/${encodeURIComponent(category)}/access/${userId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+    })
+}

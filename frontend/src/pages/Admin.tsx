@@ -3,7 +3,8 @@ import { TopNav } from "../components/TopNav"
 import { SideNav } from "../components/SideNav"
 import {
   fetchAllUsers, fetchAdminQuestSets, setQuestSetPublic, grantAccess, revokeAccess,
-  type AdminUser, type AdminQuestSet,
+  fetchAdminCategories, setCategoryPublic, grantCategoryAccess, revokeCategoryAccess,
+  type AdminUser, type AdminQuestSet, type AdminCategory,
 } from "../api/admin"
 
 const CATEGORY_ORDER = ['리눅스', '도커', 'k8s', 'Git', '미들웨어', '데이터베이스', '가상화', '스토리지', '네트워크', 'OpenStack']
@@ -26,6 +27,8 @@ interface Props {
 export function Admin({ onHome, onProgress, onLeaderboard, onHall, onReview, onFeed, onLogout, onChangePassword, userName, userEmail, userRole }: Props) {
     const [users, setUsers] = useState<AdminUser[]>([])
     const [sets, setSets] = useState<AdminQuestSet[]>([])
+    const [categorySettings, setCategorySettings] = useState<AdminCategory[]>([])
+    const [accessCategory, setAccessCategory] = useState<string | null>(null)
     const [selectedSetId, setSelectedSetId] = useState<number | null>(null)
     const [query, setQuery] = useState('')
     const [onlyPrivate, setOnlyPrivate] = useState(false)
@@ -35,6 +38,7 @@ export function Admin({ onHome, onProgress, onLeaderboard, onHall, onReview, onF
     const reload = () => {
         fetchAllUsers().then(setUsers)
         fetchAdminQuestSets().then(setSets)
+        fetchAdminCategories().then(setCategorySettings)
     }
 
     useEffect(() => { reload() }, [])
@@ -47,6 +51,22 @@ export function Admin({ onHome, onProgress, onLeaderboard, onHall, onReview, onF
     const handleToggleUser = async (setId: number, userId: number, granted: boolean) => {
         if (granted) await revokeAccess(setId, userId)
         else await grantAccess(setId, userId)
+        reload()
+    }
+
+    // 분야가 비공개면 세트 공개 여부와 상관없이 일반 사용자에게 안 보인다 (관리자·접근 허용자 제외)
+    const handleToggleCategory = async (category: string, isPublic: boolean) => {
+        const msg = isPublic
+            ? `'${category}' 분야를 공개할까요? 세트별 공개 설정에 따라 모든 사용자에게 보입니다.`
+            : `'${category}' 분야를 비공개로 바꿀까요? 세트 공개 여부와 상관없이 관리자와 접근 허용자만 볼 수 있습니다.`
+        if (!window.confirm(msg)) return
+        await setCategoryPublic(category, isPublic)
+        reload()
+    }
+
+    const handleToggleCategoryUser = async (category: string, userId: number, granted: boolean) => {
+        if (granted) await revokeCategoryAccess(category, userId)
+        else await grantCategoryAccess(category, userId)
         reload()
     }
 
@@ -96,6 +116,8 @@ export function Admin({ onHome, onProgress, onLeaderboard, onHall, onReview, onF
             {categories.map((category) => {
               const group = byCategory.get(category)!
               const all = sets.filter((s) => s.category === category)
+              const setting = categorySettings.find((c) => c.category === category)
+              const categoryPublic = setting ? setting.is_public : true
               const publicCount = all.filter((s) => s.is_public).length
               const expanded = searching ? group.length > 0 : !!open[category]
               if (searching && group.length === 0) return null
@@ -113,9 +135,39 @@ export function Admin({ onHome, onProgress, onLeaderboard, onHall, onReview, onF
                         {searching ? ` · 검색 결과 ${group.length}` : ''}
                       </span>
                     </button>
+                    <button
+                      onClick={() => handleToggleCategory(category, !categoryPublic)}
+                      className={`font-sans text-code-sm px-2 py-1 border ${categoryPublic ? 'text-success border-success/30 bg-success/5' : 'text-error border-error/30 bg-error/5'}`}
+                    >
+                      {categoryPublic ? '분야 공개' : '분야 비공개'}
+                    </button>
+                    {!categoryPublic && (
+                      <button
+                        onClick={() => setAccessCategory(accessCategory === category ? null : category)}
+                        className="font-sans text-code-sm px-2 py-1 border border-outline-variant text-on-surface-variant hover:text-on-surface"
+                      >
+                        접근 {setting?.accessUsers.length ?? 0}명
+                      </button>
+                    )}
                     <button onClick={() => handleBulkPublic(category, all, true)} className="font-sans text-code-sm px-2 py-1 border border-outline-variant text-on-surface-variant hover:text-success">전체 공개</button>
                     <button onClick={() => handleBulkPublic(category, all, false)} className="font-sans text-code-sm px-2 py-1 border border-outline-variant text-on-surface-variant hover:text-error">전체 비공개</button>
                   </div>
+                  {accessCategory === category && !categoryPublic && (
+                    <div className="px-6 py-4 bg-surface-container-lowest border-t border-outline-variant">
+                      <span className="font-sans text-label-caps text-on-surface-variant mb-2 block">분야 접근 유저 (관리자는 항상 볼 수 있음)</span>
+                      <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
+                        {users.map((u) => {
+                          const granted = !!setting?.accessUsers.some((a) => a.id === u.id)
+                          return (
+                            <label key={u.id} className="flex items-center gap-2 font-sans text-body-md py-1">
+                              <input type="checkbox" checked={granted} onChange={() => handleToggleCategoryUser(category, u.id, granted)} />
+                              {u.name} ({u.email})
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                   {expanded && (
                     <table className="w-full text-left border-collapse">
                       <thead className="bg-surface">
