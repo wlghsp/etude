@@ -1,0 +1,55 @@
+-- 퀴즈 세트 458. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_storage_round11.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 458, 'fdisk 크기 표기와 시그니처: +/- 크기, 단위 접미사, 정렬, -w·-B·-n, 스크립트', '파티션 크기와 초기화를 읽습니다. + 와 - 접두의 기준, K·M·G 단위와 폐기 예정 KB·MB, +섹터 수 표기의 정렬 차이, -w 시그니처 삭제, -B·-n, I 명령의 스크립트 파일을 봅니다.', 'quiz', '스토리지'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 458);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 458, 1, '+ 접두', '`+` 접두가 붙은 **크기**(예: +10G)는 무엇을 기준으로 할까요?', '시작 쪽이에요.', NULL, NULL, '[]', 'choice', '["디스크 전체에 대한 비율", "마지막 사용 가능 섹터 기준 상대", "파티션의 첫 섹터 기준 상대 크기", "디스크 시작 기준의 절대 위치"]', 2, 'fdisk 문서는 크기에 + 를 붙이면 파티션 첫 섹터에 상대적으로 해석한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 458 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 458, 2, '- 접두', '`-` 접두가 붙은 **크기** 는 무엇을 기준으로 할까요?', '끝 쪽이에요.', NULL, NULL, '[]', 'choice', '["파티션 첫 섹터 기준 상대 크기", "상한 섹터 기준 상대 크기", "현재 파티션 끝에서의 축소 크기", "절대 섹터 번호 그대로의 값"]', 1, '문서는 크기에 - 를 붙이면 상한(파티션에 쓸 수 있는 마지막 섹터)에 상대적으로 해석한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 458 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 458, 3, 'K·M·G 의미', '크기 표기에서 `K` 는 몇 바이트일까요?', 'iB 는 생략 가능해요.', NULL, NULL, '[]', 'choice', '["1024 바이트", "1000 바이트", "512 바이트 섹터", "4096 바이트 페이지"]', 0, '문서는 KiB(1024 바이트), MiB 등을 받으며 iB 는 생략할 수 있어 K 는 KiB 와 같다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 458 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 458, 4, 'KB·MB', '`KB`·`MB` 처럼 **10의 거듭제곱 단위** 를 문서는 어떻게 볼까요?', '옛 호환이에요.', NULL, NULL, '[]', 'choice', '["가장 권장되는 표기이다", "1024 단위로 해석되는 표기이다", "GPT 에서만 쓸 수 있는 표기이다", "하위 호환용으로 받지만 폐기 예정이다"]', 3, '문서는 하위 호환을 위해 KB(1000 바이트), MB 등도 받지만 이 10^N 접미사는 폐기 예정이라고 설명합니다. +/-<size>{K,B,M,G,...} 표기를 권합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 458 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 458, 5, '+섹터 수', '`+<섹터 수>` 로 크기를 주면 **정렬** 은 어떻게 될까요?', '정렬이 안 돼요.', NULL, NULL, '[]', 'choice', '["항상 4K 경계로 정렬된다", "자동으로 MiB 단위로 올림된다", "장치 한계에 맞춰지지 않는다", "GPT 에서만 정렬된다"]', 2, '문서는 +<sectors> 표기에서는 마지막 섹터를 시작 + 크기(−1 없이)로 엄격히 계산하며 이때 크기는 장치 I/O 한계에 맞춰 정렬되지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 458 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 458, 6, '-w 기본', '`-w` 를 **주지 않았을 때** 시그니처 삭제는 어떻게 될까요?', 'auto 예요.', NULL, NULL, '[]', 'choice', '["항상 지운다", "대화형 모드일 때만 지운다", "절대 지우지 않는다", "비대화형 모드일 때만 지운다"]', 1, '문서는 -w 를 주지 않으면 기본이 auto 이며, 이 경우 대화형 모드에서만 시그니처를 지운다고 설명합니다. 새 파티션 테이블을 만들기 전 감지된 시그니처는 항상 경고로 알립니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 458 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 458, 7, '-B 옵션', '`fdisk -B` 는 새 디스크 레이블을 만들 때 무엇을 하지 않을까요?', '앞부분이에요.', NULL, NULL, '[]', 'choice', '["첫 디스크 섹터의 시작 부분을 지우지 않는다", "기존 파티션 테이블을 읽지 않는다", "모든 시그니처를 감지하지 않는다", "파티션 크기를 정렬하지 않는다"]', 0, '문서는 -B/--protect-boot 가 새 디스크 레이블을 만들 때 첫 디스크 섹터의 시작을 지우지 않게 하며 GPT 와 MBR 에서 지원된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 458 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 458, 8, '-n 옵션', '`fdisk -n` 은 무엇을 하지 않을까요?', '자동 생성이에요.', NULL, NULL, '[]', 'choice', '["기존 파티션 테이블을 읽지 않는다", "파티션 크기를 자동으로 맞추지 않는다", "장치를 열 때 잠금을 걸지 않는다", "기본 테이블을 자동 생성하지 않는다"]', 3, '문서는 -n/--noauto-pt 가 빈 장치에 기본 파티션 테이블을 자동으로 만들지 않게 하며, 이때는 o, g 같은 명령으로 직접 만들어야 한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 458 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 458, 9, '스크립트 파일', 'fdisk 의 `I` 명령으로 **스크립트 파일** 을 읽으면 어떻게 될까요?', '메모리에 적용돼요.', NULL, NULL, '[]', 'choice', '["즉시 디스크에 기록되어 되돌릴 수 없다", "새 파일시스템까지 함께 만들어진다", "메모리에 적용되고 쓰기 전 수정 가능", "기존 파티션이 모두 삭제되고 끝난다"]', 2, '문서는 I 명령으로 sfdisk(8) 호환 스크립트 파일을 읽을 수 있고, 스크립트는 메모리의 파티션 테이블에 적용되어 장치에 쓰기 전에 더 수정할 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 458 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 458, 10, '시그니처 삭제', '장치의 **기존 시그니처 삭제 시점** 을 정하는 옵션입니다. 빈칸을 채우세요.', 'wipe 의 소문자 w 예요.', NULL, NULL, '[]', 'fill', '["-w", "-W", "-B", "-n"]', NULL, '-w 는 새 파티션 테이블을 만들기 전 장치의 시그니처 삭제 시점(auto·never·always)을 정합니다. -W 는 새 파티션의 시그니처에 대한 같은 설정입니다.', '[0]', 'fdisk {0} always /dev/sdb', NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 458 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 458, 11, '레이블 유형', '지원할 **디스크 레이블 유형** 을 한정하는 옵션입니다. 빈칸을 채우세요.', 'type 의 t 예요.', NULL, NULL, '[]', 'fill', '["-t", "-l", "-u", "-b"]', NULL, '-t 는 지정한 유형의 디스크 레이블만 지원하게 하며, 빈 장치에 자동으로 만들 레이블 유형도 정합니다.', '[0]', 'fdisk {0} gpt /dev/sdb', NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 458 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 458, 12, '크기 지정', '새 파티션의 크기를 정하는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '확인 → 시작 → 끝 → 결과예요.', NULL, NULL, '[]', 'order', '["`fdisk -l` 로 장치의 현재 파티션 테이블을 확인한다", "권장 기본값인 첫 섹터를 그대로 받아들인다", "`+10G` 처럼 상대 크기로 마지막 섹터를 입력한다", "저장한 뒤 `lsblk` 로 결과를 확인한다"]', NULL, '문서의 기본값 권장과 SIZES 설명, 앞 라운드의 lsblk 를 이은 일반 절차입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 458 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 646, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '🧩' WHERE id = 458;

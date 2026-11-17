@@ -1,0 +1,55 @@
+-- 퀴즈 세트 457. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_storage_round11.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 457, 'fdisk 로 파티션 테이블 보기: 지원 형식, 섹터 0, 기본값 정렬, -l·-x·-o', '파티션 도구를 읽습니다. 대화형 도구라는 점, GPT·MBR 등 지원 형식, 섹터 0 에 기록되는 파티션 테이블, 기본값 정렬 권장, CHS 폐기, 스크립트에는 partx, -l·-x·-o 목록 옵션을 봅니다.', 'quiz', '스토리지'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 457);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 457, 1, 'fdisk 역할', 'fdisk 는 무엇을 하는 도구일까요?', '표를 다뤄요.', NULL, NULL, '[]', 'choice', '["파일시스템을 만들고 포맷한다", "파티션 안의 파일을 복구한다", "대화형으로 파티션을 나눈다", "마운트 지점을 관리한다"]', 2, 'fdisk 문서는 파티션 테이블을 만들고 조작하는 대화형(dialog-driven) 프로그램이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 457 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 457, 2, '지원 형식', 'fdisk 가 이해하는 **파티션 테이블 형식** 은 무엇일까요?', '다섯 가지예요.', NULL, NULL, '[]', 'choice', '["GPT 와 MBR 두 가지만", "GPT, MBR, Sun, SGI, BSD", "MBR 과 BSD 두 가지만", "LVM 과 RAID 메타데이터"]', 1, '문서는 fdisk 가 GPT, MBR, Sun, SGI, BSD 파티션 테이블을 이해한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 457 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 457, 3, '기록 위치', '파티션 분할 정보는 보통 디스크의 **어디에** 기록될까요?', '맨 앞이에요.', NULL, NULL, '[]', 'choice', '["디스크의 섹터 0", "디스크의 마지막 섹터", "/etc/fstab 파일 안", "각 파티션의 한가운데"]', 0, '문서는 파티션 분할이 파티션 테이블에 기록되며 보통 디스크의 섹터 0 에서 찾을 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 457 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 457, 4, '기본값 따르기', '문서가 fdisk 의 **기본값** 에 대해 권하는 것은 무엇일까요?', '정렬되어 있어요.', NULL, NULL, '[]', 'choice', '["구식이므로 직접 값을 지정한다", "항상 CHS 기준으로 바꿔 쓴다", "파일시스템에 맞게 매번 고친다", "장치 속성에 맞춰 정렬되므로 기본값을 따른다"]', 3, '문서는 기본값(첫·마지막 섹터와 +/-<size> 표기 크기)이 항상 장치 속성에 맞춰 정렬되므로 fdisk 의 기본값을 따르는 것이 좋다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 457 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 457, 5, 'CHS 주소', '**CHS(실린더·헤드·섹터)** 주소 방식을 문서는 어떻게 볼까요?', '옛 방식이에요.', NULL, NULL, '[]', 'choice', '["SSD 에서 반드시 지정해야 한다", "4K 섹터 장치에서 권장된다", "구식이며 기본으로 쓰지 않는다", "현재 기본 주소 방식이다"]', 2, '문서는 CHS 주소가 폐기(deprecated)되어 기본으로 쓰이지 않으며, SSD·4K 섹터 장치에 fdisk -S -H 를 권하는 옛 글을 따르지 말라고 설명합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 457 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 457, 6, '스크립트용', '스크립트에서 디스크 **배치를 출력** 할 때 문서가 권하는 도구는 무엇일까요?', '사람용이 아니에요.', NULL, NULL, '[]', 'choice', '["fdisk -x", "partx(8)", "fdisk -s", "blkid(8)"]', 1, '문서는 partx(8) 가 스크립트용 풍부한 인터페이스를 제공하고, fdisk 는 사람용이라 출력의 하위 호환이 보장되지 않는다고 설명합니다. 입력(명령)은 항상 하위 호환입니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 457 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 457, 7, '-l 옵션', '`fdisk -l /dev/sdb` 는 무엇을 할까요?', '보고 끝내요.', NULL, NULL, '[]', 'choice', '["파티션 테이블을 나열하고 끝낸다", "대화형 편집을 시작한다", "파티션 테이블을 새로 만든다", "파티션을 모두 삭제한다"]', 0, '문서는 -l/--list 가 지정한 장치의 파티션 테이블을 나열한 뒤 종료한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 457 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 457, 8, '-l 장치 생략', '`fdisk -l` 에 **장치를 주지 않으면** 어떤 장치를 쓸까요?', '목록 파일이에요.', NULL, NULL, '[]', 'choice', '["/etc/fstab 에 적힌 장치", "루트 파일시스템의 장치만", "오류를 내고 바로 종료한다", "/proc/partitions 목록"]', 3, '문서는 장치를 주지 않으면 /proc/partitions(있을 때)에 언급된 장치를 쓰며, 명령행에서 준 순서나 커널이 나열한 순서대로 보여 준다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 457 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 457, 9, '-x 옵션', '`fdisk -x` 는 `-l` 과 무엇이 다를까요?', '더 자세히예요.', NULL, NULL, '[]', 'choice', '["목록을 JSON 형식으로 바꿔 보여 준다", "숨은 파티션만 따로 보여 준다", "같은 목록을 더 자세한 정보와 함께 보여 준다", "목록을 보여 주지 않고 종료한다"]', 2, '문서는 -x/--list-details 가 --list 와 같지만 더 많은 상세 정보를 제공한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 457 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 457, 10, '목록 보기', '파티션 테이블을 **나열하고 종료** 하는 옵션입니다. 빈칸을 채우세요.', 'list 의 l 이에요.', NULL, NULL, '[]', 'fill', '["-l", "-x", "-s", "-n"]', NULL, '-l 은 파티션 테이블을 나열하고 종료합니다. -x 는 더 자세히, -s 는 섹터 수(폐기 예정), -n 은 기본 테이블 자동 생성 안 함입니다.', '[0]', 'fdisk {0} /dev/sdb', NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 457 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 457, 11, '열 추가', '기본 출력 열에 **UUID 열을 더하는** 옵션입니다. 빈칸을 채우세요.', 'output 의 o 예요.', NULL, NULL, '[]', 'fill', '["-o", "-t", "-u", "-b"]', NULL, '-o 는 출력 열을 정하며 +list 형식이면 기본 열을 확장합니다(예: -o +UUID). -t 는 디스크 레이블 유형, -u 는 단위, -b 는 섹터 크기입니다.', '[0]', 'fdisk -l {0} +UUID /dev/sdb', NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 457 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 457, 12, '파티션 작업', '디스크를 나누는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '장치 → 현재 상태 → 편집 → 확인이에요.', NULL, NULL, '[]', 'order', '["`lsblk` 로 대상 장치를 확인한다", "`fdisk -l` 로 현재 파티션 테이블을 확인한다", "`fdisk` 대화형으로 파티션을 구성하고 저장한다", "`blkid` 와 `lsblk` 로 결과를 확인한다"]', NULL, '앞 라운드의 lsblk·blkid 와 문서의 -l, 대화형 설명을 이은 일반 절차입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "fdisk(8) man page", "url": "https://man7.org/linux/man-pages/man8/fdisk.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 457 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 645, unit_id = (SELECT id FROM unit WHERE id = 21), icon = '✂️' WHERE id = 457;
