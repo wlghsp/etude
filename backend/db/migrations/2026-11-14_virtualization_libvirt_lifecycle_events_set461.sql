@@ -1,0 +1,55 @@
+-- 퀴즈 세트 461. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_virt_round6.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 461, 'libvirt 이벤트 동작: on_poweroff·on_reboot·on_crash, 금지 조합, on_lockfailure, pm', '도메인 XML 의 생명주기 이벤트를 읽습니다. destroy·restart·preserve, QEMU 에서 금지된 조합, 크래시 전용 coredump 계열과 preserve-running, on_lockfailure 의 pause, pm 절전 상태의 한계를 봅니다.', 'quiz', '가상화'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 461);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 461, 1, '이벤트 요소', '`on_poweroff`·`on_reboot`·`on_crash` 는 무엇을 정할까요?', '재정의예요.', NULL, NULL, '[]', 'choice', '["게스트에 줄 CPU 개수", "게스트의 부팅 장치 순서", "전원 이벤트 때의 동작", "호스트의 방화벽 규칙"]', 2, 'libvirt 도메인 XML 문서는 이 요소들이 게스트 OS 가 poweroff·reboot 을 요청하거나 크래시할 때 기본 동작을 덮어쓰는 동작을 정한다고 설명합니다. virsh reboot·shutdown 도 같은 이벤트를 일으킵니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 461 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 461, 2, 'destroy', '이벤트 동작 `destroy` 는 무엇을 할까요?', '완전 종료예요.', NULL, NULL, '[]', 'choice', '["도메인을 종료한 뒤 같은 설정으로 다시 시작한다", "도메인을 종료하고 자원을 모두 해제한다", "도메인을 종료하되 분석용으로 자원을 남긴다", "도메인을 종료한 뒤 새 이름으로 다시 시작한다"]', 1, '문서는 destroy 가 도메인을 완전히 종료하고 모든 자원을 해제한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 461 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 461, 3, 'restart', '이벤트 동작 `restart` 는 무엇을 할까요?', '다시 켜져요.', NULL, NULL, '[]', 'choice', '["도메인을 종료한 뒤 같은 설정으로 다시 시작한다", "도메인을 종료하고 자원을 모두 해제한다", "도메인을 종료하되 분석용으로 자원을 남긴다", "도메인을 계속 실행하고 크래시를 무시한다"]', 0, '문서는 restart 가 도메인을 종료한 뒤 같은 설정으로 다시 시작한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 461 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 461, 4, 'preserve', '이벤트 동작 `preserve` 의 목적은 무엇일까요?', '분석용이에요.', NULL, NULL, '[]', 'choice', '["자원을 즉시 모두 해제한다", "같은 설정으로 자동 재시작한다", "새 이름으로 다시 시작한다", "분석할 수 있도록 자원을 보존한다"]', 3, '문서는 preserve 가 도메인을 종료하되 분석할 수 있도록 자원을 보존한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 461 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 461, 5, '금지 조합', 'QEMU/KVM 에서 **금지된 조합** 은 무엇일까요?', '한 가지예요.', NULL, NULL, '[]', 'choice', '["on_poweroff=destroy 와 on_reboot=restart", "on_poweroff=destroy 와 on_reboot=destroy", "on_poweroff=restart 와 on_reboot=destroy", "on_crash=preserve 와 on_reboot=restart"]', 2, '문서는 QEMU/KVM/HVF 가 destroy·restart 동작을 지원하지만 on_poweroff 를 restart, on_reboot 를 destroy 로 두는 조합은 금지된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 461 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 461, 6, 'coredump', '`on_crash` 의 `coredump-destroy` 는 무엇을 할까요?', '덤프 후 종료예요.', NULL, NULL, '[]', 'choice', '["코어를 덤프한 뒤 같은 설정으로 다시 시작한다", "코어를 덤프한 뒤 종료하고 자원을 해제한다", "덤프 없이 도메인을 계속 실행한다", "덤프 없이 자원을 보존하고 종료한다"]', 1, '문서는 on_crash 의 추가 동작 중 coredump-destroy 가 크래시한 도메인의 코어를 덤프한 뒤 완전히 종료하고 자원을 해제한다고 설명합니다. coredump-restart 는 덤프 후 재시작입니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 461 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 461, 7, 'preserve-running', '`on_crash` 의 `preserve-running` 은 언제 유용할까요?', '스스로 처리해요.', NULL, NULL, '[]', 'choice', '["게스트가 스스로 덤프하고 재부팅할 때", "호스트가 코어를 대신 덤프해야 할 때", "도메인을 즉시 완전히 종료해야 할 때", "다른 호스트로 마이그레이션할 때"]', 0, '문서는 preserve-running 이 크래시한 도메인을 계속 실행하게 하며 게스트 OS 가 내부 크래시 덤프를 하고 스스로 재부팅할 수 있을 때 유용하다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 461 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 461, 8, 'lockfailure', '`on_lockfailure` 의 `pause` 는 무엇을 할까요?', '락을 잃었을 때예요.', NULL, NULL, '[]', 'choice', '["도메인을 강제로 전원 끈다", "도메인을 끄고 락을 다시 얻으려 시작한다", "아무 일 없다는 듯 계속 실행한다", "일시 정지해 수동 재개하게 한다"]', 3, '문서는 락 매니저가 자원 락을 잃을 때 pause 가 도메인을 일시 정지해 락 문제가 해결된 뒤 수동으로 재개할 수 있게 한다고 설명합니다. poweroff·restart·ignore 도 있습니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 461 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 461, 9, 'pm 요소', '`<pm>` 요소의 `suspend-to-mem enabled="no"` 는 무엇을 막을까요?', '한계가 있어요.', NULL, NULL, '[]', 'choice', '["게스트 OS 의 모든 절전 동작을 완전히 막는다", "호스트가 절전 모드로 들어가는 것을 막는다", "S3 광고만 끄고 게스트 우회는 못 막는다", "디스크에 상태를 저장하는 동작을 켠다"]', 2, '문서는 pm 요소가 BIOS 의 S3(suspend-to-mem)·S4(suspend-to-disk) ACPI 절전 상태 광고를 켜거나 끄지만, 게스트 OS 가 이를 우회할 수 있어 절전 자체를 막지는 못한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 461 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 461, 10, '크래시 동작', '크래시 시 **코어를 덤프하고 재시작** 하는 값입니다. 빈칸을 채우세요.', 'coredump 뒤에 restart 예요.', NULL, NULL, '[]', 'fill', '["coredump-restart", "coredump-destroy", "preserve", "restart"]', NULL, 'coredump-restart 는 코어를 덤프한 뒤 같은 설정으로 재시작합니다. coredump-destroy 는 덤프 후 종료합니다.', '[0]', '<on_crash>{0}</on_crash>', NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 461 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 461, 11, '종료 후 보존', '종료하되 **분석용으로 자원을 보존** 하는 값입니다. 빈칸을 채우세요.', '보존이에요.', NULL, NULL, '[]', 'fill', '["preserve", "destroy", "restart", "rename-restart"]', NULL, 'preserve 는 도메인을 종료하되 자원을 보존합니다. destroy 는 해제, restart 는 재시작, rename-restart 는 libxl 에서만 새 이름으로 재시작합니다.', '[0]', '<on_poweroff>{0}</on_poweroff>', NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 461 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 461, 12, '설치 재구성', '설치 후 첫 부팅 전에 설정을 바꾸는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '설정 → 종료 → 수정 → 시작이에요.', NULL, NULL, '[]', 'order', '["`on_reboot` 를 `destroy` 로 설정해 설치를 시작한다", "설치가 끝나 게스트가 재부팅하면 도메인이 종료된다", "설치 미디어 같은 설정을 고친다", "`virsh start` 로 첫 부팅을 한다"]', NULL, '문서의 "설치 중 reboot 를 poweroff 로 처리해 첫 부팅 전에 재구성한다"는 사용 사례를 이은 일반 절차입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 461 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 637, unit_id = (SELECT id FROM unit WHERE id = 48), icon = '🔔' WHERE id = 461;

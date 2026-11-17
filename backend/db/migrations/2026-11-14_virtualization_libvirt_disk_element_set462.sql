@@ -1,0 +1,55 @@
+-- 퀴즈 세트 462. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_virt_round6.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 462, 'libvirt disk 요소: type·device, lun, snapshot 모드, startupPolicy, target 의 dev·bus', '도메인 XML 의 disk 요소를 읽습니다. type 과 device 의 의미와 기본값, lun 의 SCSI 명령 전달, snapshot 모드, cdrom 의 읽기 전용, startupPolicy, target 의 dev 가 순서 힌트라는 점과 bus 추정을 봅니다.', 'quiz', '가상화'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 462);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 462, 1, 'disk 요소', '`<disk>` 요소는 어떤 장치를 설명할까요?', '디스크처럼 보이면 모두예요.', NULL, NULL, '[]', 'choice', '["디스크의 볼륨 풀 정의", "호스트의 물리 디스크 목록", "디스크처럼 보이는 모든 장치", "네트워크 파일시스템의 마운트"]', 2, '문서는 플로피, 하드디스크, CDROM, 준가상화 드라이버 등 디스크처럼 보이는 모든 장치를 disk 요소로 지정한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 462 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 462, 2, 'type 속성', '`<disk type="file">` 의 **type** 은 무엇을 가리킬까요?', '원본이에요.', NULL, NULL, '[]', 'choice', '["게스트에 보이는 버스 종류", "디스크의 실제 소스 종류", "디스크의 캐시 방식", "디스크의 부팅 순서"]', 1, '문서는 type 이 file, block, dir, network, volume 등 디스크의 기반 소스를 가리킨다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 462 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 462, 3, 'device 기본', '`device` 속성의 **기본값** 은 무엇일까요?', '일반 디스크예요.', NULL, NULL, '[]', 'choice', '["disk", "cdrom", "lun", "floppy"]', 0, '문서는 device 가 floppy, disk, cdrom, lun 중 하나이며 기본값은 disk 라고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 462 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 462, 4, 'lun', '`device="lun"` 은 무엇이 다를까요?', '명령 통과예요.', NULL, NULL, '[]', 'choice', '["디스크를 읽기 전용으로 연다", "가상 CD 이미지를 마운트한다", "파티션에도 SCSI 명령을 직접 전달한다", "게스트 SCSI 명령을 물리 장치로 전달한다"]', 3, '문서는 lun 이 disk 와 같게 동작하되 게스트의 일반 SCSI 명령을 물리 장치로 전달한다고 설명하며, 실제 raw 장치에서만 인식되고 파티션이나 LVM 파티션에서는 커널이 거부해 disk 와 같아진다고 합니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 462 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 462, 5, 'snapshot external', '`snapshot="external"` 은 무엇을 뜻할까요?', '분리예요.', NULL, NULL, '[]', 'choice', '["스냅샷과 변경을 한 파일에 함께 저장한다", "디스크를 스냅샷에서 제외한다", "스냅샷과 라이브 데이터를 분리한다", "스냅샷을 비관리 스토리지가 처리한다"]', 2, '문서는 internal 이 qcow2 같은 포맷으로 스냅샷과 변경을 함께 저장하고, external 이 스냅샷을 라이브 데이터와 분리하며, no 가 불참, manual 이 비관리 스토리지 처리라고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 462 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 462, 6, 'cdrom 읽기 전용', '`device="cdrom"` 디스크의 **readonly** 는 기본이 어떨까요?', '바꿀 수 없어요.', NULL, NULL, '[]', 'choice', '["기본이 쓰기 가능이다", "기본이 읽기 전용이다", "항상 암호화된다", "기본이 공유 모드이다"]', 1, '문서는 readonly 가 게스트가 장치를 수정할 수 없다는 뜻이며 device="cdrom" 디스크의 기본값이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 462 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 462, 7, 'startupPolicy', 'CDROM·플로피의 `startupPolicy` **기본값** 은 무엇일까요?', '엄격해요.', NULL, NULL, '[]', 'choice', '["mandatory: 어떤 이유로든 없으면 실패한다", "optional: 없으면 건너뛰고 계속한다", "requisite: 부팅 때만 없어도 허용한다", "없으면 빈 이미지를 자동으로 만든다"]', 0, '문서는 startupPolicy 가 mandatory(기본, 어떤 이유로든 없으면 실패), requisite(부팅 때 없으면 실패하고 마이그레이션·복원 때는 제외), optional(없으면 건너뜀)을 받는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 462 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 462, 8, 'target dev', '`<target dev="vda">` 의 **dev** 에 대해 문서가 경고하는 점은 무엇일까요?', '힌트예요.', NULL, NULL, '[]', 'choice', '["게스트 OS 의 실제 이름과 항상 같다", "호스트의 장치 이름과 항상 같다", "한 번 정하면 바꿀 수 없다", "순서 힌트일 뿐 실제 이름과 다를 수 있다"]', 3, '문서는 dev 가 논리 이름이며 실제 게스트 OS 의 장치 이름과 맞는다는 보장이 없으므로 장치 순서 힌트로 다루라고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 462 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 462, 9, 'bus 생략', '`<target>` 에서 **bus 를 생략** 하면 어떻게 정해질까요?', '이름으로 추정해요.', NULL, NULL, '[]', 'choice', '["항상 virtio 로 정해진다", "항상 ide 로 정해진다", "장치 이름 모양으로 추정한다", "정의가 거부되어 오류가 난다"]', 2, '문서는 bus 를 생략하면 장치 이름의 모양에서 추정하며 예로 sda 는 보통 SCSI 버스로 노출된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 462 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 462, 10, '소스 종류', '파일 이미지를 쓰는 **소스 종류** 입니다. 빈칸을 채우세요.', '파일이에요.', NULL, NULL, '[]', 'fill', '["file", "block", "dir", "network"]', NULL, 'file 은 파일 경로, block 은 블록 장치, dir 은 디렉터리, network 는 네트워크 소스를 가리킵니다.', '[0]', '<disk type="{0}" device="disk">', NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 462 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 462, 11, '준가상화 버스', '**준가상화(paravirtual)** 장치로 노출하는 버스입니다. 빈칸을 채우세요.', 'v 로 시작해요.', NULL, NULL, '[]', 'fill', '["virtio", "ide", "usb", "sata"]', NULL, 'bus 의 대표값은 ide, scsi, virtio, xen, usb, sata, sd, nvme 입니다. virtio 가 준가상화 버스입니다.', '[0]', '<target dev="vda" bus="{0}"/>', NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 462 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 462, 12, '디스크 추가', '도메인에 디스크를 추가하는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '이미지 → 소스 → 대상 → 반영이에요.', NULL, NULL, '[]', 'order', '["`qemu-img create` 로 디스크 이미지를 만든다", "`<disk>` 의 `<source>` 에 이미지 경로를 쓴다", "`<target>` 에 dev 와 bus 를 정한다", "도메인 XML 을 정의해 반영한다"]', NULL, '앞 세트의 qemu-img 와 문서의 disk·source·target 설명을 이은 일반 절차입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "libvirt Domain XML format", "url": "https://libvirt.org/formatdomain.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 462 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 638, unit_id = (SELECT id FROM unit WHERE id = 48), icon = '💿' WHERE id = 462;
