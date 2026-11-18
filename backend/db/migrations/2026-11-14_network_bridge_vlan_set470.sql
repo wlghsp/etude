@@ -1,0 +1,56 @@
+-- 퀴즈 세트 470. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_network_round11.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 470, 'bridge vlan 으로 VLAN 필터 다루기: pvid·untagged, self·master, VLAN별 STP 상태, global 옵션', '브리지 VLAN 필터를 읽습니다. vlan 객체, pvid(인그레스 할당)와 untagged(이그레스 태그 제거), self·master, delete 시 무시되는 플래그, VLAN 별 STP 상태, mcast_router 모드, neigh_suppress 조건, global 옵션 기본값을 봅니다.', 'quiz', '네트워크'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 470);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 470, 1, 'vlan 객체', '`bridge vlan` 객체는 무엇을 다룰까요?', '필터 목록이에요.', NULL, NULL, '[]', 'choice', '["브리지가 학습한 MAC 주소 목록", "브리지 포트의 STP 비용 설정", "링크가 아는 VLAN ID 의 필터 항목", "멀티캐스트 그룹 가입 목록"]', 2, '문서는 vlan 객체가 링크의 알려진 VLAN ID 를 담고, 관련 명령이 VLAN 필터 항목을 표시·추가·삭제한다고 설명합니다. MAC 주소는 fdb, 멀티캐스트 그룹은 mdb 입니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 470 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 470, 2, 'pvid', '`bridge vlan add ... pvid` 의 **pvid** 는 무슨 뜻일까요?', '들어올 때 적용돼요.', NULL, NULL, '[]', 'choice', '["송신할 때 VLAN 태그를 떼고 내보낸다", "수신한 태그 없는 프레임을 이 VLAN 에 할당한다", "이 VLAN 의 STP 상태를 FORWARDING 으로 둔다", "이 VLAN 을 터널 ID 에 대응시킨다"]', 1, '문서는 pvid 가 지정한 VLAN 을 인그레스에서의 PVID 로 간주하며 태그 없는 프레임이 이 VLAN 에 할당된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 470 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 470, 3, 'untagged', '`bridge vlan add ... untagged` 는 어느 방향의 동작일까요?', '나갈 때 적용돼요.', NULL, NULL, '[]', 'choice', '["송신(egress) 때 이 VLAN 을 태그 없이 내보낸다", "수신(ingress) 때 태그 없는 프레임을 받아들인다", "수신한 모든 태그 프레임을 버린다", "송신 때 항상 두 겹 태그를 붙인다"]', 0, '문서는 untagged 가 지정한 VLAN 을 이그레스에서 태그 없이 처리한다고 설명합니다. 인그레스에서 태그 없는 프레임을 VLAN 에 배정하는 것은 pvid 입니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 470 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 470, 4, 'self·master', '`bridge vlan add` 의 `self` 와 `master` 에 대한 설명으로 맞는 것은 무엇일까요?', 'master 가 기본이에요.', NULL, NULL, '[]', 'choice', '["master 는 물리 장치 설정, self 는 소프트웨어 브리지 설정이다", "둘 다 같은 뜻이며 기본값이 없다", "self 는 기본값이고 master 는 허용되지 않는다", "master 는 소프트웨어 브리지 설정(기본), self 는 물리 장치 설정이다"]', 3, '문서는 master 가 VLAN 을 소프트웨어 브리지에 설정(기본), self 가 지정한 물리 장치에 설정한다고 설명하며, 장치가 브리지 장치 자체일 때는 self 가 필수라고 합니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 470 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 470, 5, 'vlan delete', '`bridge vlan del` 에 `pvid`·`untagged` 를 함께 주면 어떻게 될까요?', '삭제에는 필요 없어요.', NULL, NULL, '[]', 'choice', '["플래그가 일치하는 항목만 지워진다", "문법 오류로 명령이 실패한다", "그 두 플래그는 무시된다", "항목 대신 플래그만 해제된다"]', 2, '문서는 delete 의 인자가 add 와 같지만 pvid 와 untagged 플래그는 무시된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 470 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 470, 6, 'vlan state', '`bridge vlan set dev eth0 vid 10 state ...` 로 정한 STP 상태는 어디에 적용될까요?', '장치를 보세요.', NULL, NULL, '[]', 'choice', '["브리지의 모든 포트의 같은 VLAN 에 적용된다(기본은 BLOCKING)", "지정한 장치의 해당 VLAN 에만 적용된다(기본은 FORWARDING)", "장치의 모든 VLAN 에 적용된다(기본은 DISABLED)", "브리지 전체에 적용된다(기본은 LEARNING)"]', 1, '문서는 상태가 지정한 장치의 해당 VLAN 에만 설정되며(포트면 그 포트의 VLAN 만) 기본 VLAN 상태는 STP FORWARDING(3) 이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 470 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 470, 7, 'mcast_router', '`mcast_router` 의 값 1 은 무엇일까요?', '기본값이에요.', NULL, NULL, '[]', 'choice', '["라우터 존재를 시스템이 감지한다(기본)", "멀티캐스트 라우터 모드를 끈다", "멀티캐스트 전달을 영구히 켠다", "라우터가 있다고 임시로 표시한다"]', 0, '문서는 0 이 비활성, 1 이 라우터 존재 감지(기본), 2 가 전달 영구 활성, 3 이 임시 표시(포트에만 가능)라고 설명합니다. 브리지 장치는 0~2 만 쓸 수 있습니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 470 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 470, 8, 'neigh_suppress', 'VLAN 의 `neigh_suppress on` 이 실제로 효과를 내려면 무엇이 필요할까요?', '포트 옵션과 연결돼요.', NULL, NULL, '[]', 'choice', '["브리지에 STP 가 꺼져 있어야만 한다", "VLAN 항목에 pvid 가 지정돼 있어야 한다", "아무 조건 없이 항상 효과가 바로 난다", "neigh_vlan_suppress 가 켜져 있어야 한다"]', 3, '문서는 neigh_suppress(기본 꺼짐)가 ARP·ND 프록시와 억제를 VLAN·포트별로 켜지만, 포트의 bridge link 옵션 neigh_vlan_suppress 가 켜져 있을 때만 효과가 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 470 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 470, 9, 'global 옵션', '`bridge vlan global set` 의 기본값으로 맞는 것은 무엇일까요?', '브리지 장치에만 써요.', NULL, NULL, '[]', 'choice', '["snooping 꺼짐, querier 켜짐, IGMP 3", "snooping 켜짐, querier 켜짐, IGMP 1", "snooping 켜짐, querier 꺼짐, IGMP 2", "snooping 꺼짐, querier 꺼짐, IGMP 2"]', 2, '문서는 global 옵션이 브리지 장치만 지원하며 mcast_snooping 기본 켜짐, mcast_querier 기본 비활성, mcast_igmp_version 기본 2(MLD 는 1)라고 설명합니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 470 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 470, 10, 'vlan 추가', '포트에 VLAN 필터 항목을 **추가하는** 하위 명령입니다. 빈칸을 채우세요.', '"추가" 예요.', NULL, NULL, '[]', 'fill', '["add", "del", "show", "tunnelshow"]', NULL, 'add 가 VLAN 필터 항목을 만듭니다. pvid untagged 를 함께 주면 접근(access) 포트처럼 쓰입니다.', '[0]', 'bridge vlan {0} dev eth0 vid 10 pvid untagged', NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 470 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 470, 11, 'querier', '브리지가 IGMP/MLD **쿼리를 직접 보내게** 하는 global 옵션입니다. 빈칸을 채우세요.', '질의자예요.', NULL, NULL, '[]', 'fill', '["querier", "snooping", "router", "flood"]', NULL, '문서는 mcast_querier 가 0 보다 크면 브리지가 멀티캐스트 쿼리를 보내며 기본은 비활성이라고 설명합니다.', '[0]', 'bridge vlan global set dev br0 vid 10 mcast_{0} 1', NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 470 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 470, 12, '접근 포트 설정', 'VLAN 10 접근 포트를 만들고 확인하는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '추가 → 들어옴 → 나감 → 확인이에요.', NULL, NULL, '[]', 'order', '["`bridge vlan add dev eth0 vid 10 pvid untagged` 로 항목을 추가한다", "태그 없이 들어온 프레임이 VLAN 10 에 할당된다(pvid)", "VLAN 10 프레임이 태그 없이 나간다(untagged)", "`bridge vlan show dev eth0` 로 필터 표를 확인한다"]', NULL, '문서의 pvid(인그레스 할당)·untagged(이그레스 태그 제거)·show 설명을 이은 절차입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 470 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 649 WHERE id = 117;
+UPDATE quest_set SET display_order = 645, unit_id = (SELECT id FROM unit WHERE id = 47), icon = '🏷️' WHERE id = 470;
