@@ -1,0 +1,14 @@
+{
+  "setId": 491,
+  "answers": {
+    "1": "cd /tmp/lab/proj\ngit worktree add /tmp/lab/wt wip\ngit worktree list\nls /tmp/lab/wt\n\n# 같은 브랜치를 두 곳에서 동시에 체크아웃할 수는 없다",
+    "2": "cd /tmp/lab/proj\ngit grep -n TODO > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# app.txt:1:TODO: a 처럼 나온다",
+    "3": "cd /tmp/lab/proj\ngit shortlog -sn HEAD > /tmp/q3.txt\ncat /tmp/q3.txt\n\n# 개수<탭>이름. 터미널이 아닌 곳(스크립트·리다이렉트)에서는 리비전을 안 주면 표준입력을 읽으므로 HEAD 를 붙인다",
+    "4": "cd /tmp/lab/proj\ngit describe --tags > /tmp/q4.txt\ncat /tmp/q4.txt\n\n# 태그 위면 v1.0 만, 그 뒤에 커밋이 있으면 -개수-g해시 가 붙는다",
+    "5": "cd /tmp/lab/proj\ngit archive -o /tmp/q5.tar HEAD\ntar tf /tmp/q5.tar\n\n# app.txt, b.txt, c.txt 만 들어 있다",
+    "6": "cd /tmp/lab/proj\ngit branch --merged main > /tmp/q6.txt\ncat /tmp/q6.txt\n\n# wip 에는 main 에 없는 커밋이 있어 목록에 안 나온다",
+    "7": "cd /tmp/lab/proj\ngit branch -m wip feature-x\ngit branch\n\n# 현재 브랜치 이름을 바꿀 때는 git branch -m 새이름 만 써도 된다",
+    "8": "cd /tmp/lab/proj\nprintf '#!/bin/sh\\nif git diff --cached | grep -q FIXME; then echo \"FIXME 가 있어 커밋을 막습니다\"; exit 1; fi\\n' > .git/hooks/pre-commit\nchmod +x .git/hooks/pre-commit\n\n# 훅은 저장소(.git) 안에 있어 clone 으로는 전달되지 않는다",
+    "9": "cd /tmp/lab/proj\ngit diff --name-status v1.0 HEAD > /tmp/q9.txt\ncat /tmp/q9.txt\n\n# A<탭>b.txt, A<탭>c.txt"
+  }
+}

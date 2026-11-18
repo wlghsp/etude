@@ -1,0 +1,14 @@
+{
+  "setId": 490,
+  "answers": {
+    "1": "sed -i 's#COPY app.txt#COPY src/app.txt#' /tmp/work/q1/Dockerfile\ndocker build -t t1 /tmp/work/q1\ndocker run --rm t1 > /tmp/q1.txt\ncat /tmp/q1.txt\n\n# 원본 경로는 컨텍스트(/tmp/work/q1) 기준이다",
+    "2": "sed -i 's#^CMD .*#CMD [\"sh\", \"-c\", \"echo $GREETING\"]#' /tmp/work/q2/Dockerfile\ndocker build -t t2 /tmp/work/q2\ndocker run --rm t2 > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# exec 형식은 쉘이 없어 $VAR 가 안 풀린다. sh -c 로 쉘을 거친다",
+    "3": "docker run --rm t3 custom > /tmp/q3.txt\ncat /tmp/q3.txt\n\n# 인자 없이 실행하면 arg: default. 인자를 주면 CMD(default)만 바뀐다",
+    "4": "cd /tmp/work/q4 && PORT=9090 docker compose config > /tmp/q4.txt\ngrep -n published /tmp/q4.txt\n\n# PORT 가 없으면 8080. 변수 한 줄을 앞에 붙여 이 명령에만 적용한다",
+    "5": "cd /tmp/work/q6 && docker compose --profile debug config --services > /tmp/q6.txt\ncat /tmp/q6.txt\n\n# --profile 이 없으면 web 만 나온다",
+    "6": "cd /tmp/work/q7 && docker compose -f base.yaml -f prod.yaml config | grep image > /tmp/q7.txt\ncat /tmp/q7.txt\n\n# 뒤에 적은 파일이 우선한다. 순서를 바꾸면 1.24 가 나온다",
+    "7": "docker build --build-arg TAG=3.19 -t t8 /tmp/work/q8\ndocker run --rm t8 > /tmp/q8.txt\ncat /tmp/q8.txt\n\n# FROM 뒤의 ARG 는 FROM 줄에서 못 쓴다. FROM 앞에 선언해야 한다",
+    "8": "cd /tmp/work/q9 && docker compose run --rm -T app > /tmp/q9.txt\ncat /tmp/q9.txt\n\n# environment 가 env_file 을 이겨 2 가 출력된다",
+    "9": "cd /tmp/work/q10 && sed -i 's/imag:/image:/' compose.yaml\ndocker compose config -q && echo valid > /tmp/q10.txt\ncat /tmp/q10.txt\n\n# 오타가 있으면 additional properties 'imag' not allowed 오류가 난다"
+  }
+}
