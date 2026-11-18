@@ -1,0 +1,56 @@
+-- 퀴즈 세트 469. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_network_round10.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 469, 'bridge 로 브리지 포트와 fdb 다루기: link set(state·guard·hairpin·fastleave), fdb add·replace·flush', 'bridge 명령을 읽습니다. link 객체와 STP 포트 상태(0 은 BPDU 필터), guard·hairpin·fastleave 옵션, fdb 의 local 기본값, self·master, extern_learn·sticky, replace 와 flush 의 [no]dynamic 을 봅니다.', 'quiz', '네트워크'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 469);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 469, 1, 'bridge link', '`bridge link` 객체는 무엇에 대응할까요?', '브리지의 포트예요.', NULL, NULL, '[]', 'choice', '["브리지의 가상 스위치 전체", "브리지가 학습한 MAC 주소", "브리지의 포트 장치", "브리지의 VLAN 필터 목록"]', 2, '문서는 link 객체가 브리지의 포트 장치에 대응하며, 관련 명령이 포트 상태와 브리지 특화 속성을 설정·표시한다고 설명합니다. MAC 주소는 fdb, VLAN 은 vlan 객체입니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 469 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 469, 2, 'state 0', '`bridge link set dev DEV state 0` 은 포트를 어떤 상태로 만들까요?', 'BPDU filter 라고도 해요.', NULL, NULL, '[]', 'choice', '["STP FORWARDING: 포트가 완전히 활성", "STP DISABLED: 완전 비활성", "STP BLOCKING: BPDU 만 처리", "STP LEARNING: MAC 학습만 허용"]', 1, '문서는 상태 0 이 STP DISABLED 로 포트를 STP 에서 완전히 비활성으로 만들며 BPDU 필터라고도 하고, 말단 가상 장치 같은 신뢰할 수 없는 포트에서 STP 를 끄는 데 쓸 수 있다고 설명합니다. 3 이 FORWARDING, 4 가 BLOCKING 입니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 469 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 469, 3, 'guard', '포트에 `guard on` 을 설정하면 어떻게 될까요?', '적대적인 BPDU 를 막아요.', NULL, NULL, '[]', 'choice', '["STP BPDU 를 받으면 그 포트를 비활성화한다", "STP BPDU 를 받아도 무시하고 계속 전달한다", "포트가 항상 루트 포트로 선출된다", "포트에서 MAC 학습을 막는다"]', 0, '문서는 guard 가 켜지면 STP BPDU 를 받았을 때 포트를 비활성화해 적대적 장치의 BPDU 로 인한 장애를 막고, 링크를 내렸다 올리거나 포트를 뺐다 다시 붙이면 재시작한다고 설명합니다. 기본은 꺼짐입니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 469 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 469, 4, 'hairpin', '`hairpin on` 을 설정하면 브리지는 어떻게 동작할까요?', '리플렉티브 릴레이 모드예요.', NULL, NULL, '[]', 'choice', '["받은 포트로는 항상 되돌리지 않는다", "모든 포트로 프레임을 복제해 내보낸다", "다른 포트로는 전달하지 않고 버린다", "받은 포트로 트래픽을 되돌려 내보낼 수 있다"]', 3, '문서는 hairpin 이 받은 포트로 트래픽을 되돌려 보내도 되는지 정하며(reflective relay), 기본 VEPA 기능 지원에 쓰이고 기본은 꺼져 있어 되돌리지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 469 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 469, 5, 'fastleave', '`fastleave on` 의 효과로 맞는 것은 무엇일까요?', 'IGMP 와 관련돼요.', NULL, NULL, '[]', 'choice', '["STP 포트 상태를 즉시 FORWARDING 으로 바꾼다", "MAC 주소 학습 항목을 즉시 모두 지운다", "IGMP Leave 시 멀티캐스트를 즉시 중단", "브로드캐스트 플러딩을 즉시 끈다"]', 2, '문서는 fastleave 가 포트가 IGMP Leave 메시지를 받으면 즉시 그 포트의 멀티캐스트 트래픽을 멈추게 하며, 브리지에서 IGMP snooping 이 켜져 있을 때만 쓰이고 기본은 꺼짐이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 469 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 469, 6, 'fdb local', '`bridge fdb add` 에서 `static`·`dynamic` 을 지정하지 않으면 기본 동작은 무엇일까요?', '기본이 local 이에요.', NULL, NULL, '[]', 'choice', '["dynamic 항목이 되어 일정 시간 뒤 에이징으로 지워진다", "local 영구 항목이 되어 그 MAC 프레임을 전달하지 않고 로컬에서 종단한다", "static 항목이 되어 ARP 없이 다른 포트로 전달한다", "extern_learn 항목이 되어 외부 컨트롤러가 관리한다"]', 1, '문서는 local 이 영구 fdb 항목이라 해당 MAC·VLAN 의 프레임을 브리지가 전달하지 않고 로컬에서 종단하며, static 이나 dynamic 을 지정하지 않으면 이것이 기본이라고 설명합니다. permanent 는 local 의 동의어입니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 469 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 469, 7, 'self·master', '`bridge fdb` 의 `master` 플래그는 무엇을 뜻할까요?', '포트가 속한 브리지가 처리해요.', NULL, NULL, '[]', 'choice', '["브리지 같은 마스터 장치의 드라이버가 작업을 수행한다", "포트 드라이버가 브리지를 거치지 않고 직접 수행한다", "항목이 모든 VLAN 에 복제된다", "항목이 삭제되지 않고 고정된다"]', 0, '문서는 master 가 장치가 브리지 같은 마스터에 속한 포트일 때 작업을 마스터 장치의 드라이버가 수행하게 한다고 설명합니다. self 는 드라이버가 직접 수행하며 master 를 지정하지 않으면 기본으로 켜집니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 469 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 469, 8, 'extern_learn', '`extern_learn` 이 붙은 fdb 항목을 커널은 어떻게 다룰까요?', '외부에서 학습한 항목이에요.', NULL, NULL, '[]', 'choice', '["커널이 직접 학습한 항목으로 보고 에이징한다", "다른 포트로 학습되면 포트를 자동으로 옮긴다", "일정 시간 뒤 항상 static 항목으로 바꾼다", "하드웨어·사용자 공간이 학습해 에이징 안 함"]', 3, '문서는 extern_learn 이 항목이 하드웨어나 사용자 공간 컨트롤러가 학습한 동적 항목임을 커널에 알리며 커널이 그런 항목을 에이징하지 않는다고 설명합니다. sticky 는 학습으로 포트가 바뀌지 않게 합니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 469 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 469, 9, 'flush nodynamic', '`bridge fdb flush` 에서 `nodynamic` 을 쓰면 무엇이 지워질까요?', '"no" 는 부정이에요.', NULL, NULL, '[]', 'choice', '["동적 항목만 골라서 지워진다", "필터와 무관하게 모든 항목이 지워진다", "static·permanent 항목만 지워진다", "삭제 대상이 없어 아무것도 지워지지 않는다"]', 2, '문서는 [no]dynamic 에서 dynamic 을 쓰면 동적 항목만, 앞에 no 를 붙이면 동적이 아닌(static 이나 permanent) 항목만 삭제된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 469 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 469, 10, 'fdb replace', '일치하는 항목이 없으면 **새로 만드는** fdb 하위 명령입니다. 빈칸을 채우세요.', '"교체" 예요.', NULL, NULL, '[]', 'fill', '["replace", "append", "del", "get"]', NULL, '문서는 replace 가 일치하는 항목이 없으면 대신 새 항목을 만든다고 설명합니다. append 는 멀티캐스트 L2 주소 전용입니다.', '[0]', 'bridge fdb {0} 00:11:22:33:44:55 dev veth0', NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 469 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 469, 11, 'guard 옵션', '포트가 STP BPDU 를 받으면 **그 포트를 끄는** 옵션입니다. 빈칸을 채우세요.', '"감시" 예요.', NULL, NULL, '[]', 'fill', '["guard", "hairpin", "fastleave", "root_block"]', NULL, '문서는 guard 가 켜지면 BPDU 를 받은 포트를 비활성화해 적대적 BPDU 로 인한 네트워크 장애를 막는다고 설명합니다.', '[0]', 'bridge link set dev eth0 {0} on', NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 469 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 469, 12, 'guard 복구', 'BPDU guard 로 꺼진 포트를 되살리는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '켜고 → 꺼지고 → 내렸다 올려요.', NULL, NULL, '[]', 'order', '["`bridge link set dev eth0 guard on` 으로 가드를 켠다", "그 포트가 STP BPDU 를 받아 비활성화된다", "`ip link set dev eth0 down` 으로 링크를 내린다", "`ip link set dev eth0 up` 으로 올리면 포트가 다시 시작된다"]', NULL, '문서는 guard 로 꺼진 포트가 링크를 내렸다 올리거나 포트를 제거했다 다시 붙이면 재시작된다고 설명하며 ip link set 예시를 듭니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "bridge(8) man page", "url": "https://man7.org/linux/man-pages/man8/bridge.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 469 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 648 WHERE id = 117;
+UPDATE quest_set SET display_order = 644, unit_id = (SELECT id FROM unit WHERE id = 47), icon = '🌉' WHERE id = 469;
