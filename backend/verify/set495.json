@@ -1,0 +1,14 @@
+{
+  "setId": 495,
+  "answers": {
+    "1": "cd /tmp/lab/work\ngit stash -u\ngit status --short\ngit stash list\n\n# -u 가 없으면 new.txt 는 그대로 남는다",
+    "2": "cd /tmp/lab/work\ngit stash apply\ngit stash list\ncat a.txt\n\n# pop = apply + drop. apply 는 stash 가 남는다",
+    "3": "cd /tmp/lab/work\ngit stash branch rescue\ngit status --short\ngit stash list\n\n# stash 를 만든 커밋에서 분기하므로 충돌 없이 적용되고 stash 는 지워진다",
+    "4": "cd /tmp/lab/work\ngit push origin v1.0\ngit ls-remote --tags origin\n\n# 로컬 태그는 push 해야 원격에 생긴다",
+    "5": "cd /tmp/lab/work\ngit push origin --delete old\ngit ls-remote --heads origin\n\n# git push origin :old 도 같은 뜻이다",
+    "6": "cd /tmp/lab/work\ngit branch -r\ngit fetch --prune\ngit branch -r\n\n# 설정 fetch.prune=true 로 항상 자동 정리할 수도 있다",
+    "7": "cd /tmp/lab/work\ngit branch --set-upstream-to=origin/feat feat\ngit rev-parse --abbrev-ref feat@{upstream} > /tmp/q7.txt\ncat /tmp/q7.txt\ngit branch -vv\n\n# push -u 도 같은 연결을 만든다",
+    "8": "cd /tmp/lab/work\ngit push origin main || true\ngit push --force-with-lease origin main\ngit log --oneline -2\n\n# 그 사이 남이 올린 커밋이 있으면 lease 가 실패해 덮어쓰지 않는다",
+    "9": "cd /tmp/lab/work\ngit commit --amend --author=\"Bob <bob@x.com>\" --no-edit\ngit log -1 --format='%an <%ae> %s'\n\n# 작성자(author)와 커밋한 사람(committer)은 따로다. --author 는 작성자만 바꾼다"
+  }
+}
