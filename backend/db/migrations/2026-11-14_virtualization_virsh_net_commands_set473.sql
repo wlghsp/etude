@@ -1,0 +1,55 @@
+-- 퀴즈 세트 473. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_virt_round8.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 473, 'virsh 로 가상 네트워크 다루기: net-create·define·start·destroy·undefine, net-edit·update, net-list', 'virsh 네트워크 명령을 읽습니다. 임시(net-create)와 영속(net-define) 네트워크, start·destroy·undefine 의 차이, net-edit 의 동등 절차, net-update 의 즉시 반영과 --parent-index, net-list 기본 동작, DHCP 임대 조회를 봅니다.', 'quiz', '가상화'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 473);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 473, 1, 'net-create', '`virsh net-create FILE` 은 무엇을 할까요?', 'transient 예요.', NULL, NULL, '[]', 'choice', '["XML 로 비활성 영속 네트워크를 정의만 해 둔다", "실행 중인 네트워크의 XML 을 파일로 내보낸다", "XML 로 임시(transient) 네트워크를 만들고 바로 시작한다", "정의된 네트워크를 부팅 때 자동 시작하게 한다"]', 2, 'virsh 문서는 net-create 가 XML 파일로 임시(transient) 가상 네트워크를 만들고 인스턴스화(시작)한다고 설명합니다. 정의만 하는 것은 net-define 입니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 473 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 473, 2, 'net-define', '`virsh net-define FILE` 은 무엇을 할까요?', '영속이에요.', NULL, NULL, '[]', 'choice', '["임시 네트워크를 만들고 곧바로 시작한다", "비활성 영속 네트워크를 정의·수정한다", "실행 중인 네트워크를 즉시 중지한다", "네트워크의 설정을 영구히 삭제한다"]', 1, '문서는 net-define 이 비활성 영속 가상 네트워크를 XML 로 정의하거나 기존 영속 네트워크를 수정한다고 설명합니다. 시작은 별도로 net-start 를 합니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 473 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 473, 3, 'net-start', '`virsh net-start NAME` 의 대상은 무엇일까요?', '정의돼 있어야 해요.', NULL, NULL, '[]', 'choice', '["미리 정의된 비활성 네트워크", "XML 파일로만 존재하는 새 네트워크", "이미 실행 중인 임시 네트워크", "삭제된 네트워크의 백업본"]', 0, '문서는 net-start 가 이전에 정의된 비활성 네트워크를 시작한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 473 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 473, 4, 'net-destroy', '`virsh net-destroy NAME` 은 무엇을 할까요?', '이름이 무섭지만 중지예요.', NULL, NULL, '[]', 'choice', '["영속 네트워크의 정의를 삭제한다", "네트워크의 DHCP 임대를 모두 지운다", "네트워크 XML 을 비운 상태로 바꾼다", "네트워크를 즉시 중지한다(임시·영속 모두)"]', 3, '문서는 net-destroy 가 임시 또는 영속 가상 네트워크를 이름이나 UUID 로 지정해 중지(destroy)하며 즉시 효과가 난다고 설명합니다. 정의 삭제는 net-undefine 입니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 473 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 473, 5, 'net-undefine', '활성 상태인 영속 네트워크에 `virsh net-undefine` 을 하면 어떻게 될까요?', '정의만 지워요.', NULL, NULL, '[]', 'choice', '["네트워크가 즉시 중지되고 설정은 남는다", "명령이 항상 실패한다", "설정이 지워지고 임시가 된다", "네트워크가 비활성 영속 상태로 바뀐다"]', 2, '문서는 net-undefine 이 영속 네트워크의 설정을 지우며, 네트워크가 활성이면 임시(transient)로 만든다고 설명합니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 473 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 473, 6, 'net-edit', '`virsh net-edit NAME` 은 어떤 절차와 같을까요?', '세 단계가 있어요.', NULL, NULL, '[]', 'choice', '["net-destroy 후 net-undefine 하고 새로 net-create 하는 것과 같다", "dumpxml --inactive 로 내보내 고치고 define 한 것과 같다", "net-update 로 실행 중인 네트워크만 고치는 것과 같다", "net-start 후 net-dumpxml 로 확인하는 것과 같다"]', 1, '문서는 net-edit 가 `net-dumpxml --inactive > network.xml`, 편집기로 수정, `net-define network.xml` 과 같지만 오류 검사를 한다고 설명합니다. 편집기는 $VISUAL·$EDITOR 이고 기본은 vi 입니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 473 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 473, 7, 'net-update', '`virsh net-update` 의 특징으로 맞는 것은 무엇일까요?', '재시작이 필요 없어요.', NULL, NULL, '[]', 'choice', '["재시작 없이 일부 섹션을 즉시 반영한다", "항상 네트워크를 중지한 뒤에만 쓸 수 있다", "네트워크 전체 XML 을 통째로 교체해야 한다", "임시 네트워크에는 쓸 수 없다"]', 0, '문서는 net-update 가 기존 네트워크 정의의 지정 섹션을 갱신하며 destroy 후 재시작 없이 즉시 적용할 수도 있다고 설명합니다. --live 는 실행 중, --config 는 다음 시작에 적용합니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 473 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 473, 8, '--parent-index', '`net-update` 의 `--parent-index` 는 언제 쓸까요?', '부모 요소가 여러 개일 때예요.', NULL, NULL, '[]', 'choice', '["업데이트를 적용할 네트워크의 순번을 지정한다", "새 요소를 삽입할 문서의 줄 번호를 지정한다", "변경을 되돌릴 이전 버전 번호를 지정한다", "부모 요소가 여럿일 때 몇 번째인지 지정(0부터)"]', 3, '문서는 --parent-index 가 요청한 요소가 들어 있는 여러 부모 요소 중 하나를 0부터 센 번호로 지정하며, 생략하면 가장 알맞은 부모(보통 dhcp 가 있는 ip)가 선택된다고 설명합니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 473 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 473, 9, 'net-list', '`virsh net-list` 에 옵션 없이 실행하면 무엇이 나올까요?', '--all 이 있어요.', NULL, NULL, '[]', 'choice', '["정의된 모든 네트워크가 나온다", "비활성 네트워크만 나온다", "활성 네트워크만 나온다", "자동 시작인 네트워크만 나온다"]', 2, '문서는 net-list 가 활성 네트워크 목록을 돌려주고, --all 이면 정의된 비활성 네트워크까지, --inactive 면 비활성만 나온다고 설명합니다. --autostart·--persistent 로 거를 수 있습니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 473 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 473, 10, 'add 동의어', '`net-update` 의 command 중 `add-last` 의 **동의어** 입니다. 빈칸을 채우세요.', '짧은 말이에요.', NULL, NULL, '[]', 'fill', '["add", "modify", "delete", "add-first"]', NULL, '문서는 command 가 add-first·add-last·add(add-last 의 동의어)·delete·modify 중 하나라고 설명합니다.', '[0]', 'virsh net-update default {0} ip-dhcp-host "<host .../>"', NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 473 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 473, 11, 'DHCP 임대', '네트워크에 연결된 인터페이스의 **DHCP 임대** 를 나열하는 명령입니다. 빈칸을 채우세요.', '"dhcp leases" 예요.', NULL, NULL, '[]', 'fill', '["net-dhcp-leases", "net-port-list", "net-info", "net-metadata"]', NULL, '문서는 net-dhcp-leases 가 지정한 가상 네트워크에 연결된 모든 네트워크 인터페이스의 DHCP 임대 목록을 보여 주며 mac 으로 하나만 볼 수 있다고 설명합니다.', '[0]', 'virsh {0} default', NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 473 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 473, 12, '네트워크 등록', '새 가상 네트워크를 영속으로 등록해 쓰는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '정의 → 시작 → 자동시작 → 확인이에요.', NULL, NULL, '[]', 'order', '["`virsh net-define net.xml` 로 비활성 영속 네트워크를 정의한다", "`virsh net-start NAME` 으로 시작한다", "`virsh net-autostart NAME` 으로 부팅 때 자동 시작하게 한다", "`virsh net-list --all` 로 상태를 확인한다"]', NULL, '문서의 net-define·net-start·net-autostart·net-list 설명을 이은 일반 절차입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 473 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 642, unit_id = (SELECT id FROM unit WHERE id = 48), icon = '🕸️' WHERE id = 473;

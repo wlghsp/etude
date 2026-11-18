@@ -1,0 +1,55 @@
+-- 퀴즈 세트 475. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_virt_round8.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 475, 'virsh 로 호스트 인터페이스 다루기: iface-bridge·unbridge, define·destroy·start, begin·commit·rollback', 'virsh 호스트 인터페이스 명령을 읽습니다. 이름·MAC 지정, iface-bridge 와 기본값, iface-unbridge, define·destroy·start·undefine, begin·commit·rollback 으로 변경을 안전하게 확정하거나 되돌리는 흐름을 봅니다.', 'quiz', '가상화'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 475);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 475, 1, 'iface 이름', 'virsh 에서 호스트 인터페이스(iface)를 가리킬 수 있는 방법은 무엇일까요?', '두 가지가 있어요.', NULL, NULL, '[]', 'choice', '["UUID 또는 이름이며, 이름이 겹치면 UUID 를 써야 한다", "IP 주소 하나만 쓸 수 있다", "이름 또는 MAC 주소(겹치면 이름)", "인덱스 번호만 쓸 수 있도록 한다"]', 2, '문서는 호스트 인터페이스를 이름이나 MAC 주소로 지정하며, 인터페이스와 브리지가 같은 MAC 을 쓰는 경우처럼 MAC 이 유일하지 않으면 모호함 때문에 오류가 나므로 이름을 써야 한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 475 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 475, 2, 'iface-bridge', '`virsh iface-bridge eth0 br0` 은 무엇을 할까요?', 'IP 설정이 옮겨 가요.', NULL, NULL, '[]', 'choice', '["eth0 의 이름을 br0 로 바꾼다", "br0 를 만들고 eth0 를 붙여 IP 설정을 옮긴다", "br0 를 eth0 에 별칭으로 붙인다", "eth0 와 br0 의 IP 설정을 서로 바꾼다"]', 1, '문서는 iface-bridge 가 브리지 장치를 만들고 기존 네트워크 장치를 붙이며 그 장치의 모든 IP 설정을 새 브리지로 옮긴다고 설명합니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 475 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 475, 3, 'bridge 기본값', '`iface-bridge` 가 만든 브리지의 **기본 동작** 으로 맞는 것은 무엇일까요?', '옵션으로 바꿀 수 있어요.', NULL, NULL, '[]', 'choice', '["즉시 시작되고 STP 가 켜지며 지연은 0 초다", "시작되지 않고 STP 가 꺼지며 지연은 0 초다", "즉시 시작되고 STP 가 꺼지며 지연은 15 초다", "시작되지 않고 STP 가 켜지며 지연은 30 초다"]', 0, '문서는 새 브리지가 즉시 시작되고 STP 가 켜져 있으며 지연이 0 이고, --no-stp·--no-start 와 지연 초 값으로 바꿀 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 475 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 475, 4, 'iface-unbridge', '`virsh iface-unbridge br0` 은 무엇을 할까요?', '되돌리기예요.', NULL, NULL, '[]', 'choice', '["브리지의 STP 기능만 끈다", "브리지 안의 모든 장치를 삭제한다", "브리지를 비활성 상태로만 만든다", "브리지를 없애고 IP 를 돌려준다"]', 3, '문서는 iface-unbridge 가 브리지를 해체해 하부 인터페이스를 정상 용도로 돌려주고 IP 설정을 브리지에서 하부 장치로 옮기며, --no-start 가 없으면 하부 인터페이스를 재시작한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 475 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 475, 5, 'iface-define', '`virsh iface-define FILE` 은 무엇을 할까요?', '영속이에요.', NULL, NULL, '[]', 'choice', '["인터페이스를 즉시 시작해 버린다", "인터페이스를 임시로만 만들어 둔다", "비활성 영속 인터페이스를 정의·수정한다", "인터페이스의 MAC 주소를 바꿔 준다"]', 2, '문서는 iface-define 이 비활성 영속 물리 호스트 인터페이스를 XML 로 정의하거나 기존 영속 인터페이스를 수정한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 475 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 475, 6, 'destroy·start', '`iface-destroy` 와 `iface-start` 는 각각 무엇에 가까울까요?', 'if-down 과 if-up 이에요.', NULL, NULL, '[]', 'choice', '["destroy 는 설정 삭제, start 는 새로 정의", "destroy 는 if-down, start 는 if-up 과 같다", "destroy 는 if-up, start 는 if-down", "destroy 는 브리지 해체, start 는 브리지 생성"]', 1, '문서는 iface-destroy 가 "if-down" 을 실행하는 것처럼 인터페이스를 중지하며 즉시 효과가 나고, iface-start 가 "if-up" 처럼 이전에 정의된 인터페이스를 시작한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 475 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 475, 7, 'iface-undefine', '`virsh iface-undefine` 의 대상은 무엇일까요?', '상태 조건이 있어요.', NULL, NULL, '[]', 'choice', '["비활성 호스트 인터페이스의 설정", "활성 상태의 인터페이스도 포함한 모든 것", "실행 중인 브리지의 멤버 장치", "임시로 만든 인터페이스"]', 0, '문서는 iface-undefine 이 비활성 호스트 인터페이스의 설정을 삭제한다고 설명합니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 475 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 475, 8, 'begin·commit', '`iface-begin` 과 `iface-commit` 에 대한 설명으로 맞는 것은 무엇일까요?', '롤백 지점이에요.', NULL, NULL, '[]', 'choice', '["begin 이 변경을 확정하고, commit 이 스냅샷을 만든다", "begin 과 commit 은 같은 동작이다", "begin 이 롤백하고, commit 이 스냅샷을 지운다", "begin 이 스냅샷을 만들고 commit 이 확정·롤백 지점 삭제"]', 3, '문서는 iface-begin 이 호스트 인터페이스 설정의 스냅샷을 만들고(이미 있으면 실패), iface-commit 이 변경을 정상으로 선언하며 롤백 지점을 지운다고 설명합니다. 스냅샷이 없으면 commit 은 실패합니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 475 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 475, 9, 'iface-rollback', '`iface-rollback` 에 대한 설명으로 맞는 것은 무엇일까요?', '재부팅도 관련돼요.', NULL, NULL, '[]', 'choice', '["마지막 iface-commit 이후 변경만 되돌리며, 재부팅은 영향이 없다", "모든 인터페이스를 삭제하며, 재부팅 뒤에 실행된다", "마지막 iface-begin 상태로 되돌리며, 호스트 재부팅도 암묵적 롤백 지점이다", "스냅샷 없이도 항상 성공하며, 재부팅은 영향이 없다"]', 2, '문서는 iface-rollback 이 마지막 iface-begin 이 기록한 상태로 모든 설정을 되돌리며 스냅샷이 없으면 실패하고, 호스트 재부팅도 암묵적 롤백 지점이라고 설명합니다.', NULL, NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 475 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 475, 10, 'iface-bridge 명령', '기존 NIC 를 브리지에 붙이며 **브리지를 만드는** 명령입니다. 빈칸을 채우세요.', '"브리지" 가 들어 있어요.', NULL, NULL, '[]', 'fill', '["bridge", "define", "start", "begin"]', NULL, '문서는 iface-bridge interface bridge 형식으로 브리지를 만들고 기존 장치를 붙인다고 설명합니다.', '[0]', 'virsh iface-{0} eth0 br0', NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 475 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 475, 11, 'iface-commit', '`iface-begin` 이후의 변경을 **정상으로 확정** 하는 명령입니다. 빈칸을 채우세요.', '"확정" 이에요.', NULL, NULL, '[]', 'fill', '["commit", "begin", "rollback", "undefine"]', NULL, '문서는 iface-commit 이 마지막 iface-begin 이후의 모든 변경을 동작하는 것으로 선언하고 롤백 지점을 지운다고 설명합니다.', '[0]', 'virsh iface-{0}', NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 475 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 475, 12, '안전하게 브리지', '롤백 지점을 두고 호스트 NIC 를 브리지로 바꾸는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '지점 → 변경 → 확인 → 확정이에요.', NULL, NULL, '[]', 'order', '["`virsh iface-begin` 으로 현재 설정의 스냅샷을 만든다", "`virsh iface-bridge eth0 br0` 으로 브리지를 만든다", "호스트 네트워크가 정상인지 확인한다", "`virsh iface-commit` 으로 변경을 확정한다"]', NULL, '문서의 iface-begin·iface-bridge·iface-commit 설명을 이은 절차입니다. 문제가 있으면 commit 대신 iface-rollback 을 씁니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "virsh command reference", "url": "https://libvirt.org/manpages/virsh.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 475 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 644, unit_id = (SELECT id FROM unit WHERE id = 48), icon = '🪢' WHERE id = 475;

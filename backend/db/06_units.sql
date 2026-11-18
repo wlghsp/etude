@@ -588,3 +588,6 @@ UPDATE quest_set SET unit_id = 47 WHERE id = 469;
 UPDATE quest_set SET unit_id = 47 WHERE id = 470;
 UPDATE quest_set SET unit_id = 47 WHERE id = 471;
 UPDATE quest_set SET unit_id = 47 WHERE id = 472;
+UPDATE quest_set SET unit_id = 48 WHERE id = 473;
+UPDATE quest_set SET unit_id = 48 WHERE id = 474;
+UPDATE quest_set SET unit_id = 48 WHERE id = 475;
