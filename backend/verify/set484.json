@@ -1,0 +1,14 @@
+{
+  "setId": 484,
+  "answers": {
+    "1": "kubectl patch deployment tool -n $NS -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"nginx\",\"image\":\"nginx:1.26\"}]}}}}'\nkubectl get deploy tool -n $NS -o jsonpath='{.spec.template.spec.containers[0].image}'\n\n# strategic 병합은 containers 목록에서 name 이 같은 항목만 골라 image 를 바꾼다",
+    "2": "kubectl patch deployment tool -n $NS --type json -p '[{\"op\":\"replace\",\"path\":\"/spec/replicas\",\"value\":5}]'\nkubectl get deploy tool -n $NS\n\n# json patch 는 op·path·value 를 모두 적는다. replace 는 있는 값을 바꾼다 (없으면 add)",
+    "3": "KUBE_EDITOR=\"sed -i 's/replicas: 2/replicas: 4/'\" kubectl edit deployment tool -n $NS\nkubectl get deploy tool -n $NS\n\n# 편집기 인자 끝에 임시 파일 경로가 붙는다. sed -i 가 그 파일을 고치면 저장한 것으로 본다",
+    "4": "kubectl set env deployment/tool MODE=prod -n $NS\nkubectl set env deployment/tool --list -n $NS\n\n# set env 는 Pod 템플릿을 바꾸므로 새 Pod 로 롤아웃된다. --list 로 확인, MODE- 로 삭제",
+    "5": "kubectl annotate deployment tool owner=team-b --overwrite -n $NS\nkubectl get deploy tool -n $NS -o jsonpath='{.metadata.annotations.owner}'\n\n# --overwrite 없이는 'already has a value' 오류. 주석 삭제는 owner- 로 한다",
+    "6": "kubectl diff -f /tmp/lab/new.yaml -n $NS > /tmp/q6.txt\ncat /tmp/q6.txt\nkubectl get deploy tool -n $NS\n\n# diff 는 클러스터를 바꾸지 않는다. +/- 줄로 replicas 변화가 보인다",
+    "7": "kubectl cp $NS/tool-pod:/tmp/data.txt /tmp/q7.txt\ncat /tmp/q7.txt\n\n# 형식은 [네임스페이스/]Pod:경로. 컨테이너가 여러 개면 -c 로 고른다",
+    "8": "kubectl wait --for=condition=Ready pod/slowpod -n $NS --timeout=60s && echo ready > /tmp/q8.txt\ncat /tmp/q8.txt\n\n# wait 는 조건이 충족되면 0, 시간이 지나면 1. && 로 이으면 성공했을 때만 다음 일을 한다",
+    "9": "kubectl explain deployment.spec.strategy.type > /tmp/q9.txt\ncat /tmp/q9.txt\n\n# 점(.)으로 필드 경로를 따라 내려간다. --recursive 는 하위를 모두 펼친다"
+  }
+}
