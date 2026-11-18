@@ -1,0 +1,14 @@
+{
+  "setId": 492,
+  "answers": {
+    "1": "sed -i 's/replicas: 2/replicas: 3/' /tmp/lab/web.yaml\nkubectl apply -f /tmp/lab/web.yaml -n $NS\nkubectl get deploy web -n $NS\n\n# create 는 있는 것을 또 만들 수 없지만 apply 는 차이만 반영한다",
+    "2": "kubectl apply --server-side --field-manager=trainer -f /tmp/lab/web.yaml -n $NS\nkubectl get deploy web -n $NS -o jsonpath='{.metadata.managedFields[*].manager}'\n\n# 필드 소유자가 trainer 로 기록된다. 다른 관리자와 겹치면 충돌 오류",
+    "3": "kubectl delete deployment web -n $NS --cascade=orphan\nkubectl get deploy,rs,pod -n $NS -l app=web\n\n# Deployment 는 사라지고 RS·Pod 는 그대로 남는다 (주인 없음)",
+    "4": "kubectl delete pods -n $NS --field-selector=status.phase=Succeeded\nkubectl get pods -n $NS\n\n# 이름이 아니라 상태로 골라 지운다. 라벨 셀렉터(-l)와 함께 쓸 수도 있다",
+    "5": "kubectl delete pod slow -n $NS --now\nkubectl get pod slow -n $NS\n\n# --now 는 grace period 1초. --force 는 API 오브젝트만 즉시 지우므로 컨테이너가 남을 수 있어 조심한다",
+    "6": "kubectl auth can-i create pods -n $NS > /tmp/q6.txt\nkubectl auth can-i delete nodes >> /tmp/q6.txt\ncat /tmp/q6.txt\n\n# 허용이면 yes(종료 코드 0), 아니면 no(종료 코드 1)",
+    "7": "kubectl api-resources --namespaced=true -o name > /tmp/q7.txt\ngrep -E 'deployments|nodes' /tmp/q7.txt\n\n# nodes 는 클러스터 범위라 --namespaced=false 쪽에 나온다",
+    "8": "kubectl set serviceaccount deployment web robot -n $NS\nkubectl get deploy web -n $NS -o jsonpath='{.spec.template.spec.serviceAccountName}'\n\n# 새 Pod 부터 robot 의 신원으로 API 에 접근한다",
+    "9": "kubectl get cm stuck -n $NS -o jsonpath='{.metadata.finalizers}{\"\\n\"}{.metadata.deletionTimestamp}{\"\\n\"}'\nkubectl patch cm stuck -n $NS --type=merge -p '{\"metadata\":{\"finalizers\":null}}'\nkubectl get cm stuck -n $NS\n\n# finalizer 를 억지로 비우면 정리 작업을 건너뛰므로 원인(담당 컨트롤러)을 먼저 확인한다"
+  }
+}
