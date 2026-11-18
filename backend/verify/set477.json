@@ -1,0 +1,14 @@
+{
+  "setId": 477,
+  "answers": {
+    "1": "cd /tmp/lab/proj\ngit merge feature\necho mode=both > f.txt\ngit add f.txt\ngit commit -q --no-edit\ncat f.txt\ngit log --oneline --graph\n\n# 충돌이 나면 병합은 멈춘 상태(MERGE_HEAD). 고치고 add 한 뒤 commit 으로 끝낸다",
+    "2": "cd /tmp/lab/proj\ngit merge feature\ngit status -s > /tmp/q2.txt\ngit merge --abort\ncat /tmp/q2.txt\ncat f.txt\n\n# UU 는 양쪽이 수정한 충돌 파일. --abort 는 병합 전으로 되돌린다",
+    "3": "cd /tmp/lab/proj\ngit merge feature\ngit checkout --theirs f.txt\ngit add f.txt\ngit commit -q --no-edit\ncat f.txt\n\n# 병합 중에는 ours=지금 브랜치(main), theirs=가져오는 브랜치(feature). 리베이스에서는 반대가 된다",
+    "4": "cd /tmp/lab/proj\ngit merge -X theirs feature -m 'merge feature'\ncat f.txt\ngit log --oneline --graph\n\n# -X theirs 는 '충돌 구간만' 상대 쪽을 고르는 전략 옵션이다",
+    "5": "cd /tmp/lab/proj\ngit merge -s ours feature -m 'merge feature (keep ours)'\ncat f.txt\ngit log --oneline --graph\n\n# -s ours 는 상대 변경을 전부 버리고 병합 기록만 남긴다. 충돌 자체가 생기지 않는다",
+    "6": "cd /tmp/lab/proj\ngit merge --ff-only other\necho $? > /tmp/q6.txt\ngit merge --ff-only feature\ngit log --oneline --graph --all\n\n# 갈라진 브랜치는 ff-only 가 거부한다. 앞서 있는 브랜치는 병합 커밋 없이 포인터만 옮긴다",
+    "7": "cd /tmp/lab/proj\ngit merge --no-ff feature -m 'merge feature'\ngit log --oneline --graph\n\n# --no-ff 는 ff 가능해도 병합 커밋을 만든다. 첫 부모(HEAD^1)가 병합 전 main 이다",
+    "8": "cd /tmp/lab/proj\ngit merge feature\ngit diff --name-only --diff-filter=U > /tmp/q8.txt\ncat /tmp/q8.txt\n\n# --diff-filter=U 는 병합이 안 된(충돌) 파일만 고른다. h.txt 는 자동 병합돼서 빠진다",
+    "9": "cd /tmp/lab/proj\ngit config rerere.enabled true\ngit merge feature\necho mode=both > f.txt\ngit add f.txt\ngit commit -q --no-edit\ngit reset -q --hard HEAD~1\ngit merge feature\ncat f.txt\n\n# 두 번째 병합에서 'Resolved f.txt using previous resolution' 이 나오며 이전 해결이 자동 적용된다"
+  }
+}
