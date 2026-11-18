@@ -1,0 +1,164 @@
+-- Git 실습 세트 480. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_linux_text_lab_set.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 480, '텍스트 도구 손연습: grep -E·-o·-vc·-nw, sort -k·-h, uniq -c 빈도, join, sha256sum -c', '실제 데이터로 텍스트 도구를 써서 결과로 채점합니다. grep 의 확장 정규식과 -o·-v·-c·-n·-w, sort 의 열 기준(-k)과 단위 정렬(-h), sort|uniq -c|sort -rn 빈도 세기, join 으로 파일 합치기, sha256sum -c 로 바뀐 파일 찾기를 실습합니다.', 'linux', '리눅스'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 480);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 480, 1, '여러 패턴 중 하나라도 맞는 줄 (grep -E)', '**배경** — `grep -E` 는 확장 정규식을 쓰고, `|` 로 **또는** 을 표현합니다. `grep -E ''ERROR|WARN''` 은 둘 중 하나가 들어 있는 줄을 모두 뽑습니다. 준비된 `/tmp/lab/log.txt` 는 날짜·수준·모듈·메시지·`id=번호` 로 된 6줄입니다.
+
+**문제** — `/tmp/lab/log.txt` 에서 `ERROR` **또는** `WARN` 이 있는 줄만 **`/tmp/q1.txt`** 에 저장하세요. (4줄이 됩니다.)', '`grep -E ''ERROR|WARN'' /tmp/lab/log.txt > /tmp/q1.txt`', 'grep -E ''ERROR|WARN'' /tmp/lab/log.txt > /tmp/q1.txt
+cat /tmp/q1.txt
+
+# -E 는 확장 정규식. | 는 또는. 기본 grep 에서는 \\| 로 써야 한다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*; mkdir -p /tmp/lab; cd /tmp/lab; printf ''%s\\\\n'' ''2024-05-01 ERROR db timeout id=101'' ''2024-05-01 INFO web ok id=102'' ''2024-05-02 ERROR web 500 id=103'' ''2024-05-02 WARN db slow id=104'' ''2024-05-03 ERROR db timeout id=105'' ''2024-05-03 INFO web ok id=106'' > /tmp/lab/log.txt"]', '["sh", "-c", "( [ \\"$(wc -l < /tmp/q1.txt)\\" -eq 4 ] ) && ( ! grep -q INFO /tmp/q1.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "4줄이다", "cmd": ["sh", "-c", "[ \\"$(wc -l < /tmp/q1.txt)\\" -eq 4 ]"]}, {"label": "INFO 줄이 없다", "cmd": ["sh", "-c", "! grep -q INFO /tmp/q1.txt"]}]', '[{"title": "GNU grep 매뉴얼", "url": "https://www.gnu.org/software/grep/manual/grep.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 480 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 480, 2, '맞은 부분만 뽑기 (grep -o)', '**배경** — `grep -o` 는 줄 전체가 아니라 **패턴에 맞은 부분만** 한 줄에 하나씩 출력합니다. 값만 추출할 때 편합니다. `id=[0-9]*` 는 `id=` 뒤의 숫자 전체에 맞습니다.
+
+**문제** — `/tmp/lab/log.txt` 에서 `id=숫자` 부분만 모두 뽑아 **`/tmp/q2.txt`** 에 저장하세요. (`id=101` … `id=106` 6줄)', '`grep -o ''id=[0-9]*'' /tmp/lab/log.txt > /tmp/q2.txt`', 'grep -o ''id=[0-9]*'' /tmp/lab/log.txt > /tmp/q2.txt
+cat /tmp/q2.txt
+
+# -o 는 맞은 부분만 한 줄씩. 줄이 아니라 값을 얻고 싶을 때 쓴다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*; mkdir -p /tmp/lab; cd /tmp/lab; printf ''%s\\\\n'' ''2024-05-01 ERROR db timeout id=101'' ''2024-05-01 INFO web ok id=102'' ''2024-05-02 ERROR web 500 id=103'' ''2024-05-02 WARN db slow id=104'' ''2024-05-03 ERROR db timeout id=105'' ''2024-05-03 INFO web ok id=106'' > /tmp/lab/log.txt"]', '["sh", "-c", "( [ \\"$(wc -l < /tmp/q2.txt)\\" -eq 6 ] ) && ( [ \\"$(head -n 1 /tmp/q2.txt)\\" = id=101 ] ) && ( ! grep -qv \\"^id=[0-9]*$\\" /tmp/q2.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "6줄이다", "cmd": ["sh", "-c", "[ \\"$(wc -l < /tmp/q2.txt)\\" -eq 6 ]"]}, {"label": "첫 줄이 id=101 이다", "cmd": ["sh", "-c", "[ \\"$(head -n 1 /tmp/q2.txt)\\" = id=101 ]"]}, {"label": "줄에 id= 뿐이다 (다른 글자 없음)", "cmd": ["sh", "-c", "! grep -qv \\"^id=[0-9]*$\\" /tmp/q2.txt"]}]', '[{"title": "GNU grep 매뉴얼", "url": "https://www.gnu.org/software/grep/manual/grep.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 480 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 480, 3, 'INFO 가 아닌 줄 세기 (grep -vc)', '**배경** — `-v` 는 패턴이 **없는** 줄을 고르고, `-c` 는 줄을 출력하는 대신 **개수**만 셉니다. 합치면 `grep -vc 패턴` 은 "패턴이 없는 줄의 수" 입니다.
+
+**문제** — `/tmp/lab/log.txt` 에서 `INFO` 가 **들어 있지 않은** 줄의 개수를 **`/tmp/q3.txt`** 에 저장하세요. (숫자 `4` 한 줄)', '`grep -vc INFO /tmp/lab/log.txt > /tmp/q3.txt`', 'grep -vc INFO /tmp/lab/log.txt > /tmp/q3.txt
+cat /tmp/q3.txt
+
+# -v 반전, -c 개수. 두 옵션은 함께 쓸 수 있다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*; mkdir -p /tmp/lab; cd /tmp/lab; printf ''%s\\\\n'' ''2024-05-01 ERROR db timeout id=101'' ''2024-05-01 INFO web ok id=102'' ''2024-05-02 ERROR web 500 id=103'' ''2024-05-02 WARN db slow id=104'' ''2024-05-03 ERROR db timeout id=105'' ''2024-05-03 INFO web ok id=106'' > /tmp/lab/log.txt"]', '["sh", "-c", "( [ \\"$(cat /tmp/q3.txt)\\" = 4 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "값이 4 이다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/q3.txt)\\" = 4 ]"]}]', '[{"title": "GNU grep 매뉴얼", "url": "https://www.gnu.org/software/grep/manual/grep.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 480 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 480, 4, '단어 단위로 찾고 줄 번호 붙이기 (grep -nw)', '**배경** — `-w` 는 패턴이 **하나의 단어**로 있을 때만 맞고(`db` 가 `dbx` 안에 있으면 제외), `-n` 은 **줄 번호**를 앞에 붙입니다.
+
+**문제** — `/tmp/lab/log.txt` 에서 단어 `db` 가 있는 줄을 **줄 번호와 함께** **`/tmp/q4.txt`** 에 저장하세요. (`1:` `4:` `5:` 로 시작하는 3줄)', '`grep -nw db /tmp/lab/log.txt > /tmp/q4.txt`', 'grep -nw db /tmp/lab/log.txt > /tmp/q4.txt
+cat /tmp/q4.txt
+
+# -n 은 ''번호:'' 를 붙인다. -w 는 단어 경계를 요구한다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*; mkdir -p /tmp/lab; cd /tmp/lab; printf ''%s\\\\n'' ''2024-05-01 ERROR db timeout id=101'' ''2024-05-01 INFO web ok id=102'' ''2024-05-02 ERROR web 500 id=103'' ''2024-05-02 WARN db slow id=104'' ''2024-05-03 ERROR db timeout id=105'' ''2024-05-03 INFO web ok id=106'' > /tmp/lab/log.txt"]', '["sh", "-c", "( [ \\"$(wc -l < /tmp/q4.txt)\\" -eq 3 ] ) && ( [ \\"$(cut -d: -f1 /tmp/q4.txt | tr \\"\\\\n\\" ,)\\" = \\"1,4,5,\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "3줄이다", "cmd": ["sh", "-c", "[ \\"$(wc -l < /tmp/q4.txt)\\" -eq 3 ]"]}, {"label": "줄 번호가 1, 4, 5 다", "cmd": ["sh", "-c", "[ \\"$(cut -d: -f1 /tmp/q4.txt | tr \\"\\\\n\\" ,)\\" = \\"1,4,5,\\" ]"]}]', '[{"title": "GNU grep 매뉴얼", "url": "https://www.gnu.org/software/grep/manual/grep.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 480 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 480, 5, '점수 높은 순, 같으면 이름순 (sort -k)', '**배경** — `sort -k 시작,끝` 은 **어느 열**을 기준으로 정렬할지 정합니다. 열 번호 뒤에 `n`(숫자), `r`(역순)을 붙이고, `-k` 를 여러 번 써서 **둘째 기준**을 줄 수 있습니다. 예: `sort -k2,2nr -k1,1`.
+
+**문제** — `/tmp/lab/scores.txt`(이름 점수) 를 **점수 높은 순**, 점수가 같으면 **이름 알파벳순**으로 정렬해 **`/tmp/q5.txt`** 에 저장하세요. (`lee`, `park`, `kim`, `choi` 순서)', '`sort -k2,2nr -k1,1 /tmp/lab/scores.txt > /tmp/q5.txt`', 'sort -k2,2nr -k1,1 /tmp/lab/scores.txt > /tmp/q5.txt
+cat /tmp/q5.txt
+
+# -k2,2nr : 2열만 숫자 역순. -k1,1 : 같을 때 1열(이름) 오름차순', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*; mkdir -p /tmp/lab; cd /tmp/lab; printf ''%s\\\\n'' ''kim 70'' ''lee 85'' ''park 85'' ''choi 60'' > /tmp/lab/scores.txt"]', '["sh", "-c", "( [ \\"$(cut -d\\" \\" -f1 /tmp/q5.txt | tr \\"\\\\n\\" ,)\\" = \\"lee,park,kim,choi,\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "이름 순서가 lee, park, kim, choi 다", "cmd": ["sh", "-c", "[ \\"$(cut -d\\" \\" -f1 /tmp/q5.txt | tr \\"\\\\n\\" ,)\\" = \\"lee,park,kim,choi,\\" ]"]}]', '[{"title": "GNU coreutils — sort", "url": "https://www.gnu.org/software/coreutils/manual/html_node/sort-invocation.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 480 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 480, 6, '용량 표기를 크기대로 정렬하기 (sort -h)', '**배경** — `sort -n` 은 `10K` 와 `2M` 의 단위를 모릅니다. `sort -h` 는 **사람이 읽는 숫자**(`K`, `M`, `G`)를 단위까지 이해해 크기순으로 정렬합니다. `du -h` 의 결과를 정렬할 때 씁니다.
+
+**문제** — `/tmp/lab/sizes.txt`(`용량 이름`) 를 **용량이 작은 것부터** 정렬하고 **이름만** 한 줄씩 **`/tmp/q6.txt`** 에 저장하세요. (`c`, `a`, `b`, `d` 순서)', '`sort -h /tmp/lab/sizes.txt | cut -d'' '' -f2 > /tmp/q6.txt`', 'sort -h /tmp/lab/sizes.txt | cut -d'' '' -f2 > /tmp/q6.txt
+cat /tmp/q6.txt
+
+# -h 는 K/M/G 단위를 이해한다. -n 으로는 500 < 10K < 2M < 1G 순서를 못 맞춘다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*; mkdir -p /tmp/lab; cd /tmp/lab; printf ''%s\\\\n'' ''10K a'' ''2M b'' ''500 c'' ''1G d'' > /tmp/lab/sizes.txt"]', '["sh", "-c", "( [ \\"$(cat /tmp/q6.txt | tr \\"\\\\n\\" ,)\\" = \\"c,a,b,d,\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "c, a, b, d 순서다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/q6.txt | tr \\"\\\\n\\" ,)\\" = \\"c,a,b,d,\\" ]"]}]', '[{"title": "GNU coreutils — sort", "url": "https://www.gnu.org/software/coreutils/manual/html_node/sort-invocation.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 480 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 480, 7, '가장 많이 나온 단어 세기 (sort | uniq -c | sort -rn)', '**배경** — 빈도 세기의 정석은 `sort | uniq -c | sort -rn` 입니다. `uniq` 는 **이웃한** 같은 줄만 합치므로 먼저 `sort` 로 모으고, `-c` 로 개수를 앞에 붙이고, 개수 내림차순으로 다시 정렬합니다.
+
+**문제** — `/tmp/lab/words.txt`(한 줄에 단어 하나) 에서 **단어별 등장 횟수**를 센 결과를 **많이 나온 순**으로 **`/tmp/q7.txt`** 에 저장하세요. 첫 줄이 가장 많이 나온 단어(`apple`, 3번)여야 합니다.', '`sort /tmp/lab/words.txt | uniq -c | sort -rn > /tmp/q7.txt`', 'sort /tmp/lab/words.txt | uniq -c | sort -rn > /tmp/q7.txt
+cat /tmp/q7.txt
+
+# uniq 는 이웃한 줄만 합친다. 그래서 반드시 sort 가 먼저다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*; mkdir -p /tmp/lab; cd /tmp/lab; printf ''%s\\\\n'' apple banana apple cherry banana apple > /tmp/lab/words.txt"]', '["sh", "-c", "( [ \\"$(head -n 1 /tmp/q7.txt | tr -s \\" \\" | sed \\"s/^ //\\")\\" = \\"3 apple\\" ] ) && ( grep -q \\"2 banana\\" /tmp/q7.txt ) && ( [ \\"$(wc -l < /tmp/q7.txt)\\" -eq 3 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "첫 줄이 3 apple 이다", "cmd": ["sh", "-c", "[ \\"$(head -n 1 /tmp/q7.txt | tr -s \\" \\" | sed \\"s/^ //\\")\\" = \\"3 apple\\" ]"]}, {"label": "banana 는 2번이다", "cmd": ["sh", "-c", "grep -q \\"2 banana\\" /tmp/q7.txt"]}, {"label": "3줄이다", "cmd": ["sh", "-c", "[ \\"$(wc -l < /tmp/q7.txt)\\" -eq 3 ]"]}]', '[{"title": "GNU coreutils — uniq", "url": "https://www.gnu.org/software/coreutils/manual/html_node/uniq-invocation.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 480 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 480, 8, '공통 열로 두 파일 합치기 (join)', '**배경** — `join 파일1 파일2` 는 두 파일을 **첫 번째 열(키)이 같은 줄끼리** 이어 붙입니다(관계형 DB 의 JOIN 과 비슷). 두 파일은 키 기준으로 정렬되어 있어야 합니다.
+
+**문제** — `/tmp/lab/a.txt`(번호 이름) 와 `/tmp/lab/b.txt`(번호 도시) 를 번호로 합쳐 **`/tmp/q8.txt`** 에 저장하세요. (`1 kim seoul`, `2 lee busan`)', '`join /tmp/lab/a.txt /tmp/lab/b.txt > /tmp/q8.txt`', 'join /tmp/lab/a.txt /tmp/lab/b.txt > /tmp/q8.txt
+cat /tmp/q8.txt
+
+# 기본은 1열이 키. 다른 열은 -1 N -2 M 으로 고른다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*; mkdir -p /tmp/lab; cd /tmp/lab; printf ''%s\\\\n'' ''1 kim'' ''2 lee'' > /tmp/lab/a.txt; printf ''%s\\\\n'' ''1 seoul'' ''2 busan'' > /tmp/lab/b.txt"]', '["sh", "-c", "( [ \\"$(cat /tmp/q8.txt | tr \\"\\\\n\\" ,)\\" = \\"1 kim seoul,2 lee busan,\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "내용이 맞다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/q8.txt | tr \\"\\\\n\\" ,)\\" = \\"1 kim seoul,2 lee busan,\\" ]"]}]', '[{"title": "GNU coreutils — join", "url": "https://www.gnu.org/software/coreutils/manual/html_node/join-invocation.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 480 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 480, 9, '바뀐 파일 찾기 (sha256sum -c)', '**배경** — `sha256sum 파일들 > SUMS` 로 해시 목록을 만들어 두면 `sha256sum -c SUMS` 로 **파일이 바뀌었는지 검증**할 수 있습니다. `--quiet` 를 주면 정상(`OK`)은 숨기고 **실패한 것만** 보여 줍니다. 준비된 `/tmp/lab/SUMS` 는 `a.txt` 와 `b.txt` 의 해시 목록이고, `b.txt` 는 그 뒤에 수정되었습니다.
+
+**문제** — `/tmp/lab` 에서 `SUMS` 를 검증해, **실패한 파일 줄만** **`/tmp/q9.txt`** 에 저장하세요. (`b.txt: FAILED`)', '`cd /tmp/lab` → `sha256sum --quiet -c SUMS > /tmp/q9.txt` (오류 메시지는 `2>/dev/null` 로 버려도 돼요)', 'cd /tmp/lab
+sha256sum --quiet -c SUMS > /tmp/q9.txt 2>/dev/null
+cat /tmp/q9.txt
+
+# -c 는 목록의 해시와 현재 파일을 비교한다. --quiet 는 OK 를 숨긴다. 실패가 있으면 종료 코드는 1', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*; mkdir -p /tmp/lab; cd /tmp/lab; echo a > a.txt; echo b > b.txt; sha256sum a.txt b.txt > SUMS; echo tampered >> b.txt"]', '["sh", "-c", "( [ \\"$(cat /tmp/q9.txt)\\" = \\"b.txt: FAILED\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "실패한 b.txt 만 있다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/q9.txt)\\" = \\"b.txt: FAILED\\" ]"]}]', '[{"title": "GNU coreutils — SHA-2 해시", "url": "https://www.gnu.org/software/coreutils/manual/html_node/sha2-utilities.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 480 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 480, 10, 'sort 를 옵션 없이 쓰면', '`sort` 를 **옵션 없이** 숫자 `10`, `9`, `100` 에 쓰면 어떤 순서가 될까요?', '문자를 한 글자씩 비교해요.', NULL, NULL, '[]', 'choice', '["크기 기준이라 9, 10, 100 순서가 된다", "문자열 기준이라 10, 100, 9 순서가 된다", "자릿수가 적은 쪽이 먼저라 9, 10, 100 이 된다", "입력한 순서를 그대로 유지하므로 10, 9, 100 이 된다"]', 1, 'GNU sort 는 옵션이 없으면 줄을 문자열(로캘 기준)로 비교합니다. 그래서 "10" 과 "100" 이 "9" 보다 앞에 옵니다. 숫자 크기로 정렬하려면 -n 을 씁니다.', NULL, NULL, NULL, '[{"title": "GNU coreutils — sort", "url": "https://www.gnu.org/software/coreutils/manual/html_node/sort-invocation.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 480 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 480, 11, 'K·M·G 단위까지 알아서 정렬하기', '`10K`, `2M`, `1G` 처럼 **단위가 붙은 크기**를 크기순으로 정렬하는 `sort` 옵션입니다. 빈칸을 채우세요.', '"human" 의 첫 글자예요.', NULL, NULL, '[]', 'fill', '["h", "n", "r", "u"]', NULL, 'GNU sort 의 -h 는 사람이 읽는 숫자(2K, 1G)를 비교합니다. -n 은 단위를 모르는 숫자 비교, -r 은 역순, -u 는 중복 제거입니다.', '[0]', 'sort -{0} sizes.txt', NULL, '[{"title": "GNU coreutils — sort", "url": "https://www.gnu.org/software/coreutils/manual/html_node/sort-invocation.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 480 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 480, 12, '로그에서 가장 흔한 오류 찾기', '로그에서 **가장 자주 나온 모듈**을 찾는 파이프라인의 순서입니다. 순서에 맞게 놓아 보세요.', '거르기 → 뽑기 → 모으기 → 세기 → 순위예요.', NULL, NULL, '[]', 'order', '["`grep ERROR log.txt` 로 ERROR 줄만 거른다", "`awk ''{print $3}''` 로 모듈 이름 열만 뽑는다", "`sort` 로 같은 값을 이웃하게 모은다", "`uniq -c | sort -rn | head -n 1` 로 개수를 세고 가장 많은 것을 고른다"]', NULL, 'uniq 는 이웃한 줄만 합치므로 sort 가 먼저 필요합니다. 마지막에 개수 내림차순으로 정렬해 첫 줄을 고릅니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "GNU coreutils — uniq", "url": "https://www.gnu.org/software/coreutils/manual/html_node/uniq-invocation.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 480 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 56 WHERE id = 201;
+UPDATE quest_set SET display_order = 57 WHERE id = 279;
+UPDATE quest_set SET display_order = 58 WHERE id = 204;
+UPDATE quest_set SET display_order = 59 WHERE id = 280;
+UPDATE quest_set SET display_order = 60 WHERE id = 207;
+UPDATE quest_set SET display_order = 61 WHERE id = 281;
+UPDATE quest_set SET display_order = 62 WHERE id = 210;
+UPDATE quest_set SET display_order = 63 WHERE id = 282;
+UPDATE quest_set SET display_order = 64 WHERE id = 213;
+UPDATE quest_set SET display_order = 65 WHERE id = 283;
+UPDATE quest_set SET display_order = 66 WHERE id = 479;
+UPDATE quest_set SET display_order = 67 WHERE id = 216;
+UPDATE quest_set SET display_order = 68 WHERE id = 284;
+UPDATE quest_set SET display_order = 69 WHERE id = 219;
+UPDATE quest_set SET display_order = 70 WHERE id = 285;
+UPDATE quest_set SET display_order = 71 WHERE id = 222;
+UPDATE quest_set SET display_order = 72 WHERE id = 286;
+UPDATE quest_set SET display_order = 73 WHERE id = 50;
+UPDATE quest_set SET display_order = 74 WHERE id = 47;
+UPDATE quest_set SET display_order = 75 WHERE id = 44;
+UPDATE quest_set SET display_order = 76 WHERE id = 48;
+UPDATE quest_set SET display_order = 77 WHERE id = 49;
+UPDATE quest_set SET display_order = 78 WHERE id = 9;
+UPDATE quest_set SET display_order = 79 WHERE id = 7;
+UPDATE quest_set SET display_order = 80 WHERE id = 15;
+UPDATE quest_set SET display_order = 81 WHERE id = 30;
+UPDATE quest_set SET display_order = 82 WHERE id = 17;
+UPDATE quest_set SET display_order = 83 WHERE id = 105;
+UPDATE quest_set SET display_order = 84 WHERE id = 35;
+UPDATE quest_set SET display_order = 85 WHERE id = 335;
+UPDATE quest_set SET display_order = 86 WHERE id = 338;
+UPDATE quest_set SET display_order = 87 WHERE id = 341;
+UPDATE quest_set SET display_order = 88 WHERE id = 344;
+UPDATE quest_set SET display_order = 89 WHERE id = 347;
+UPDATE quest_set SET display_order = 90 WHERE id = 350;
+UPDATE quest_set SET display_order = 91 WHERE id = 370;
+UPDATE quest_set SET display_order = 92 WHERE id = 4;
+UPDATE quest_set SET display_order = 93 WHERE id = 18;
+UPDATE quest_set SET display_order = 94 WHERE id = 106;
+UPDATE quest_set SET display_order = 95 WHERE id = 36;
+UPDATE quest_set SET display_order = 96 WHERE id = 81;
+UPDATE quest_set SET display_order = 97 WHERE id = 235;
+UPDATE quest_set SET display_order = 98 WHERE id = 24;
+UPDATE quest_set SET display_order = 99 WHERE id = 123;
+UPDATE quest_set SET display_order = 100 WHERE id = 10;
+UPDATE quest_set SET display_order = 101 WHERE id = 16;
+UPDATE quest_set SET display_order = 102 WHERE id = 27;
+UPDATE quest_set SET display_order = 103 WHERE id = 32;
+UPDATE quest_set SET display_order = 104 WHERE id = 75;
+UPDATE quest_set SET display_order = 105 WHERE id = 124;
+UPDATE quest_set SET display_order = 106 WHERE id = 28;
+UPDATE quest_set SET display_order = 107 WHERE id = 226;
+UPDATE quest_set SET display_order = 108 WHERE id = 229;
+UPDATE quest_set SET display_order = 109 WHERE id = 232;
+UPDATE quest_set SET display_order = 110 WHERE id = 382;
+UPDATE quest_set SET display_order = 111 WHERE id = 430;
+UPDATE quest_set SET display_order = 112 WHERE id = 431;
+UPDATE quest_set SET display_order = 113 WHERE id = 426;
+UPDATE quest_set SET display_order = 114 WHERE id = 427;
+UPDATE quest_set SET display_order = 115 WHERE id = 428;
+UPDATE quest_set SET display_order = 116 WHERE id = 429;
+UPDATE quest_set SET display_order = 117 WHERE id = 432;
+UPDATE quest_set SET display_order = 118 WHERE id = 433;
+UPDATE quest_set SET display_order = 55, unit_id = (SELECT id FROM unit WHERE id = 54), icon = '🧪' WHERE id = 480;

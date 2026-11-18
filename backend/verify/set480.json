@@ -1,0 +1,14 @@
+{
+  "setId": 480,
+  "answers": {
+    "1": "grep -E 'ERROR|WARN' /tmp/lab/log.txt > /tmp/q1.txt\ncat /tmp/q1.txt\n\n# -E 는 확장 정규식. | 는 또는. 기본 grep 에서는 \\| 로 써야 한다",
+    "2": "grep -o 'id=[0-9]*' /tmp/lab/log.txt > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# -o 는 맞은 부분만 한 줄씩. 줄이 아니라 값을 얻고 싶을 때 쓴다",
+    "3": "grep -vc INFO /tmp/lab/log.txt > /tmp/q3.txt\ncat /tmp/q3.txt\n\n# -v 반전, -c 개수. 두 옵션은 함께 쓸 수 있다",
+    "4": "grep -nw db /tmp/lab/log.txt > /tmp/q4.txt\ncat /tmp/q4.txt\n\n# -n 은 '번호:' 를 붙인다. -w 는 단어 경계를 요구한다",
+    "5": "sort -k2,2nr -k1,1 /tmp/lab/scores.txt > /tmp/q5.txt\ncat /tmp/q5.txt\n\n# -k2,2nr : 2열만 숫자 역순. -k1,1 : 같을 때 1열(이름) 오름차순",
+    "6": "sort -h /tmp/lab/sizes.txt | cut -d' ' -f2 > /tmp/q6.txt\ncat /tmp/q6.txt\n\n# -h 는 K/M/G 단위를 이해한다. -n 으로는 500 < 10K < 2M < 1G 순서를 못 맞춘다",
+    "7": "sort /tmp/lab/words.txt | uniq -c | sort -rn > /tmp/q7.txt\ncat /tmp/q7.txt\n\n# uniq 는 이웃한 줄만 합친다. 그래서 반드시 sort 가 먼저다",
+    "8": "join /tmp/lab/a.txt /tmp/lab/b.txt > /tmp/q8.txt\ncat /tmp/q8.txt\n\n# 기본은 1열이 키. 다른 열은 -1 N -2 M 으로 고른다",
+    "9": "cd /tmp/lab\nsha256sum --quiet -c SUMS > /tmp/q9.txt 2>/dev/null\ncat /tmp/q9.txt\n\n# -c 는 목록의 해시와 현재 파일을 비교한다. --quiet 는 OK 를 숨긴다. 실패가 있으면 종료 코드는 1"
+  }
+}
