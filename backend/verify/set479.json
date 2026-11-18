@@ -1,0 +1,14 @@
+{
+  "setId": 479,
+  "answers": {
+    "1": "cat > /tmp/lab/args.sh <<'EOF'\n#!/bin/bash\nfor a in \"$@\"; do echo \"$a\"; done\nEOF\nbash /tmp/lab/args.sh \"a b\" c\n\n# \"$@\" 는 인자 경계를 보존한다. 따옴표 없이 $@ 를 쓰면 공백에서 쪼개진다",
+    "2": "cat > /tmp/lab/sum.sh <<'EOF'\n#!/bin/bash\ntotal=0\nwhile [ $# -gt 0 ]; do\n  total=$((total + $1))\n  shift\ndone\necho $total\nEOF\nbash /tmp/lab/sum.sh 1 2 3 4\n\n# shift 로 $1 을 소비하며 $# 가 0 이 될 때까지 돈다",
+    "3": "cat > /tmp/lab/greet.sh <<'EOF'\n#!/bin/bash\nname=\"\"; verbose=0\nwhile getopts \"n:v\" opt; do\n  case $opt in\n    n) name=$OPTARG ;;\n    v) verbose=1 ;;\n  esac\ndone\necho \"hello $name\"\n[ $verbose -eq 1 ] && echo verbose\nEOF\nbash /tmp/lab/greet.sh -v -n lee\n\n# 옵션 순서는 상관없다. 루프에서 값만 모으고 출력은 루프 뒤에 한다",
+    "4": "cat > /tmp/lab/strict.sh <<'EOF'\n#!/bin/bash\nset -eu\necho start\necho \"$UNSET_VAR\"\necho end\nEOF\nbash /tmp/lab/strict.sh; echo \"종료 코드: $?\"\n\n# set -u 라서 정의 안 된 변수를 읽는 순간 멈춘다. end 는 출력되지 않는다",
+    "5": "cat > /tmp/lab/arr.sh <<'EOF'\n#!/bin/bash\nnames=(kim lee park)\nnames+=(choi)\necho ${#names[@]}\necho ${names[3]}\nEOF\nbash /tmp/lab/arr.sh\n\n# ${#배열[@]} 는 개수, 인덱스는 0부터. 마지막 원소 인덱스는 개수 - 1",
+    "6": "cat > /tmp/lab/assoc.sh <<'EOF'\n#!/bin/bash\ndeclare -A age\nage[kim]=30\nage[lee]=25\nfor k in \"${!age[@]}\"; do echo \"$k=${age[$k]}\"; done | sort\nEOF\nbash /tmp/lab/assoc.sh\n\n# 연관 배열은 bash 4 이상. 키 순서가 일정하지 않아 sort 로 고정한다",
+    "7": "cat > /tmp/lab/split.sh <<'EOF'\n#!/bin/bash\nread -r a b <<< \"10 20\"\necho $((a + b))\nEOF\nbash /tmp/lab/split.sh\n\n# echo \"10 20\" | read a b 는 서브쉘에서 읽어 변수가 사라진다. <<< 는 그렇지 않다",
+    "8": "cat > /tmp/lab/max.sh <<'EOF'\n#!/bin/bash\nmax() {\n  local a=$1 b=$2\n  if [ \"$a\" -gt \"$b\" ]; then echo \"$a\"; else echo \"$b\"; fi\n}\nmax \"$1\" \"$2\"\nEOF\nbash /tmp/lab/max.sh 3 9\nbash /tmp/lab/max.sh 12 4\n\n# local 은 함수 안에서만 쓰는 변수. 결과는 echo 로 내보낸다",
+    "9": "cat > /tmp/lab/cleanup.sh <<'EOF'\n#!/bin/bash\ntrap 'echo cleanup' EXIT\necho work\nexit 3\nEOF\nbash /tmp/lab/cleanup.sh; echo \"종료 코드: $?\"\n\n# EXIT trap 은 exit 로 끝나도 실행된다. 종료 코드는 3 그대로다"
+  }
+}
