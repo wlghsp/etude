@@ -1,0 +1,56 @@
+-- 퀴즈 세트 466. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_network_round9.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 466, 'ip(7) IPv4 소켓: socket 종류, bind·listen, 특권 포트, 브로드캐스트와 예약 주소', '리눅스 IPv4 소켓 구현을 읽습니다. SOCK_STREAM·DGRAM·RAW 와 protocol, 주소·포트 bind 의 유일성, listen 자동 bind, SO_REUSEADDR 의 대가, 1024 미만 특권 포트, SO_BROADCAST, .0 주소의 5.14 변화, 127/8·224/4 대역을 봅니다.', 'quiz', '네트워크'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 466);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 466, 1, 'SOCK_DGRAM', '`socket(AF_INET, SOCK_DGRAM, 0)` 은 어떤 소켓을 만들까요?', 'protocol 0 의 의미를 보세요.', NULL, NULL, '[]', 'choice', '["TCP 스트림 소켓이다", "원시(raw) 소켓이다", "UDP 데이터그램 소켓", "SCTP 스트림 소켓이다"]', 2, 'ip(7) 문서는 protocol 0 과 IPPROTO_UDP 가 udp(7) 데이터그램 소켓, 0 과 IPPROTO_TCP 가 tcp(7) 스트림 소켓에 쓰인다고 설명합니다.', NULL, NULL, NULL, '[{"title": "ip(7) man page", "url": "https://man7.org/linux/man-pages/man7/ip.7.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 466 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 466, 2, 'SOCK_RAW', '`SOCK_RAW` 소켓은 무엇을 하는 소켓일까요?', 'protocol 값은 IANA 가 정해요.', NULL, NULL, '[]', 'choice', '["TCP 재전송을 대신 처리한다", "IP 프로토콜에 직접 접근한다", "항상 암호화해서 보낸다", "로컬 호스트 안에서만 통신한다"]', 1, '문서는 SOCK_RAW 가 raw(7) 소켓으로 IP 프로토콜에 직접 접근하며, protocol 은 IANA 에 정의된 IP 프로토콜 값을 쓸 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "ip(7) man page", "url": "https://man7.org/linux/man-pages/man7/ip.7.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 466 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 466, 3, 'bind 유일성', '같은 로컬 (주소, 포트) 쌍에 bind 할 수 있는 IP 소켓은 몇 개일까요?', '쌍마다 하나예요.', NULL, NULL, '[]', 'choice', '["하나뿐이다", "TCP 와 UDP 를 합쳐 둘까지", "제한 없이 여러 개", "인터페이스마다 하나씩 자동 공유"]', 0, '문서는 bind(2) 한 소켓에 대해 주어진 로컬 (주소, 포트) 쌍에는 하나의 IP 소켓만 묶을 수 있다고 설명합니다. 이미 쓰는 주소에 묶으려 하면 EADDRINUSE 가 납니다.', NULL, NULL, NULL, '[{"title": "ip(7) man page", "url": "https://man7.org/linux/man-pages/man7/ip.7.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 466 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 466, 4, 'listen 자동 bind', 'bind 하지 않은 소켓에 `listen(2)` 을 부르면 어떻게 될까요?', '포트를 직접 고르지 않았어요.', NULL, NULL, '[]', 'choice', '["EINVAL 오류로 항상 실패하고 만다", "포트 0 번에 고정으로 묶여 버린다", "127.0.0.1 의 80 번 포트에 묶인다", "임의의 빈 포트와 INADDR_ANY 로 자동 묶인다"]', 3, '문서는 bind 하지 않은 소켓에 listen(2) 을 부르면 소켓이 무작위 빈 포트와 INADDR_ANY 로 자동 bind 된다고 설명합니다. connect(2) 도 비슷하게 빈 포트로 자동 bind 합니다.', NULL, NULL, NULL, '[{"title": "ip(7) man page", "url": "https://man7.org/linux/man-pages/man7/ip.7.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 466 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 466, 5, 'SO_REUSEADDR', 'TCP 에서 bind 한 로컬 주소는 닫은 뒤 한동안 쓸 수 없습니다. 이를 피하는 옵션과 대가는 무엇일까요?', '재사용 옵션이에요.', NULL, NULL, '[]', 'choice', '["SO_BROADCAST 를 켜면 되지만 방송 폭주 위험이 있다", "SO_KEEPALIVE 를 켜면 되지만 연결이 끊기기 쉽다", "SO_REUSEADDR 를 켜면 되지만 TCP 가 덜 안정적이 된다", "옵션이 없어서 시간이 지나기만 기다려야 한다"]', 2, '문서는 닫은 뒤 한동안 bind 한 TCP 로컬 주소를 쓸 수 없고, SO_REUSEADDR 를 설정하면 피할 수 있지만 TCP 를 덜 안정적으로 만든다고 설명합니다.', NULL, NULL, NULL, '[{"title": "ip(7) man page", "url": "https://man7.org/linux/man-pages/man7/ip.7.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 466 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 466, 6, '특권 포트', '1024 미만 포트에 bind 하려면 리눅스에서 무엇이 필요할까요?', '권한 이름을 보세요.', NULL, NULL, '[]', 'choice', '["CAP_NET_ADMIN 권한", "CAP_NET_BIND_SERVICE 권한", "CAP_NET_RAW 권한", "소켓에 SO_REUSEADDR 설정"]', 1, '문서는 1024 미만 포트를 특권 포트라 하며, 네트워크 네임스페이스를 관할하는 사용자 네임스페이스에서 CAP_NET_BIND_SERVICE 를 가진 프로세스만 bind 할 수 있다고 설명합니다. CAP_NET_ADMIN 은 방화벽 설정 변경에 필요합니다.', NULL, NULL, NULL, '[{"title": "ip(7) man page", "url": "https://man7.org/linux/man-pages/man7/ip.7.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 466 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 466, 7, '브로드캐스트', 'IP 브로드캐스트 주소로 데이터그램을 보내려면 무엇이 필요할까요?', '소켓 플래그예요.', NULL, NULL, '[]', 'choice', '["SO_BROADCAST 소켓 플래그를 설정한다", "연결 지향 소켓으로 보낸다", "CAP_NET_BIND_SERVICE 를 가진다", "SO_REUSEADDR 를 설정한다"]', 0, '문서는 브로드캐스트 주소로 데이터그램을 보내거나 받으려면 SO_BROADCAST 플래그가 필요하며, 연결 지향 소켓은 유니캐스트 주소만 쓸 수 있다고 설명합니다. 새 프로토콜에는 멀티캐스트를 권합니다.', NULL, NULL, NULL, '[{"title": "ip(7) man page", "url": "https://man7.org/linux/man-pages/man7/ip.7.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 466 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 466, 8, '가장 낮은 주소', '서브넷의 가장 낮은 주소(예: 255.255.255.0 마스크의 .0)에 대한 설명으로 맞는 것은 무엇일까요?', '5.14 버전이 기준이에요.', NULL, NULL, '[]', 'choice', '["항상 브로드캐스트 주소로만 쓰여 할당할 수 없다", "가장 높은 주소와 같은 브로드캐스트 주소가 된다", "루프백 주소로 자동 취급되어 쓰인다", "5.14 부터 일반 유니캐스트 주소로 할당할 수 있다"]', 3, '문서는 가장 높은 주소(.255)가 브로드캐스트 주소로 지정되며 인터페이스에 쓸 수 없지만, 가장 낮은 주소는 Linux 5.14 부터 일반 유니캐스트 주소로 취급되어 할당할 수 있다고 설명합니다.', NULL, NULL, NULL, '[{"title": "ip(7) man page", "url": "https://man7.org/linux/man-pages/man7/ip.7.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 466 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 466, 9, '예약 대역', '문서가 설명하는 주소 대역과 쓰임의 짝으로 맞는 것은 무엇일까요?', '127/8 과 224/4 입니다.', NULL, NULL, '[]', 'choice', '["127/8 은 멀티캐스트, 224/4 는 루프백", "127/8 은 브로드캐스트, 224/4 는 사설 주소", "127/8 은 루프백, 224/4 는 멀티캐스트", "127/8 은 사설 주소, 224/4 는 링크 로컬"]', 2, '문서는 127/8 범위 주소가 루프백 주소(INADDR_LOOPBACK 127.0.0.1 과 같은 취급)로, 224.0.0.0~239.255.255.255 가 멀티캐스트 전용으로 쓰인다고 설명합니다.', NULL, NULL, NULL, '[{"title": "ip(7) man page", "url": "https://man7.org/linux/man-pages/man7/ip.7.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 466 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 466, 10, 'INADDR_ANY', 'bind 에 이 값을 주면 **모든 로컬 인터페이스** 에 묶입니다(0.0.0.0). 빈칸을 채우세요.', '"아무 주소" 예요.', NULL, NULL, '[]', 'fill', '["INADDR_ANY", "INADDR_LOOPBACK", "INADDR_BROADCAST", "INADDR_NONE"]', NULL, '문서는 INADDR_ANY(0.0.0.0) 가 소켓 bind 에서 모든 로컬 인터페이스를 뜻한다고 설명합니다. INADDR_LOOPBACK 은 127.0.0.1 입니다.', '[0]', 'bind(sock, {0}, ...)', NULL, '[{"title": "ip(7) man page", "url": "https://man7.org/linux/man-pages/man7/ip.7.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 466 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 466, 11, '특권 포트 경계', '이 번호 **미만** 의 포트를 특권 포트라 부릅니다. 빈칸을 채우세요.', '1000 보다 조금 커요.', NULL, NULL, '[]', 'fill', '["1024", "256", "4096", "49152"]', NULL, '문서는 1024 미만 포트를 특권(예약) 포트라고 부르며 CAP_NET_BIND_SERVICE 권한이 필요하다고 설명합니다.', '[0]', '포트 {0} 미만은 특권 포트', NULL, '[{"title": "ip(7) man page", "url": "https://man7.org/linux/man-pages/man7/ip.7.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 466 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 466, 12, '수신 소켓 준비', '새 IP 소켓으로 들어오는 연결을 받기까지의 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '만들고 → 묶고 → 대기예요.', NULL, NULL, '[]', 'order', '["`socket(AF_INET, SOCK_STREAM, 0)` 으로 소켓을 만든다", "`bind(2)` 로 로컬 (주소, 포트) 를 정한다", "`listen(2)` 으로 연결을 기다린다", "들어온 연결을 받아 처리한다"]', NULL, '문서는 새 패킷이나 연결을 받으려면 소켓을 로컬 주소에 bind 해야 하고, bind 하지 않으면 listen 이 자동으로 묶는다고 설명합니다. 일반적인 서버 절차입니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "ip(7) man page", "url": "https://man7.org/linux/man-pages/man7/ip.7.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 466 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 645 WHERE id = 117;
+UPDATE quest_set SET display_order = 641, unit_id = (SELECT id FROM unit WHERE id = 47), icon = '🧭' WHERE id = 466;
