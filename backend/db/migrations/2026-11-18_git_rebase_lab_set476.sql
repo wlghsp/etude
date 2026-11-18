@@ -1,0 +1,134 @@
+-- Git 실습 세트 476. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_git_rebase_lab_set.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 476, 'Git rebase 손연습: --onto, fixup·autosquash, squash·reword·drop·순서 바꾸기, 충돌 해결, --abort, -x', '직접 rebase 를 해 봅니다. --onto 로 브랜치 옮기기, fixup 과 autosquash 로 오타 수정 합치기, squash·reword·drop·순서 바꾸기를 GIT_SEQUENCE_EDITOR 로 자동화하기, 충돌 해결 후 --continue, --abort 로 취소, -x 로 커밋마다 명령 실행. 공유한 브랜치를 rebase 하면 왜 위험한지도 짚습니다.', 'linux', 'Git'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 476);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 476, 1, '이력 옮기기: 다른 브랜치 위로 (rebase --onto)', '**배경** — `main` 에서 `dev` 가 갈라지고, `dev` 에서 `topic` 이 갈라졌습니다. 그런데 `topic` 은 `dev` 의 작업과 상관없어서 **`main` 위로 바로 옮기고** 싶습니다. `git rebase --onto 새기준 옛기준 브랜치` 는 "옛기준 다음부터 브랜치 끝까지의 커밋"만 새 기준 위로 옮깁니다.
+
+**문제** — `/tmp/lab/proj` 에서 `topic` 의 커밋 2개(`topic 1`, `topic 2`)만 `main` 의 최신 커밋 위로 옮기세요. `dev` 의 커밋(`dev work 1`)은 따라오면 안 됩니다.', '`git rebase --onto main dev topic` — 새 기준(main), 옛 기준(dev), 옮길 브랜치(topic) 순서예요.', 'cd /tmp/lab/proj
+git rebase --onto main dev topic
+git log --oneline --graph --all
+
+# --onto main dev topic : dev 이후의 topic 커밋(2개)만 main 위로 다시 쌓는다. dev 의 커밋은 가져오지 않는다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci base.txt base base && git checkout -q -b dev && ci d.txt d1 ''dev work 1'' && git checkout -q -b topic && ci t.txt t1 ''topic 1'' && ci t.txt t2 ''topic 2'' && git checkout -q main && ci m.txt m2 ''main 2'' && git checkout -q topic"]', '["sh", "-c", "( cd /tmp/lab/proj && [ \\"$(git merge-base main topic)\\" = \\"$(git rev-parse main)\\" ] ) && ( cd /tmp/lab/proj && [ \\"$(git rev-list --count main..topic)\\" -eq 2 ] ) && ( cd /tmp/lab/proj && ! git log --format=%s topic | grep -q \\"dev work\\" )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "topic 이 main 의 최신 커밋 위에 있다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git merge-base main topic)\\" = \\"$(git rev-parse main)\\" ]"]}, {"label": "main 위에 topic 커밋이 2개다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git rev-list --count main..topic)\\" -eq 2 ]"]}, {"label": "dev 의 커밋은 따라오지 않았다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && ! git log --format=%s topic | grep -q \\"dev work\\""]}]', '[{"title": "git-rebase 문서", "url": "https://git-scm.com/docs/git-rebase"}, {"title": "Pro Git — 이력 다시 쓰기", "url": "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 476 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 476, 2, '오타 수정을 원래 커밋에 합치기 (fixup + autosquash)', '**배경** — 이미 만든 커밋 `add a` 의 파일에 오타가 있습니다. 새 "오타 수정" 커밋을 남기지 않고 **원래 커밋에 흡수**하려면 `git commit --fixup=커밋` 으로 "fixup!" 커밋을 만든 뒤 `git rebase -i --autosquash` 가 자동으로 제자리에 합칩니다. 에디터를 열지 않으려면 `GIT_SEQUENCE_EDITOR=true` 를 앞에 붙입니다. 저장소에는 `base` 태그(기준)와 그 위의 커밋 3개(`add a`, `add b`, `add c`)가 있습니다.
+
+**문제** — `/tmp/lab/proj/a.txt` 의 `hello wrold` 를 `hello world` 로 고친 뒤, 오타 수정이 **별도 커밋으로 남지 않고** `add a` 에 합쳐지게 하세요. 최종 커밋은 `base` 위에 3개여야 합니다.', '파일을 고치고 `git add` → `git commit --fixup=<add a 커밋>` → `GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash base`', 'cd /tmp/lab/proj
+sed -i ''s/wrold/world/'' a.txt
+git add a.txt
+git commit -q --fixup=$(git log --format=%h -1 --grep=''add a'')
+GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash base
+git log --oneline
+
+# --fixup 커밋은 제목이 ''fixup! add a''. --autosquash 가 그 커밋을 add a 바로 아래로 옮겨 합친다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci base.txt base base && git tag base && ci a.txt ''hello wrold'' ''add a'' && ci b.txt b ''add b'' && ci c.txt c ''add c''"]', '["sh", "-c", "( cd /tmp/lab/proj && [ \\"$(git rev-list --count base..HEAD)\\" -eq 3 ] ) && ( cd /tmp/lab/proj && ! git log --format=%s | grep -q \\"^fixup!\\" ) && ( cd /tmp/lab/proj && [ \\"$(git show HEAD~2:a.txt)\\" = \\"hello world\\" ] ) && ( cd /tmp/lab/proj && [ \\"$(git log --reverse --format=%s base..HEAD | tr \\"\\\\n\\" ,)\\" = \\"add a,add b,add c,\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "base 위에 커밋이 3개다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git rev-list --count base..HEAD)\\" -eq 3 ]"]}, {"label": "fixup! 커밋이 남아 있지 않다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && ! git log --format=%s | grep -q \\"^fixup!\\""]}, {"label": "add a 커밋의 a.txt 가 고쳐졌다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git show HEAD~2:a.txt)\\" = \\"hello world\\" ]"]}, {"label": "커밋 순서는 add a, add b, add c 다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git log --reverse --format=%s base..HEAD | tr \\"\\\\n\\" ,)\\" = \\"add a,add b,add c,\\" ]"]}]', '[{"title": "git-rebase 문서", "url": "https://git-scm.com/docs/git-rebase"}, {"title": "Pro Git — 이력 다시 쓰기", "url": "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 476 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 476, 3, '세 커밋을 하나로 합치기 (squash)', '**배경** — `git rebase -i` 의 할 일 목록(todo)에서 `pick` 을 `squash` 로 바꾸면 그 커밋이 **바로 위 커밋에 합쳐집니다**. 에디터 대신 스크립트로 todo 를 고치려면 `GIT_SEQUENCE_EDITOR` 에 `sed` 명령을 넣고, 합친 커밋 메시지 편집 창은 `GIT_EDITOR=true` 로 그대로 넘깁니다. `base` 태그 위에 커밋 3개(`add a`, `add b`, `add c`)가 있습니다.
+
+**문제** — 세 커밋을 **커밋 하나**로 합치세요. 첫 줄(`pick`)은 두고 두 번째 줄부터 `squash` 로 바꿉니다. 합쳐진 커밋 메시지에는 세 제목이 모두 남아야 합니다.', 'todo 의 2번째 줄부터 `pick` → `squash`: `sed -i -e ''2,$s/^pick/squash/''`', 'cd /tmp/lab/proj
+GIT_SEQUENCE_EDITOR="sed -i -e ''2,\\$s/^pick/squash/''" GIT_EDITOR=true git rebase -i base
+git log --format=%B -1
+
+# 첫 pick 은 그대로, 나머지를 squash 로 바꾸면 모두 첫 커밋에 합쳐진다. 메시지는 세 개가 이어진다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci base.txt base base && git tag base && ci a.txt ''hello world'' ''add a'' && ci b.txt b ''add b'' && ci c.txt c ''add c''"]', '["sh", "-c", "( cd /tmp/lab/proj && [ \\"$(git rev-list --count base..HEAD)\\" -eq 1 ] ) && ( cd /tmp/lab/proj && [ -f a.txt ] && [ -f b.txt ] && [ -f c.txt ] ) && ( cd /tmp/lab/proj && [ \\"$(git log -1 --format=%B | grep -c \\"^add \\")\\" -eq 3 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "base 위에 커밋이 1개다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git rev-list --count base..HEAD)\\" -eq 1 ]"]}, {"label": "세 파일이 모두 남아 있다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ -f a.txt ] && [ -f b.txt ] && [ -f c.txt ]"]}, {"label": "메시지에 세 제목이 모두 있다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git log -1 --format=%B | grep -c \\"^add \\")\\" -eq 3 ]"]}]', '[{"title": "git-rebase 문서", "url": "https://git-scm.com/docs/git-rebase"}, {"title": "Pro Git — 이력 다시 쓰기", "url": "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 476 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 476, 4, '커밋 메시지 고치기 (reword)', '**배경** — 중간 커밋의 메시지를 고치려면 todo 에서 그 커밋의 `pick` 을 `reword` 로 바꿉니다. 그러면 git 이 메시지 편집기를 한 번 열고, 저장한 내용이 새 메시지가 됩니다. 스크립트에서는 `GIT_EDITOR` 에 `sed` 로 첫 줄을 바꾸는 명령을 줍니다. `base` 위에 커밋 3개가 있고 두 번째 제목이 오타(`add bee`)입니다.
+
+**문제** — 두 번째 커밋의 제목 `add bee` 를 **`add b`** 로 고치세요. 다른 커밋과 순서는 그대로여야 합니다.', 'todo 에서 `add bee` 줄의 `pick` → `reword`, 메시지 편집기는 `GIT_EDITOR="sed -i ''1s/.*/add b/''"`', 'cd /tmp/lab/proj
+GIT_SEQUENCE_EDITOR="sed -i ''/add bee/s/^pick/reword/''" GIT_EDITOR="sed -i ''1s/.*/add b/''" git rebase -i base
+git log --oneline
+
+# reword 는 내용은 그대로 두고 메시지만 바꾼다. 그 아래 커밋들은 해시가 새로 만들어진다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci base.txt base base && git tag base && ci a.txt ''hello world'' ''add a'' && ci b.txt b ''add bee'' && ci c.txt c ''add c''"]', '["sh", "-c", "( cd /tmp/lab/proj && [ \\"$(git log --reverse --format=%s base..HEAD | tr \\"\\\\n\\" ,)\\" = \\"add a,add b,add c,\\" ] ) && ( cd /tmp/lab/proj && [ \\"$(git rev-list --count base..HEAD)\\" -eq 3 ] ) && ( cd /tmp/lab/proj && [ \\"$(cat b.txt)\\" = b ] && [ \\"$(cat c.txt)\\" = c ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "커밋 제목이 add a, add b, add c 순서다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git log --reverse --format=%s base..HEAD | tr \\"\\\\n\\" ,)\\" = \\"add a,add b,add c,\\" ]"]}, {"label": "커밋이 3개다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git rev-list --count base..HEAD)\\" -eq 3 ]"]}, {"label": "파일 내용은 그대로다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(cat b.txt)\\" = b ] && [ \\"$(cat c.txt)\\" = c ]"]}]', '[{"title": "git-rebase 문서", "url": "https://git-scm.com/docs/git-rebase"}, {"title": "Pro Git — 이력 다시 쓰기", "url": "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 476 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 476, 5, '중간 커밋 버리기 (drop)', '**배경** — todo 에서 `pick` 을 `drop` 으로 바꾸면 그 커밋이 이력에서 **사라집니다**(그 커밋이 만든 변경도 함께). 되돌리는 `revert` 와 달리 이력에 흔적이 남지 않습니다. `base` 위에 `add a`, `add b`, `add c` 가 있습니다.
+
+**문제** — `add b` 커밋만 이력에서 **버리세요**. `add a`, `add c` 는 남아야 하고 `b.txt` 는 없어져야 합니다.', 'todo 에서 해당 줄의 `pick` 을 `drop` 으로: `sed -i ''/add b/s/^pick/drop/''`', 'cd /tmp/lab/proj
+GIT_SEQUENCE_EDITOR="sed -i ''/add b/s/^pick/drop/''" git rebase -i base
+git log --oneline
+ls
+
+# drop 한 커밋은 이력과 작업 폴더 모두에서 빠진다 (공유한 브랜치라면 revert 가 안전)', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci base.txt base base && git tag base && ci a.txt ''hello world'' ''add a'' && ci b.txt b ''add b'' && ci c.txt c ''add c''"]', '["sh", "-c", "( cd /tmp/lab/proj && ! git log --format=%s | grep -qx \\"add b\\" ) && ( cd /tmp/lab/proj && [ \\"$(git log --reverse --format=%s base..HEAD | tr \\"\\\\n\\" ,)\\" = \\"add a,add c,\\" ] ) && ( cd /tmp/lab/proj && [ ! -e b.txt ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "add b 가 이력에 없다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && ! git log --format=%s | grep -qx \\"add b\\""]}, {"label": "add a, add c 가 이 순서로 남았다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git log --reverse --format=%s base..HEAD | tr \\"\\\\n\\" ,)\\" = \\"add a,add c,\\" ]"]}, {"label": "b.txt 가 없다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ ! -e b.txt ]"]}]', '[{"title": "git-rebase 문서", "url": "https://git-scm.com/docs/git-rebase"}, {"title": "Pro Git — 이력 다시 쓰기", "url": "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 476 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 476, 6, '앞 두 커밋 순서 바꾸기', '**배경** — todo 의 줄 순서가 곧 커밋 적용 순서입니다. 줄을 서로 바꾸면 커밋 순서가 바뀝니다(서로 겹치는 변경이 없을 때 충돌 없이 됩니다). `base` 위에 `add a`, `add b`, `add c` 가 있습니다.
+
+**문제** — 앞의 두 커밋 순서만 바꿔 이력이 **`add b`, `add a`, `add c`** 순서가 되게 하세요.', 'todo 편집 스크립트: 1번째 줄을 보류했다가 2번째 줄 뒤에 붙이기 — `sed -i -e ''1{h;d}'' -e ''2{G}''`', 'cd /tmp/lab/proj
+GIT_SEQUENCE_EDITOR="sed -i -e ''1{h;d}'' -e ''2{G}''" git rebase -i base
+git log --oneline
+
+# 1줄을 hold 공간에 담고 지운 뒤, 2줄 다음에 붙여(G) 앞 두 줄의 순서를 바꾼다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci base.txt base base && git tag base && ci a.txt ''hello world'' ''add a'' && ci b.txt b ''add b'' && ci c.txt c ''add c''"]', '["sh", "-c", "( cd /tmp/lab/proj && [ \\"$(git log --reverse --format=%s base..HEAD | tr \\"\\\\n\\" ,)\\" = \\"add b,add a,add c,\\" ] ) && ( cd /tmp/lab/proj && [ \\"$(git rev-list --count base..HEAD)\\" -eq 3 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "커밋 순서가 add b, add a, add c 다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git log --reverse --format=%s base..HEAD | tr \\"\\\\n\\" ,)\\" = \\"add b,add a,add c,\\" ]"]}, {"label": "커밋이 3개다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git rev-list --count base..HEAD)\\" -eq 3 ]"]}]', '[{"title": "git-rebase 문서", "url": "https://git-scm.com/docs/git-rebase"}, {"title": "Pro Git — 이력 다시 쓰기", "url": "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 476 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 476, 7, '충돌 난 rebase 이어서 끝내기', '**배경** — `main` 과 `feature` 가 `f.txt` 의 같은 줄을 서로 다르게 바꿨습니다(`mode=main`, `mode=feature`). `git rebase main` 을 하면 **충돌**로 멈춥니다. 파일을 직접 고치고, `git add` 로 해결을 알린 뒤, `git rebase --continue` 로 이어 갑니다. (`GIT_EDITOR=true` 를 붙이면 메시지 편집기를 열지 않습니다.)
+
+**문제** — `/tmp/lab/proj` 의 `feature` 를 `main` 위로 rebase 하세요. 충돌은 `f.txt` 의 내용을 **`mode=both`** 한 줄로 해결합니다. 끝나면 rebase 가 진행 중이 아니고, 병합 커밋 없이 `main` 뒤에 `feature` 가 이어져야 합니다.', '충돌 → `echo mode=both > f.txt` → `git add f.txt` → `GIT_EDITOR=true git rebase --continue`', 'cd /tmp/lab/proj
+git rebase main
+echo mode=both > f.txt
+git add f.txt
+GIT_EDITOR=true git rebase --continue
+cat f.txt
+git log --oneline
+
+# 충돌 때 rebase 는 멈추고 상태를 남긴다. 해결 → add → --continue 순서. 끝나면 이력은 한 줄로 이어진다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci f.txt mode=base base && git checkout -q -b feature && ci f.txt mode=feature ''feature change'' && git rev-parse feature > /tmp/lab/orig.txt && git checkout -q main && ci f.txt mode=main ''main change'' && git checkout -q feature"]', '["sh", "-c", "( cd /tmp/lab/proj && [ ! -d .git/rebase-merge ] && [ ! -d .git/rebase-apply ] ) && ( cd /tmp/lab/proj && [ \\"$(cat f.txt)\\" = mode=both ] ) && ( cd /tmp/lab/proj && git merge-base --is-ancestor main feature && [ \\"$(git branch --show-current)\\" = feature ] ) && ( cd /tmp/lab/proj && [ \\"$(git rev-list --merges --count HEAD)\\" -eq 0 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "rebase 가 진행 중이 아니다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ ! -d .git/rebase-merge ] && [ ! -d .git/rebase-apply ]"]}, {"label": "f.txt 가 mode=both 다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(cat f.txt)\\" = mode=both ]"]}, {"label": "feature 가 main 위에 이어져 있다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && git merge-base --is-ancestor main feature && [ \\"$(git branch --show-current)\\" = feature ]"]}, {"label": "병합 커밋이 없다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git rev-list --merges --count HEAD)\\" -eq 0 ]"]}]', '[{"title": "git-rebase 문서", "url": "https://git-scm.com/docs/git-rebase"}, {"title": "Pro Git — 이력 다시 쓰기", "url": "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 476 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 476, 8, 'rebase 를 도중에 취소하기 (--abort)', '**배경** — rebase 중 충돌이 나서 "이건 아니다" 싶으면 `git rebase --abort` 로 **rebase 를 시작하기 전 상태로 완전히 되돌립니다**. 브랜치도 작업 폴더도 원래대로 돌아옵니다. 같은 충돌 상황(`feature` 를 `main` 위로)이 준비되어 있고, 원래 `feature` 의 커밋 해시는 `/tmp/lab/orig.txt` 에 있습니다.
+
+**문제** — `git rebase main` 을 실행해 충돌이 나게 한 뒤, **취소**해서 `feature` 가 원래 커밋 그대로(`/tmp/lab/orig.txt` 와 같은 해시)로 돌아오게 하세요. 작업 폴더의 `f.txt` 는 `mode=feature` 여야 합니다.', '`git rebase main` 으로 충돌을 만든 뒤 `git rebase --abort`', 'cd /tmp/lab/proj
+git rebase main
+git rebase --abort
+git status
+cat f.txt
+
+# --abort 는 rebase 를 시작하기 전으로 되돌린다. 해결하다 꼬였을 때 안전하게 처음부터 다시 할 수 있다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci f.txt mode=base base && git checkout -q -b feature && ci f.txt mode=feature ''feature change'' && git rev-parse feature > /tmp/lab/orig.txt && git checkout -q main && ci f.txt mode=main ''main change'' && git checkout -q feature"]', '["sh", "-c", "( cd /tmp/lab/proj && git reflog show HEAD | grep -q \\"rebase (abort)\\" ) && ( cd /tmp/lab/proj && [ ! -d .git/rebase-merge ] && [ ! -d .git/rebase-apply ] ) && ( cd /tmp/lab/proj && [ \\"$(git rev-parse feature)\\" = \\"$(cat /tmp/lab/orig.txt)\\" ] ) && ( cd /tmp/lab/proj && [ \\"$(cat f.txt)\\" = mode=feature ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "rebase 를 한 번 시도했다 (abort 기록)", "cmd": ["sh", "-c", "cd /tmp/lab/proj && git reflog show HEAD | grep -q \\"rebase (abort)\\""]}, {"label": "rebase 가 진행 중이 아니다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ ! -d .git/rebase-merge ] && [ ! -d .git/rebase-apply ]"]}, {"label": "feature 가 원래 커밋이다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git rev-parse feature)\\" = \\"$(cat /tmp/lab/orig.txt)\\" ]"]}, {"label": "f.txt 가 mode=feature 다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(cat f.txt)\\" = mode=feature ]"]}]', '[{"title": "git-rebase 문서", "url": "https://git-scm.com/docs/git-rebase"}, {"title": "Pro Git — 이력 다시 쓰기", "url": "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 476 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 476, 9, '커밋마다 명령 실행하기 (rebase -x)', '**배경** — `git rebase -x "명령"` (`--exec`) 은 rebase 가 **각 커밋을 적용한 직후마다** 그 명령을 실행합니다. 커밋마다 테스트가 통과하는지 확인할 때 씁니다. 여기서는 명령으로 "지금 커밋의 제목을 파일에 덧붙이기" 를 합니다. `base` 위에 `add a`, `add b`, `add c` 가 있습니다.
+
+**문제** — `base` 이후 커밋마다 제목을 **`/tmp/q9.txt`** 에 한 줄씩 덧붙이세요. 파일에는 `add a`, `add b`, `add c` 가 이 순서로 한 줄씩 있어야 합니다.', '`git rebase -x ''git log -1 --format=%s >> /tmp/q9.txt'' base`', 'cd /tmp/lab/proj
+git rebase -x ''git log -1 --format=%s >> /tmp/q9.txt'' base
+cat /tmp/q9.txt
+
+# -x 는 커밋마다 pick 다음에 exec 줄을 끼운다. 실패하면 그 커밋에서 멈추므로 어디서 깨졌는지 알 수 있다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci base.txt base base && git tag base && ci a.txt ''hello world'' ''add a'' && ci b.txt b ''add b'' && ci c.txt c ''add c''"]', '["sh", "-c", "( [ \\"$(wc -l < /tmp/q9.txt)\\" -eq 3 ] ) && ( [ \\"$(cat /tmp/q9.txt | tr \\"\\\\n\\" ,)\\" = \\"add a,add b,add c,\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "파일에 세 줄이다", "cmd": ["sh", "-c", "[ \\"$(wc -l < /tmp/q9.txt)\\" -eq 3 ]"]}, {"label": "커밋 순서대로 제목이 들어 있다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/q9.txt | tr \\"\\\\n\\" ,)\\" = \\"add a,add b,add c,\\" ]"]}]', '[{"title": "git-rebase 문서", "url": "https://git-scm.com/docs/git-rebase"}, {"title": "Pro Git — 이력 다시 쓰기", "url": "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 476 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 476, 10, '이미 푸시한 브랜치를 rebase 하면', '동료가 이미 가져간(푸시한) 브랜치를 **rebase** 하면 어떤 일이 생길까요?', 'rebase 는 커밋을 새로 만들어요.', NULL, NULL, '[]', 'choice', '["커밋 해시는 그대로여서 동료의 이력과 충돌하지 않는다", "커밋이 새 해시로 다시 만들어져 동료의 이력과 갈라진다", "푸시한 커밋은 읽기 전용이라 rebase 가 항상 거부된다", "원격 브랜치가 자동으로 같이 rebase 되어 맞춰진다"]', 1, 'git-rebase 문서는 이미 공개한 이력을 rebase 하면 커밋 객체가 새로 만들어지고 예전 커밋을 쓰던 사람들은 갈라진 이력을 복구해야 한다고 설명합니다. 그래서 공유한 브랜치는 rebase 하지 않는 것이 원칙입니다.', NULL, NULL, NULL, '[{"title": "git-rebase 문서", "url": "https://git-scm.com/docs/git-rebase"}, {"title": "Pro Git — 이력 다시 쓰기", "url": "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 476 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 476, 11, '충돌을 해결한 뒤 이어 가기', 'rebase 중 충돌 파일을 고치고 `git add` 까지 했습니다. 나머지 커밋을 **이어서 적용**하는 명령입니다. 빈칸을 채우세요.', '"계속" 이에요.', NULL, NULL, '[]', 'fill', '["continue", "abort", "skip", "quit"]', NULL, 'git-rebase 문서는 충돌을 해결하고 git add 로 표시한 뒤 git rebase --continue 로 진행한다고 설명합니다. --abort 는 시작 전으로 되돌리고, --skip 은 그 커밋을 건너뜁니다.', '[0]', 'git rebase --{0}', NULL, '[{"title": "git-rebase 문서", "url": "https://git-scm.com/docs/git-rebase"}, {"title": "Pro Git — 이력 다시 쓰기", "url": "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 476 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 476, 12, 'rebase 충돌 해결 순서', 'rebase 중 충돌이 났을 때의 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '멈춤 → 고침 → 알림 → 이어 가기예요.', NULL, NULL, '[]', 'order', '["`git rebase main` 을 실행하다 충돌이 나서 멈춘다", "충돌 표시(`<<<<<<<`)가 있는 파일을 열어 원하는 내용으로 고친다", "`git add 파일` 로 충돌을 해결했다고 알린다", "`git rebase --continue` 로 나머지 커밋을 이어서 적용한다"]', NULL, 'git-rebase 문서의 충돌 해결 흐름입니다. 도중에 포기하려면 --continue 대신 --abort 를 씁니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "git-rebase 문서", "url": "https://git-scm.com/docs/git-rebase"}, {"title": "Pro Git — 이력 다시 쓰기", "url": "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 476 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 429 WHERE id = 54;
+UPDATE quest_set SET display_order = 430 WHERE id = 94;
+UPDATE quest_set SET display_order = 431 WHERE id = 56;
+UPDATE quest_set SET display_order = 432 WHERE id = 95;
+UPDATE quest_set SET display_order = 433 WHERE id = 365;
+UPDATE quest_set SET display_order = 434 WHERE id = 168;
+UPDATE quest_set SET display_order = 435 WHERE id = 320;
+UPDATE quest_set SET display_order = 436 WHERE id = 180;
+UPDATE quest_set SET display_order = 437 WHERE id = 323;
+UPDATE quest_set SET display_order = 438 WHERE id = 188;
+UPDATE quest_set SET display_order = 439 WHERE id = 325;
+UPDATE quest_set SET display_order = 440 WHERE id = 192;
+UPDATE quest_set SET display_order = 441 WHERE id = 326;
+UPDATE quest_set SET display_order = 442 WHERE id = 196;
+UPDATE quest_set SET display_order = 443 WHERE id = 327;
+UPDATE quest_set SET display_order = 428, unit_id = (SELECT id FROM unit WHERE id = 49), icon = '🪜' WHERE id = 476;
