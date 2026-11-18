@@ -1,0 +1,14 @@
+{
+  "setId": 482,
+  "answers": {
+    "1": "kubectl kustomize /tmp/lab/base > /tmp/q1.txt\ncat /tmp/q1.txt\n\n# kustomize 는 출력만 한다. 적용은 apply -k 로 따로 한다",
+    "2": "cat > /tmp/lab/overlay/kustomization.yaml <<'EOF'\nresources:\n- ../base\nnamePrefix: dev-\nEOF\nkubectl kustomize /tmp/lab/overlay | head -5\n\n# base 는 그대로 두고 overlay 에서 이름만 바꿨다",
+    "3": "cat > /tmp/lab/overlay/kustomization.yaml <<'EOF'\nresources:\n- ../base\nimages:\n- name: nginx\n  newTag: \"1.26\"\nEOF\nkubectl kustomize /tmp/lab/overlay | grep image:\n\n# images 는 이름 기준으로 찾아 태그(또는 이름)를 바꾼다",
+    "4": "cat > /tmp/lab/overlay/kustomization.yaml <<'EOF'\nresources:\n- ../base\nreplicas:\n- name: web\n  count: 4\nEOF\nkubectl kustomize /tmp/lab/overlay | grep replicas\n\n# name 은 base 의 리소스 이름(접두사 적용 전)을 쓴다",
+    "5": "cat > /tmp/lab/overlay/kustomization.yaml <<'EOF'\nresources:\n- ../base\nlabels:\n- pairs:\n    env: dev\n  includeSelectors: true\nEOF\nkubectl kustomize /tmp/lab/overlay | grep -c 'env: dev'\n\n# includeSelectors 를 빼면 Deployment 자신의 라벨에만 붙는다 (셀렉터는 변경하면 위험하다)",
+    "6": "cat > /tmp/lab/overlay/kustomization.yaml <<'EOF'\nresources:\n- ../base\nconfigMapGenerator:\n- name: app-config\n  literals:\n  - LEVEL=debug\nEOF\nkubectl kustomize /tmp/lab/overlay | grep -A4 'kind: ConfigMap'\n\n# 이름 뒤 해시는 내용이 바뀌면 달라진다. 이를 참조하는 리소스는 자동으로 새 이름을 쓰게 바뀐다",
+    "7": "kubectl apply -k /tmp/lab/overlay -n $NS\nkubectl get deploy -n $NS\n\n# apply -k 는 kustomize 로 렌더링한 결과를 apply 한다",
+    "8": "cat > /tmp/lab/overlay/env-patch.yaml <<'EOF'\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  template:\n    spec:\n      containers:\n      - name: web\n        env:\n        - name: APP_MODE\n          value: dev\nEOF\ncat >> /tmp/lab/overlay/kustomization.yaml <<'EOF'\npatches:\n- path: env-patch.yaml\nEOF\nkubectl kustomize /tmp/lab/overlay | grep -B1 -A2 APP_MODE\n\n# 패치는 바꿀 필드만 적는다. 대상 이름은 접두사가 붙기 전 base 의 이름(web)으로 맞춘다",
+    "9": "kubectl delete -k /tmp/lab/overlay -n $NS\nkubectl get deploy -n $NS\n\n# apply -k 와 delete -k 는 같은 폴더를 가리키면 대칭이다"
+  }
+}
