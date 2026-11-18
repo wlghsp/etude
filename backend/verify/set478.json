@@ -1,0 +1,14 @@
+{
+  "setId": 478,
+  "answers": {
+    "1": "docker create --name lc alpine sleep 300\ndocker inspect -f '{{.State.Status}}' lc > /tmp/q1.txt\ndocker start lc\ncat /tmp/q1.txt\ndocker ps\n\n# create 직후 상태는 created. start 하면 running 이 된다",
+    "2": "docker pause pz\ndocker inspect -f '{{.State.Status}}' pz > /tmp/q2.txt\ndocker unpause pz\ncat /tmp/q2.txt\ndocker ps\n\n# pause 는 cgroup freezer 로 프로세스를 얼린다. unpause 하면 멈춘 자리에서 계속된다",
+    "3": "docker stop -t 2 stubborn\ndocker inspect -f '{{.State.ExitCode}}' stubborn > /tmp/q3.txt\ncat /tmp/q3.txt\n\n# SIGTERM 을 무시하면 유예 시간 뒤 SIGKILL. 종료 코드 137 = 128 + 9(SIGKILL)",
+    "4": "docker kill -s USR1 sigbox\nsleep 2\ndocker logs sigbox\n\n# kill -s 는 프로세스를 죽이는 게 아니라 신호를 전달한다. 프로세스가 trap 으로 처리하면 계속 돈다",
+    "5": "docker wait job > /tmp/q5.txt\ncat /tmp/q5.txt\n\n# wait 는 종료까지 막혔다가 종료 코드(여기서는 7)를 표준출력으로 내보낸다",
+    "6": "docker run --name nf alpine nosuchcmd\necho $? > /tmp/q6.txt\ncat /tmp/q6.txt\n\n# 127 = command not found. 126 은 실행 권한 없음, 125 는 도커 데몬/옵션 오류",
+    "7": "docker exec -u nobody -w /tmp -e GREETING=hi ex sh -c 'echo $GREETING $(id -un) $(pwd)' > /tmp/q7.txt\ncat /tmp/q7.txt\n\n# 작은따옴표로 감싸야 호스트 쉘이 아니라 컨테이너 안 쉘이 변수를 푼다",
+    "8": "docker logs -t --tail 2 talk > /tmp/q8.txt\ncat /tmp/q8.txt\n\n# -t 는 RFC3339 시각을 줄 앞에 붙인다. --tail 은 끝에서 N줄만 가져온다",
+    "9": "docker run --name evt alpine true\ndocker events --since 2m --until \"$(( $(date +%s) + 1 ))\" --filter container=evt --filter event=die > /tmp/q9.txt\ncat /tmp/q9.txt\n\n# events 는 --until 이 없으면 끝나지 않는다. 필터로 대상 컨테이너와 사건 종류를 좁힌다"
+  }
+}
