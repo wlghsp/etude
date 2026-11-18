@@ -1,0 +1,14 @@
+{
+  "setId": 485,
+  "answers": {
+    "1": "cat > /tmp/work/app/Dockerfile <<'EOF'\nFROM alpine AS build\nRUN echo built > /out.txt\n\nFROM alpine\nCOPY --from=build /out.txt /app.txt\nCMD [\"cat\", \"/app.txt\"]\nEOF\ndocker build -t ms:1 /tmp/work/app\ndocker run --rm ms:1\n\n# 둘째 FROM 부터가 최종 이미지다. 앞 단계는 COPY --from 으로 필요한 파일만 넘기고 버려진다",
+    "2": "docker build --target build -t ms:build /tmp/work/app\ndocker run --rm ms:build cat /out.txt\n\n# --target 은 그 단계에서 멈춘다. 최종 단계가 아니므로 CMD 도 최종과 다를 수 있다",
+    "3": "docker build --build-arg VERSION=2.5 -t arg:1 /tmp/work/app\ndocker run --rm arg:1\n\n# 기본값(1.0)은 --build-arg 로 덮어쓴다. ARG 는 빌드가 끝나면 사라진다",
+    "4": "docker build --build-arg V=3 -t arg:2 /tmp/work/app\ndocker run --rm arg:2 printenv APP_V > /tmp/q4.txt\ncat /tmp/q4.txt\n\n# ARG 단독은 실행 중에 보이지 않는다. ENV 로 옮기면 이미지에 남아 컨테이너에서 보인다",
+    "5": "echo secret.env > /tmp/work/app/.dockerignore\ndocker build -t ig:1 /tmp/work/app\ndocker run --rm ig:1\n\n# .dockerignore 는 빌드 컨텍스트에서 파일을 뺀다. 비밀·불필요한 파일이 이미지에 들어가는 것을 막는다",
+    "6": "docker build -t c:1 /tmp/work/app\ndocker build --progress=plain -t c:1 /tmp/work/app > /tmp/q6b.txt 2>&1\ndocker build --progress=plain --no-cache -t c:1 /tmp/work/app > /tmp/q6c.txt 2>&1\ngrep -A1 'RUN echo' /tmp/q6b.txt /tmp/q6c.txt\n\n# 캐시를 쓴 단계는 CACHED, --no-cache 면 DONE. 진행 출력은 stderr 로 나와서 2>&1 이 필요하다",
+    "7": "cat > /tmp/work/app/Dockerfile <<'EOF'\nFROM alpine\nRUN echo a > /a.txt && echo b > /b.txt && echo c > /c.txt\nEOF\ndocker build -t ly:1 /tmp/work/app\ndocker image inspect -f '{{len .RootFS.Layers}}' ly:1\n\n# RUN 한 줄 = 레이어 하나. && 로 합치면 레이어가 줄어든다",
+    "8": "docker build -f /tmp/work/app/Dockerfile.prod -t prod:1 /tmp/work/app\ndocker run --rm prod:1\n\n# -f 는 Dockerfile 위치, 마지막 인자는 컨텍스트. 둘은 서로 다를 수 있다",
+    "9": "docker build -t app:1.0 -t app:latest /tmp/work/app\ndocker images app\n\n# 태그는 이름표다. 같은 이미지 ID 에 이름이 둘 붙는다"
+  }
+}
