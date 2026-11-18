@@ -163,7 +163,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
                                 <button onClick={onReview} className="mt-3 font-sans text-label-caps text-info hover:underline">복습 보러 가기 →</button>
                             </section>
                         ))}
-                        <div role="tablist" aria-label="분야" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div role="tablist" aria-label="분야" className="flex flex-wrap gap-2">
                             {Object.entries(grouped).map(([category, items]) => {
                                 const meta = CATEGORY_META[category] ?? DEFAULT_META
                                 const catDone = items.filter((s) => (completedCount[s.id] ?? 0) > 0).length
@@ -175,18 +175,14 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
                                         key={category}
                                         role="tab"
                                         aria-selected={selected}
+                                        title={nextHere ? `다음: #${nextHere.id} ${nextHere.title}` : '모두 끝냈어요! 🎉'}
                                         onClick={() => chooseCategory(category)}
-                                        className={`flex items-center gap-3 rounded-xl border-2 bg-gradient-to-br ${meta.grad} to-transparent px-4 py-3 text-left transition-all ${selected ? `${meta.border} shadow-[0_0_24px_rgba(129,140,248,0.15)]` : 'border-outline-variant opacity-80 hover:opacity-100 hover:border-outline'}`}
+                                        className={`relative flex items-center gap-2 overflow-hidden rounded-lg border-2 bg-gradient-to-br ${meta.grad} to-transparent px-3 py-1.5 text-left transition-all ${selected ? `${meta.border} shadow-[0_0_24px_rgba(129,140,248,0.15)]` : 'border-outline-variant opacity-80 hover:opacity-100 hover:border-outline'}`}
                                     >
-                                        <span className="text-[30px] leading-none">{meta.icon}</span>
-                                        <div className="min-w-0 flex-1">
-                                            <h2 className={`font-sans text-headline-md ${meta.text}`}>{category}</h2>
-                                            <p className="font-sans text-code-sm text-on-surface-variant truncate">{nextHere ? `다음: #${nextHere.id} ${nextHere.title}` : '모두 끝냈어요! 🎉'}</p>
-                                            <p className="font-sans text-code-sm text-on-surface-variant tabular-nums">완료 {catDone}/{items.length} 세트</p>
-                                        </div>
-                                        <ProgressRing value={catPct} size={44} stroke={5} className={meta.ring}>
-                                            <span className="font-sans text-[11px] font-bold text-on-surface tabular-nums">{catPct}%</span>
-                                        </ProgressRing>
+                                        <span className="text-[20px] leading-none">{meta.icon}</span>
+                                        <h2 className={`font-sans text-body-md font-bold ${meta.text}`}>{category}</h2>
+                                        <span className="font-sans text-code-sm text-on-surface-variant tabular-nums">{catDone}/{items.length}</span>
+                                        <span aria-hidden className="absolute inset-x-0 bottom-0 h-[3px] bg-white/10"><span className={`block h-full bg-current ${meta.ring}`} style={{ width: `${catPct}%` }} /></span>
                                     </button>
                                 )
                             })}
