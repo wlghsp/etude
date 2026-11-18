@@ -1,0 +1,14 @@
+{
+  "setId": 486,
+  "answers": {
+    "1": "cd /tmp/lab/proj\ngit config --local user.email local@example.com\ngit config --show-origin user.email > /tmp/q1.txt\ncat /tmp/q1.txt\n\n# 저장소 설정(.git/config)이 전역(~/.gitconfig)보다 우선한다. --show-origin 으로 출처 파일이 보인다",
+    "2": "git config --global alias.lg 'log --oneline -3'\ncd /tmp/lab/proj\ngit lg\n\n# alias 값에는 'git' 을 빼고 적는다. 설정 파일(~/.gitconfig)의 [alias] 항목이 된다",
+    "3": "git config -f /tmp/lab/work.gitconfig user.email work@example.com\ngit config --global includeIf.\"gitdir:/tmp/lab/work/\".path /tmp/lab/work.gitconfig\ngit -C /tmp/lab/work/proj config user.email\ngit -C /tmp/lab/other/proj config user.email\n\n# gitdir: 조건은 저장소 위치로 판단한다. 끝의 / 를 빼면 하위 폴더에 안 맞는다",
+    "4": "git config --global url.\"https://example.com/\".insteadOf \"ex:\"\ncd /tmp/lab/proj\ngit ls-remote --get-url origin > /tmp/q4.txt\ncat /tmp/q4.txt\ngit remote -v\n\n# 설정 파일에 적힌 origin 은 ex:repo.git 그대로, 접속할 때만 긴 주소로 바뀐다",
+    "5": "cd /tmp/lab/proj\ngit format-patch -2 -o /tmp/lab/patches\nls /tmp/lab/patches\n\n# 파일은 0001-제목.patch 처럼 번호와 커밋 제목으로 이름이 붙는다",
+    "6": "cd /tmp/lab/target\ngit am /tmp/lab/patches/*.patch\ngit log --format='%an %s'\n\n# am 은 patch 에 담긴 작성자·날짜·메시지로 커밋한다 (committer 는 지금 사용자)",
+    "7": "cd /tmp/lab/proj\ngit apply --check /tmp/lab/change.diff && echo 적용-가능\ngit apply /tmp/lab/change.diff\ngit status --short\ncat a.txt\n\n# apply 는 커밋하지 않는다. 커밋까지 하려면 format-patch 로 만든 패치를 git am 으로 적용한다",
+    "8": "cd /tmp/lab/proj\ngit rev-parse HEAD^{tree} > /tmp/q8.txt\ngit cat-file -p HEAD\ncat /tmp/q8.txt\n\n# HEAD^{tree} 는 'HEAD 커밋의 트리'. cat-file -p 의 첫 줄 tree 와 같은 값이다",
+    "9": "cd /tmp/lab/proj\ngit update-ref refs/heads/saved HEAD\ngit for-each-ref --format='%(refname:short)' refs/heads > /tmp/q9.txt\ncat /tmp/q9.txt\n\n# 브랜치 = refs/heads 아래 해시 한 줄. git branch saved 와 같은 결과를 낮은 수준 명령으로 만든 것이다"
+  }
+}

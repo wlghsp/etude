@@ -1,0 +1,117 @@
+-- Git 실습 세트 486. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_git_config_patch_lab_set.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 486, 'Git 설정·패치·내부 구조 손연습: config --show-origin·alias·includeIf·insteadOf, format-patch·am·apply, rev-parse·cat-file, update-ref·for-each-ref', '저장소 밖의 Git 도구를 직접 다룹니다. 설정 우선순위와 --show-origin, 별명(alias), 폴더별 includeIf, 주소 줄여 쓰기(insteadOf), 커밋을 패치로 내보내는 format-patch 와 am·apply 의 차이, 커밋이 가리키는 트리 알아내기, update-ref 와 for-each-ref 로 브랜치를 ref 로 다루기를 실습합니다.', 'linux', 'Git'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 486);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 486, 1, '이 설정은 어디서 왔나? (config --show-origin)', '**배경** — Git 설정은 **시스템 → 전역(`~/.gitconfig`) → 저장소(`.git/config`)** 순으로 겹치고, 뒤의 것이 앞의 것을 **덮어씁니다**. 어떤 값이 **어느 파일에서** 왔는지는 `git config --show-origin 키` 로 봅니다. 지금 전역에 `user.email=t@example.com` 이 있습니다.
+
+**문제** — `/tmp/lab/proj` 저장소에만 적용되도록 `user.email` 을 **`local@example.com`** 으로 설정하세요(`--local`). 그리고 **적용된 값과 출처**를 `git config --show-origin user.email` 로 **`/tmp/q1.txt`** 에 저장하세요. (출처는 `.git/config` 로 보여야 합니다.)', '`git config --local user.email local@example.com` 후 `git config --show-origin user.email > /tmp/q1.txt`', 'cd /tmp/lab/proj
+git config --local user.email local@example.com
+git config --show-origin user.email > /tmp/q1.txt
+cat /tmp/q1.txt
+
+# 저장소 설정(.git/config)이 전역(~/.gitconfig)보다 우선한다. --show-origin 으로 출처 파일이 보인다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci f.txt 1 ''c1'' && ci f.txt 2 ''c2'' && ci f.txt 3 ''c3'' && ci f.txt 4 ''c4'' && ci f.txt 5 ''c5''"]', '["sh", "-c", "( grep -q \\"local@example.com\\" /tmp/q1.txt ) && ( grep -q \\"\\\\.git/config\\" /tmp/q1.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "값이 local@example.com 이다", "cmd": ["sh", "-c", "grep -q \\"local@example.com\\" /tmp/q1.txt"]}, {"label": "출처가 .git/config 다", "cmd": ["sh", "-c", "grep -q \\"\\\\.git/config\\" /tmp/q1.txt"]}]', '[{"title": "git-config 문서", "url": "https://git-scm.com/docs/git-config"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 486 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 486, 2, '긴 명령에 별명 붙이기 (alias)', '**배경** — 자주 쓰는 긴 명령은 `git config --global alias.이름 "명령"` 으로 **별명**을 만듭니다. 별명은 `git 이름` 으로 실행하며 `git` 다음에 올 부분만 적습니다. 인자를 더 줄 수도 있습니다. `/tmp/lab/proj` 에는 커밋이 5개 있습니다.
+
+**문제** — **`lg`** 라는 별명을 전역으로 만들어 `git lg` 가 **최근 커밋 3개를 한 줄씩**(`log --oneline -3`) 보여 주게 하세요.', '`git config --global alias.lg "log --oneline -3"`', 'git config --global alias.lg ''log --oneline -3''
+cd /tmp/lab/proj
+git lg
+
+# alias 값에는 ''git'' 을 빼고 적는다. 설정 파일(~/.gitconfig)의 [alias] 항목이 된다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci f.txt 1 ''c1'' && ci f.txt 2 ''c2'' && ci f.txt 3 ''c3'' && ci f.txt 4 ''c4'' && ci f.txt 5 ''c5''"]', '["sh", "-c", "( cd /tmp/lab/proj && [ \\"$(git lg | wc -l)\\" -eq 3 ] ) && ( git config --global --get alias.lg | grep -q \\"log --oneline\\" )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "git lg 가 3줄이다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git lg | wc -l)\\" -eq 3 ]"]}, {"label": "별명이 전역 설정에 있다", "cmd": ["sh", "-c", "git config --global --get alias.lg | grep -q \\"log --oneline\\""]}]', '[{"title": "git-config 문서", "url": "https://git-scm.com/docs/git-config"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 486 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 486, 3, '폴더에 따라 설정 바꾸기 (includeIf)', '**배경** — 회사 일과 개인 일의 저장소에서 **다른 이메일**을 쓰고 싶을 때 `includeIf` 로 **폴더 조건부 설정**을 합니다. 전역 설정에 `[includeIf "gitdir:경로/"]` 와 `path = 파일` 을 적으면, 그 폴더 아래 저장소에서만 그 파일의 설정이 **추가로 적용**됩니다. 경로 끝에 `/` 가 있어야 하위 폴더 전체에 맞습니다. 저장소 `/tmp/lab/work/proj` 와 `/tmp/lab/other/proj` 가 있고 전역 이메일은 `t@example.com` 입니다.
+
+**문제** — `/tmp/lab/work/` 아래 저장소에서만 `user.email` 이 **`work@example.com`** 이 되게 하세요. 설정 조각은 `/tmp/lab/work.gitconfig` 에 두고 전역에서 `includeIf` 로 불러옵니다. `other/proj` 는 계속 `t@example.com` 이어야 합니다.', '`git config -f /tmp/lab/work.gitconfig user.email work@example.com` → `git config --global includeIf."gitdir:/tmp/lab/work/".path /tmp/lab/work.gitconfig`', 'git config -f /tmp/lab/work.gitconfig user.email work@example.com
+git config --global includeIf."gitdir:/tmp/lab/work/".path /tmp/lab/work.gitconfig
+git -C /tmp/lab/work/proj config user.email
+git -C /tmp/lab/other/proj config user.email
+
+# gitdir: 조건은 저장소 위치로 판단한다. 끝의 / 를 빼면 하위 폴더에 안 맞는다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir -p work/proj other/proj && for d in work/proj other/proj; do (cd $d && git init -q); done"]', '["sh", "-c", "( [ \\"$(git -C /tmp/lab/work/proj config user.email)\\" = work@example.com ] ) && ( [ \\"$(git -C /tmp/lab/other/proj config user.email)\\" = t@example.com ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "work 아래는 work@example.com 이다", "cmd": ["sh", "-c", "[ \\"$(git -C /tmp/lab/work/proj config user.email)\\" = work@example.com ]"]}, {"label": "other 는 t@example.com 이다", "cmd": ["sh", "-c", "[ \\"$(git -C /tmp/lab/other/proj config user.email)\\" = t@example.com ]"]}]', '[{"title": "git-config 문서", "url": "https://git-scm.com/docs/git-config"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 486 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 486, 4, '주소를 짧게 쓰기 (url.insteadOf)', '**배경** — `url.<기본>.insteadOf <짧은말>` 설정은 **짧은 말로 쓴 주소를 긴 주소로 바꿔서** 접속하게 합니다. 팀의 긴 저장소 주소를 `ex:` 처럼 줄여 쓸 때 편합니다. 실제로 접속에 쓰일 주소는 `git ls-remote --get-url 원격이름` 으로 확인합니다. `/tmp/lab/proj` 의 `origin` 은 `ex:repo.git` 으로 등록되어 있습니다.
+
+**문제** — `ex:` 를 **`https://example.com/`** 로 바꿔 쓰도록 전역 설정하고, 실제로 쓰이는 `origin` 주소를 **`/tmp/q4.txt`** 에 저장하세요. (`https://example.com/repo.git`)', '`git config --global url."https://example.com/".insteadOf "ex:"` 후 `git ls-remote --get-url origin`', 'git config --global url."https://example.com/".insteadOf "ex:"
+cd /tmp/lab/proj
+git ls-remote --get-url origin > /tmp/q4.txt
+cat /tmp/q4.txt
+git remote -v
+
+# 설정 파일에 적힌 origin 은 ex:repo.git 그대로, 접속할 때만 긴 주소로 바뀐다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && git remote add origin ex:repo.git"]', '["sh", "-c", "( [ \\"$(cat /tmp/q4.txt)\\" = https://example.com/repo.git ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "실제 주소가 https://example.com/repo.git 이다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/q4.txt)\\" = https://example.com/repo.git ]"]}]', '[{"title": "git-config 문서", "url": "https://git-scm.com/docs/git-config"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 486 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 486, 5, '커밋을 패치 파일로 내보내기 (format-patch)', '**배경** — `git format-patch -N` 은 **최근 N개 커밋을 메일 형식 패치 파일**로 만듭니다(커밋마다 파일 하나, 작성자·메시지 포함). 파일을 이메일이나 파일로 전달하면 받은 쪽이 `git am` 으로 같은 커밋을 만듭니다. `-o 폴더` 로 출력 폴더를 정합니다. `/tmp/lab/proj` 에 커밋 5개가 있습니다.
+
+**문제** — 최근 **2개 커밋**을 패치 파일로 만들어 **`/tmp/lab/patches`** 폴더에 저장하세요. (`0001-…patch`, `0002-…patch` 2개)', '`git format-patch -2 -o /tmp/lab/patches`', 'cd /tmp/lab/proj
+git format-patch -2 -o /tmp/lab/patches
+ls /tmp/lab/patches
+
+# 파일은 0001-제목.patch 처럼 번호와 커밋 제목으로 이름이 붙는다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci f.txt 1 ''c1'' && ci f.txt 2 ''c2'' && ci f.txt 3 ''c3'' && ci f.txt 4 ''c4'' && ci f.txt 5 ''c5''"]', '["sh", "-c", "( [ \\"$(ls /tmp/lab/patches/*.patch 2>/dev/null | wc -l)\\" -eq 2 ] ) && ( ls /tmp/lab/patches | grep -q \\"^0001-\\" && ls /tmp/lab/patches | grep -q \\"^0002-\\" ) && ( grep -l \\"Subject: .*c5\\" /tmp/lab/patches/*.patch >/dev/null 2>&1 )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "패치 파일이 2개다", "cmd": ["sh", "-c", "[ \\"$(ls /tmp/lab/patches/*.patch 2>/dev/null | wc -l)\\" -eq 2 ]"]}, {"label": "0001, 0002 가 있다", "cmd": ["sh", "-c", "ls /tmp/lab/patches | grep -q \\"^0001-\\" && ls /tmp/lab/patches | grep -q \\"^0002-\\""]}, {"label": "가장 최근 커밋(c5) 패치가 있다", "cmd": ["sh", "-c", "grep -l \\"Subject: .*c5\\" /tmp/lab/patches/*.patch >/dev/null 2>&1"]}]', '[{"title": "git-format-patch 문서", "url": "https://git-scm.com/docs/git-format-patch"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 486 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 486, 6, '받은 패치를 커밋으로 만들기 (git am)', '**배경** — `git am 패치들` 은 `format-patch` 로 만든 패치를 **원래 작성자와 메시지 그대로 커밋**으로 적용합니다. 작업 폴더만 고치는 `git apply` 와 달리 **커밋까지** 만듭니다. `/tmp/lab/target` 은 아직 패치가 적용되지 않은 저장소이고, 패치 2개가 `/tmp/lab/patches` 에 있습니다(작성자는 `alice`).
+
+**문제** — `/tmp/lab/target` 에 패치들을 **`git am`** 으로 적용하세요. `feature one`, `feature two` 커밋이 생기고 **작성자가 `alice`** 로 유지되어야 합니다.', '`cd /tmp/lab/target` → `git am /tmp/lab/patches/*.patch`', 'cd /tmp/lab/target
+git am /tmp/lab/patches/*.patch
+git log --format=''%an %s''
+
+# am 은 patch 에 담긴 작성자·날짜·메시지로 커밋한다 (committer 는 지금 사용자)', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci f.txt 0 base && export GIT_AUTHOR_NAME=alice GIT_AUTHOR_EMAIL=a@example.com && ci f.txt 1 ''feature one'' && ci f.txt 2 ''feature two'' && unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL && git format-patch -2 -o /tmp/lab/patches >/dev/null && cd /tmp/lab && git clone -q proj target && cd target && git reset -q --hard HEAD~2"]', '["sh", "-c", "( cd /tmp/lab/target && [ \\"$(git log --reverse --format=%s -2 | tr \\"\\\\n\\" ,)\\" = \\"feature one,feature two,\\" ] ) && ( cd /tmp/lab/target && [ \\"$(git log -1 --format=%an)\\" = alice ] ) && ( [ ! -d /tmp/lab/target/.git/rebase-apply ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "커밋 제목이 feature one, feature two 다", "cmd": ["sh", "-c", "cd /tmp/lab/target && [ \\"$(git log --reverse --format=%s -2 | tr \\"\\\\n\\" ,)\\" = \\"feature one,feature two,\\" ]"]}, {"label": "작성자가 alice 다", "cmd": ["sh", "-c", "cd /tmp/lab/target && [ \\"$(git log -1 --format=%an)\\" = alice ]"]}, {"label": "am 이 진행 중이 아니다", "cmd": ["sh", "-c", "[ ! -d /tmp/lab/target/.git/rebase-apply ]"]}]', '[{"title": "git-am 문서", "url": "https://git-scm.com/docs/git-am"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 486 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 486, 7, '변경 내용(diff)을 작업 폴더에 적용하기 (git apply)', '**배경** — `git apply 파일` 은 `git diff` 로 만든 변경 파일(diff)을 **작업 폴더에만** 반영합니다(커밋은 만들지 않음). 적용해도 되는지 먼저 `--check` 로 시험할 수 있습니다. `/tmp/lab/change.diff` 는 `a.txt` 를 `one` 에서 `two` 로 바꾸는 diff 입니다.
+
+**문제** — 먼저 `--check` 로 적용 가능한지 확인한 뒤, `change.diff` 를 **적용**하세요. `a.txt` 가 `two` 가 되고 **커밋은 늘어나지 않아야** 합니다(변경은 아직 커밋 전).', '`git apply --check /tmp/lab/change.diff` → `git apply /tmp/lab/change.diff`', 'cd /tmp/lab/proj
+git apply --check /tmp/lab/change.diff && echo 적용-가능
+git apply /tmp/lab/change.diff
+git status --short
+cat a.txt
+
+# apply 는 커밋하지 않는다. 커밋까지 하려면 format-patch 로 만든 패치를 git am 으로 적용한다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci a.txt one ''add a'' && echo two > a.txt && git diff > /tmp/lab/change.diff && git checkout -q a.txt"]', '["sh", "-c", "( cd /tmp/lab/proj && [ \\"$(cat a.txt)\\" = two ] ) && ( cd /tmp/lab/proj && [ \\"$(git rev-list --count HEAD)\\" -eq 1 ] ) && ( cd /tmp/lab/proj && git status --short | grep -q \\"^ M a.txt\\" )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "a.txt 가 two 다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(cat a.txt)\\" = two ]"]}, {"label": "커밋은 1개 그대로다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git rev-list --count HEAD)\\" -eq 1 ]"]}, {"label": "작업 폴더에 수정(M)이 있다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && git status --short | grep -q \\"^ M a.txt\\""]}]', '[{"title": "git-apply 문서", "url": "https://git-scm.com/docs/git-apply"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 486 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 486, 8, '커밋이 가리키는 트리 알아내기 (rev-parse, cat-file)', '**배경** — Git 의 커밋은 **트리(폴더 스냅샷)**·부모·작성자·메시지를 담은 객체입니다. `git cat-file -p HEAD` 는 커밋 내용을, `git rev-parse HEAD^{tree}` 는 **그 커밋의 트리 해시**를 바로 알려 줍니다. 모든 객체는 내용의 SHA-1 해시로 식별됩니다.
+
+**문제** — `/tmp/lab/proj` 의 **`HEAD` 커밋이 가리키는 트리 해시**를 **`/tmp/q8.txt`** 에 저장하세요. (`cat-file -p HEAD` 의 `tree` 줄과 같은 값입니다.)', '`git rev-parse HEAD^{tree} > /tmp/q8.txt`', 'cd /tmp/lab/proj
+git rev-parse HEAD^{tree} > /tmp/q8.txt
+git cat-file -p HEAD
+cat /tmp/q8.txt
+
+# HEAD^{tree} 는 ''HEAD 커밋의 트리''. cat-file -p 의 첫 줄 tree 와 같은 값이다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci f.txt 1 ''c1'' && ci f.txt 2 ''c2'' && ci f.txt 3 ''c3'' && ci f.txt 4 ''c4'' && ci f.txt 5 ''c5''"]', '["sh", "-c", "( [ \\"$(wc -c < /tmp/q8.txt | tr -d \\" \\")\\" -eq 41 ] ) && ( cd /tmp/lab/proj && [ \\"$(cat /tmp/q8.txt)\\" = \\"$(git cat-file -p HEAD | sed -n \\"1p\\" | cut -d\\" \\" -f2)\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "40자리 해시다", "cmd": ["sh", "-c", "[ \\"$(wc -c < /tmp/q8.txt | tr -d \\" \\")\\" -eq 41 ]"]}, {"label": "HEAD 커밋의 트리 해시와 같다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(cat /tmp/q8.txt)\\" = \\"$(git cat-file -p HEAD | sed -n \\"1p\\" | cut -d\\" \\" -f2)\\" ]"]}]', '[{"title": "git-rev-parse 문서", "url": "https://git-scm.com/docs/git-rev-parse"}, {"title": "Pro Git — Git 내부", "url": "https://git-scm.com/book/en/v2/Git-Internals-Plumbing-and-Porcelain"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 486 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 486, 9, '브랜치를 ref 로 직접 만들고 목록 뽑기 (update-ref, for-each-ref)', '**배경** — 브랜치는 `.git/refs/heads/이름` 에 **커밋 해시를 적어 둔 ref** 일 뿐입니다. `git update-ref refs/heads/이름 커밋` 은 그 ref 를 직접 만들고, `git for-each-ref --format=''%(refname:short)'' refs/heads` 는 ref 목록을 **원하는 형식**으로 뽑습니다(스크립트에서 편합니다).
+
+**문제** — `update-ref` 로 **`HEAD`** 를 가리키는 브랜치 **`saved`** 를 만든 뒤, `for-each-ref` 로 **브랜치 이름만** 한 줄씩 **`/tmp/q9.txt`** 에 저장하세요. (`main`, `saved` 가 있어야 합니다.)', '`git update-ref refs/heads/saved HEAD` → `git for-each-ref --format=''%(refname:short)'' refs/heads > /tmp/q9.txt`', 'cd /tmp/lab/proj
+git update-ref refs/heads/saved HEAD
+git for-each-ref --format=''%(refname:short)'' refs/heads > /tmp/q9.txt
+cat /tmp/q9.txt
+
+# 브랜치 = refs/heads 아래 해시 한 줄. git branch saved 와 같은 결과를 낮은 수준 명령으로 만든 것이다', '["sh", "-c", "rm -f ~/.gitconfig; rm -rf /tmp/lab /tmp/q*.txt && mkdir -p /tmp/lab && cd /tmp/lab && git config --global user.name tester && git config --global user.email t@example.com && git config --global init.defaultBranch main && mkdir proj && cd proj && git init -q && ci() { echo \\"$2\\" > \\"$1\\"; git add \\"$1\\"; git commit -qm \\"$3\\"; }; ci f.txt 1 ''c1'' && ci f.txt 2 ''c2'' && ci f.txt 3 ''c3'' && ci f.txt 4 ''c4'' && ci f.txt 5 ''c5''"]', '["sh", "-c", "( grep -qx main /tmp/q9.txt && grep -qx saved /tmp/q9.txt ) && ( cd /tmp/lab/proj && [ \\"$(git rev-parse saved)\\" = \\"$(git rev-parse HEAD)\\" ] ) && ( ! grep -q \\"refs/\\" /tmp/q9.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "main 과 saved 가 있다", "cmd": ["sh", "-c", "grep -qx main /tmp/q9.txt && grep -qx saved /tmp/q9.txt"]}, {"label": "saved 가 HEAD 를 가리킨다", "cmd": ["sh", "-c", "cd /tmp/lab/proj && [ \\"$(git rev-parse saved)\\" = \\"$(git rev-parse HEAD)\\" ]"]}, {"label": "이름만 있다 (refs/ 접두사 없음)", "cmd": ["sh", "-c", "! grep -q \\"refs/\\" /tmp/q9.txt"]}]', '[{"title": "git-update-ref 문서", "url": "https://git-scm.com/docs/git-update-ref"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 486 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 486, 10, 'git am 과 git apply 의 차이', '`git am` 과 `git apply` 의 차이로 맞는 것은 무엇일까요?', '커밋을 만드는지 보세요.', NULL, NULL, '[]', 'choice', '["apply 는 메일 형식 패치를 커밋으로 만들고 am 은 작업 폴더만 고친다", "am 은 메일 형식 패치를 커밋으로 만들고 apply 는 작업 폴더만 고친다", "둘 다 커밋을 만들며 am 은 원격 저장소에서만 쓴다", "둘은 같은 명령의 다른 이름이고 인자 형식만 다르다"]', 1, 'git-am 문서는 am 이 메일함 형태의 패치를 읽어 커밋으로 적용하고 작성자와 메시지를 유지한다고 설명합니다. git-apply 문서는 apply 가 패치를 작업 폴더(와 선택적으로 인덱스)에 반영할 뿐 커밋하지 않는다고 설명합니다.', NULL, NULL, NULL, '[{"title": "git-am 문서", "url": "https://git-scm.com/docs/git-am"}, {"title": "git-apply 문서", "url": "https://git-scm.com/docs/git-apply"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 486 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 486, 11, '설정의 출처 보기', 'Git 설정 값이 **어느 파일에서 왔는지** 함께 보여 주는 명령입니다. 빈칸을 채우세요.', '"설정" 이에요.', NULL, NULL, '[]', 'fill', '["config", "remote", "describe", "rev-parse"]', NULL, 'git-config 문서는 --show-origin 이 설정 값이 읽힌 출처(파일 경로 등)를 함께 보여 준다고 설명합니다. describe 는 가장 가까운 태그로 커밋 이름을 만들고, rev-parse 는 이름을 해시로 바꿉니다.', '[0]', 'git {0} --show-origin user.email', NULL, '[{"title": "git-config 문서", "url": "https://git-scm.com/docs/git-config"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 486 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 486, 12, '패치로 커밋 옮기기 순서', '한 저장소의 커밋을 다른 저장소로 **패치 파일**로 옮기는 큰 줄기 순서입니다. 순서에 맞게 놓아 보세요.', '내보내기 → 전달 → 적용 → 확인이에요.', NULL, NULL, '[]', 'order', '["원본 저장소에서 `git format-patch -N` 으로 패치 파일을 만든다", "패치 파일을 이메일이나 파일로 받는 쪽에 전달한다", "받는 저장소에서 `git am` 으로 패치를 적용한다", "`git log` 로 커밋과 작성자가 맞게 만들어졌는지 확인한다"]', NULL, 'git-format-patch 와 git-am 문서의 워크플로입니다. 작성자와 메시지가 패치에 담겨 그대로 유지됩니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "git-format-patch 문서", "url": "https://git-scm.com/docs/git-format-patch"}, {"title": "git-am 문서", "url": "https://git-scm.com/docs/git-am"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 486 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 445, unit_id = (SELECT id FROM unit WHERE id = 50), icon = '🔬' WHERE id = 486;
