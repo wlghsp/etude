@@ -1,16 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { QuestSet } from '../types'
 import { setKind, firstXpLabel } from '../setKind'
 import { Logo } from '../components/Logo'
+import { MAX_WIDTH, OFFSETS, pathLayout } from './pathLayout'
 
 // 한 단원의 세트를 구불구불한 길 위의 노드로 보여 준다 (듀오링고식 + 마스코트 + 보물상자).
 // 끝낸 노드는 초록색으로 채워지고 길도 초록으로 이어지며, 다음 노드에는 마스코트가 서서 기다린다.
 // 단원을 모두 끝내면 길 끝의 보물상자가 열린다. 세트는 잠기지 않는다 (아무 순서로나 해도 된다).
 
 const ROW = 118 // 노드 한 줄의 높이(px)
-const WIDTH = 520 // 길 영역의 폭(px)
-const BASE_X = 200 // 길의 중심 x
-const OFFSETS = [0, 52, 84, 52, 0, -52, -84, -52] // 노드가 좌우로 굽이치는 정도(px)
 
 interface Props {
     items: QuestSet[]
@@ -23,10 +21,26 @@ interface Props {
     onSelect: (id: number, sandboxType: string) => void
 }
 
+// 설명 카드(폭 300)가 길 영역 안에 들어오게 하는 왼쪽 위치
+const cardLeftOf = (x: number, width: number) => Math.max(width >= MAX_WIDTH ? 8 : 0, Math.min(x - 150, width - 300, 150))
+
 const fallbackIcon = (s: QuestSet) => (s.is_review ? '🏆' : s.sandbox_type === 'quiz' ? '📝' : '💻')
 
 export function SetPath({ items, hiddenDone = 0, completedCount, perfectIds, nextId, firstTime, tone, onSelect }: Props) {
     const [openId, setOpenId] = useState<number | 'chest' | null>(null)
+    // 컨테이너 폭에 맞춰 길 배치를 정한다 (휴대폰에서는 좁은 배치)
+    const boxRef = useRef<HTMLDivElement>(null)
+    const [avail, setAvail] = useState(MAX_WIDTH)
+    useLayoutEffect(() => {
+        const el = boxRef.current
+        if (!el) return
+        const measure = () => setAvail(el.clientWidth)
+        measure()
+        const ro = new ResizeObserver(measure)
+        ro.observe(el)
+        return () => ro.disconnect()
+    }, [])
+    const L = pathLayout(avail)
 
     // 열린 설명 카드는 다른 곳을 누르거나 Esc 를 누르면 닫는다 (카드와 노드 안을 누를 때는 그대로)
     useEffect(() => {
@@ -40,7 +54,7 @@ export function SetPath({ items, hiddenDone = 0, completedCount, perfectIds, nex
 
     // 길의 점들: 세트마다 하나, 맨 끝에 보물상자 하나
     const n = items.length
-    const pts = Array.from({ length: n + 1 }, (_, i) => ({ x: BASE_X + OFFSETS[i % OFFSETS.length]!, y: i * ROW + ROW / 2 }))
+    const pts = Array.from({ length: n + 1 }, (_, i) => ({ x: L.baseX + OFFSETS[i % OFFSETS.length]! * L.swing, y: i * ROW + ROW / 2 }))
     const allDone = n + hiddenDone > 0 && items.every((s) => (completedCount[s.id] ?? 0) > 0)
     const lastDone = items.reduce((m, s, i) => ((completedCount[s.id] ?? 0) > 0 ? i : m), -1)
     const curve = (upTo: number) => {
@@ -55,8 +69,8 @@ export function SetPath({ items, hiddenDone = 0, completedCount, perfectIds, nex
     const height = (n + 1) * ROW
 
     return (
-        <div className="relative" style={{ width: WIDTH, maxWidth: '100%', height }}>
-            <svg className="pointer-events-none absolute left-0 top-0" width={WIDTH} height={height} aria-hidden="true">
+        <div ref={boxRef} className="relative" style={{ width: '100%', maxWidth: MAX_WIDTH, height }}>
+            <svg className="pointer-events-none absolute left-0 top-0" width={L.width} height={height} aria-hidden="true">
                 <path d={curve(n)} fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeDasharray="1 14" className="text-outline-variant" />
                 {lastDone >= 0 && <path d={curve(Math.min(lastDone + 1, n))} fill="none" stroke="#22c55e" strokeWidth="8" strokeLinecap="round" opacity="0.9" />}
             </svg>
@@ -68,11 +82,11 @@ export function SetPath({ items, hiddenDone = 0, completedCount, perfectIds, nex
                 const isNext = i === nextIndex
                 const open = openId === s.id
                 const { x, y } = pts[i]!
-                const size = isNext ? 84 : 68
-                const cardLeft = Math.min(Math.max(8, x - 150), 150)
+                const size = isNext ? L.nodeNext : L.nodeNormal
+                const cardLeft = cardLeftOf(x, L.width)
                 return (
                     <div key={s.id}>
-                        {isNext && (
+                        {isNext && !L.compact && (
                             <div className="pointer-events-none absolute z-10 flex items-center gap-1" style={{ left: x - size / 2 - 96, top: y - 26 }}>
                                 <span className="fx-pop relative rounded-xl bg-white px-2.5 py-1 font-sans text-label-caps font-bold text-[#3b1fa8] shadow">
                                     {count > 0 ? '또 해 볼까?' : firstTime ? '여기서 시작!' : '다음은 여기!'}
@@ -98,9 +112,9 @@ export function SetPath({ items, hiddenDone = 0, completedCount, perfectIds, nex
                             aria-hidden="true"
                             onClick={() => setOpenId(open ? null : s.id)}
                             className="absolute z-0 text-left"
-                            style={{ left: x + size / 2 + 14, top: y - 18, width: WIDTH - 10 - (x + size / 2 + 14) }}
+                            style={{ left: x + size / 2 + 14, top: y - 18, width: L.width - 10 - (x + size / 2 + 14) }}
                         >
-                            <span className={`block truncate font-sans text-body-md font-semibold ${done ? 'text-on-surface' : 'text-on-surface-variant'}`}>{s.title}</span>
+                            <span className={`block ${L.compact ? 'line-clamp-2 text-code-sm leading-4' : 'truncate text-body-md'} font-sans font-semibold ${done ? 'text-on-surface' : 'text-on-surface-variant'}`}>{s.title}</span>
                             <span className="font-sans text-code-sm text-on-surface-variant/80">{setKind(s).icon} {s.is_review ? '복습 · ' : ''}{done ? (perfect ? '퍼펙트 ★' : '끝냈어요') : isNext ? '다음 추천' : '도전해 봐요'}</span>
                         </button>
 
@@ -110,8 +124,8 @@ export function SetPath({ items, hiddenDone = 0, completedCount, perfectIds, nex
                                 className="fx-pop absolute z-30 w-[300px] max-w-[calc(100vw-4rem)] rounded-2xl border border-outline-variant bg-surface-container-low p-4 shadow-xl"
                                 style={{ left: cardLeft, top: y + size / 2 + 8 }}
                             >
-                                <p className="font-sans text-body-md font-semibold text-on-surface"><span className="mr-1.5 font-normal text-on-surface-variant">#{s.id}</span>{s.icon} {s.title}</p>
-                                <p className="mt-1 font-sans text-code-sm leading-5 text-on-surface-variant">{s.description}</p>
+                                <p className="line-clamp-2 font-sans text-body-md font-semibold text-on-surface"><span className="mr-1.5 font-normal text-on-surface-variant">#{s.id}</span>{s.icon} {s.title}</p>
+                                <p className="mt-1 line-clamp-2 font-sans text-code-sm leading-5 text-on-surface-variant">{s.description}</p>
                                 <p className="mt-2 font-sans text-label-caps text-on-surface-variant">{setKind(s).icon} {setKind(s).label} · {setKind(s).hint}{!done && firstXpLabel(s) ? ` · 첫 완료 ${firstXpLabel(s)}` : ''}</p>
                                 <div className="mt-3 flex items-center gap-3">
                                     <button
@@ -148,7 +162,7 @@ export function SetPath({ items, hiddenDone = 0, completedCount, perfectIds, nex
                             <span className={`whitespace-nowrap font-sans text-body-md font-bold ${allDone ? 'text-gold' : 'text-on-surface-variant/80'}`}>{allDone ? '단원 정복! 🎉' : `단원 상자 · ${doneCount}/${total}`}</span>
                         </button>
                         {open && (
-                            <div data-setpath-card="" className="fx-pop absolute z-30 w-[300px] max-w-[calc(100vw-4rem)] rounded-2xl border border-outline-variant bg-surface-container-low p-4 shadow-xl" style={{ left: Math.min(Math.max(8, x - 150), 150), top: y + 44 }}>
+                            <div data-setpath-card="" className="fx-pop absolute z-30 w-[300px] max-w-[calc(100vw-4rem)] rounded-2xl border border-outline-variant bg-surface-container-low p-4 shadow-xl" style={{ left: cardLeftOf(x, L.width), top: y + 44 }}>
                                 <p className="font-sans text-body-md font-semibold text-on-surface">{allDone ? '🏆 단원 정복!' : '🎁 단원 상자'}</p>
                                 <p className="mt-1 font-sans text-code-sm leading-5 text-on-surface-variant">
                                     {allDone ? '이 단원의 모든 세트를 끝냈어요. 단원 정복 배지를 받았고, 소식에도 축하가 올라가요.' : `이 단원의 세트를 모두 끝내면 열리는 상자예요. 지금 ${doneCount}/${total}개 끝냈어요. 순서는 상관없어요.`}
