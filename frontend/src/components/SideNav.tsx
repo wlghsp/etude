@@ -4,6 +4,7 @@ import { stageOf } from '../characters'
 import { fetchFeedSummary } from '../api/feed'
 import { avatarTone } from '../avatar'
 import { fetchGamification, type LevelInfo } from '../api/user'
+import { TOGGLE_NAV_EVENT } from './navDrawer'
 
 type Page = 'home' | 'review' | 'progress' | 'leaderboard' | 'hall' | 'feed' | 'admin'
 
@@ -40,6 +41,15 @@ let levelCache: LevelInfo | null = null
 export function SideNav({ activePage, userName, userEmail, userRole, onHome, onProgress, onLeaderboard, onReview, onHall, onFeed, onAdmin, onLogout, onChangePassword }: Props) {
     // 내 소식에 달린 안 본 좋아요·댓글 수 (소식 화면을 열면 서버에서 '본 시각'이 갱신된다)
     const [newForMe, setNewForMe] = useState(0)
+    // 좁은 화면(md 미만)에서만 쓰는 서랍 열림 상태. 화면을 옮기면 SideNav 가 새로 그려져 저절로 닫힌다.
+    const [open, setOpen] = useState(false)
+    useEffect(() => {
+        const toggle = () => setOpen((o) => !o)
+        const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+        window.addEventListener(TOGGLE_NAV_EVENT, toggle)
+        window.addEventListener('keydown', esc)
+        return () => { window.removeEventListener(TOGGLE_NAV_EVENT, toggle); window.removeEventListener('keydown', esc) }
+    }, [])
     // 어느 화면에서나 내 레벨이 보이게 한다 (서버 값)
     const [level, setLevel] = useState<LevelInfo | null>(levelCache)
     useEffect(() => { fetchGamification().then((g) => { levelCache = g.level; setLevel(g.level) }).catch(() => { /* 레벨이 없어도 메뉴는 그대로다 */ }) }, [])
@@ -66,7 +76,12 @@ export function SideNav({ activePage, userName, userEmail, userRole, onHome, onP
     const caption = (text: string) => <p className="mx-6 mb-1 mt-4 font-sans text-[11px] font-semibold uppercase tracking-widest text-on-surface-variant/60">{text}</p>
 
     return (
-        <aside className="hidden md:flex flex-col w-60 bg-surface-container border-r border-outline-variant fixed h-[calc(100vh-3.5rem)] py-4">
+        <>
+        {open && <div className="fixed inset-x-0 bottom-0 top-14 z-30 bg-black/50 md:hidden" onClick={() => setOpen(false)} aria-hidden="true" />}
+        <aside
+            onClick={(e) => { if ((e.target as HTMLElement).closest('button')) setOpen(false) }}
+            className={`${open ? 'flex' : 'hidden'} md:flex z-40 flex-col w-60 bg-surface-container border-r border-outline-variant fixed h-[calc(100vh-3.5rem)] py-4`}
+        >
             <div className="px-4 mb-6">
                 <div className="flex items-center gap-2.5">
                     <Logo size={36} className="drop-shadow-[0_0_10px_rgba(129,140,248,0.45)]" />
@@ -115,5 +130,6 @@ export function SideNav({ activePage, userName, userEmail, userRole, onHome, onP
                 </button>
             </div>
         </aside>
+        </>
     )
 }
