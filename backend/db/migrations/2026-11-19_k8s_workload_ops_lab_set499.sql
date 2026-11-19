@@ -1,0 +1,152 @@
+-- Git 실습 세트 499. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). docs/specs/spec_k8s_workload_ops_lab_set.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 499, 'k8s 워크로드 운영 옵션 손연습: DaemonSet OnDelete, CronJob 시간대·이력, --from-env-file, imagePullSecrets, create token, wait --for=delete, replace --force, externalTrafficPolicy, 이름 있는 targetPort', 'DaemonSet OnDelete, CronJob 의 timeZone·startingDeadlineSeconds·이력 한도, .env 파일로 ConfigMap 만들기, default ServiceAccount 에 imagePullSecrets, create token 발급, wait --for=delete, replace --force, externalTrafficPolicy Local, 이름 있는 targetPort 를 실습합니다.', 'k8s', 'k8s'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 499);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 499, 1, '템플릿을 바꿔도 Pod 를 직접 지울 때만 교체 (DaemonSet OnDelete)', '**배경** — DaemonSet 의 기본 업데이트 전략 `RollingUpdate` 는 템플릿을 바꾸면 Pod 를 알아서 교체합니다. **`OnDelete`** 는 템플릿을 바꿔도 **Pod 를 직접 삭제해야** 새 버전으로 다시 만들어, 노드마다 교체 시점을 사람이 정하고 싶을 때(점검 창, 단계적 적용) 씁니다.
+
+**문제** — DaemonSet **`ds`**(`busybox:1.36`, `sleep 3600`)를 **`OnDelete`** 전략으로 만들고 Pod 가 준비될 때까지 기다리세요.', 'DaemonSet 스펙 `updateStrategy: {type: OnDelete}`', 'kubectl apply -n $NS -f - <<''EOF''
+apiVersion: apps/v1
+kind: DaemonSet
+metadata: {name: ds}
+spec:
+  updateStrategy: {type: OnDelete}
+  selector:
+    matchLabels: {app: ds}
+  template:
+    metadata:
+      labels: {app: ds}
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+      - {name: c, image: "busybox:1.36", command: ["sleep", "3600"]}
+EOF
+kubectl wait --for=jsonpath=''{.status.numberReady}''=1 ds/ds -n $NS --timeout=120s
+
+# OnDelete 에는 rollout status 를 쓸 수 없어 wait 로 기다린다. 이후 이미지를 바꿔도 Pod 를 kubectl delete pod 로 지우기 전까지는 옛 버전이다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*.txt; mkdir -p /tmp/lab; kubectl delete ds ds -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cronjob tick -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete job once -n $NS --ignore-not-found --wait=true --timeout=60s >/dev/null 2>&1; kubectl delete deploy web -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete svc web np-svc -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete pod slow np -n $NS --ignore-not-found --grace-period=1 --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cm app-env -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete secret reg -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete sa app-sa -n $NS --ignore-not-found >/dev/null 2>&1; kubectl patch sa default -n $NS -p ''{\\"imagePullSecrets\\":null}'' >/dev/null 2>&1; true\\n"]', '["sh", "-c", "( [ \\"$(kubectl get ds ds -n $NS -o jsonpath=''{.spec.updateStrategy.type}'' 2>/dev/null)\\" = OnDelete ] ) && ( [ \\"$(kubectl get ds ds -n $NS -o jsonpath=''{.status.numberReady}'' 2>/dev/null)\\" -ge 1 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "전략이 OnDelete 다", "cmd": ["sh", "-c", "[ \\"$(kubectl get ds ds -n $NS -o jsonpath=''{.spec.updateStrategy.type}'' 2>/dev/null)\\" = OnDelete ]"]}, {"label": "Pod 가 준비됐다", "cmd": ["sh", "-c", "[ \\"$(kubectl get ds ds -n $NS -o jsonpath=''{.status.numberReady}'' 2>/dev/null)\\" -ge 1 ]"]}]', '[{"title": "DaemonSet 업데이트", "url": "https://kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 499 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 499, 2, '정기 작업의 시간대와 이력·지연 한도 정하기 (CronJob)', '**배경** — CronJob 의 `schedule` 은 기본으로 컨트롤러 시간대(대개 UTC)를 따릅니다. **`timeZone`** 으로 시간대를, **`startingDeadlineSeconds`** 로 "예정 시각을 놓쳤을 때 이만큼 안에는 늦게라도 시작"하는 허용 시간을, **`successfulJobsHistoryLimit`**·**`failedJobsHistoryLimit`** 로 남길 완료·실패 Job 수를 정합니다. CronJob `tick` 이 있습니다.
+
+**문제** — `tick` 에 `timeZone: Asia/Seoul`, `startingDeadlineSeconds: 60`, `successfulJobsHistoryLimit: 1`, `failedJobsHistoryLimit: 0` 을 설정하세요.', '`kubectl patch cronjob tick -p ''{"spec":{"timeZone":"Asia/Seoul",...}}''` 한 번에 네 필드를 패치해요.', 'kubectl patch cronjob tick -n $NS -p ''{"spec":{"timeZone":"Asia/Seoul","startingDeadlineSeconds":60,"successfulJobsHistoryLimit":1,"failedJobsHistoryLimit":0}}''
+kubectl get cronjob tick -n $NS -o jsonpath=''{.spec.timeZone} {.spec.startingDeadlineSeconds}''
+
+# 시간대가 없으면 컨트롤러 기준 시각이라 서울 오전 9시를 "0 0 * * *" 로 적어야 한다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*.txt; mkdir -p /tmp/lab; kubectl delete ds ds -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cronjob tick -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete job once -n $NS --ignore-not-found --wait=true --timeout=60s >/dev/null 2>&1; kubectl delete deploy web -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete svc web np-svc -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete pod slow np -n $NS --ignore-not-found --grace-period=1 --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cm app-env -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete secret reg -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete sa app-sa -n $NS --ignore-not-found >/dev/null 2>&1; kubectl patch sa default -n $NS -p ''{\\"imagePullSecrets\\":null}'' >/dev/null 2>&1; kubectl create cronjob tick -n $NS --image=busybox:1.36 --schedule=''0 9 * * *'' -- echo tick >/dev/null\\n"]', '["sh", "-c", "( [ \\"$(kubectl get cronjob tick -n $NS -o jsonpath=''{.spec.timeZone}'' 2>/dev/null)\\" = Asia/Seoul ] ) && ( [ \\"$(kubectl get cronjob tick -n $NS -o jsonpath=''{.spec.startingDeadlineSeconds}'' 2>/dev/null)\\" = 60 ] ) && ( [ \\"$(kubectl get cronjob tick -n $NS -o jsonpath=''{.spec.successfulJobsHistoryLimit}'' 2>/dev/null)\\" = 1 ] ) && ( [ \\"$(kubectl get cronjob tick -n $NS -o jsonpath=''{.spec.failedJobsHistoryLimit}'' 2>/dev/null)\\" = 0 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "timeZone 이 Asia/Seoul 이다", "cmd": ["sh", "-c", "[ \\"$(kubectl get cronjob tick -n $NS -o jsonpath=''{.spec.timeZone}'' 2>/dev/null)\\" = Asia/Seoul ]"]}, {"label": "startingDeadlineSeconds 가 60 이다", "cmd": ["sh", "-c", "[ \\"$(kubectl get cronjob tick -n $NS -o jsonpath=''{.spec.startingDeadlineSeconds}'' 2>/dev/null)\\" = 60 ]"]}, {"label": "성공 이력이 1 이다", "cmd": ["sh", "-c", "[ \\"$(kubectl get cronjob tick -n $NS -o jsonpath=''{.spec.successfulJobsHistoryLimit}'' 2>/dev/null)\\" = 1 ]"]}, {"label": "실패 이력이 0 이다", "cmd": ["sh", "-c", "[ \\"$(kubectl get cronjob tick -n $NS -o jsonpath=''{.spec.failedJobsHistoryLimit}'' 2>/dev/null)\\" = 0 ]"]}]', '[{"title": "CronJob", "url": "https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 499 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 499, 3, 'KEY=값 파일로 ConfigMap 만들기 (--from-env-file)', '**배경** — `kubectl create configmap --from-env-file=파일` 은 `KEY=값` 이 줄마다 적힌 **.env 형식 파일**을 읽어 **줄 하나를 키 하나**로 만듭니다. `--from-file` 이 파일 전체를 키 하나의 값으로 넣는 것과 다릅니다. `/tmp/lab/app.env` 에 `LEVEL=debug`, `PORT=8080` 이 있습니다.
+
+**문제** — 이 파일로 ConfigMap **`app-env`** 를 만들어 **키 `LEVEL`·`PORT`** 가 각각 따로 들어가게 하세요.', '`kubectl create configmap app-env --from-env-file=/tmp/lab/app.env`', 'kubectl create configmap app-env -n $NS --from-env-file=/tmp/lab/app.env
+kubectl get cm app-env -n $NS -o jsonpath=''{.data}''
+
+# --from-file 이면 키가 app.env 하나이고 값이 파일 전체가 된다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*.txt; mkdir -p /tmp/lab; kubectl delete ds ds -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cronjob tick -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete job once -n $NS --ignore-not-found --wait=true --timeout=60s >/dev/null 2>&1; kubectl delete deploy web -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete svc web np-svc -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete pod slow np -n $NS --ignore-not-found --grace-period=1 --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cm app-env -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete secret reg -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete sa app-sa -n $NS --ignore-not-found >/dev/null 2>&1; kubectl patch sa default -n $NS -p ''{\\"imagePullSecrets\\":null}'' >/dev/null 2>&1; printf ''LEVEL=debug\\\\nPORT=8080\\\\n'' > /tmp/lab/app.env\\n"]', '["sh", "-c", "( [ \\"$(kubectl get cm app-env -n $NS -o jsonpath=''{.data.LEVEL}'' 2>/dev/null)\\" = debug ] ) && ( [ \\"$(kubectl get cm app-env -n $NS -o jsonpath=''{.data.PORT}'' 2>/dev/null)\\" = 8080 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "LEVEL 이 debug 다", "cmd": ["sh", "-c", "[ \\"$(kubectl get cm app-env -n $NS -o jsonpath=''{.data.LEVEL}'' 2>/dev/null)\\" = debug ]"]}, {"label": "PORT 가 8080 이다", "cmd": ["sh", "-c", "[ \\"$(kubectl get cm app-env -n $NS -o jsonpath=''{.data.PORT}'' 2>/dev/null)\\" = 8080 ]"]}]', '[{"title": "ConfigMap 만들기", "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 499 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 499, 4, '비공개 레지스트리 인증을 기본으로 붙이기 (imagePullSecrets)', '**배경** — 비공개 레지스트리의 이미지를 받으려면 **`docker-registry` 타입 Secret** 을 만들고 Pod 의 **`imagePullSecrets`** 에 적어야 합니다. 네임스페이스의 **`default` ServiceAccount 에 달아 두면** 그 계정을 쓰는 모든 Pod 에 자동 적용되어 Pod 마다 적지 않아도 됩니다.
+
+**문제** — 서버 `registry.example.com`, 사용자 `u`, 비밀번호 `p` 의 docker-registry Secret **`reg`** 를 만들고, **`default` ServiceAccount 의 `imagePullSecrets`** 에 연결하세요.', '`kubectl create secret docker-registry reg --docker-server=... --docker-username=... --docker-password=...` → `kubectl patch sa default -p ''{"imagePullSecrets":[{"name":"reg"}]}''`', 'kubectl create secret docker-registry reg -n $NS --docker-server=registry.example.com --docker-username=u --docker-password=p
+kubectl patch sa default -n $NS -p ''{"imagePullSecrets":[{"name":"reg"}]}''
+kubectl get sa default -n $NS -o jsonpath=''{.imagePullSecrets}''
+
+# 이후 만드는 Pod 에 imagePullSecrets 가 자동으로 들어간다(이미 있는 Pod 는 그대로)', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*.txt; mkdir -p /tmp/lab; kubectl delete ds ds -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cronjob tick -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete job once -n $NS --ignore-not-found --wait=true --timeout=60s >/dev/null 2>&1; kubectl delete deploy web -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete svc web np-svc -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete pod slow np -n $NS --ignore-not-found --grace-period=1 --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cm app-env -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete secret reg -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete sa app-sa -n $NS --ignore-not-found >/dev/null 2>&1; kubectl patch sa default -n $NS -p ''{\\"imagePullSecrets\\":null}'' >/dev/null 2>&1; true\\n"]', '["sh", "-c", "( [ \\"$(kubectl get secret reg -n $NS -o jsonpath=''{.type}'' 2>/dev/null)\\" = kubernetes.io/dockerconfigjson ] ) && ( [ \\"$(kubectl get sa default -n $NS -o jsonpath=''{.imagePullSecrets[0].name}'' 2>/dev/null)\\" = reg ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "Secret reg 타입이 docker-registry 다", "cmd": ["sh", "-c", "[ \\"$(kubectl get secret reg -n $NS -o jsonpath=''{.type}'' 2>/dev/null)\\" = kubernetes.io/dockerconfigjson ]"]}, {"label": "default SA 에 reg 가 연결됐다", "cmd": ["sh", "-c", "[ \\"$(kubectl get sa default -n $NS -o jsonpath=''{.imagePullSecrets[0].name}'' 2>/dev/null)\\" = reg ]"]}]', '[{"title": "비공개 레지스트리 이미지 가져오기", "url": "https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 499 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 499, 5, 'ServiceAccount 의 짧은 수명 토큰 발급 (create token)', '**배경** — `kubectl create token 계정` 은 ServiceAccount 의 **만료가 있는 토큰**을 즉석에서 발급합니다(`--duration` 으로 수명 지정). 옛 방식의 영구 토큰 Secret 보다 안전해, 스크립트·외부 도구에 잠깐 인증을 줄 때 씁니다. 토큰은 JWT 라서 점 `.` 으로 나뉜 3부분이며 가운데(페이로드)에 계정 이름이 들어 있습니다. ServiceAccount `app-sa` 가 있습니다.
+
+**문제** — `app-sa` 의 토큰을 **수명 `10m`** 으로 발급해 **`/tmp/q5.txt`** 에 저장하세요.', '`kubectl create token app-sa --duration=10m > /tmp/q5.txt`', 'kubectl create token app-sa -n $NS --duration=10m > /tmp/q5.txt
+cut -d. -f2 /tmp/q5.txt | base64 -d 2>/dev/null | head -c 200
+
+# 비밀 값이므로 화면·로그에 남기지 않는다. 만료되면 다시 발급한다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*.txt; mkdir -p /tmp/lab; kubectl delete ds ds -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cronjob tick -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete job once -n $NS --ignore-not-found --wait=true --timeout=60s >/dev/null 2>&1; kubectl delete deploy web -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete svc web np-svc -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete pod slow np -n $NS --ignore-not-found --grace-period=1 --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cm app-env -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete secret reg -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete sa app-sa -n $NS --ignore-not-found >/dev/null 2>&1; kubectl patch sa default -n $NS -p ''{\\"imagePullSecrets\\":null}'' >/dev/null 2>&1; kubectl create sa app-sa -n $NS >/dev/null\\n"]', '["sh", "-c", "( [ \\"$(tr -cd . < /tmp/q5.txt 2>/dev/null | wc -c | tr -d '' '')\\" = 2 ] ) && ( (cut -d. -f2 /tmp/q5.txt | tr -d \\"\\\\n\\" | tr \\"_-\\" \\"/+\\"; echo ==) | tr -d \\"\\\\n\\" | base64 -d 2>/dev/null | grep -q app-sa )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "JWT 형식(점 2개)이다", "cmd": ["sh", "-c", "[ \\"$(tr -cd . < /tmp/q5.txt 2>/dev/null | wc -c | tr -d '' '')\\" = 2 ]"]}, {"label": "페이로드에 app-sa 가 있다", "cmd": ["sh", "-c", "(cut -d. -f2 /tmp/q5.txt | tr -d \\"\\\\n\\" | tr \\"_-\\" \\"/+\\"; echo ==) | tr -d \\"\\\\n\\" | base64 -d 2>/dev/null | grep -q app-sa"]}]', '[{"title": "ServiceAccount 토큰", "url": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_create/kubectl_create_token/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 499 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 499, 6, 'Pod 가 완전히 사라질 때까지 기다리기 (wait --for=delete)', '**배경** — `kubectl delete` 는 기본으로 삭제가 끝날 때까지 기다립니다. `--wait=false` 로 바로 돌려받은 뒤 **`kubectl wait --for=delete`** 로 **실제로 사라질 때까지** 기다릴 수 있어, 삭제 뒤 같은 이름으로 다시 만드는 스크립트에 쓰입니다. Pod `slow` 는 종료 유예가 길어 지워도 바로 사라지지 않습니다.
+
+**문제** — `slow` 를 **`--wait=false`** 로 삭제 요청한 뒤 **`kubectl wait --for=delete`** 로 사라질 때까지 기다리고, 끝나면 **`/tmp/q6.txt`** 에 `gone` 을 쓰세요.', '`kubectl delete pod slow --wait=false` → `kubectl wait --for=delete pod/slow --timeout=60s && echo gone > /tmp/q6.txt`', 'kubectl delete pod slow -n $NS --wait=false
+kubectl wait --for=delete pod/slow -n $NS --timeout=60s && echo gone > /tmp/q6.txt
+cat /tmp/q6.txt
+
+# 대상이 이미 없으면 wait 는 오류(NotFound)를 낸다. 삭제 요청 직후에 건다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*.txt; mkdir -p /tmp/lab; kubectl delete ds ds -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cronjob tick -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete job once -n $NS --ignore-not-found --wait=true --timeout=60s >/dev/null 2>&1; kubectl delete deploy web -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete svc web np-svc -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete pod slow np -n $NS --ignore-not-found --grace-period=1 --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cm app-env -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete secret reg -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete sa app-sa -n $NS --ignore-not-found >/dev/null 2>&1; kubectl patch sa default -n $NS -p ''{\\"imagePullSecrets\\":null}'' >/dev/null 2>&1; kubectl apply -n $NS -f - <<''EOF''\\napiVersion: v1\\nkind: Pod\\nmetadata: {name: slow}\\nspec:\\n  terminationGracePeriodSeconds: 15\\n  containers:\\n  - {name: c, image: \\"busybox:1.36\\", command: [\\"sleep\\", \\"3600\\"]}\\nEOF\\nkubectl wait --for=condition=Ready pod/slow -n $NS --timeout=90s >/dev/null\\n"]', '["sh", "-c", "( [ \\"$(cat /tmp/q6.txt 2>/dev/null)\\" = gone ] ) && ( ! kubectl get pod slow -n $NS >/dev/null 2>&1 )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "q6 가 gone 이다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/q6.txt 2>/dev/null)\\" = gone ]"]}, {"label": "Pod 가 없다", "cmd": ["sh", "-c", "! kubectl get pod slow -n $NS >/dev/null 2>&1"]}]', '[{"title": "kubectl wait", "url": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_wait/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 499 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 499, 7, '바꿀 수 없는 필드는 지우고 다시 만들기 (replace --force)', '**배경** — Job 의 Pod 템플릿처럼 **만든 뒤 바꿀 수 없는 필드**를 `kubectl apply` 로 고치면 `field is immutable` 오류가 납니다. **`kubectl replace --force -f 파일`** 은 객체를 **지우고 같은 정의로 다시 만들어** 이를 한 번에 처리합니다. Job `once` 가 `echo old` 로 만들어져 있고, `/tmp/lab/job.yaml` 은 `echo new` 로 고쳐 두었습니다.
+
+**문제** — `/tmp/lab/job.yaml` 로 Job `once` 를 **교체**해 명령이 `echo new` 가 되게 하고, 완료까지 기다리세요.', '`kubectl replace --force -f /tmp/lab/job.yaml` → `kubectl wait --for=condition=complete job/once`', 'kubectl apply -n $NS -f /tmp/lab/job.yaml   # 오류: field is immutable
+kubectl replace --force -n $NS -f /tmp/lab/job.yaml
+kubectl wait --for=condition=complete job/once -n $NS --timeout=90s
+kubectl get job once -n $NS -o jsonpath=''{.spec.template.spec.containers[0].command}''
+
+# 지우고 만드는 방식이라 Pod 가 새로 생긴다. 서비스 중인 Deployment 에는 신중히 쓴다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*.txt; mkdir -p /tmp/lab; kubectl delete ds ds -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cronjob tick -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete job once -n $NS --ignore-not-found --wait=true --timeout=60s >/dev/null 2>&1; kubectl delete deploy web -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete svc web np-svc -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete pod slow np -n $NS --ignore-not-found --grace-period=1 --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cm app-env -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete secret reg -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete sa app-sa -n $NS --ignore-not-found >/dev/null 2>&1; kubectl patch sa default -n $NS -p ''{\\"imagePullSecrets\\":null}'' >/dev/null 2>&1; cat > /tmp/lab/job.yaml <<''EOF''\\napiVersion: batch/v1\\nkind: Job\\nmetadata: {name: once}\\nspec:\\n  template:\\n    spec:\\n      restartPolicy: Never\\n      containers:\\n      - {name: c, image: \\"busybox:1.36\\", command: [\\"echo\\", \\"old\\"]}\\nEOF\\nkubectl apply -n $NS -f /tmp/lab/job.yaml >/dev/null; kubectl wait --for=condition=complete job/once -n $NS --timeout=90s >/dev/null\\nsed -i ''s/old/new/'' /tmp/lab/job.yaml\\n"]', '["sh", "-c", "( [ \\"$(kubectl get job once -n $NS -o jsonpath=''{.spec.template.spec.containers[0].command}'' 2>/dev/null)\\" = ''[\\"echo\\",\\"new\\"]'' ] ) && ( [ \\"$(kubectl get job once -n $NS -o jsonpath=''{.status.succeeded}'' 2>/dev/null)\\" = 1 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "명령이 echo new 다", "cmd": ["sh", "-c", "[ \\"$(kubectl get job once -n $NS -o jsonpath=''{.spec.template.spec.containers[0].command}'' 2>/dev/null)\\" = ''[\\"echo\\",\\"new\\"]'' ]"]}, {"label": "완료됐다", "cmd": ["sh", "-c", "[ \\"$(kubectl get job once -n $NS -o jsonpath=''{.status.succeeded}'' 2>/dev/null)\\" = 1 ]"]}]', '[{"title": "kubectl replace", "url": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_replace/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 499 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 499, 8, '클라이언트 IP 를 지키며 노드 안에서만 받기 (externalTrafficPolicy)', '**배경** — NodePort·LoadBalancer Service 의 **`externalTrafficPolicy`** 기본값 `Cluster` 는 어느 노드로 와도 다른 노드의 Pod 로 넘겨 **클라이언트 IP 가 바뀌고** 홉이 늘 수 있습니다. **`Local`** 은 **받은 노드의 Pod 로만** 보내 원래 IP 를 보존하고 홉을 줄이지만, 그 노드에 Pod 가 없으면 연결이 실패합니다. NodePort Service `web` 이 있습니다.
+
+**문제** — `web` 의 `externalTrafficPolicy` 를 **`Local`** 로 바꾸세요.', '`kubectl patch svc web -p ''{"spec":{"externalTrafficPolicy":"Local"}}''`', 'kubectl patch svc web -n $NS -p ''{"spec":{"externalTrafficPolicy":"Local"}}''
+kubectl get svc web -n $NS -o jsonpath=''{.spec.externalTrafficPolicy}''
+
+# ClusterIP 타입에는 이 필드를 쓸 수 없다(NodePort·LoadBalancer 에서만)', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*.txt; mkdir -p /tmp/lab; kubectl delete ds ds -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cronjob tick -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete job once -n $NS --ignore-not-found --wait=true --timeout=60s >/dev/null 2>&1; kubectl delete deploy web -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete svc web np-svc -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete pod slow np -n $NS --ignore-not-found --grace-period=1 --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cm app-env -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete secret reg -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete sa app-sa -n $NS --ignore-not-found >/dev/null 2>&1; kubectl patch sa default -n $NS -p ''{\\"imagePullSecrets\\":null}'' >/dev/null 2>&1; kubectl create deployment web -n $NS --image=nginx:1.25 >/dev/null; kubectl expose deployment web -n $NS --type=NodePort --port=80 >/dev/null\\n"]', '["sh", "-c", "( [ \\"$(kubectl get svc web -n $NS -o jsonpath=''{.spec.externalTrafficPolicy}'' 2>/dev/null)\\" = Local ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "externalTrafficPolicy 가 Local 이다", "cmd": ["sh", "-c", "[ \\"$(kubectl get svc web -n $NS -o jsonpath=''{.spec.externalTrafficPolicy}'' 2>/dev/null)\\" = Local ]"]}]', '[{"title": "Service (externalTrafficPolicy)", "url": "https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 499 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 499, 9, '포트 번호 대신 이름으로 연결하기 (이름 있는 targetPort)', '**배경** — 컨테이너 포트에 **이름**(`ports[].name`)을 주면 Service 의 `targetPort` 에 **번호 대신 이름**을 적을 수 있습니다. 앱이 포트 번호를 바꿔도 Service 를 고칠 필요가 없어 배포 간 결합이 느슨해집니다. Pod `np`(라벨 `app=np`)는 포트 80 을 **`http`** 라는 이름으로 열고 있습니다.
+
+**문제** — Service **`np-svc`** 를 만들어 `app=np` Pod 로 보내되 **`targetPort` 를 이름 `http`** 로 적고, Endpoints 에 Pod 가 잡히게 하세요.', 'Service 스펙 `ports: [{port: 80, targetPort: http}]`, `selector: {app: np}`', 'kubectl apply -n $NS -f - <<''EOF''
+apiVersion: v1
+kind: Service
+metadata: {name: np-svc}
+spec:
+  selector: {app: np}
+  ports:
+  - {port: 80, targetPort: http}
+EOF
+kubectl get endpoints np-svc -n $NS
+
+# 이름이 컨테이너 포트의 name 과 다르면 Endpoints 가 비어 연결되지 않는다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*.txt; mkdir -p /tmp/lab; kubectl delete ds ds -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cronjob tick -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete job once -n $NS --ignore-not-found --wait=true --timeout=60s >/dev/null 2>&1; kubectl delete deploy web -n $NS --ignore-not-found --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete svc web np-svc -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete pod slow np -n $NS --ignore-not-found --grace-period=1 --wait=true --timeout=90s >/dev/null 2>&1; kubectl delete cm app-env -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete secret reg -n $NS --ignore-not-found >/dev/null 2>&1; kubectl delete sa app-sa -n $NS --ignore-not-found >/dev/null 2>&1; kubectl patch sa default -n $NS -p ''{\\"imagePullSecrets\\":null}'' >/dev/null 2>&1; kubectl apply -n $NS -f - <<''EOF''\\napiVersion: v1\\nkind: Pod\\nmetadata: {name: np, labels: {app: np}}\\nspec:\\n  terminationGracePeriodSeconds: 0\\n  containers:\\n  - name: web\\n    image: nginx:1.25\\n    ports:\\n    - {name: http, containerPort: 80}\\nEOF\\nkubectl wait --for=condition=Ready pod/np -n $NS --timeout=90s >/dev/null\\n"]', '["sh", "-c", "( [ \\"$(kubectl get svc np-svc -n $NS -o jsonpath=''{.spec.ports[0].targetPort}'' 2>/dev/null)\\" = http ] ) && ( [ -n \\"$(kubectl get endpoints np-svc -n $NS -o jsonpath=''{.subsets[0].addresses[0].ip}'' 2>/dev/null)\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "targetPort 가 http 다", "cmd": ["sh", "-c", "[ \\"$(kubectl get svc np-svc -n $NS -o jsonpath=''{.spec.ports[0].targetPort}'' 2>/dev/null)\\" = http ]"]}, {"label": "Endpoints 에 Pod 가 있다", "cmd": ["sh", "-c", "[ -n \\"$(kubectl get endpoints np-svc -n $NS -o jsonpath=''{.subsets[0].addresses[0].ip}'' 2>/dev/null)\\" ]"]}]', '[{"title": "Service 의 이름 있는 포트", "url": "https://kubernetes.io/docs/concepts/services-networking/service/#defining-a-service"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 499 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 499, 10, 'DaemonSet OnDelete 전략', '`updateStrategy: OnDelete` 인 DaemonSet 의 이미지를 바꾸면 기존 Pod 는 어떻게 될까요?', '"삭제할 때" 라는 이름 그대로예요.', NULL, NULL, '[]', 'choice', '["곧바로 하나씩 자동으로 교체된다", "직접 지우기 전까지 옛 이미지로 계속 실행된다", "모든 Pod 가 한꺼번에 재시작된다", "이미지 변경 요청이 거부된다"]', 1, 'OnDelete 는 템플릿이 바뀌어도 기존 Pod 를 건드리지 않고, Pod 를 지우면 컨트롤러가 새 템플릿으로 다시 만듭니다. 노드별 교체 시점을 사람이 정할 때 씁니다.', NULL, NULL, NULL, '[{"title": "DaemonSet 업데이트", "url": "https://kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 499 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 499, 11, '삭제가 끝날 때까지 기다리기', 'Pod 가 완전히 삭제될 때까지 기다리는 명령입니다. 빈칸을 채우세요.', '"삭제" 의 영어예요.', NULL, NULL, '[]', 'fill', '["delete", "gone", "remove", "terminated"]', NULL, '`--for=delete` 는 대상이 사라질 때까지 기다립니다. 다른 값은 `condition=Ready`, `jsonpath=...` 형태가 있고 gone·remove·terminated 는 쓰이지 않습니다.', '[0]', 'kubectl wait --for={0} pod/slow', NULL, '[{"title": "kubectl wait", "url": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_wait/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 499 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 499, 12, '바꿀 수 없는 필드를 고쳐 다시 올리는 순서', 'Job 템플릿처럼 immutable 한 필드를 바꿔 다시 적용하는 순서입니다. 순서에 맞게 놓아 보세요.', '수정 → 시도 → 교체 → 확인이에요.', NULL, NULL, '[]', 'order', '["정의 파일에서 바꿀 값을 수정한다", "`kubectl apply -f` 로 적용해 `field is immutable` 오류를 확인한다", "`kubectl replace --force -f` 로 지우고 다시 만든다", "`kubectl wait` 와 `kubectl get` 으로 새 객체의 상태를 확인한다"]', NULL, 'immutable 필드는 apply 로 바꿀 수 없어 오류가 납니다. replace --force 가 객체를 지우고 새로 만들어 반영하며, 그 뒤 상태를 확인합니다.', '[0, 1, 2, 3]', NULL, NULL, '[{"title": "kubectl replace", "url": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_replace/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 499 AND order_index = 12);
+
+-- 배치: 단원 끝
+UPDATE quest_set SET display_order = 296 WHERE id = 80;
+UPDATE quest_set SET display_order = 297 WHERE id = 13;
+UPDATE quest_set SET display_order = 298 WHERE id = 122;
+UPDATE quest_set SET display_order = 299 WHERE id = 25;
+UPDATE quest_set SET display_order = 300 WHERE id = 108;
+UPDATE quest_set SET display_order = 301 WHERE id = 37;
+UPDATE quest_set SET display_order = 302 WHERE id = 26;
+UPDATE quest_set SET display_order = 303 WHERE id = 348;
+UPDATE quest_set SET display_order = 304 WHERE id = 422;
+UPDATE quest_set SET display_order = 305 WHERE id = 489;
+UPDATE quest_set SET display_order = 307 WHERE id = 23;
+UPDATE quest_set SET display_order = 308 WHERE id = 31;
+UPDATE quest_set SET display_order = 309 WHERE id = 29;
+UPDATE quest_set SET display_order = 310 WHERE id = 227;
+UPDATE quest_set SET display_order = 311 WHERE id = 230;
+UPDATE quest_set SET display_order = 312 WHERE id = 233;
+UPDATE quest_set SET display_order = 313 WHERE id = 339;
+UPDATE quest_set SET display_order = 314 WHERE id = 345;
+UPDATE quest_set SET display_order = 315 WHERE id = 423;
+UPDATE quest_set SET display_order = 316 WHERE id = 425;
+UPDATE quest_set SET display_order = 317 WHERE id = 119;
+UPDATE quest_set SET display_order = 318 WHERE id = 120;
+UPDATE quest_set SET display_order = 319 WHERE id = 121;
+UPDATE quest_set SET display_order = 320 WHERE id = 424;
+UPDATE quest_set SET display_order = 321 WHERE id = 14;
+UPDATE quest_set SET display_order = 292, unit_id = (SELECT id FROM unit WHERE id = 65), icon = '🧮' WHERE id = 499;

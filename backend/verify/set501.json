@@ -1,0 +1,14 @@
+{
+  "setId": 501,
+  "answers": {
+    "1": "docker build --target build -t t1 /tmp/work/q1\ndocker run --rm t1 cat /build.txt > /tmp/q1.txt\ncat /tmp/q1.txt\n\n# --target 이 없으면 마지막 단계(final)까지 빌드한다",
+    "2": "echo 'STOPSIGNAL SIGQUIT' >> /tmp/work/q2/Dockerfile\ndocker build -t t2 /tmp/work/q2\ndocker image inspect -f '{{.Config.StopSignal}}' t2\n\n# 컨테이너를 --stop-signal 로 따로 실행하면 그 값이 우선한다",
+    "3": "docker build -t t3a /tmp/work/q3a\ndocker build -t t3b /tmp/work/q3b\ndocker run --rm t3b cat /trig.txt\n\n# t3a 에는 트리거만 저장돼 있다(docker image inspect 의 Config.OnBuild). 자식 빌드 때 실행된다",
+    "4": "sed -i 's#^COPY run.sh#COPY --chmod=755 run.sh#' /tmp/work/q4/Dockerfile\ndocker build -t t4 /tmp/work/q4\ndocker run --rm t4 stat -c %a /run.sh\n\n# --chmod 는 BuildKit 에서 지원한다. --chown 도 같은 방식이다",
+    "5": "sed -i 's#^COPY app.tar.gz#ADD app.tar.gz#' /tmp/work/q5/Dockerfile\ndocker build -t t5 /tmp/work/q5\ndocker run --rm t5 cat /opt/app/hello.txt\n\n# COPY 는 압축 파일 그대로 복사한다(풀지 않는다)",
+    "6": "echo 'EXPOSE 8080/tcp' >> /tmp/work/q6/Dockerfile\ndocker build -t t6 /tmp/work/q6\ndocker image inspect -f '{{range $p, $_ := .Config.ExposedPorts}}{{$p}}{{end}}' t6 > /tmp/q6.txt\ncat /tmp/q6.txt\n\n# EXPOSE 만으로는 호스트에서 접속되지 않는다. docker run -p 8080:8080 으로 게시한다",
+    "7": "docker build -t t7:a -t t7:b /tmp/work/q7\ndocker image ls t7\n\n# IMAGE ID 가 같다. 한 이미지에 이름이 두 개 붙은 것이다",
+    "8": "docker commit -c 'CMD [\"cat\",\"/note.txt\"]' work t8\ndocker run --rm t8\n\n# commit 이미지는 만든 과정이 남지 않아 재현이 어렵다. 가능하면 Dockerfile 로 만든다",
+    "9": "docker build --secret id=tok,src=/tmp/work/q9/token.txt -t t9 /tmp/work/q9\ndocker run --rm t9 cat /len.txt\n\n# 비밀 값은 이미지 어디에도 남지 않는다. ARG 로 넘기면 docker history 에 보인다"
+  }
+}

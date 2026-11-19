@@ -1,0 +1,14 @@
+{
+  "setId": 500,
+  "answers": {
+    "1": "kubectl run tmp -n $NS --rm -i --restart=Never --image=busybox:1.36 -- wget -qO- http://web > /tmp/q1.txt\ngrep -o 'Welcome to nginx' /tmp/q1.txt\nkubectl get pod tmp -n $NS   # NotFound\n\n# -i 가 없으면 출력을 받기 전에 끝날 수 있다. --rm 이 임시 Pod 를 지운다",
+    "2": "kubectl apply -n $NS -f - <<'EOF'\napiVersion: v1\nkind: Pod\nmetadata: {name: qos}\nspec:\n  terminationGracePeriodSeconds: 0\n  containers:\n  - name: web\n    image: nginx:1.25\n    resources:\n      requests: {cpu: 100m, memory: 64Mi}\n      limits: {cpu: 100m, memory: 64Mi}\nEOF\nkubectl wait --for=condition=Ready pod/qos -n $NS --timeout=90s\nkubectl get pod qos -n $NS -o jsonpath='{.status.qosClass}'\n\n# limits 만 적어도 requests 가 같은 값으로 채워져 Guaranteed 가 된다",
+    "3": "kubectl events --for pod/app -n $NS > /tmp/q3.txt\ncat /tmp/q3.txt\n\n# --types=Warning 이면 경고만, -w 면 새 이벤트를 계속 보여 준다",
+    "4": "kubectl get pods -n $NS -l tier=front -o name > /tmp/q4.txt\ncat /tmp/q4.txt\n\n# kubectl delete $(kubectl get pods -l tier=front -o name) 처럼 다른 명령에 넘긴다",
+    "5": "kubectl get pods -n $NS -l tier=front -o jsonpath='{range .items[*]}{.metadata.name}{\"\\t\"}{.spec.containers[0].image}{\"\\n\"}{end}' > /tmp/q5.txt\ncat /tmp/q5.txt\n\n# 홑따옴표 안에서 \"\\t\" 와 \"\\n\" 은 kubectl 이 해석한다",
+    "6": "kubectl get pods -n $NS -l tier=front -o go-template='{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}' > /tmp/q6.txt\ncat /tmp/q6.txt\n\n# {{\"\\n\"}} 이 없으면 이름이 한 줄에 붙어 나온다",
+    "7": "kubectl get pod crash -n $NS -o jsonpath='{.status.containerStatuses[0].lastState.terminated.exitCode}' > /tmp/q7.txt\ncat /tmp/q7.txt\n\n# lastState 는 한 번 죽은 뒤에야 채워진다. 코드를 알면 logs --previous 로 이유를 찾는다",
+    "8": "kubectl rollout history deploy/web -n $NS --revision=1 | grep 'Image:' | awk '{print $2}' > /tmp/q8.txt\ncat /tmp/q8.txt\n\n# 롤백 대상은 kubectl rollout undo deploy/web --to-revision=1",
+    "9": "kubectl set env deploy/web -n $NS --from=configmap/cfg --prefix=APP_\nkubectl get deploy web -n $NS -o jsonpath='{.spec.template.spec.containers[0].env}'\n\n# 키 mode 가 APP_MODE 로 바뀌어 configMapKeyRef 로 연결된다. 접두사가 없으면 MODE 다"
+  }
+}
