@@ -1,0 +1,14 @@
+{
+  "setId": 498,
+  "answers": {
+    "1": "docker run -d --name c1 --network net1 --network-alias db alpine sleep 3600\ndocker exec c2 ping -c1 -W2 db\n\n# c1 에게 이름이 둘(c1, db)이다. 별명은 사용자 정의 네트워크에서만 풀린다",
+    "2": "docker network create --subnet 172.30.0.0/24 net2\ndocker run -d --name fixed --network net2 --ip 172.30.0.10 alpine sleep 3600\ndocker inspect -f '{{.NetworkSettings.Networks.net2.IPAddress}}' fixed\n\n# --ip 는 --subnet 을 직접 준 네트워크에서만 쓸 수 있다",
+    "3": "docker run -d --name d1 --dns 1.1.1.1 alpine sleep 3600\ndocker exec d1 cat /etc/resolv.conf\n\n# nameserver 1.1.1.1 이 보인다. 데몬 전체에 적용하려면 daemon.json 의 dns 를 쓴다",
+    "4": "docker run -d --name lg --log-opt max-size=1m --log-opt max-file=3 alpine sleep 3600\ndocker inspect -f '{{json .HostConfig.LogConfig}}' lg\n\n# {\"Type\":\"json-file\",\"Config\":{\"max-file\":\"3\",\"max-size\":\"1m\"}}. 제한이 없으면 로그가 디스크를 채울 수 있다",
+    "5": "docker run -d --name sg --stop-signal SIGINT --stop-timeout 3 alpine sleep 3600\ndocker inspect -f '{{.Config.StopSignal}} {{.Config.StopTimeout}}' sg\n\n# SIGINT 3. 신호를 못 받는 프로세스는 3초 뒤 SIGKILL 로 끝난다",
+    "6": "docker run -d --name ro --mount type=volume,src=v1,dst=/data,readonly alpine sleep 3600\ndocker exec ro cat /data/hello.txt\ndocker exec ro sh -c 'echo x > /data/new.txt'   # Read-only file system 오류\n\n# --mount 는 항목 이름이 있어 -v 의 콜론 순서를 외울 필요가 없다",
+    "7": "docker run -d --name sy --sysctl net.core.somaxconn=1024 alpine sleep 3600\ndocker exec sy cat /proc/sys/net/core/somaxconn\n\n# 1024. 컨테이너마다 독립이라 호스트 값은 그대로다",
+    "8": "docker ps -q --no-trunc --filter name=target > /tmp/q8.txt\ncat /tmp/q8.txt\n\n# --no-trunc 가 없으면 12자리다. 이름 필터는 부분 일치라 다른 컨테이너가 섞이지 않게 주의한다",
+    "9": "docker run -d --name sec --security-opt no-new-privileges --cap-drop ALL --cap-add NET_BIND_SERVICE alpine sleep 3600\ndocker inspect -f '{{.HostConfig.SecurityOpt}} {{.HostConfig.CapAdd}} {{.HostConfig.CapDrop}}' sec\n\n# 권한을 쓰지 않는 앱이라면 --cap-drop ALL 만으로도 충분한 경우가 많다"
+  }
+}
