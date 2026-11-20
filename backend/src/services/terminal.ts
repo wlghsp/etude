@@ -6,7 +6,7 @@ import { assignFromPool, releaseVcluster } from './vcluster-pool.js'
 import { registerSession, removeSession } from './session-registry.js'
 import { createSessionAccess, destroySessionAccess } from './k8s-session.js'
 import { sandboxLimits } from './sandbox-limits.js'
-import { privilegedSandboxHost } from './sandbox-runtime.js'
+import { privilegedSandboxHost, dindMirrorCmd } from './sandbox-runtime.js'
 import { installKubeconfig } from './container-kubeconfig.js'
 import type { TerminalTicketInfo } from './terminal-ticket.js'
 
@@ -131,7 +131,8 @@ const OPEN = 1
 // stop이 실패해도(이미 종료됨, 시작 실패) 삭제는 시도한다.
 async function removeContainer(container: Docker.Container): Promise<void> {
   await container.stop().catch(() => {})
-  await container.remove().catch(() => {})
+  // v: dind 컨테이너가 만드는 익명 볼륨(/var/lib/docker)까지 지운다. 안 지우면 세션마다 하나씩 쌓여 디스크가 찬다.
+  await container.remove({ v: true }).catch(() => {})
 }
 
 // 정리 책임은 이 함수의 close handler 한 곳에만 둔다. 세션 종료 API는 없다.
@@ -230,9 +231,11 @@ async function handleDockerTerminal(
   ctx: TerminalCtx,
 ): Promise<PreparedTerminal> {
   const { binds: isoBinds, ...isoHost } = privilegedSandboxHost('dind')
+  const mirror = dindMirrorCmd() // Docker Hub 한도(429)를 피하려고 안쪽 도커가 미러를 쓰게 한다 (없으면 빈 배열)
   const container = await docker.createContainer({
     Env: SANDBOX_ENV,
     Image: config.image,
+    ...(mirror.length > 0 ? { Cmd: mirror } : {}),
     Labels: { etude: 'sandbox'},
     OpenStdin: false, Tty: false,
     AttachStdin: false, AttachStdout: false, AttachStderr: false,

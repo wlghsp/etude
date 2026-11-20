@@ -26,6 +26,7 @@ interface Props {
 type Filter = { kind: 'all' } | { kind: 'unfinished' } | { kind: 'category'; category: string }
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
+const PAGE_SIZE = 10 // 세트 목록에서 처음 보여 주는 개수 (더 보기로 PAGE_SIZE × 2 씩 늘린다)
 const formatDate = (iso: string) => {
     const d = new Date(iso)
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
@@ -39,9 +40,13 @@ export function Progress({ onBack, onLeaderboard, onHall, onReview, onFeed, onAd
     const [goals, setGoals] = useState<Goals | null>(null)
     const badges = gami?.badges ?? null
     const level = gami?.level ?? null
-    const [filter, setFilter] = useState<Filter>({ kind: 'all' })
+    const [filter, setFilterRaw] = useState<Filter>({ kind: 'all' })
+    const setFilter = (f: Filter) => { setFilterRaw(f); setShown(PAGE_SIZE) } // 필터를 바꾸면 목록을 처음 몇 개로 되돌린다
     const [openSets, setOpenSets] = useState<Set<number>>(new Set())
     const [openRecords, setOpenRecords] = useState<Set<number>>(new Set())
+    // 화면이 끝없이 길어지지 않게: 코스별 단원 목록은 접어 두고, 세트 목록은 처음 몇 개만 보여 준다
+    const [toggledCats, setToggledCats] = useState<Set<string>>(new Set()) // 기본 펼침/접힘을 뒤집은 코스
+    const [shown, setShown] = useState(PAGE_SIZE)
 
     useEffect(() => {
         fetchGoals().then(setGoals).catch(() => { /* 목표가 없어도 진행현황은 보인다 */ })
@@ -56,6 +61,8 @@ export function Progress({ onBack, onLeaderboard, onHall, onReview, onFeed, onAd
     const weekCount = allRecords.filter((r) => Date.now() - new Date(r.completedAt).getTime() <= WEEK_MS).length
     const rate = list.length > 0 ? Math.round((completedSets / list.length) * 100) : 0
     const categories = useMemo(() => Array.from(new Set(list.map((s) => s.category))), [list])
+    // 진행이 있는 첫 코스(없으면 첫 코스)만 기본으로 펼친다
+    const defaultOpenCat = categories.find((c) => list.some((s) => s.category === c && s.completions.length > 0)) ?? categories[0]
     const visible = list.filter((s) => {
         if (filter.kind === 'unfinished') return s.completions.length === 0
         if (filter.kind === 'category') return s.category === filter.category
@@ -124,7 +131,7 @@ export function Progress({ onBack, onLeaderboard, onHall, onReview, onFeed, onAd
             <div className="flex flex-1 pt-14">
                 <SideNav activePage="progress" userName={userName} userEmail={userEmail} userRole={userRole} onHome={onBack} onProgress={() => {}} onLeaderboard={onLeaderboard} onHall={onHall} onReview={onReview} onFeed={onFeed} onAdmin={onAdmin} onLogout={onLogout} onChangePassword={onChangePassword} />
 
-                <main className="fx-page flex-1 md:ml-60 flex flex-col items-center px-gutter py-8 bg-surface">
+                <main className="fx-page flex-1 min-w-0 md:ml-60 flex flex-col items-center px-gutter py-8 bg-surface">
                     <div className="w-full max-w-[900px] flex flex-col gap-8">
                         <div className="flex flex-col gap-2">
                             <div className="flex items-center gap-2 text-on-surface-variant font-sans text-label-caps">
@@ -178,10 +185,27 @@ export function Progress({ onBack, onLeaderboard, onHall, onReview, onFeed, onAd
 
                             <section className="flex flex-col gap-4">
                                 <h2 className="font-sans text-headline-md text-on-surface">단원별 진행</h2>
-                                {categories.map((c) => (
-                                    <div key={c} className="border border-outline-variant bg-surface-container-low p-5 flex flex-col gap-4">
-                                        <span className="font-sans text-body-lg font-semibold text-on-surface">{c}</span>
-                                        {groupByUnit(list.filter((s) => s.category === c), (s) => ({ unitId: s.unitId, unitTitle: s.unitTitle, unitOrder: s.unitOrder })).map((g) => {
+                                {categories.map((c) => {
+                                    const inCat = list.filter((s) => s.category === c)
+                                    const catDone = inCat.filter((s) => s.completions.length > 0).length
+                                    const catPct = inCat.length === 0 ? 0 : Math.round((catDone / inCat.length) * 100)
+                                    const catOpen = (c === defaultOpenCat) !== toggledCats.has(c)
+                                    return (
+                                    <div key={c} className="border border-outline-variant bg-surface-container-low flex flex-col">
+                                        <button
+                                            type="button"
+                                            onClick={() => setToggledCats((prev) => { const next = new Set(prev); if (next.has(c)) next.delete(c); else next.add(c); return next })}
+                                            aria-expanded={catOpen}
+                                            className="flex w-full items-center gap-3 p-5 text-left hover:bg-surface-container-high transition-colors"
+                                        >
+                                            <span className="font-sans text-body-lg font-semibold text-on-surface">{c}</span>
+                                            <span className="font-sans text-code-sm text-on-surface-variant tabular-nums">{catDone}/{inCat.length} 세트</span>
+                                            <div className="ml-auto hidden h-1.5 w-32 bg-surface-container-highest sm:block" role="progressbar" aria-valuenow={catPct} aria-valuemin={0} aria-valuemax={100}>
+                                                <div className="h-full bg-primary transition-all" style={{ width: `${catPct}%` }} />
+                                            </div>
+                                            <span className="material-symbols-outlined text-[22px] text-on-surface-variant" aria-hidden="true">{catOpen ? 'expand_less' : 'expand_more'}</span>
+                                        </button>
+                                        {catOpen && <div className="flex flex-col gap-4 px-5 pb-5">{groupByUnit(list.filter((s) => s.category === c), (s) => ({ unitId: s.unitId, unitTitle: s.unitTitle, unitOrder: s.unitOrder })).map((g) => {
                                             const done = g.items.filter((s) => s.completions.length > 0).length
                                             const pct = Math.round((done / g.items.length) * 100)
                                             return (
@@ -195,9 +219,10 @@ export function Progress({ onBack, onLeaderboard, onHall, onReview, onFeed, onAd
                                                     </div>
                                                 </div>
                                             )
-                                        })}
+                                        })}</div>}
                                     </div>
-                                ))}
+                                    )
+                                })}
                             </section>
 
                             <section className="flex flex-col gap-4">
@@ -210,7 +235,7 @@ export function Progress({ onBack, onLeaderboard, onHall, onReview, onFeed, onAd
                                 {visible.length === 0 && <p className="font-sans text-body-md text-on-surface-variant">조건에 맞는 세트가 없어요.</p>}
 
                                 <ul className="flex flex-col gap-3">
-                                    {visible.map((set) => {
+                                    {visible.slice(0, shown).map((set) => {
                                         const done = set.completions.length > 0
                                         const open = openSets.has(set.questSetId)
                                         const best = done ? Math.min(...set.completions.map((c) => c.totalSeconds)) : 0
@@ -247,6 +272,13 @@ export function Progress({ onBack, onLeaderboard, onHall, onReview, onFeed, onAd
                                         )
                                     })}
                                 </ul>
+                                {visible.length > shown && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShown((n) => n + PAGE_SIZE * 2)}
+                                        className="self-center rounded-xl border border-outline-variant px-5 py-2.5 font-sans text-body-md font-semibold text-on-surface hover:bg-surface-container-high transition-colors"
+                                    >더 보기 ({visible.length - shown}개 남음)</button>
+                                )}
                             </section>
                         </>}
                     </div>

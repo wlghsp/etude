@@ -10,7 +10,7 @@ export async function cleanupOrphanContainers() {
     for (const c of containers) {
         const container = docker.getContainer(c.Id)
         await container.stop().catch(() => {})
-        await container.remove().catch(() => {})
+        await container.remove({ v: true }).catch(() => {}) // v: dind 컨테이너의 익명 볼륨(/var/lib/docker)까지 지운다
     }
 }
 
@@ -21,6 +21,6 @@ export async function cleanupRunningContainers() {
     for (const c of containers) {
         const container = docker.getContainer(c.Id)
         await container.stop().catch(() => {})
-        await container.remove().catch(() => {})
+        await container.remove({ v: true }).catch(() => {}) // v: dind 컨테이너의 익명 볼륨(/var/lib/docker)까지 지운다
     }
 }

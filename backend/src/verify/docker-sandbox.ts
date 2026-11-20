@@ -3,7 +3,7 @@ import type { SandboxFactory, VerifySandbox } from './verify-quest.js'
 import { createSessionAccess, destroySessionAccess } from '../services/k8s-session.js'
 import { installKubeconfig } from '../services/container-kubeconfig.js'
 import { sandboxLimits, type SandboxClass } from '../services/sandbox-limits.js'
-import { privilegedSandboxHost } from '../services/sandbox-runtime.js'
+import { privilegedSandboxHost, dindMirrorCmd } from '../services/sandbox-runtime.js'
 
 const DEFAULT_EXEC_TIMEOUT_MS = 120_000
 
@@ -45,8 +45,11 @@ export function dockerSandboxFactory(docker: Docker, config: { image: string; bi
     return async () => {
         // 특권 프로필의 격리 방식은 앱과 같은 헬퍼(SANDBOX_RUNTIME)가 정한다
         const { binds: isoBinds, ...isoHost } = profile.privileged ? privilegedSandboxHost(profile.limitClass === 'systemd' ? 'systemd' : 'dind') : { binds: [] as string[] }
+        // dind 는 앱과 같게 Docker Hub 대신 미러를 쓴다 (DOCKER_REGISTRY_MIRROR). 한도(429)에 걸리면 검증이 가짜로 실패한다.
+        const mirror = profile.privileged && profile.limitClass !== 'systemd' ? dindMirrorCmd() : []
         const container = await docker.createContainer({
             Image: config.image,
+            ...(mirror.length > 0 ? { Cmd: mirror } : {}),
             Labels: { etude: 'verify' },
             HostConfig: {
                 // k8s는 DB의 binds(관리자 kubeconfig 마운트)를 무시한다. 앱과 같다.
@@ -65,7 +68,7 @@ export function dockerSandboxFactory(docker: Docker, config: { image: string; bi
             // 권한(ClusterRoleBinding)과 네임스페이스를 먼저 지운다. 일부만 만들어진 상태에서도 안전하다.
             if (ns && accessStarted) await destroySessionAccess(ns).catch(() => {})
             await container.stop({ t: 0 }).catch(() => {})
-            await container.remove({ force: true }).catch(() => {})
+            await container.remove({ force: true, v: true }).catch(() => {}) // v: dind 가 만드는 익명 볼륨(/var/lib/docker)까지 지운다. 안 지우면 검증마다 쌓여 디스크가 찬다
         }
 
         // 실제 채점(execCheck)과 같은 방식: exec를 시작하고 끝날 때까지 inspect로 기다린다

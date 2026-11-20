@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { privilegedSandboxHost } from './sandbox-runtime.js'
+import { dindMirrorCmd, privilegedSandboxHost } from './sandbox-runtime.js'
 
 afterEach(() => vi.unstubAllEnvs())
 
@@ -22,5 +22,25 @@ describe('privilegedSandboxHost', () => {
         vi.stubEnv('SANDBOX_RUNTIME', 'sysbox-runc')
         expect(privilegedSandboxHost('dind')).toEqual({ Runtime: 'sysbox-runc', binds: [] })
         expect(privilegedSandboxHost('systemd')).toEqual({ Runtime: 'sysbox-runc', binds: [] })
+    })
+})
+
+describe('dindMirrorCmd', () => {
+    const OLD = process.env.DOCKER_REGISTRY_MIRROR
+    afterEach(() => { if (OLD === undefined) delete process.env.DOCKER_REGISTRY_MIRROR; else process.env.DOCKER_REGISTRY_MIRROR = OLD })
+
+    it('미러 환경변수가 없으면 dockerd 에 아무 옵션도 주지 않는다 (Docker Hub 직접 사용)', () => {
+        delete process.env.DOCKER_REGISTRY_MIRROR
+        expect(dindMirrorCmd()).toEqual([])
+    })
+
+    it('http 미러는 --registry-mirror 와 --insecure-registry 를 함께 준다', () => {
+        process.env.DOCKER_REGISTRY_MIRROR = 'http://172.17.0.1:5000'
+        expect(dindMirrorCmd()).toEqual(['--registry-mirror=http://172.17.0.1:5000', '--insecure-registry=172.17.0.1:5000'])
+    })
+
+    it('https 미러는 --registry-mirror 만 준다', () => {
+        process.env.DOCKER_REGISTRY_MIRROR = 'https://mirror.example.com'
+        expect(dindMirrorCmd()).toEqual(['--registry-mirror=https://mirror.example.com'])
     })
 })

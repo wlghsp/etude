@@ -102,6 +102,45 @@ docker compose -f deploy/docker-compose.prod.yml --project-directory . down -v
 
 ---
 
+## 디스크 정리 (도커 볼륨)
+
+도커 실습 세션은 `docker:dind` 컨테이너를 쓰고, 이 이미지는 실행할 때마다 안쪽 도커 저장소용 **익명 볼륨**(이름이
+64자리 해시)을 하나 만든다. 컨테이너를 지울 때 볼륨까지 지우지 않으면 세션마다 하나씩 쌓여 디스크가 찬다
+(2026-11-19 로컬에서 848개·약 53GB 로 디스크가 100% 가 됨).
+
+- **원인 차단:** 앱이 샌드박스 컨테이너를 지울 때 `remove({ v: true })` 로 볼륨까지 지운다 (`terminal.ts`, `plugins/docker.ts`).
+- **안전망:** 배포(`deploy.yml`)가 `git pull` 직후 어느 컨테이너에도 연결 안 된 64자리 해시 이름 볼륨만 지우고, 디스크 상태(`df`, `docker system df`)를 로그에 남긴다. 이름 있는 볼륨(DB 등)은 지우지 않는다.
+
+```bash
+# 상태 확인: Local Volumes 의 RECLAIMABLE 이 크면 쌓인 것
+docker system df
+df -h /
+
+# 수동 정리 (배포가 하는 것과 같다. 연결 안 된 64자리 해시 이름 볼륨만 삭제)
+docker volume ls -qf dangling=true | grep -E '^[0-9a-f]{64}$' | xargs -r docker volume rm
+```
+
+`docker volume prune` 은 Docker 23 미만에서는 이름 있는 볼륨까지 지울 수 있어 쓰지 않는다.
+
+## 유휴 클러스터 수 (vcluster 풀)
+
+k8s 실습은 미리 만들어 둔 vcluster 를 세션에 하나씩 내준다. 내주면 빈자리를 비동기로 하나 더 만들고, 세션이 끝나면 그 vcluster 는 삭제한다.
+**풀이 비어 있으면 그 자리에서 만들어서 수십 초(느린 서버에서는 60초 이상) 기다린다.** 개수는 `VCLUSTER_POOL_SIZE` 로 정하며 운영 compose 의 기본은 4 이다 (코드 기본값은 2).
+
+고르는 기준:
+- **N ≥ 한 vcluster 가 만들어지는 시간 안에 k8s 실습을 동시에 시작하는 사람 수.** 수업처럼 한꺼번에 시작하면 그만큼 필요하다.
+- **N × (vcluster 하나가 쉴 때 차지하는 메모리) 가 서버 메모리의 10~15% 안.** 실습 중인 세션의 메모리는 따로다.
+- 풀이 줄어드는 속도보다 채우는 속도가 느리면(동시에 여러 개를 만들면 서버가 느려진다) N 을 키워도 소용이 없다.
+
+서버에서 재 보는 법:
+```bash
+free -h && nproc                                       # 서버 메모리·CPU
+kubectl top pods -A | grep -E 'vcluster|NAME'          # vcluster 하나의 실제 메모리
+kubectl get ns | grep -c 'vcluster-pool-'              # 지금 만들어 둔 유휴 수
+docker logs etude-backend 2>&1 | grep -i vcluster | tail   # 풀 생성 실패·fallback(그 자리에서 생성) 기록
+```
+값을 바꾸려면 서버의 `deploy/.env` 에 `VCLUSTER_POOL_SIZE=6` 처럼 적고 재배포한다.
+
 ## k3d 클러스터
 
 ```bash

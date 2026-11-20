@@ -27,5 +27,6 @@ export interface QuestSet {
   unit_title: string | null
   unit_order: number | null
   quest_count: number
+  terminal_count: number // 터미널 문제 수 (세트 라벨을 실제 구성으로 정한다)
   first_xp: number // 처음 끝내면 얻는 XP (서버가 계산)
 }

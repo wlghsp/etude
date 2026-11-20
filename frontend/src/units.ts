@@ -38,3 +38,11 @@ export function groupByUnit<T>(items: T[], info: (item: T) => UnitInfo): UnitGro
     for (const g of groups) g.number = orderOf.get(g) === null ? null : ++n
     return groups
 }
+
+// 홈에서 기본으로 펼칠 단원의 위치. 추천(다음에 할) 세트가 있는 단원, 없으면 아직 안 끝낸 세트가 있는 첫 단원.
+// 전부 끝냈으면 -1 (모두 접힌 채로 시작한다). 나머지 단원은 머리글만 보이고 눌러서 연다.
+export function defaultOpenGroupIndex<T extends { id: number }>(groups: UnitGroup<T>[], nextId: number | null, isDone: (item: T) => boolean): number {
+    const withNext = groups.findIndex((g) => g.items.some((s) => s.id === nextId))
+    if (withNext >= 0) return withNext
+    return groups.findIndex((g) => g.items.some((s) => !isDone(s)))
+}

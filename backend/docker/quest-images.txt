@@ -1,0 +1,20 @@
+# 퀘스트가 Docker Hub 에서 받는 이미지 (배포 때 미러에 미리 받아 둔다: scripts/mirror-warm.sh)
+# 한 줄에 하나. 새 퀘스트가 새 이미지를 쓰면 여기에 추가한다. (library/ 이미지만; 다른 네임스페이스는 이름을 그대로 쓴다)
+alpine:latest
+alpine:3.19
+alpine:3.20
+busybox:latest
+busybox:1.36
+nginx:latest
+nginx:1.24
+nginx:1.25
+nginx:1.26
+nginx:1.27
+nginx:alpine
+nginx:1.25-alpine
+nginx:1.26-alpine
+nginx:1.27-alpine
+ubuntu:latest
+hello-world:latest
+registry:2
+redis:latest

@@ -34,6 +34,10 @@ services:
     environment:
       # vcluster CLI가 표준으로 인식하는 KUBECONFIG 환경변수 — KUBECONFIG_PATH(.env.prod)와 동일 경로를 가리킨다
       KUBECONFIG: /root/.kube/config-etude
+      # 미리 만들어 두는 유휴 vcluster(k8s 실습 환경) 수. 풀이 비면 그 자리에서 만들어 수십 초 걸린다 (guide_server_operations.md '유휴 클러스터 수')
+      VCLUSTER_POOL_SIZE: ${VCLUSTER_POOL_SIZE:-4}
+      # 도커 실습(dind) 안쪽 도커가 Docker Hub 대신 쓸 미러 (docs/specs/spec_registry_mirror.md). 기본 브리지(docker0) 게이트웨이 주소다.
+      DOCKER_REGISTRY_MIRROR: http://${MIRROR_BIND_IP:-172.17.0.1}:5000
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOME}/.kube/config-etude:/root/.kube/config-etude:ro
@@ -42,6 +46,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      mirror:
+        condition: service_started
     healthcheck:
       # /health 는 DB까지 확인한다. 시작 직후 고아 정리와 vcluster 풀 생성 시간을 start_period 로 기다린다.
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/health >/dev/null"]
@@ -49,6 +55,26 @@ services:
       timeout: 5s
       retries: 6
       start_period: 180s
+    networks:
+      - etude
+      - k3d-etude
+
+  # Docker Hub 풀스루 캐시. 실습 세션(dind)과 k3d 클러스터가 이미지를 여기서 받아, Hub 의 익명 한도(429)를 피한다.
+  # 한 번 받은 이미지는 볼륨에 남아 재배포 후에도 유지된다. 외부에는 열지 않는다(127.0.0.1 과 docker0 게이트웨이에만 바인딩).
+  # Hub 계정으로 받고 싶으면 deploy/.env 에 REGISTRY_PROXY_USERNAME / REGISTRY_PROXY_PASSWORD(액세스 토큰)를 둔다.
+  mirror:
+    image: registry:2
+    container_name: etude-mirror
+    restart: unless-stopped
+    environment:
+      REGISTRY_PROXY_REMOTEURL: https://registry-1.docker.io
+      REGISTRY_PROXY_USERNAME: ${REGISTRY_PROXY_USERNAME:-}
+      REGISTRY_PROXY_PASSWORD: ${REGISTRY_PROXY_PASSWORD:-}
+    ports:
+      - "127.0.0.1:5000:5000"
+      - "${MIRROR_BIND_IP:-172.17.0.1}:5000:5000"
+    volumes:
+      - etude-mirror-data:/var/lib/registry
     networks:
       - etude
       - k3d-etude
@@ -74,6 +100,7 @@ services:
 volumes:
   etude-db-data:
   etude-feedback-files:
+  etude-mirror-data:
 
 networks:
   etude:

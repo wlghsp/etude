@@ -6,7 +6,7 @@ import { fetchQuestSets } from "../api/quest";
 import { fetchGamification, fetchGoals, fetchProgress, type Gamification, type Goals, type LevelInfo } from "../api/user";
 import { SideNav } from "../components/SideNav";
 import { TopNav } from "../components/TopNav";
-import { groupByUnit } from "../units";
+import { defaultOpenGroupIndex, groupByUnit } from "../units";
 import { SetPath } from "./SetPath";
 import { Logo } from "../components/Logo";
 import { ProgressRing } from "../components/ProgressRing";
@@ -64,6 +64,7 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
     const [stats, setStats] = useState<Stats | null>(null)
     const [goals, setGoals] = useState<Goals | null>(null)
     const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set()) // 완료 세트를 펼쳐 둔 단원
+    const [toggledUnits, setToggledUnits] = useState<Set<string>>(new Set()) // 기본 펼침/접힘을 뒤집은 단원
     const [perfectIds, setPerfectIds] = useState<Set<number>>(new Set()) // 힌트·풀이 없이 끝낸 적이 있는 세트
 
     useEffect(() => {
@@ -194,36 +195,48 @@ export function SetSelect({ onSelect, onProgress, onLeaderboard, onHall, onRevie
 
                                     {(
                                         <div className="space-y-8">
-                                            {groupByUnit(items, (s) => ({ unitId: s.unit_id, unitTitle: s.unit_title, unitOrder: s.unit_order })).map((g) => {
+                                            {(() => {
+                                              const groups = groupByUnit(items, (s) => ({ unitId: s.unit_id, unitTitle: s.unit_title, unitOrder: s.unit_order }))
+                                              // 내가 보는 단원(추천 세트가 있는 단원)만 기본으로 펼치고, 나머지는 머리글만 보이게 접어 둔다
+                                              const openIdx = defaultOpenGroupIndex(groups, nextSet?.id ?? null, (s) => (completedCount[s.id] ?? 0) > 0)
+                                              return groups.map((g, gi) => {
                                                 const done = g.items.filter((s) => (completedCount[s.id] ?? 0) > 0).length
                                                 // 끝낸 세트가 3개 이상이면 접어서 다음에 할 세트가 먼저 보이게 한다 (펼치면 전부 보인다)
                                                 const unitKey = `${category}-${g.unitId ?? 'none'}`
                                                 const collapsible = done >= COLLAPSE_DONE_FROM
                                                 const collapsed = collapsible && !expandedUnits.has(unitKey)
+                                                const unitOpen = gi === openIdx !== toggledUnits.has(unitKey) // 단원 없는 묶음도 "기타 세트" 머리글로 접고 편다
                                                 const shown = collapsed ? g.items.filter((s) => (completedCount[s.id] ?? 0) === 0) : g.items
                                                 return (
                                                     <div key={g.unitId ?? 'none'}>
-                                                        {g.title && (
-                                                            <div className={`flex items-center gap-3 mb-4 rounded-2xl border border-outline-variant bg-gradient-to-r ${meta.grad} to-transparent px-4 py-3`}>
+                                                        {(
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setToggledUnits((prev) => { const next = new Set(prev); if (next.has(unitKey)) next.delete(unitKey); else next.add(unitKey); return next })}
+                                                                aria-expanded={unitOpen}
+                                                                className={`flex w-full items-center gap-3 ${unitOpen ? 'mb-4' : ''} rounded-2xl border border-outline-variant bg-gradient-to-r ${meta.grad} to-transparent px-4 py-3 text-left transition-colors hover:border-outline`}
+                                                            >
                                                                 <ProgressRing value={Math.round((done / g.items.length) * 100)} size={36} stroke={4} className={done === g.items.length ? 'text-success' : meta.ring}>
                                                                     {done === g.items.length
                                                                         ? <span className="material-symbols-outlined text-[18px] text-success" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
                                                                         : <span className="font-sans text-[10px] font-bold text-on-surface-variant tabular-nums">{done}/{g.items.length}</span>}
                                                                 </ProgressRing>
-                                                                <h3 className="font-sans text-body-lg font-semibold text-on-surface">{g.number}단원 · {g.title}</h3>
+                                                                <h3 className="font-sans text-body-lg font-semibold text-on-surface">{g.title ? `${g.number}단원 · ${g.title}` : '기타 세트'}</h3>
                                                                 {done === g.items.length && <span className="px-2 py-0.5 rounded-full border border-success/50 bg-success/10 font-sans text-label-caps text-success">단원 완료</span>}
-                                                            </div>
+                                                                <span className="material-symbols-outlined ml-auto text-[22px] text-on-surface-variant" aria-hidden="true">{unitOpen ? 'expand_less' : 'expand_more'}</span>
+                                                            </button>
                                                         )}
-                                                        {collapsible && (
+                                                        {unitOpen && collapsible && (
                                                             <button
                                                                 onClick={() => setExpandedUnits((prev) => { const next = new Set(prev); if (next.has(unitKey)) next.delete(unitKey); else next.add(unitKey); return next })}
                                                                 className="mb-3 font-sans text-label-caps text-info hover:underline"
                                                             >{collapsed ? `✅ 끝낸 ${done}개 펼치기` : '끝낸 세트 접기'}</button>
                                                         )}
-                                                        <SetPath items={shown} hiddenDone={g.items.length - shown.length} completedCount={completedCount} perfectIds={perfectIds} nextId={nextSet?.id ?? null} firstTime={(stats?.completed ?? 0) === 0} tone={meta} onSelect={enterSet} />
+                                                        {unitOpen && <SetPath items={shown} hiddenDone={g.items.length - shown.length} completedCount={completedCount} perfectIds={perfectIds} nextId={nextSet?.id ?? null} firstTime={(stats?.completed ?? 0) === 0} tone={meta} onSelect={enterSet} />}
                                                     </div>
                                                 )
-                                            })}
+                                              })
+                                            })()}
                                         </div>
                                     )}
                                 </section>

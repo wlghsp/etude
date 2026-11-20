@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Logo } from './Logo'
 import { stageOf } from '../characters'
 import { fetchFeedSummary } from '../api/feed'
 import { avatarTone } from '../avatar'
@@ -83,10 +82,7 @@ export function SideNav({ activePage, userName, userEmail, userRole, onHome, onP
             className={`${open ? 'flex' : 'hidden'} md:flex z-40 flex-col w-60 bg-surface-container border-r border-outline-variant fixed h-[calc(100vh-3.5rem)] py-4`}
         >
             <div className="px-4 mb-6">
-                <div className="flex items-center gap-2.5">
-                    <Logo size={36} className="drop-shadow-[0_0_10px_rgba(129,140,248,0.45)]" />
-                    <div className="font-sans text-headline-md text-on-surface">Etude Workspace</div>
-                </div>
+                <div className="font-sans text-headline-md text-on-surface">Etude Workspace</div>
             </div>
             <nav className="flex-1 space-y-0.5 overflow-y-auto">
                 {caption('학습')}

@@ -17,6 +17,10 @@ jobs:
             set -e
             cd ~/etude
             git pull
+            # 도커 실습 세션이 남긴 익명 볼륨(64자리 해시 이름, 어느 컨테이너에도 연결 안 된 것만)을 정리한다. 이름 있는 볼륨(DB 등)은 건드리지 않는다.
+            docker volume ls -qf dangling=true | grep -E '^[0-9a-f]{64}$' | xargs -r docker volume rm > /dev/null || true
+            docker image prune -f > /dev/null || true
+            echo "== 디스크 =="; df -h / | tail -1; docker system df
             docker build -q -f backend/docker/Dockerfile.linux -t etude-linux:latest backend
             docker build -q -f backend/docker/Dockerfile.linux-db -t etude-linux-db:latest backend
             docker build -q -f backend/docker/Dockerfile.k8s -t etude-k8s:latest backend
@@ -29,3 +33,6 @@ jobs:
             docker compose -f deploy/docker-compose.prod.yml --project-directory . up -d --build --wait --wait-timeout 600 backend nginx
             # nginx.conf 는 파일 단위 바인드 마운트라 git pull 로 파일이 교체되면 컨테이너가 옛 설정을 쥘 수 있다. 재시작해 확실히 반영한다.
             docker compose -f deploy/docker-compose.prod.yml --project-directory . restart nginx
+            # Docker Hub 한도(429) 대책: k3d 가 미러에서 받게 설정(처음 한 번만 노드를 재시작)하고, 퀘스트 이미지를 미러에 미리 받아 둔다. 실패해도 배포는 막지 않는다.
+            scripts/k3d-mirror.sh || echo "k3d 미러 설정 실패: docs/specs/spec_registry_mirror.md 를 확인하세요"
+            scripts/mirror-warm.sh

@@ -40,14 +40,15 @@ export async function getQuestSets(userId: number, role: string): Promise<QuestS
   const v = visibleSet('qs', userId, role)
   const [rows] = await db.query(`
     SELECT qs.id, qs.title, qs.description, qs.sandbox_type, qs.category, qs.is_review, qs.icon, qs.time_limit_sec, qs.unit_id, u.title AS unit_title, u.display_order AS unit_order,
-      (SELECT COUNT(*) FROM quest q WHERE q.quest_set_id = qs.id) AS quest_count
+      (SELECT COUNT(*) FROM quest q WHERE q.quest_set_id = qs.id) AS quest_count,
+      (SELECT COUNT(*) FROM quest q WHERE q.quest_set_id = qs.id AND q.kind = 'terminal') AS terminal_count
     FROM quest_set qs
     LEFT JOIN unit u ON u.id = qs.unit_id
     WHERE ${v.sql}
     ORDER BY qs.display_order, qs.id`, v.params
   )
   // MariaDB 의 BOOLEAN 은 0/1 로 오므로 화면이 쓰기 쉽게 boolean 으로 바꾼다
-  return (rows as any[]).map((r) => ({ ...r, is_review: Boolean(r.is_review), quest_count: Number(r.quest_count), first_xp: Number(r.quest_count) * XP_PER_QUEST })) as QuestSet[]
+  return (rows as any[]).map((r) => ({ ...r, is_review: Boolean(r.is_review), quest_count: Number(r.quest_count), terminal_count: Number(r.terminal_count), first_xp: Number(r.quest_count) * XP_PER_QUEST })) as QuestSet[]
 }
 
 export async function getQuestSetsForAdmin() {

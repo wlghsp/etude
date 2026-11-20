@@ -37,3 +37,25 @@ test('단원 없는 세트(null)는 한 묶음으로 모아 분야 맨 끝에 �
     const g = groupByUnit<S>([{ id: 1, u: null, o: null }, { id: 2, u: 1, o: 10 }, { id: 3, u: null, o: null }], info)
     assert.deepEqual(g.map((x) => [x.unitId, x.items.map((i) => i.id), x.number]), [[1, [2], 1], [null, [1, 3], null]])
 })
+
+// --- 기본으로 펼칠 단원 ---
+import { defaultOpenGroupIndex } from './units.ts'
+
+const grp = (id: number, u: number, ids: number[]) => ({ unitId: u, title: `단원${u}`, number: id, items: ids.map((i) => ({ id: i })) })
+const done = (set: Set<number>) => (i: { id: number }) => set.has(i.id)
+
+test('추천 세트가 있는 단원을 펼친다', () => {
+    const g = [grp(1, 1, [1, 2]), grp(2, 2, [3, 4]), grp(3, 3, [5])]
+    assert.equal(defaultOpenGroupIndex(g, 4, done(new Set([1, 2, 3]))), 1)
+})
+
+test('추천 세트가 이 분야에 없으면 아직 안 끝낸 세트가 있는 첫 단원을 펼친다', () => {
+    const g = [grp(1, 1, [1, 2]), grp(2, 2, [3, 4])]
+    assert.equal(defaultOpenGroupIndex(g, 99, done(new Set([1, 2]))), 1)
+    assert.equal(defaultOpenGroupIndex(g, null, done(new Set())), 0)
+})
+
+test('전부 끝냈으면 펼칠 단원이 없다 (-1)', () => {
+    const g = [grp(1, 1, [1]), grp(2, 2, [2])]
+    assert.equal(defaultOpenGroupIndex(g, null, done(new Set([1, 2]))), -1)
+})

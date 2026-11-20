@@ -24,7 +24,7 @@ interface Props {
 // 설명 카드(폭 300)가 길 영역 안에 들어오게 하는 왼쪽 위치
 const cardLeftOf = (x: number, width: number) => Math.max(width >= MAX_WIDTH ? 8 : 0, Math.min(x - 150, width - 300, 150))
 
-const fallbackIcon = (s: QuestSet) => (s.is_review ? '🏆' : s.sandbox_type === 'quiz' ? '📝' : '💻')
+const fallbackIcon = (s: QuestSet) => (s.is_review ? '🏆' : setKind(s).icon)
 
 export function SetPath({ items, hiddenDone = 0, completedCount, perfectIds, nextId, firstTime, tone, onSelect }: Props) {
     const [openId, setOpenId] = useState<number | 'chest' | null>(null)

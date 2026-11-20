@@ -34,8 +34,8 @@ describe('컨테이너 정리 (기동·종료 시)', () => {
         const opts = listContainers.mock.calls[0][0]
         expect(opts.all).toBe(true)
         expect(JSON.parse(opts.filters)).toEqual({ label: ['etude=sandbox'] })
-        expect(a.remove).toHaveBeenCalled()
-        expect(b.remove).toHaveBeenCalled() // stop 실패와 무관하게 삭제한다
+        expect(a.remove).toHaveBeenCalledWith({ v: true })
+        expect(b.remove).toHaveBeenCalledWith({ v: true }) // stop 실패와 무관하게 삭제한다. v: dind 의 익명 볼륨까지 지운다
     })
 
     it('종료 정리: 실행 중인 etude=sandbox 컨테이너를 중지·삭제하고 다른 라벨은 대상으로 삼지 않는다', async () => {
@@ -49,6 +49,6 @@ describe('컨테이너 정리 (기동·종료 시)', () => {
         expect(opts.all).toBeUndefined()
         expect(JSON.parse(opts.filters)).toEqual({ label: ['etude=sandbox'] })
         expect(a.stop).toHaveBeenCalled()
-        expect(a.remove).toHaveBeenCalled()
+        expect(a.remove).toHaveBeenCalledWith({ v: true })
     })
 })

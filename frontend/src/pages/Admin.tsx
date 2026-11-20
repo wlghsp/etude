@@ -96,7 +96,7 @@ export function Admin({ onHome, onProgress, onLeaderboard, onHall, onReview, onF
       <div className="flex flex-1 pt-14">
         <SideNav activePage="admin" userName={userName} userEmail={userEmail} userRole={userRole} onHome={onHome} onProgress={onProgress} onLeaderboard={onLeaderboard} onHall={onHall} onReview={onReview} onFeed={onFeed} onAdmin={onHome} onLogout={onLogout} onChangePassword={onChangePassword} />
 
-        <main className="flex-1 md:ml-60 flex flex-col items-center px-gutter py-8 bg-surface">
+        <main className="flex-1 min-w-0 md:ml-60 flex flex-col items-center px-gutter py-8 bg-surface">
           <div className="w-full max-w-[900px] flex flex-col gap-8">
             <h1 className="font-sans text-headline-lg text-on-surface">퀘스트 세트 접근 관리</h1>
 
@@ -123,10 +123,10 @@ export function Admin({ onHome, onProgress, onLeaderboard, onHall, onReview, onF
               if (searching && group.length === 0) return null
               return (
                 <section key={category} className="bg-surface-container border border-outline-variant overflow-hidden">
-                  <div className="flex items-center gap-3 px-6 py-4 bg-surface">
+                  <div className="flex flex-wrap items-center gap-3 px-4 py-4 bg-surface md:px-6">
                     <button
                       onClick={() => setOpen({ ...open, [category]: !open[category] })}
-                      className="flex-1 flex items-center gap-3 text-left"
+                      className="flex-1 min-w-[12rem] flex flex-wrap items-center gap-x-3 gap-y-1 text-left"
                     >
                       <span className="font-sans text-on-surface-variant">{expanded ? '▾' : '▸'}</span>
                       <span className="font-sans text-headline-sm text-on-surface">{category}</span>
