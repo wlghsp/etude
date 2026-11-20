@@ -1,0 +1,12 @@
+{
+  "setId": 543,
+  "answers": {
+    "1": "ls -l /srv/acl\nls -l /srv/acl | awk '$1 ~ /\\+$/ {print $NF}' > /tmp/acl_files.txt\ncat /tmp/acl_files.txt   # a.txt, c.txt\n# + 는 getfacl 로 보면 user:이름 같은 추가 항목이 있다는 표시",
+    "2": "setfacl -m u:kim:rw /srv/acl/report.txt\ngetfacl /srv/acl/report.txt\n# user:kim:rw- 항목이 생긴다. 모드(chmod)는 그대로이고 다른 사용자는 막혀 있다",
+    "4": "setfacl -R -m u:lee:rwX /srv/old\ngetfacl -R /srv/old | grep -E '^# file|user:lee'\n# 파일: user:lee:rw-, 폴더: user:lee:rwx",
+    "5": "setfacl -d -m u:lee:rw /srv/proj\ngetfacl /srv/proj\ntouch /srv/proj/new.txt; getfacl /srv/proj/new.txt\n# default:user:lee:rw- 가 생기고, 새 파일에 user:lee:rw- 가 자동으로 붙는다",
+    "7": "chmod g+s /srv/shared      # 또는 chmod 2770 /srv/shared\nls -ld /srv/shared          # drwxrws--- 로 바뀐다\nsu kim -c 'touch /srv/shared/k.txt'; ls -l /srv/shared/k.txt   # 그룹이 dev",
+    "10": "chmod +t /srv/drop     # 또는 chmod 1777 /srv/drop\nls -ld /srv/drop /tmp   # 둘 다 끝이 t\n# 이제 lee 가 kim.txt 를 지우려 하면 Operation not permitted",
+    "12": "chmod g+s /srv/team                     # 새 파일의 그룹이 dev 로 상속\nsetfacl -d -m g:dev:rwx /srv/team       # 새 파일에 dev 그룹의 읽기·쓰기를 물려줌\nls -ld /srv/team; getfacl /srv/team"
+  }
+}

@@ -68,7 +68,7 @@ cat /tmp/rc.txt
 ```
 false; echo $?; echo $?
 ```', '`false` 는 항상 실패하는 명령입니다. 첫 `echo $?` 도 하나의 명령이라는 점, 그 명령이 성공했는지를 생각해 보세요.', NULL, NULL, '[]', 'choice', '["1 그리고 1", "0 그리고 0", "1 그리고 0", "0 그리고 1"]', 2, '`$?` 는 **바로 직전 명령**의 종료 코드입니다. `false` 는 실패(1)라서 첫 `echo $?` 는 1 을 찍고, 그 `echo` 자체는 성공(0)했으므로 두 번째 `echo $?` 는 0 을 찍습니다. 그래서 `1 그리고 0` 입니다. 두 번 모두 1 이 되는 것은 `$?` 가 유지된다고 착각할 때이고, 종료 코드를 나중에 쓰려면 바로 변수에 담아 두어야 합니다.', NULL, NULL, NULL, '[{"title": "Bash 레퍼런스 매뉴얼", "url": "https://www.gnu.org/software/bash/manual/bash.html"}, {"title": "Bash 매뉴얼: 위치 매개변수 ($1, $#)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Positional-Parameters"}, {"title": "Bash 매뉴얼: 종료 상태 ($?)", "url": "https://www.gnu.org/software/bash/manual/bash.html#Exit-Status"}, {"title": "Bash 매뉴얼: 쉘 함수", "url": "https://www.gnu.org/software/bash/manual/bash.html#Shell-Functions"}]'),
-  (335, 10, '명령이 실패하면 바로 멈추는 스크립트 (set -e)', '`/tmp/lab/strict.sh` 를 만드세요. `start` 를 출력하고, **항상 실패하는 명령 `false`** 를 실행하고, 그다음 `end` 를 출력하는 스크립트입니다. 단, `false` 에서 실패하면 **`end` 는 출력되지 않고 스크립트가 실패 코드로 끝나야** 합니다. 스크립트의 앞부분에 알맞은 설정을 한 줄 넣으세요.', '`set -e` 를 쓰면 이후 명령이 실패하는 순간 스크립트가 거기서 종료됩니다. 설정 줄은 `false` 보다 **앞**에 있어야 합니다.', 'cat > /tmp/lab/strict.sh <<''EOF''
+  (335, 10, '명령이 실패하면 바로 멈추는 스크립트 (set -e)', '`/tmp/lab/strict.sh` 를 만드세요. `start` 를 출력하고, **항상 실패하는 명령 `false`** 를 실행하고, 그다음 `end` 를 출력하는 스크립트입니다. 단, `false` 에서 실패하면 **`end` 는 출력되지 않고 스크립트가 실패 코드로 끝나야** 합니다. 스크립트의 앞부분에 알맞은 설정을 한 줄 넣으세요. 설정은 `set -e` 로 쓰고, `end` 는 `echo end` 로 출력하세요.', '`set -e` 를 쓰면 이후 명령이 실패하는 순간 스크립트가 거기서 종료됩니다. 설정 줄은 `false` 보다 **앞**에 있어야 합니다.', 'cat > /tmp/lab/strict.sh <<''EOF''
 #!/bin/bash
 set -e
 echo start

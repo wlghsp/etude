@@ -1,0 +1,13 @@
+{
+  "setId": 519,
+  "answers": {
+    "1": "docker network create appnet\ndocker network connect appnet db\ndocker network connect appnet client\ndocker exec client ping -c 1 db > /tmp/ping.txt\ncat /tmp/ping.txt\n\n# 기본 bridge 에서는 이름 해석(DNS)이 없다. 사용자 정의 네트워크를 만들어 두 컨테이너를 붙이면 이름이 IP 로 풀린다",
+    "2": "docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}' db > /tmp/dbnet.txt\ncat /tmp/dbnet.txt\ndocker network connect $(cat /tmp/dbnet.txt) web\ndocker exec web ping -c 1 db\n\n# 이름은 같은 네트워크 안에서만 풀린다. 컨테이너는 네트워크 여러 개에 동시에 붙을 수 있다",
+    "3": "sed -i 's/web:8080/web:80/' /tmp/check.sh\nsh /tmp/check.sh > /tmp/page.txt\nhead -5 /tmp/page.txt\n\n# nginx 는 80 번에서 듣는다. refused = 주소는 닿았지만 그 포트를 여는 프로세스가 없다 (포트 번호 오류, 서버 미기동 등)",
+    "4": "docker port web\ndocker rm -f web\ndocker run -d --name web -p 8080:80 nginx:alpine\nsleep 2\ndocker port web\n\n# -p 호스트포트:컨테이너포트. 오른쪽은 컨테이너 안 서버가 실제로 듣는 포트여야 한다",
+    "5": "docker network inspect -f '{{range .Containers}}{{.Name}} {{end}}' appnet\ndocker network disconnect appnet app\ndocker network rm appnet\ndocker ps --format '{{.Names}}'\n\n# 연결된 컨테이너가 있으면 네트워크를 못 지운다. 컨테이너를 지우거나, disconnect 로 연결만 끊는다",
+    "6": "docker network inspect -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}' oldnet\ndocker network create --subnet 10.78.0.0/24 newnet\ndocker run -d --name app --network newnet alpine sleep 3600\ndocker network inspect -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}' newnet\n\n# 서로 다른 네트워크의 IP 대역은 겹칠 수 없다. 다른 대역을 고르거나 --subnet 을 생략한다",
+    "7": "docker network inspect -f '{{.Internal}}' isolated\ndocker network connect bridge worker\ndocker exec worker ip route > /tmp/route.txt\ncat /tmp/route.txt\n\n# --internal 로 만든 네트워크는 바깥으로 나가는 기본 경로가 없다. 외부 통신이 필요하면 일반 네트워크(bridge 등)에도 붙인다",
+    "8": "sed -i 's/^DB_HOST=.*/DB_HOST=db/' /tmp/app.env\ndocker run --rm --network appnet --env-file /tmp/app.env alpine sh -c 'wget -qO- -T 3 http://$DB_HOST' > /tmp/out.txt\nhead -5 /tmp/out.txt\n\n# 컨테이너 안의 localhost 는 그 컨테이너 자신이다. 다른 컨테이너는 같은 네트워크의 컨테이너 이름으로 부른다"
+  }
+}

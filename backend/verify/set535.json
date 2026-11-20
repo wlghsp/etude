@@ -1,0 +1,11 @@
+{
+  "setId": 535,
+  "answers": {
+    "2": "truncate -s 16M /tmp/lab/disk.img\nls -l /tmp/lab/disk.img\n\n# 16M = 16 x 1024 x 1024 = 16777216 바이트 크기의 파일이 생긴다",
+    "4": "mkfs.ext4 -F -q /tmp/lab/disk.img\nblkid /tmp/lab/disk.img\n\n# -F 로 일반 파일에도 확인 없이 만든다. blkid 에 TYPE=\"ext4\" 가 나오면 성공이다",
+    "5": "tune2fs -L backup /tmp/lab/disk.img\nblkid /tmp/lab/disk.img\n\n# mkfs 때 -L 로 붙여도 되지만, 이미 만든 뒤에는 tune2fs -L 로 바꾼다",
+    "6": "blkid /tmp/lab/disk.img\nblkid -s UUID -o value /tmp/lab/disk.img > /tmp/uuid.txt\ncat /tmp/uuid.txt\n\n# -s UUID 로 항목을 고르고 -o value 로 값만 출력한다",
+    "7": "dumpe2fs -h /tmp/lab/disk.img 2>/dev/null | egrep 'Block (size|count)'\ndumpe2fs -h /tmp/lab/disk.img 2>/dev/null | awk '/^Block size:/ {print $3}' > /tmp/bs.txt\ndumpe2fs -h /tmp/lab/disk.img 2>/dev/null | awk '/^Block count:/ {print $3}' > /tmp/blocks.txt\ncat /tmp/bs.txt /tmp/blocks.txt\n\n# 8MiB = 8388608 바이트 = 블록 8192개 x 1024 바이트",
+    "8": "e2fsck -f -n /tmp/lab/disk.img > /tmp/fsck.txt 2>&1\ncat /tmp/fsck.txt\n\n# 종료 코드 0 은 오류 없음이다. 요약 줄은 '레이블: 사용 inode/전체 inode files, 사용 블록/전체 블록 blocks' 형태다"
+  }
+}

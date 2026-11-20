@@ -1,0 +1,12 @@
+{
+  "setId": 528,
+  "answers": {
+    "2": "docker run -d --name reg -p 5000:5000 registry:2\n\n# 호스트 5000 번을 컨테이너 5000 번(레지스트리)에 연결한다",
+    "3": "docker tag alpine localhost:5000/myalpine:1.0\ndocker images | grep myalpine\n\n# 주소:포트/저장소:태그 형태의 새 이름을 붙인다",
+    "4": "docker push localhost:5000/myalpine:1.0\n\n# 이름 앞의 localhost:5000 서버로 올라간다",
+    "5": "wget -qO- http://localhost:5000/v2/_catalog > /tmp/q5.txt\ncat /tmp/q5.txt\n\n# {\"repositories\":[...]} 형태로 저장소 이름 목록이 나온다",
+    "7": "wget -qO- http://localhost:5000/v2/app/tags/list > /tmp/q7.txt\ncat /tmp/q7.txt\n\n# {\"name\":\"app\",\"tags\":[...]} 형태로 태그 목록이 나온다",
+    "8": "docker pull localhost:5000/app:1.0\ndocker tag localhost:5000/app:1.0 myapp:local\ndocker images | grep -E 'app'\n\n# 레지스트리에서 받은 이미지에 짧은 이름을 더 붙인다",
+    "11": "docker run -d --name reg -p 5000:5000 -v regdata:/var/lib/registry registry:2\n\n# 이미지 데이터가 regdata 볼륨에 저장되어 컨테이너를 지워도 남는다"
+  }
+}

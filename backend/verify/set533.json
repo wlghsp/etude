@@ -1,0 +1,14 @@
+{
+  "setId": 533,
+  "answers": {
+    "1": "docker network inspect -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}' bridge > /tmp/subnet.txt\ndocker network inspect -f '{{range .IPAM.Config}}{{.Gateway}}{{end}}' bridge > /tmp/gw.txt\ncat /tmp/subnet.txt /tmp/gw.txt\n\n# 네트워크의 IPAM 에 서브넷(주소 범위)과 게이트웨이(밖으로 나가는 문)가 들어 있다",
+    "2": "docker exec c1 ip -4 addr show eth0 | grep -o 'inet [0-9.]*' | cut -d' ' -f2 > /tmp/c1_ip.txt\ndocker exec c1 ip route | grep default | cut -d' ' -f3 > /tmp/c1_gw.txt\ncat /tmp/c1_ip.txt /tmp/c1_gw.txt\n\n# 컨테이너의 기본 경로(default via)는 bridge 의 게이트웨이(호스트 쪽 docker0 주소)를 가리킨다",
+    "3": "ip addr show docker0 > /tmp/docker0.txt\ncat /tmp/docker0.txt\n\n# docker0 는 기본 bridge 의 호스트 쪽 가상 스위치다. 이 인터페이스의 주소가 곧 bridge 의 게이트웨이",
+    "4": "D2IP=$(docker inspect -f '{{.NetworkSettings.Networks.bridge.IPAddress}}' d2)\ndocker exec d1 ping -c 1 $D2IP > /tmp/byip.txt 2>&1\ndocker exec d1 ping -c 1 d2 > /tmp/byname.txt 2>&1\ncat /tmp/byip.txt /tmp/byname.txt\n\n# 기본 bridge 에는 이름 해석(DNS)이 없어 IP 로만 통한다",
+    "5": "docker network create --subnet 198.51.100.0/24 labnet\ndocker run -d --name xa --network labnet alpine sleep 3600\ndocker run -d --name yb --network labnet alpine sleep 3600\ndocker exec xa ping -c 1 yb > /tmp/ping.txt\ncat /tmp/ping.txt\n\n# 사용자 정의 bridge 에서는 컨테이너 이름이 IP 로 풀린다. --subnet 으로 대역도 직접 정할 수 있다",
+    "7": "ID=$(docker network inspect -f '{{.Id}}' labnet | cut -c1-12)\nip addr show br-$ID > /tmp/br.txt\ncat /tmp/br.txt\n\n# 사용자 정의 bridge 마다 호스트에 br-<네트워크ID 앞 12자> 인터페이스가 생기고, 그 주소가 게이트웨이다",
+    "8": "iptables -t nat -S POSTROUTING | grep 198.51.100.0/24 > /tmp/nat.txt\ncat /tmp/nat.txt\n\n# -s 198.51.100.0/24 ! -o br-... -j MASQUERADE : 이 대역에서 나가는 패킷의 출발 주소를 호스트 주소로 바꾼다",
+    "9": "docker network connect --ip 198.51.100.50 labnet app\ndocker exec app ip addr > /tmp/app_if.txt\ncat /tmp/app_if.txt\n\n# connect 하면 컨테이너 안에 인터페이스가 하나 더 생긴다. 기존 연결(bridge)은 그대로 유지된다",
+    "11": "docker run --rm --network labnet alpine nc -w 3 srv 9000 > /tmp/nc.txt\ncat /tmp/nc.txt\n\n# nc 호스트 포트 : 해당 포트에서 듣는 서버가 있으면 연결돼 데이터를 받는다. 없으면 Connection refused"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "setId": 549,
+  "answers": {
+    "2": "cat /tmp/sshd_demo/sshd_config.sample\ngrep -vE '^[[:space:]]*(#|$)' /tmp/sshd_demo/sshd_config.sample > /tmp/active.txt\ncat /tmp/active.txt   # Include, PermitRootLogin, KbdInteractiveAuthentication, UsePAM, X11Forwarding, PrintMotd\n# '#PasswordAuthentication yes' 처럼 주석 처리된 줄은 적용되지 않는다 (기본값이 쓰인다)",
+    "3": "cat /tmp/sshd_demo/sshd_config\nsed -i 's/^PermitRootLogin .*/PermitRootLogin no/; s/^#PasswordAuthentication .*/PasswordAuthentication no/' /tmp/sshd_demo/sshd_config\nsshd -t -f /tmp/sshd_demo/sshd_config && echo 문법 OK\nsshd -T -f /tmp/sshd_demo/sshd_config | grep -E '^(permitrootlogin|passwordauthentication|port)'\n# 주석(#)을 풀고 값을 no 로 바꿔야 적용된다",
+    "5": "sshd -t -f /tmp/sshd_demo/broken_config   # line 2: Bad configuration option: PermitRootLogn\nsed -i 's/PermitRootLogn /PermitRootLogin /' /tmp/sshd_demo/broken_config\nsshd -t -f /tmp/sshd_demo/broken_config && echo OK\n# 오타가 난 채 서버를 재시작하면 sshd 가 못 떠서 원격 접속이 끊긴다. 항상 -t 로 먼저 확인",
+    "6": "sshd -T -f /tmp/sshd_demo/first_config | grep -E '^(permitrootlogin|passwordauthentication) ' > /tmp/effective.txt\ncat /tmp/effective.txt   # permitrootlogin no / passwordauthentication yes\n# 위쪽 값이 이긴다: root 는 막혔지만, 비밀번호 로그인은 위쪽 yes 가 적용돼 열려 있다",
+    "7": "sshd -T -f /tmp/sshd_demo/main_config | grep passwordauthentication   # yes (조각 파일이 먼저 읽혀서 이긴다)\ngrep -rn PasswordAuthentication /tmp/sshd_demo\nsed -i 's/^PasswordAuthentication .*/PasswordAuthentication no/' /tmp/sshd_demo/conf.d/50-cloud-init.conf\nsshd -T -f /tmp/sshd_demo/main_config | grep passwordauthentication   # no\n# 메인 파일만 고치지 말고, Include 되는 조각 파일까지 확인해야 한다",
+    "10": "printf '%s\\n' 'Host dbtunnel' '  HostName bastion.example.com' '  User ops' '  LocalForward 13306 db.example.com:3306' > /tmp/sshd_demo/client_config\nssh -G -F /tmp/sshd_demo/client_config dbtunnel | grep -iE '^(hostname|user|localforward) '\n# 이제 'ssh -N dbtunnel' 만 실행해 두면 localhost:13306 으로 db 에 접속할 수 있다 (-N 은 명령 없이 터널만 유지)"
+  }
+}

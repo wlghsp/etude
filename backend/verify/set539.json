@@ -1,0 +1,11 @@
+{
+  "setId": 539,
+  "answers": {
+    "1": "dpkg -l bash\ndpkg -s bash | grep '^Version'\ndpkg-query -W -f='${Version}' bash > /tmp/bash_version.txt\n\n# dpkg -l 의 ii 는 설치 완료 표시. 버전만 뽑을 땐 dpkg-query -W -f 가 편하다 (awk 로 -l 의 3번째 열을 써도 된다)",
+    "2": "dpkg -S /usr/bin/pgrep\ndpkg -S /usr/bin/pgrep | cut -d: -f1 > /tmp/owner.txt\n\n# 명령 위치가 궁금하면 which pgrep 으로 경로를 먼저 찾는다. 패키지가 안 준 파일(직접 만든 파일)은 no path found 라고 나온다",
+    "4": "cat /tmp/lab-sources.list\ngrep -c '^deb ' /tmp/lab-sources.list > /tmp/deb_count.txt\n\n# ^ 는 줄의 시작. '^deb ' 는 '# deb' 주석과 deb-src 를 모두 제외한다",
+    "6": "apt-cache policy hello-lab\napt-cache policy hello-lab | awk '/Candidate:/ {print $2}' > /tmp/candidate.txt\n\n# Installed 와 Candidate 가 다르면 업그레이드할 수 있는 버전이 있다는 뜻이다. 이 명령은 목록만 읽고 아무것도 바꾸지 않는다",
+    "8": "find /tmp/work/hello-etude -type f\ncat /tmp/work/hello-etude/DEBIAN/control\ndpkg-deb --build /tmp/work/hello-etude /tmp/work/hello-etude.deb\ndpkg -i /tmp/work/hello-etude.deb\nhello-etude\ndpkg -S /usr/local/bin/hello-etude\n\n# DEBIAN/ 폴더는 패키지 정보용이고, 나머지 경로가 그대로 시스템의 / 아래로 설치된다",
+    "9": "dpkg -l conf-lab\nls /etc/conf-lab.conf\ndpkg --purge conf-lab\nls /etc/conf-lab.conf\ndpkg -l conf-lab\n\n# -r 로만 지우면 설정 파일이 남아 상태가 rc 가 된다. --purge (-P) 는 설정 파일까지 지운다. 설정을 다시 쓸 일이 있으면 remove 만 하는 편이 안전하다"
+  }
+}

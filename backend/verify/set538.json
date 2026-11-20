@@ -1,0 +1,11 @@
+{
+  "setId": 538,
+  "answers": {
+    "1": "dnf info installed curl-minimal > /tmp/q1.txt\ncat /tmp/q1.txt\n\n# installed 를 붙이면 저장소가 아닌, 이 서버에 설치된 패키지만 조회한다 (Repository 가 @로 시작)",
+    "3": "rpm -qf /usr/bin/curl > /tmp/q3.txt\ncat /tmp/q3.txt\n\n# -q(질의) + f(file): 이 파일을 설치한 패키지. 결과는 curl 이 아니라 curl-minimal-버전...",
+    "4": "rpm -qc openssl-libs > /tmp/q4.txt\ncat /tmp/q4.txt\n\n# -qc: 설정 파일만(c = config), -ql: 모든 파일(l = list). /etc/pki/tls/openssl.cnf 같은 파일이 나온다",
+    "7": "dnf remove --assumeno dejavu-sans-fonts > /tmp/q7.txt 2>&1\ncat /tmp/q7.txt\nrpm -q dejavu-sans-fonts\n\n# --assumeno: 모든 질문에 no. 'Removing dependent packages' 아래가 함께 지워질 패키지. 'Operation aborted.' 로 끝나 실제 변경은 없다",
+    "9": "dnf remove -y which\nrpm -q which\n\n# 설치한 패키지가 없으면 rpm -q 는 'package which is not installed' 라고 답한다",
+    "10": "dnf history list\nID=$(dnf history list | awk '/remove/{print $1; exit}')\ndnf history info $ID > /tmp/q10.txt\ncat /tmp/q10.txt\n\n# list 는 ID·명령·시각·작업을 요약, info ID 는 Packages Altered 에 Removed vim-minimal... 처럼 무엇이 바뀌었는지 보여 준다"
+  }
+}

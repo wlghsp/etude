@@ -1,0 +1,11 @@
+{
+  "setId": 536,
+  "answers": {
+    "1": "cat /tmp/lab/fstab\nawk '$2==\"/data\" {print $3}' /tmp/lab/fstab > /tmp/fstype.txt\nawk '$2==\"/data\" {print $6}' /tmp/lab/fstab > /tmp/pass.txt\ncat /tmp/fstype.txt /tmp/pass.txt\n\n# awk 의 $3 = 형식 열, $6 = pass 열",
+    "3": "cat /tmp/report/blkid.txt\nsed -i 's#^/dev/sdb1 #UUID=8e41a7c3-92d0-4f55-b3a6-7c10e9d4f802 #' /tmp/lab/fstab\ncat /tmp/lab/fstab\n\n# blkid 의 UUID 값(따옴표 제외)을 첫 열에 넣는다. 나머지 열은 그대로",
+    "6": "awk '!/^#/ && NF!=6' /tmp/lab/fstab\nsed -i 's#^\\(UUID=8e41a7c3-92d0-4f55-b3a6-7c10e9d4f802 /data xfs defaults,noatime 0\\)$#\\1 2#' /tmp/lab/fstab\nsed -i 's/defaults nofail/defaults,nofail/' /tmp/lab/fstab\nawk '!/^#/ && NF!=6' /tmp/lab/fstab\ncat /tmp/lab/fstab\n\n# 5열짜리는 pass 를 채우고, 7열짜리(공백으로 끊긴 옵션)는 쉼표로 잇는다",
+    "8": "cat /tmp/report/free.txt\nawk '/^Swap:/ {print $2}' /tmp/report/free.txt > /tmp/swap_total.txt\nawk '/^Swap:/ {print $3}' /tmp/report/free.txt > /tmp/swap_used.txt\ncat /tmp/swap_total.txt /tmp/swap_used.txt\n\n# 첫 열은 'Swap:' 이므로 total 은 2열, used 는 3열이다. 스왑을 이만큼 쓰고 있으면 메모리가 빠듯하다는 신호다",
+    "9": "fallocate -l 32M /tmp/lab/swapfile\nchmod 600 /tmp/lab/swapfile\nmkswap /tmp/lab/swapfile\nls -l /tmp/lab/swapfile\n\n# 32M 은 33554432 바이트. 권한이 600 이 아니면 mkswap·swapon 이 insecure permissions 경고를 낸다",
+    "11": "echo '/tmp/lab/swapfile none swap sw 0 0' >> /tmp/lab/fstab\ncat /tmp/lab/fstab\nawk '!/^#/ && NF!=6' /tmp/lab/fstab\n\n# 스왑은 붙일 폴더가 없어 2열이 none 이다. >> 는 기존 내용 뒤에 덧붙인다"
+  }
+}

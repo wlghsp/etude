@@ -1,0 +1,12 @@
+{
+  "setId": 522,
+  "answers": {
+    "2": "mariadb -N mall -e 'SELECT id FROM orders WHERE amount > (SELECT AVG(amount) FROM orders)' > /tmp/big.txt\ncat /tmp/big.txt\n\n# 괄호 안 쿼리가 먼저 평균 하나를 만들고, 바깥 쿼리가 그 값과 비교한다 (2, 4, 6)",
+    "3": "mariadb -N mall -e 'SELECT name FROM members WHERE id IN (SELECT member_id FROM orders)' > /tmp/buyers.txt\ncat /tmp/buyers.txt\n\n# 서브쿼리가 회원 번호 목록 (1,1,2,3,3,3) 을 만들고, IN 이 목록에 있는 회원만 남긴다",
+    "6": "mariadb -N mall -e 'SELECT m.name FROM members m WHERE EXISTS (SELECT 1 FROM orders o WHERE o.member_id = m.id AND o.amount >= 80000)' > /tmp/whale.txt\ncat /tmp/whale.txt\n\n# 회원마다 안쪽 쿼리에 행이 있는지 확인. 80000 이상 주문(90000)이 있는 park 만 남는다",
+    "7": "mariadb -N mall -e 'SELECT m.name FROM members m WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.member_id = m.id)' > /tmp/idle.txt\ncat /tmp/idle.txt\n\n# 회원별로 주문이 없으면 NOT EXISTS 가 참. 앞에서 배운 LEFT JOIN ... IS NULL 과 같은 결과를 낸다 (choi, han)",
+    "10": "mariadb -N mall -e 'SELECT m.name FROM members m WHERE NOT EXISTS (SELECT 1 FROM coupon_used c WHERE c.member_id = m.id)' > /tmp/nocoupon.txt\ncat /tmp/nocoupon.txt\n\n# NOT EXISTS 는 행이 있는지만 보므로 NULL 행이 있어도 안전하다. NOT IN 을 쓰려면 서브쿼리에 WHERE member_id IS NOT NULL",
+    "11": "mariadb -N mall -e 'SELECT AVG(total) FROM (SELECT member_id, SUM(amount) AS total FROM orders GROUP BY member_id) t' > /tmp/avg_total.txt\ncat /tmp/avg_total.txt\n\n# 안쪽이 회원별 합계 표(100000, 15000, 160000)를 만들고, 바깥이 그 표의 평균(약 91666.67)을 구한다. FROM 의 서브쿼리는 별칭 필수",
+    "12": "mariadb -N mall -e \"SELECT m.name, CASE WHEN t.total >= 100000 THEN 'vip' WHEN t.total IS NOT NULL THEN 'normal' ELSE 'none' END FROM members m LEFT JOIN (SELECT member_id, SUM(amount) AS total FROM orders GROUP BY member_id) t ON t.member_id = m.id\" > /tmp/grade.txt\ncat /tmp/grade.txt\n\n# 파생 테이블로 합계를 만들고 LEFT JOIN 으로 이은 뒤 CASE 가 위에서부터 차례로 검사한다 (kim vip, lee normal, park vip, choi none, han none)"
+  }
+}

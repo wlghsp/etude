@@ -1,0 +1,131 @@
+import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..')); from gen_pilot_sets import *
+# 세트 550 커널 매개변수·모듈 써 보기: sysctl 읽기·영구화, lsmod·modinfo·modprobe, /etc/modprobe.d. 명세: docs/specs/spec_gap_set550.md
+# 샌드박스(Rocky 9 ubi-init 컨테이너, 로컬 검증 기준)에서 직접 확인한 사실:
+#  - sysctl 읽기(-n, 키=값 출력)와 /proc/sys 읽기는 되지만, 쓰기(sysctl -w, echo > /proc/sys/...)는 'permission denied'/'Read-only file system' 으로 막힌다.
+#  - lsmod·modinfo·modprobe(kmod 패키지)가 이미지에 없고, 호스트 커널 모듈 목록은 호스트마다 달라 채점에 쓸 수 없다.
+#  - /etc/sysctl.d, /etc/modprobe.d 디렉터리는 이미지에 없다(setup 이 만든다). 파일 쓰기는 된다.
+# 그래서 읽기는 실제 sysctl 로, 모듈 출력은 실제 형식 그대로의 샘플 파일(/srv/lab/mod)로, 설정은 파일 작성 실습으로 구성한다.
+# 어떤 채점도 호스트 커널 값·실제 쓰기 성공 여부에 의존하지 않는다(특권 환경에서도 같은 결과).
+
+CLEAN = "rm -rf /srv/lab /tmp/*.txt /etc/sysctl.d/90-lab.conf /etc/modprobe.d/lab.conf; mkdir -p /srv/lab/mod /etc/sysctl.d /etc/modprobe.d"
+
+LSMOD = r"""cat > /srv/lab/mod/lsmod.txt <<'EOF'
+Module                  Size  Used by
+xt_conntrack           16384  1
+nf_conntrack          172032  2 xt_conntrack,nf_nat
+nf_nat                 49152  1 nf_conntrack
+br_netfilter           32768  0
+bridge                311296  1 br_netfilter
+overlay               155648  4
+veth                   36864  0
+dummy                  16384  0
+EOF
+"""
+MODINFO = r"""cat > /srv/lab/mod/modinfo-overlay.txt <<'EOF'
+filename:       /lib/modules/5.14.0-example.el9.x86_64/kernel/fs/overlayfs/overlay.ko.xz
+alias:          fs-overlay
+license:        GPL
+description:    Overlay filesystem
+author:         Miklos Szeredi <miklos@szeredi.hu>
+rhelversion:    9.4
+srcversion:     0123456789ABCDEF01234567
+depends:        
+retpoline:      Y
+intree:         Y
+name:           overlay
+vermagic:       5.14.0-example.el9.x86_64 SMP preempt mod_unload modversions
+parm:           check_copy_up:Obsolete; does nothing
+parm:           redirect_dir:Default to on or off for the redirect_dir feature (bool)
+parm:           redirect_always_follow:Follow redirects even if redirect_dir feature is turned off (bool)
+parm:           index:Default to on or off for the inodes index feature (bool)
+parm:           nfs_export:Default to on or off for the NFS export feature (bool)
+parm:           xino_auto:Auto enable xino feature (bool)
+parm:           metacopy:Default to on or off for the metadata only copy up feature (bool)
+parmtype:       redirect_dir:bool
+parmtype:       index:bool
+parmtype:       nfs_export:bool
+parmtype:       xino_auto:bool
+parmtype:       metacopy:bool
+EOF
+"""
+SETLINES = lambda f: f"tr -s ' \\n' '\\n' < {f} | grep -v '^$' | sort | tr '\\n' ' '"
+
+b = SetBuilder(550, '커널 매개변수·모듈 써 보기: sysctl·lsmod·modprobe',
+               '커널 값을 읽고 바꾸는 `sysctl` 과 커널 모듈을 다루는 `lsmod`·`modinfo`·`modprobe` 를 손으로 써 봅니다. sysctl 키와 `/proc/sys` 파일의 대응, 임시 변경과 `/etc/sysctl.d` 영구화의 차이, 모듈 목록·정보 읽기, `modprobe` 와 `insmod` 의 차이, `/etc/modprobe.d` 의 `options`·`blacklist` 설정을 익힙니다. 샌드박스는 커널 값 쓰기와 모듈 로드가 막혀 있어 읽기는 실제 명령으로, 모듈 출력은 같은 모양의 샘플 파일로, 설정은 파일을 직접 써서 연습합니다.',
+               'linux-systemd', '리눅스', 59, 809, '🧩',
+               [{"title": "sysctl(8) 매뉴얼", "url": "https://man7.org/linux/man-pages/man8/sysctl.8.html"},
+                {"title": "modprobe.d(5) 매뉴얼", "url": "https://man7.org/linux/man-pages/man5/modprobe.d.5.html"},
+                {"title": "modprobe(8) 매뉴얼", "url": "https://man7.org/linux/man-pages/man8/modprobe.8.html"}], 1)
+
+# 1 -------------------------------------------------------------
+b.nt('sysctl 로 커널 값 하나 읽기', '`sysctl 변수이름` 은 커널의 설정값을 `이름 = 값` 모양으로 보여 줍니다. 커널 종류를 알려 주는 변수 `kernel.ostype` 의 **값만**(이름과 `=` 없이) 읽어 `/tmp/ostype.txt` 에 저장하세요. 스크립트에서 값만 필요할 때 쓰는 방법입니다. (선행 세트에서 배운 `sysctl` 읽기의 응용입니다.)',
+     '`man sysctl` 이나 `sysctl --help` 에서 "이름을 출력하지 않는" 옵션을 찾아 보세요.',
+     "sysctl kernel.ostype      # kernel.ostype = Linux\nsysctl -n kernel.ostype > /tmp/ostype.txt\ncat /tmp/ostype.txt     # Linux",
+     CLEAN,
+     [chk('ostype.txt 에 값 Linux 만 들어 있다', '[ "$(tr -d " \\n" < /tmp/ostype.txt)" = Linux ]')])
+# 2 -------------------------------------------------------------
+b.nt('sysctl 키와 /proc/sys 파일의 대응', 'sysctl 변수는 실제로는 `/proc/sys/` 아래의 **파일**입니다. 변수 이름의 점(`.`)이 디렉터리 구분(`/`)에 해당합니다. 예를 들어 `kernel.hostname` 은 `/proc/sys/kernel/hostname` 파일입니다.\n\n변수 `net.ipv4.ip_forward`(패킷 전달 여부) 에 대응하는 **파일 경로**를 `/tmp/path.txt` 에 저장하고, 그 파일을 `cat` 으로 읽은 **값**을 `/tmp/value.txt` 에 저장하세요.',
+     '변수 이름에서 어떤 글자를 바꾸면 경로가 되는지 위 예를 보고 규칙을 찾으세요. 만든 경로가 맞는지는 `ls` 나 `cat` 으로 확인할 수 있습니다.',
+     "echo /proc/sys/net/ipv4/ip_forward > /tmp/path.txt\ncat /proc/sys/net/ipv4/ip_forward > /tmp/value.txt\ncat /tmp/path.txt /tmp/value.txt\n# sysctl -n net.ipv4.ip_forward 와 같은 값",
+     CLEAN,
+     [chk('path.txt 가 올바른 /proc/sys 경로다', '[ "$(tr -d " \\n" < /tmp/path.txt)" = /proc/sys/net/ipv4/ip_forward ] && [ -e /proc/sys/net/ipv4/ip_forward ]'),
+      chk('value.txt 가 현재 값과 같다', '[ -s /tmp/value.txt ] && [ "$(tr -d " \\n" < /tmp/value.txt)" = "$(tr -d " \\n" < /proc/sys/net/ipv4/ip_forward)" ]')])
+# 3 -------------------------------------------------------------
+b.choice('임시 변경은 왜 사라질까', '서버에서 `sysctl -w vm.swappiness=10` 을 실행하자 바로 적용됐습니다(`sysctl vm.swappiness` 로 확인). 그런데 서버를 재부팅하니 값이 이전으로 돌아왔습니다. 가장 알맞은 설명은 무엇일까요?',
+         '`-w`(또는 `/proc/sys` 파일에 쓰기)가 바꾸는 대상이 "지금 실행 중인 것"인지 "디스크에 저장된 것"인지 생각해 보세요.',
+         ['실행 중인 커널의 메모리 값만 바뀌었고 어디에도 저장되지 않았다. 재부팅 때 설정 파일(`/etc/sysctl.d/*.conf` 등)의 값으로 다시 정해진다', '`-w` 는 값을 디스크에 저장하지만 재부팅 때 항상 초기화된다', 'vm.swappiness 는 읽기 전용 변수라 바꿀 수 없다', '재부팅하면 `/proc/sys` 의 파일이 삭제되기 때문이다'], 0,
+         '`sysctl -w`(= `/proc/sys` 파일에 `echo` 로 쓰기)는 **지금 돌고 있는 커널**의 값만 바꿉니다. 재부팅하면 커널이 새로 시작해 `/etc/sysctl.d/`·`/usr/lib/sysctl.d/`·`/etc/sysctl.conf` 의 값을 읽어 정합니다. 그래서 오래 유지할 값은 설정 파일에 적어야 합니다. `/proc/sys` 는 실제 파일이 아니라 커널이 보여 주는 가상 파일 시스템이라 삭제 개념이 없습니다.')
+# 4 -------------------------------------------------------------
+b.nt('/etc/sysctl.d 에 영구 설정 파일 만들기', '임시 변경이 아니라 **재부팅 뒤에도 유지**되게 하려면 `/etc/sysctl.d/` 아래에 `.conf` 파일을 만듭니다. 한 줄에 `변수 = 값` 하나씩 적고, 파일 이름은 숫자로 시작해 읽는 순서를 정하는 관례를 따릅니다.\n\n`/etc/sysctl.d/90-lab.conf` 를 만들어 다음 두 줄을 적으세요.\n- `net.ipv4.ip_forward = 1`\n- `vm.swappiness = 10`\n\n(샌드박스는 커널 값 쓰기가 막혀 있어 `sysctl --system` 으로 적용하는 단계는 하지 않습니다. 실제 서버에서는 파일을 만든 뒤 `sudo sysctl --system` 으로 즉시 적용합니다.)',
+     '`cat > 파일 <<EOF` 나 `echo 줄 >> 파일` 로 파일에 줄을 적을 수 있습니다. 변수 이름과 값은 위 목록 그대로 씁니다.',
+     "cat > /etc/sysctl.d/90-lab.conf <<'EOF'\nnet.ipv4.ip_forward = 1\nvm.swappiness = 10\nEOF\ncat /etc/sysctl.d/90-lab.conf\n# 실제 서버: sudo sysctl --system 으로 적용",
+     CLEAN,
+     [chk('ip_forward 줄이 있다', 'grep -Eq "^[[:space:]]*net\\.ipv4\\.ip_forward[[:space:]]*=[[:space:]]*1[[:space:]]*$" /etc/sysctl.d/90-lab.conf'),
+      chk('swappiness 줄이 있다', 'grep -Eq "^[[:space:]]*vm\\.swappiness[[:space:]]*=[[:space:]]*10[[:space:]]*$" /etc/sysctl.d/90-lab.conf')])
+# 5 -------------------------------------------------------------
+b.nt('lsmod 출력 읽기: 쓰는 곳이 없는 모듈', '`lsmod` 는 지금 커널에 올라와 있는 **모듈**(필요할 때 붙이는 드라이버·기능 조각) 목록을 보여 줍니다. 열은 `Module`(이름)·`Size`(바이트)·`Used by`(이 모듈을 쓰는 것의 개수와 이름)입니다. 샌드박스에는 `lsmod` 가 없어 실제 출력과 같은 모양의 샘플을 `/srv/lab/mod/lsmod.txt` 에 두었습니다.\n\n`Used by` 개수가 **0** 인 모듈, 즉 쓰는 곳이 없어 내릴 수 있는 **후보**의 이름을 한 줄에 하나씩 `/tmp/unused.txt` 에 저장하세요.',
+     '첫 줄은 제목이고, 개수가 담긴 열은 세 번째입니다.',
+     "cat /srv/lab/mod/lsmod.txt\nawk 'NR>1 && $3==0 {print $1}' /srv/lab/mod/lsmod.txt > /tmp/unused.txt\ncat /tmp/unused.txt   # br_netfilter, dummy, veth",
+     CLEAN + "; " + LSMOD,
+     [chk('개수 0 인 모듈 세 개가 저장돼 있다', '[ "$(' + SETLINES('/tmp/unused.txt') + ')" = "br_netfilter dummy veth " ]')])
+# 6 -------------------------------------------------------------
+b.nt('modinfo 출력 읽기: 모듈 매개변수 이름', '`modinfo 모듈이름` 은 모듈 파일의 정보(파일 경로·설명·의존 모듈·**매개변수**)를 보여 줍니다. 샘플이 `/srv/lab/mod/modinfo-overlay.txt`(`modinfo overlay` 의 모양) 에 있습니다. `parm:` 으로 시작하는 줄이 모듈을 올릴 때 줄 수 있는 매개변수이고, `parm:` 뒤 첫 단어에서 콜론(`:`) 앞이 매개변수 이름입니다.\n\n매개변수 **이름만** 한 줄에 하나씩 `/tmp/parms.txt` 에 저장하세요. (`parm:` 글자와 설명은 뺍니다.)',
+     '`parm:` 줄의 두 번째 단어를 콜론 앞뒤로 나눠 보세요.',
+     "grep '^parm:' /srv/lab/mod/modinfo-overlay.txt\ngrep '^parm:' /srv/lab/mod/modinfo-overlay.txt | awk '{split($2,a,\":\"); print a[1]}' > /tmp/parms.txt\ncat /tmp/parms.txt",
+     CLEAN + "; " + MODINFO,
+     [chk('매개변수 이름 7개가 정확히 저장돼 있다', '[ "$(' + SETLINES('/tmp/parms.txt') + ')" = "check_copy_up index metacopy nfs_export redirect_always_follow redirect_dir xino_auto " ]')])
+# 7 -------------------------------------------------------------
+b.choice('modprobe 와 insmod', '모듈을 올리는 명령이 둘 있습니다. `insmod /경로/모듈.ko` 와 `modprobe 모듈이름` 입니다. 이 모듈이 다른 모듈(의존 모듈)을 먼저 필요로 할 때, 보통 `modprobe` 를 쓰는 이유로 가장 알맞은 것은 무엇일까요?',
+         '모듈 이름만 주느냐, 파일 경로를 직접 주느냐의 차이와, 의존 모듈을 누가 챙겨 주는지를 생각해 보세요.',
+         ['`modprobe` 는 `/lib/modules` 아래에서 이름으로 모듈을 찾고 의존 모듈까지 함께 올려 주지만, `insmod` 는 준 파일 하나만 올려 의존 모듈이 없으면 실패한다', '`insmod` 는 읽기 전용이고 `modprobe` 만 쓰기가 가능하다', '`modprobe` 는 재부팅 뒤에도 자동으로 유지시켜 준다', '두 명령은 완전히 같고 이름만 다르다'], 0,
+         '`modprobe` 는 모듈 이름으로 `/lib/modules/커널버전/` 의 의존 관계 정보(`modules.dep`)를 보고 필요한 모듈을 순서대로 올립니다. `insmod`·`rmmod` 는 파일 하나만 다루는 저수준 도구입니다.')
+# 8 -------------------------------------------------------------
+b.fill('모듈 내리기', '쓰는 곳이 없는 모듈 `dummy` 를 커널에서 **내리려(제거)** 합니다. `modprobe` 에 줄 알맞은 옵션을 채우세요. (옵션 중에는 설정 출력·시험 실행·여러 모듈 로드도 있습니다.)',
+       '올리는 것의 반대 동작을 뜻하는 영어 단어 "remove" 의 첫 글자를 떠올려 보세요.',
+       'modprobe {0} dummy', ['-r', '-c', '-n', '-a'], [0],
+       '`modprobe -r 모듈` 은 모듈을 내리고, 더 이상 필요 없어진 의존 모듈도 함께 내립니다. `-c` 는 설정을 출력하고, `-n` 은 실제로 하지 않고 시험만 하며(dry run), `-a` 는 인자로 준 이름을 **모두 올립니다**. 모듈이 사용 중이면(`Used by` 가 0 이 아니면) 내릴 수 없습니다. 반대로 0 이라고 항상 불필요한 것은 아닙니다. 다른 모듈의 참조 개수에 안 잡혀도 용도가 있는 모듈이 있으니 내리기 전에 용도를 확인합니다.')
+# 9 -------------------------------------------------------------
+b.choice('부팅 때 모듈을 자동으로 올리려면', '`modprobe ip_vs` 로 올린 모듈이 재부팅하면 없어집니다. 부팅 때마다 **자동으로 올라가게** 하는 가장 알맞은 방법은 무엇일까요?',
+         '"모듈 옵션이나 금지"를 적는 곳과 "부팅 때 올릴 모듈 이름"을 적는 곳은 다른 디렉터리입니다.',
+         ['`/etc/modules-load.d/이름.conf` 파일에 모듈 이름을 한 줄에 하나씩 적는다', '`/etc/sysctl.d/이름.conf` 에 `modprobe ip_vs` 를 적는다', '`/etc/fstab` 에 모듈 이름을 적는다', '`lsmod` 를 한 번 실행해 둔다'], 0,
+         '시스템이 부팅할 때 `systemd-modules-load` 가 `/etc/modules-load.d/*.conf` 를 읽어 거기 적힌 모듈을 올립니다(파일에는 모듈 이름만 한 줄에 하나씩). `/etc/sysctl.d` 는 sysctl `변수 = 값` 만 받고 명령을 실행하지 못하며, `/etc/fstab` 은 마운트 목록이고, `lsmod` 는 조회 명령이라 아무것도 바꾸지 않습니다. `/etc/modprobe.d` 는 올릴 때의 옵션·금지를 적는 곳입니다.')
+# 10 ------------------------------------------------------------
+b.nt('/etc/modprobe.d 에 모듈 옵션과 금지 적기', '`/etc/modprobe.d/*.conf` 는 모듈을 올릴 때 적용할 설정을 담는 파일입니다. 지시어는 줄 맨 앞에 쓰고, 모듈 이름이 그 뒤에 옵니다.\n- `options 모듈이름 매개변수=값` : 올릴 때 줄 매개변수 (매개변수 이름은 6번에서 본 `modinfo` 의 `parm:` 줄에서 확인)\n- `blacklist 모듈이름` : 자동 로드 대상에서 제외\n\n`/etc/modprobe.d/lab.conf` 를 만들어 두 줄을 적으세요. ① `overlay` 모듈의 매개변수 `index` 를 `0` 으로. ② `pcspkr` 모듈을 자동 로드 금지. (디렉터리는 이미 있습니다. 샌드박스에서는 모듈을 실제로 올리지 못하므로 파일 내용만 확인합니다.)',
+     '위 지시어 형식에서 모듈 이름 자리와 값 자리에 맞게 한 줄씩 적으세요. 한 줄에 지시어는 하나만 씁니다.',
+     "cat > /etc/modprobe.d/lab.conf <<'EOF'\noptions overlay index=0\nblacklist pcspkr\nEOF\ncat /etc/modprobe.d/lab.conf",
+     CLEAN,
+     [chk('overlay 옵션 줄이 있다', 'grep -Eq "^[[:space:]]*options[[:space:]]+overlay[[:space:]]+index=0[[:space:]]*$" /etc/modprobe.d/lab.conf'),
+      chk('pcspkr 금지 줄이 있다', 'grep -Eq "^[[:space:]]*blacklist[[:space:]]+pcspkr[[:space:]]*$" /etc/modprobe.d/lab.conf')])
+# 11 ------------------------------------------------------------
+b.choice('blacklist 의 한계', '`/etc/modprobe.d/lab.conf` 에 `blacklist pcspkr` 를 적었는데, 나중에 관리자가 `modprobe pcspkr` 를 실행하니 모듈이 그대로 올라갔습니다. 이 상황을 가장 정확히 설명한 것은 무엇일까요?',
+         '`blacklist` 가 막는 것이 "이름을 직접 부르는 로드"인지, "장치를 보고 알아서 올리는 자동 로드"인지 생각해 보세요.',
+         ['`blacklist` 는 장치 인식 등으로 모듈이 알아서 올라가는 자동 로드(별칭 매칭)만 막는다. 이름을 직접 준 `modprobe` 나 의존 관계 로드까지는 막지 못한다', '`blacklist` 줄은 재부팅한 뒤에야 문법이 검사되므로 아직 적용이 안 된 것이다', '`blacklist` 는 `/etc/sysctl.d` 에 적어야만 동작한다', '`modprobe` 는 root 가 쓰면 항상 설정을 무시한다'], 0,
+         '`blacklist` 는 모듈이 가진 **별칭(alias)** 으로 일어나는 자동 로드를 무시하게 할 뿐입니다. 이름을 직접 부르는 `modprobe` 나 다른 모듈의 의존으로 올라가는 것은 막지 못합니다. 완전히 막으려면 `install pcspkr /bin/false` 처럼 올리는 동작 자체를 다른 명령으로 바꿉니다. 파일 내용은 적는 즉시 다음 `modprobe` 부터 읽히고, `/etc/sysctl.d` 는 sysctl 변수 전용입니다.')
+# 12 ------------------------------------------------------------
+b.order('새 모듈을 확인하고 올려서 유지하는 순서', '새 기능에 필요한 모듈 하나를 점검해 올리고 부팅 뒤에도 쓰도록 하려 합니다. 알맞은 순서로 카드를 놓으세요. (먼저 이미 올라와 있는지 보고, 그다음 모듈 정보를 확인하고, 올린 뒤 커널 메시지에 오류가 없는지 본 다음, 마지막에 부팅 때 자동으로 올라가게 등록합니다)',
+        '되돌리기 쉬운 일이 앞이고, 영구로 남기는 일이 마지막입니다.',
+        ['`modprobe 모듈이름` 으로 모듈을 올린다', '`/etc/modules-load.d/이름.conf` 에 모듈 이름을 적어 부팅 때 자동으로 올라가게 한다', '`lsmod | grep 모듈이름` 으로 이미 올라와 있는지 본다', '`dmesg | tail` 로 로드 때 오류 메시지가 없는지 본다', '`modinfo 모듈이름` 으로 모듈이 있는지, 매개변수·의존 모듈이 무엇인지 본다'], [2, 4, 0, 3, 1],
+        '`lsmod` 로 현재 상태 → `modinfo` 로 모듈 정보 → `modprobe` 로 올리기 → `dmesg` 로 로드 결과 확인 → `/etc/modules-load.d/` 로 영구 등록 순서입니다. 올려 보고 문제가 없음을 확인하기 전에 부팅 자동 로드부터 등록하면, 오류가 나는 모듈이 매 부팅마다 올라가려다 문제를 일으킬 수 있습니다.')
+
+if __name__ == '__main__':
+    preview(b)

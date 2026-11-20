@@ -1,0 +1,13 @@
+{
+  "setId": 520,
+  "answers": {
+    "1": "docker inspect -f '{{range .Mounts}}{{.Source}}{{end}}' app\ndocker rm -f app\ndocker run -d --name app -v /tmp/notes:/data alpine sleep 3600\ndocker exec app cat /data/hello.txt\n\n# -v 의 호스트 경로가 없으면 도커가 빈 폴더를 새로 만들어 붙인다(오류 없음). 오타가 있어도 조용히 빈 폴더가 보인다",
+    "2": "CMD='echo ok > /out/result.txt'\ndocker run --rm --user 1000:1000 -v /tmp/out:/out alpine sh -c \"$CMD\" 2> /tmp/perm.txt\ncat /tmp/perm.txt\nls -ln /tmp\nchown 1000:1000 /tmp/out\ndocker run --rm --user 1000:1000 -v /tmp/out:/out alpine sh -c \"$CMD\"\nls -ln /tmp/out\n\n# 바인드 마운트는 호스트의 권한 그대로 보인다. 컨테이너 프로세스의 uid 와 폴더 주인(uid)·권한이 맞아야 쓸 수 있다",
+    "3": "docker logs app > /tmp/err.txt 2>&1\ncat /tmp/err.txt\ndocker rm app\ndocker run -d --name app --read-only --tmpfs /tmp alpine sh -c 'echo started > /tmp/state && sleep 3600'\ndocker exec app cat /tmp/state\n\n# --read-only 는 컨테이너의 루트 파일시스템 전체를 막는다. 쓸 곳만 --tmpfs(메모리)나 볼륨으로 열어 준다",
+    "4": "docker exec web ls /app\ndocker rm -f web\ndocker run -d --name web -v webdata:/app webimg\ndocker exec web cat /app/index.txt\n\n# 바인드 마운트(호스트 폴더)는 이미지의 해당 경로를 덮어 가린다. 비어 있는 새 이름 있는 볼륨은 처음에 이미지 내용을 복사해 채운다",
+    "5": "docker run --rm app:1 cat /conf/ver\ndocker exec app cat /conf/ver\ndocker rm -f app\ndocker volume rm confvol\ndocker run -d --name app -v confvol:/conf app:1\ndocker exec app cat /conf/ver\n\n# 볼륨은 비어 있을 때만 이미지 내용을 받는다. 옛 값이 든 볼륨이 남아 있으면 새 이미지의 파일을 가린다",
+    "6": "docker system df\ndocker system df -v\ndocker system df -v | grep -E '^vol-'\necho vol-b > /tmp/big.txt   # SIZE 열이 가장 큰 볼륨 이름\n\n# docker system df : 이미지·컨테이너·볼륨·빌드 캐시별 합계. -v 를 붙이면 항목별 상세",
+    "7": "docker ps -a\ndocker images\ndocker volume ls\ndocker system prune -f\ndocker ps -a\ndocker images\ndocker volume ls\n\n# 기본값: 종료된 컨테이너·태그 없는 이미지·안 쓰는 네트워크·빌드 캐시를 지운다. 볼륨은 --volumes 를 줘야 지우므로 기본에서는 안전하다",
+    "8": "W='echo ok > /data/out.txt'\ndocker run --rm --user 1000:1000 -v appdata:/data alpine sh -c \"$W\" 2> /tmp/perm.txt\ncat /tmp/perm.txt\ndocker run --rm -v appdata:/data alpine chown 1000:1000 /data\ndocker run --rm --user 1000:1000 -v appdata:/data alpine sh -c \"$W\"\ndocker run --rm -v appdata:/data alpine ls -ln /data\n\n# 볼륨 루트 폴더의 주인을 일회용 root 컨테이너로 바꿔 준다. 컨테이너 uid 와 볼륨 안 소유자가 맞아야 쓸 수 있다"
+  }
+}

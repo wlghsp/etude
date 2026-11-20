@@ -1,0 +1,10 @@
+{
+  "setId": 525,
+  "answers": {
+    "3": "mariadb modeling -e 'CREATE TABLE customers (id INT PRIMARY KEY, name VARCHAR(20), email VARCHAR(40)); INSERT INTO customers VALUES (1,\"kim\",\"kim@example.com\"),(2,\"lee\",\"lee@example.com\"),(3,\"park\",\"park@example.com\")'\n\n# 엔티티 = 테이블, 속성 = 열, id 가 PK",
+    "7": "mariadb modeling -e 'CREATE TABLE orders (id INT PRIMARY KEY, customer_id INT, item VARCHAR(30), FOREIGN KEY (customer_id) REFERENCES customers(id)); INSERT INTO orders VALUES (1,1,\"pen\"),(2,1,\"book\"),(3,2,\"desk\")'\n\n# N 쪽(orders)에 FK. 부모(customers)가 먼저 있어야 만들 수 있다",
+    "8": "mariadb -N modeling -e 'SELECT c.name, COUNT(o.id) FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id, c.name' > /tmp/count.txt\ncat /tmp/count.txt\n\n# 1:N 은 FK 로 JOIN 한다. 주문 없는 고객도 보려면 LEFT JOIN, COUNT 는 o.id 로 센다",
+    "10": "mariadb modeling -e 'CREATE TABLE enrollments (student_id INT, course_id INT, PRIMARY KEY (student_id, course_id), FOREIGN KEY (student_id) REFERENCES students(id), FOREIGN KEY (course_id) REFERENCES courses(id)); INSERT INTO enrollments VALUES (1,1),(1,2),(2,1)'\n\n# N:M = 연결 테이블 + 외래 키 둘. 두 열 묶음 PK 로 같은 짝 중복을 막는다",
+    "11": "mariadb -N modeling -e 'SELECT s.name, c.title FROM enrollments e JOIN students s ON e.student_id = s.id JOIN courses c ON e.course_id = c.id' > /tmp/enroll.txt\ncat /tmp/enroll.txt\n\n# N:M 조회 = 연결 테이블에서 양쪽 테이블로 JOIN 두 번"
+  }
+}

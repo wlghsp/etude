@@ -1,7 +1,7 @@
 -- 세트 346: 도커 Dockerfile 직접 쓰기 실습: FROM·RUN·LABEL, WORKDIR, CMD·ENTRYPOINT, ENV·ARG, 빌드 캐시, .dockerignore, 멀티 스테이지, USER
 -- 정답·해설은 서버만 안다. 실습 문제의 grade_cmd 는 checks 의 조건을 && 로 이은 것과 같다. docs/specs/spec_docker_dockerfile_set.md
 INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs) VALUES
-  (346, 1, 'FROM, RUN, LABEL 로 첫 이미지 만들기', '`/tmp/work/Dockerfile` 을 직접 써서 이미지 **`hello:1`** 을 빌드하세요. 조건은 세 가지예요. `alpine` 에서 시작하고, 빌드 중에 `/hello.txt` 파일을 만들어 안에 `hello etude` 를 적고(`RUN`), 이미지에 라벨 `purpose=training` 을 붙입니다(`LABEL`).', '`FROM` 이 시작 이미지, `RUN` 은 **빌드할 때** 한 번 실행할 명령, `LABEL` 은 `키=값` 꼴의 이름표예요. 빌드는 Dockerfile 이 있는 폴더에서 `docker build -t 이름:태그 .` 로 합니다.', 'cd /tmp/work
+  (346, 1, 'FROM, RUN, LABEL 로 첫 이미지 만들기', '`/tmp/work/Dockerfile` 을 직접 써서 이미지 **`hello:1`** 을 빌드하세요. 조건은 세 가지예요. `alpine` 에서 시작하고, 빌드 중에 `/hello.txt` 파일을 만들어 안에 `hello etude` 를 적고(`RUN`), 이미지에 라벨 `purpose=training` 을 붙입니다(`LABEL`).', '`FROM` 이 시작 이미지, `RUN` 은 **빌드할 때** 한 번 실행할 명령, `LABEL` 은 `키=값` 꼴의 이름표예요. 파일은 `cat > Dockerfile <<\'EOF\'` 와 `EOF` 사이에 내용을 적어 만들 수 있어요. 빌드는 Dockerfile 이 있는 폴더에서 `docker build -t 이름:태그 .` 로 합니다.', 'cd /tmp/work
 printf ''FROM alpine\\nRUN echo "hello etude" > /hello.txt\\nLABEL purpose=training\\n'' > Dockerfile
 docker build -t hello:1 .
 docker run --rm hello:1 cat /hello.txt

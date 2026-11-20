@@ -1,0 +1,6 @@
+-- 점검 지적 중 사람 판단이 필요했던 항목의 반영 (2026-11-19). 여러 번 실행해도 안전하다: REPLACE 는 옛 문장이 있을 때만 바꾼다.
+
+-- 세트 9 #12: 샌드박스에는 sudo 가 없어 설명대로 입력하면 막힌다 (채점은 파일 내용만 본다)
+UPDATE quest SET description = REPLACE(description, '`/tmp/readonly.txt` 는 root 소유의 읽기 전용 파일입니다. vim 으로 열어 `modified` 한 줄을 추가하고 `:w !sudo tee %` 로 저장하세요.', '`/tmp/readonly.txt` 는 root 소유의 읽기 전용 파일입니다. vim 으로 열어 `modified` 한 줄을 추가하고 `:w !tee %` 로 저장하세요.\n\n(이 연습 환경은 이미 root 라서 `sudo` 가 없습니다. 실제 서버에서 일반 사용자라면 `:w !sudo tee %` 처럼 앞에 `sudo` 를 붙입니다. 원리는 같습니다.)') WHERE quest_set_id = 9 AND order_index = 12 AND INSTR(description, '`/tmp/readonly.txt` 는 root 소유의 읽기 전용 파일입니다. vim 으로 열어 `modified` 한 줄을 추가하고 `:w !sudo tee %` 로 저장하세요.') > 0;
+-- 세트 27 #13: 보안상 위험한 옵션을 정답으로 쓰므로 주의 문장을 덧붙인다
+UPDATE quest SET description = REPLACE(description, '- 옵션: 읽기/쓰기(`rw`), 동기 쓰기(`sync`), `no_root_squash`', '- 옵션: 읽기/쓰기(`rw`), 동기 쓰기(`sync`), `no_root_squash`\n\n(주의: `no_root_squash` 는 클라이언트의 root 를 서버의 root 로 그대로 인정하는 옵션이라 꼭 필요할 때만 씁니다. 기본값은 root 를 낮추는 `root_squash` 입니다. 이 문제는 옵션 형식을 익히려고 일부러 지정합니다.)') WHERE quest_set_id = 27 AND order_index = 13 AND INSTR(description, '- 옵션: 읽기/쓰기(`rw`), 동기 쓰기(`sync`), `no_root_squash`') > 0 AND INSTR(description, 'root_squash` 입니다') = 0;

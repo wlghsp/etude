@@ -1,0 +1,8 @@
+{
+  "setId": 555,
+  "answers": {
+    "2": "docker context create remote-test --description 'staging server' --docker 'host=ssh://deploy@192.0.2.10'\ndocker context inspect -f '{{.Endpoints.docker.Host}}' remote-test > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# create 는 설정만 저장한다. 이 시점에는 원격으로 접속하지 않는다",
+    "4": "docker context create alt --docker 'host=unix:///var/run/docker.sock'\ndocker context use alt\ndocker context show > /tmp/q4.txt\ndocker context use default\ncat /tmp/q4.txt\n\n# use 는 설정 파일에 기록되어 이후 모든 명령에 적용된다. 끝나면 되돌려 두는 습관이 사고를 막는다",
+    "6": "docker --context default ps --format '{{.Names}}' > /tmp/q6.txt\ncat /tmp/q6.txt\ndocker context show   # broken 그대로\n\n# --context 는 그 명령 한 번에만 적용된다. use 와 달리 설정 파일을 바꾸지 않는다"
+  }
+}

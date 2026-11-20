@@ -1,0 +1,14 @@
+{
+  "setId": 502,
+  "answers": {
+    "1": "mariadb -N -e 'SELECT @@autocommit' > /tmp/ac.txt\ncat /tmp/ac.txt\n\n# 1 = 문장 하나가 끝날 때마다 자동으로 COMMIT. 트랜잭션으로 묶으려면 START TRANSACTION 으로 시작한다",
+    "2": "mariadb -N bank -e 'START TRANSACTION; UPDATE accounts SET balance=0 WHERE id=1; SELECT balance FROM accounts WHERE id=1; ROLLBACK;' > /tmp/during.txt\nmariadb -N bank -e 'SELECT balance FROM accounts WHERE id=1' > /tmp/after.txt\ncat /tmp/during.txt /tmp/after.txt\n\n# 트랜잭션 안에서는 바뀐 값(0)이 보이지만 ROLLBACK 하면 원래 값(1000)으로 돌아온다",
+    "3": "mariadb bank -e 'START TRANSACTION; UPDATE accounts SET balance=balance-300 WHERE id=1; UPDATE accounts SET balance=balance+300 WHERE id=2; COMMIT;'\nmariadb bank -e 'SELECT * FROM accounts'\n\n# 둘 다 성공해야 의미가 있는 작업은 한 트랜잭션으로 묶는다. 중간에 실패하면 ROLLBACK 으로 둘 다 취소한다",
+    "4": "mariadb bank -e 'START TRANSACTION; UPDATE accounts SET balance=balance-100 WHERE id=1; SAVEPOINT sp1; UPDATE accounts SET balance=balance+999 WHERE id=2; ROLLBACK TO sp1; COMMIT;'\nmariadb bank -e 'SELECT * FROM accounts'\n\n# ROLLBACK TO 는 트랜잭션을 끝내지 않는다. 마지막에 COMMIT 을 해야 남은 변경이 확정된다",
+    "5": "mariadb bank -e 'START TRANSACTION; UPDATE accounts SET balance=999 WHERE id=1; SELECT SLEEP(8); ROLLBACK;' >/dev/null 2>&1 &\nsleep 1\nmariadb -N bank -e 'SELECT balance FROM accounts WHERE id=1' > /tmp/seen.txt\ncat /tmp/seen.txt\nwait\n\n# 커밋 전 변경은 변경한 세션에서만 보인다. 두 번째 세션은 원래 값 1000 을 읽는다",
+    "6": "mariadb bank -e 'START TRANSACTION; SELECT * FROM accounts WHERE id=1 FOR UPDATE; SELECT SLEEP(8); ROLLBACK;' >/dev/null 2>&1 &\nsleep 1\nmariadb bank -e 'SET SESSION innodb_lock_wait_timeout=2; UPDATE accounts SET balance=1 WHERE id=1;' 2> /tmp/lock.txt\ncat /tmp/lock.txt\nwait\n\n# 행을 잡고 있는 세션이 끝나기 전에는 같은 행 변경이 대기한다. 기다림 한도(innodb_lock_wait_timeout)를 넘으면 1205 오류",
+    "7": "mariadb -e 'SELECT trx_state, trx_mysql_thread_id FROM information_schema.innodb_trx' > /tmp/trx.txt\ncat /tmp/trx.txt\n\n# innodb_trx 에는 지금 열려 있는 InnoDB 트랜잭션이 한 줄씩 나온다. trx_mysql_thread_id 가 KILL 할 때 쓰는 세션 번호",
+    "8": "ID=$(mariadb -N -e 'SELECT trx_mysql_thread_id FROM information_schema.innodb_trx LIMIT 1')\nmariadb -e \"KILL $ID\"\nsleep 1\nmariadb -N -e 'SELECT COUNT(*) FROM information_schema.innodb_trx'\n\n# KILL 은 세션을 끊고 미커밋 변경을 롤백한다. 운영에서는 무엇을 끊는지 확인하고 실행한다",
+    "9": "mariadb bank -e 'START TRANSACTION; UPDATE accounts SET balance=balance+1 WHERE id=1; SELECT SLEEP(2); UPDATE accounts SET balance=balance+1 WHERE id=2; COMMIT;' >/dev/null 2>/tmp/a.txt &\nmariadb bank -e 'START TRANSACTION; UPDATE accounts SET balance=balance+1 WHERE id=2; SELECT SLEEP(2); UPDATE accounts SET balance=balance+1 WHERE id=1; COMMIT;' >/dev/null 2>/tmp/b.txt &\nwait\ncat /tmp/a.txt /tmp/b.txt\n\n# 서로 상대가 쥔 행을 기다리면 InnoDB 가 한쪽을 희생자로 골라 롤백한다 (ERROR 1213). 그 세션은 다시 시도한다"
+  }
+}

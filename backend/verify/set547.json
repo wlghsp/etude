@@ -1,0 +1,13 @@
+{
+  "setId": 547,
+  "answers": {
+    "1": "journalctl -t shopapp -p warning..err --no-pager > /tmp/q1.txt\ncat /tmp/q1.txt\n\n# -p warning 만 쓰면 crit 까지 포함(warning 이상 전부). 범위 warning..err 는 두 수준 사이만 남긴다",
+    "2": "cat /tmp/since.txt\njournalctl -t timedemo --since \"$(cat /tmp/since.txt)\" --no-pager > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# 구간이 필요하면 --until 도 함께 쓴다. 시각 기준은 서버의 현재 시간대",
+    "4": "systemctl list-units --failed --no-pager --plain --no-legend | awk '{print $1}' > /tmp/q4.txt\ncat /tmp/q4.txt   # fa547.service, fb547.service\n\n# 같은 정보를 systemctl --failed 로도 볼 수 있다",
+    "5": "systemctl reset-failed fa547.service\nsystemctl list-units --failed --no-pager   # fb547 만 남는다\n\n# 이름 없이 systemctl reset-failed 만 치면 전부 지워져 조사 중인 것까지 사라진다",
+    "6": "systemctl list-dependencies --reverse db547.service --no-pager > /tmp/q6.txt\ncat /tmp/q6.txt\n\n# 첫 줄은 db547.service 자신, 그 아래에 이것에 의존하는 app547.service 가 나온다",
+    "8": "systemd-analyze blame --no-pager | head -3 > /tmp/q8.txt\ncat /tmp/q8.txt   # 3.0s slow547.service 가 맨 위\n\n# 시간 단위가 ms/s/min 으로 섞여 나오니 숫자만 보고 비교하지 말 것",
+    "10": "systemd-run --unit=job547 --collect sh -c 'echo job-done-547'\nsleep 1\njournalctl -u job547 --no-pager > /tmp/q10.txt\ncat /tmp/q10.txt\n\n# 임시 유닛이라 /etc/systemd/system 에 파일이 생기지 않는다. 끝나면 유닛은 자동으로 정리된다",
+    "11": "systemd-run --on-active=30min --unit=later547 /usr/bin/touch /tmp/later547.txt\nsystemctl list-timers --no-pager | grep later547\n\n# later547.timer 가 만들어져 대기한다. 취소하려면 systemctl stop later547.timer"
+  }
+}

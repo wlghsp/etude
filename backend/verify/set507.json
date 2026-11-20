@@ -1,0 +1,14 @@
+{
+  "setId": 507,
+  "answers": {
+    "1": "mariadb -e \"CREATE USER 'appuser'@'localhost' IDENTIFIED BY 'AppPass1'\"\nmariadb -uappuser -pAppPass1 -e 'SELECT 1'\n\n# 호스트 부분을 localhost 로 두면 그 서버 안에서만 접속할 수 있다. '%' 는 어디서나 접속 허용이라 꼭 필요할 때만 쓴다",
+    "2": "mariadb -e \"GRANT SELECT, INSERT, UPDATE, DELETE ON shop.* TO 'appuser'@'localhost'\"\nmariadb -e \"SHOW GRANTS FOR 'appuser'@'localhost'\"\n\n# 필요한 만큼만 주는 것이 최소 권한 원칙. 앱이 침해돼도 피해가 shop 의 데이터 변경까지로 한정된다",
+    "3": "mariadb -e \"CREATE USER 'reader'@'localhost' IDENTIFIED BY 'ReadPass1'; GRANT SELECT ON shop.* TO 'reader'@'localhost'\"\nmariadb -ureader -pReadPass1 shop -e \"INSERT INTO items VALUES (6,'kiwi',6000)\" 2> /tmp/denied.txt\ncat /tmp/denied.txt\n\n# 권한이 없는 동작은 ERROR 1142 ... command denied 로 거부된다. 읽기만 필요한 사람에게는 SELECT 만 준다",
+    "4": "mariadb -e \"SHOW GRANTS FOR 'report'@'localhost'\" > /tmp/report_grants.txt\ncat /tmp/report_grants.txt\n\n# ON *.* 는 모든 DB·모든 테이블이다. ALL PRIVILEGES 가 *.* 에 있다면 사실상 관리자 권한이라 보고서 계정에 어울리지 않는다",
+    "5": "mariadb -e \"REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'report'@'localhost'; GRANT SELECT ON shop.* TO 'report'@'localhost'\"\nmariadb -e \"SHOW GRANTS FOR 'report'@'localhost'\"\n\n# 넓게 준 권한은 회수하고 필요한 범위·종류만 다시 준다. USAGE 는 '권한 없음'(접속만 가능)을 뜻한다",
+    "6": "mariadb -e 'SELECT user, host FROM mysql.user'\nmariadb -e \"DROP USER 'olduser'@'localhost'\"\nmariadb -e 'SELECT user, host FROM mysql.user'\n\n# DROP USER 는 계정과 그 권한을 함께 지운다. 쓰지 않는 계정은 공격 경로가 되므로 남기지 않는다",
+    "7": "mariadb -e \"CREATE ROLE reader_role; GRANT SELECT ON shop.* TO reader_role; GRANT reader_role TO 'alice'@'localhost', 'bob'@'localhost'; SET DEFAULT ROLE reader_role FOR 'alice'@'localhost'; SET DEFAULT ROLE reader_role FOR 'bob'@'localhost'\"\nmariadb -ualice -pAlicePw1 -e 'SELECT COUNT(*) FROM shop.items'\n\n# 권한 묶음을 역할로 만들어 두면 사람이 바뀔 때 역할만 주고 뺀다. SET DEFAULT ROLE 이 없으면 역할이 꺼진 채로 접속해 1142 가 난다",
+    "8": "mariadb -e \"ALTER USER 'appuser'@'localhost' IDENTIFIED BY 'NewPass2'\"\nmariadb -uappuser -pNewPass2 -e 'SELECT 1'\n\n# 비밀번호만 바뀌고 GRANT 는 그대로다. 유출이 의심되면 바꾸고, 앱 설정 파일의 비밀번호도 함께 고쳐야 한다",
+    "9": "mariadb -e \"RENAME USER 'backup'@'%' TO 'backup'@'localhost'\"\nmariadb -e 'SELECT user, host FROM mysql.user WHERE user=\"backup\"'\n\n# '%' 계정은 네트워크 어디서든 비밀번호만 맞으면 들어온다. 접속 위치를 좁히면 계정이 유출돼도 위험이 줄어든다. 서버 자체가 외부에 열려 있는지는 bind-address 설정으로 따로 막는다"
+  }
+}

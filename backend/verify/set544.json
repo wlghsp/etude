@@ -1,0 +1,13 @@
+{
+  "setId": 544,
+  "answers": {
+    "2": "grep '^alice:' /etc/shadow | cut -d: -f5 > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# 같은 방법: getent shadow alice | awk -F: '{print $5}'. 값은 60",
+    "3": "passwd -l bob\npasswd -S bob\ngrep '^bob:' /etc/shadow | cut -d: -f2 | cut -c1-2\n\n# 또는 usermod -L bob. 해시 앞에 !가 붙는다. 상태 칸이 L(Locked)이 된다",
+    "5": "passwd -S carol\npasswd -u carol\npasswd -S carol\n\n# 또는 usermod -U carol. 해시 앞의 !가 사라져 상태가 P가 된다",
+    "7": "chage -l erin > /tmp/q7.txt\ncat /tmp/q7.txt\n\n# 마지막 변경일, 만료일, 최소/최대 일수, 경고일이 보인다. 최대 일수는 30",
+    "8": "chage -M 90 -W 14 frank\nchage -l frank\n\n# shadow 의 5번째 칸이 90, 6번째 칸이 14가 된다",
+    "9": "chage -E 2030-01-01 grace\nchage -l grace | grep 'Account expires'\n\n# shadow 의 8번째 칸에 1970-01-01 부터 센 날수가 저장된다",
+    "10": "usermod -s /usr/sbin/nologin svc01\ngetent passwd svc01\nsu - svc01 -c id\n\n# 마지막 칸이 nologin 이 되고, su 를 하면 This account is currently not available. 가 나온다",
+    "11": "lastlog -u 1000-60000 | awk '/Never logged in/ {print $1}' > /tmp/q11.txt\ncat /tmp/q11.txt\n\n# 일반 계정 범위만 보므로 root·daemon 은 빠진다. 출력 첫 열이 계정명이다"
+  }
+}

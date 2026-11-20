@@ -1,0 +1,101 @@
+-- 세트 532. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set532.sql, 05·06·08. docs/specs/spec_pilot_gap_sets.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 532, '도커 보안 기본: 권한·소켓·시크릿', 'docker 그룹이 사실상 호스트 root 권한이라는 것, docker.sock 을 컨테이너에 마운트하면 왜 위험한지(컨테이너 안에서 호스트의 컨테이너가 보이는 것을 직접 확인), 컨테이너 안 root 와 --user, 읽기 전용·권한 줄이기, 시크릿을 ENV·이미지 레이어에 넣으면 docker history·inspect 로 그대로 보이는 것과 런타임 주입이라는 대안을 직접 확인합니다.', 'docker', '도커'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 532);
+UPDATE quest_set SET display_order = 753, unit_id = (SELECT id FROM unit WHERE id = 66), icon = '🛡️' WHERE id = 532;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 532, 1, 'docker 그룹에 넣는다는 것', '팀원 한 명이 "sudo 는 못 쓰게 하고, `docker` 명령만 쓰게 `docker` 그룹에 넣어 주세요" 라고 요청했습니다. 이 설정을 가장 정확하게 설명한 것은 무엇인가요?', '도커 데몬은 root 로 돌고, `docker` 그룹은 그 데몬에 말을 걸 수 있는 권한입니다. 데몬에게 "호스트 폴더를 통째로 컨테이너에 붙여 줘" 라고 시킬 수 있으면 무슨 일이 가능한지 생각해 보세요.', NULL, NULL, '[]', 'choice', '["컨테이너만 다룰 수 있고 호스트 파일에는 닿지 못하는 제한된 권한이다", "호스트 root 와 거의 같은 권한을 주는 것이다 (컨테이너로 호스트 폴더를 붙여 마음대로 읽고 쓸 수 있다)", "읽기 전용 권한이라 컨테이너 목록만 볼 수 있다", "sudo 를 막아 두었으므로 안전하다"]', 1, '`docker` 그룹 사용자는 root 로 도는 도커 데몬에게 요청을 보낼 수 있습니다. `docker run -v /:/host ...` 처럼 호스트 전체를 컨테이너에 붙이면 컨테이너 안 root 로 호스트 파일을 읽고 쓸 수 있으므로, 사실상 root 권한을 준 것과 같습니다. `docker` 그룹은 신뢰하는 관리자에게만 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 532 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 532, 2, '컨테이너로 호스트 폴더에 root 소유 파일 만들기', '**상황** — 방금 설명한 위험을 눈으로 봅니다. 컨테이너에 호스트 폴더를 붙이면(`-v 호스트경로:컨테이너경로`), 컨테이너 안 프로세스는 **root 로** 그 폴더에 씁니다.
+
+호스트의 `/tmp/work/hostdir` 폴더를 `alpine` 컨테이너의 `/host` 에 붙여, 컨테이너 안에서 `/host/by-container.txt` 파일을 만들고 내용을 `hello` 로 쓰세요. 그런 다음 호스트에서 그 파일의 **소유자 번호(UID)** 를 `/tmp/q2.txt` 에 저장하세요. (`stat -c %u 파일`)', '`docker run --rm -v ... alpine sh -c ''...''` 형태입니다. 컨테이너가 끝나도 호스트 폴더에는 파일이 남습니다. 소유자 번호 0 은 root 입니다.', 'docker run --rm -v /tmp/work/hostdir:/host alpine sh -c ''echo hello > /host/by-container.txt''
+stat -c %u /tmp/work/hostdir/by-container.txt > /tmp/q2.txt
+cat /tmp/q2.txt
+
+# 컨테이너 안 root 가 호스트 폴더에 쓴 파일은 호스트에서도 root 소유다', '["sh", "-c", "docker rm -f $(docker ps -aq) >/dev/null 2>&1; docker rmi -f t1 >/dev/null 2>&1; rm -rf /tmp/work /tmp/q*.txt; mkdir -p /tmp/work; docker image inspect alpine >/dev/null 2>&1 || docker pull -q alpine >/dev/null 2>&1; true\\nmkdir -p /tmp/work/hostdir\\n"]', '["sh", "-c", "( [ \\"$(cat /tmp/work/hostdir/by-container.txt)\\" = hello ] ) && ( [ \\"$(cat /tmp/q2.txt)\\" = 0 ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "호스트 폴더에 파일이 만들어졌다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/work/hostdir/by-container.txt)\\" = hello ]"]}, {"label": "소유자 UID 0(root) 이 저장되어 있다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/q2.txt)\\" = 0 ]"]}]', '[{"title": "Docker 보안", "url": "https://docs.docker.com/engine/security/"}, {"title": "Docker 데몬 공격 면", "url": "https://docs.docker.com/engine/security/#docker-daemon-attack-surface"}, {"title": "빌드 시크릿", "url": "https://docs.docker.com/build/building/secrets/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 532 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 532, 3, 'docker.sock 을 컨테이너에 마운트하면', '모니터링 컨테이너 설정 예제에 `-v /var/run/docker.sock:/var/run/docker.sock` 가 들어 있습니다. 이 컨테이너가 침투당하면 왜 위험할까요?', '`docker.sock` 은 도커 데몬(root)의 API 입구입니다. 이 입구를 컨테이너 안에서 쓸 수 있다면 어떤 요청을 보낼 수 있을까요?', NULL, NULL, '[]', 'choice', '["컨테이너가 자기 로그 파일을 지울 수 있게 되는 정도라 위험하지 않다", "소켓 파일이 커서 컨테이너 디스크가 가득 찰 수 있다", "컨테이너의 네트워크 속도가 느려진다", "데몬 API 를 쓸 수 있어, 호스트 전체를 마운트한 새 컨테이너를 만들어 호스트 root 권한을 얻을 수 있다"]', 3, '`docker.sock` 은 도커 데몬의 API 입구입니다. 컨테이너 안에서 이를 쓸 수 있으면 다른 컨테이너를 보고 조작할 수 있고, 호스트 `/` 를 붙인 새 컨테이너를 만들어 호스트 root 권한을 얻을 수도 있습니다. 모니터링·CI 도구가 꼭 필요하다면 신뢰하는 도구에만, 권한을 줄인 프록시나 별도 방식으로 줍니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 532 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 532, 4, '컨테이너 안에서 호스트의 컨테이너 목록 보기', '**상황** — 호스트에서 `target-app` 이라는 컨테이너가 돌고 있습니다. 소켓을 붙인 **다른 컨테이너 안에서** 그 컨테이너가 보이는지 직접 확인합니다.
+
+`alpine` 에는 `docker` 명령이 없으므로, 호스트의 `docker` 실행 파일(`$(which docker)`)도 `-v` 로 `/usr/bin/docker` 에 함께 붙입니다. `/var/run/docker.sock` 을 같은 경로로 붙인 `alpine` 컨테이너에서 `docker ps --format "{{.Names}}"` 를 실행하고, 결과를 `/tmp/q4.txt` 에 저장하세요.', '`-v` 를 두 번 씁니다. 하나는 `/var/run/docker.sock` 을 같은 경로로, 하나는 `$(which docker)` 를 `/usr/bin/docker` 로. `docker run --rm ... alpine docker ps ...` 형태입니다.', 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(which docker):/usr/bin/docker alpine docker ps --format ''{{.Names}}'' > /tmp/q4.txt
+cat /tmp/q4.txt
+
+# 컨테이너 안인데 호스트의 컨테이너 target-app 이 보인다. 소켓으로 데몬을 직접 조종하는 것이다', '["sh", "-c", "docker rm -f $(docker ps -aq) >/dev/null 2>&1; docker rmi -f t1 >/dev/null 2>&1; rm -rf /tmp/work /tmp/q*.txt; mkdir -p /tmp/work; docker image inspect alpine >/dev/null 2>&1 || docker pull -q alpine >/dev/null 2>&1; true\\ndocker run -d --name target-app alpine sleep 600 >/dev/null\\n"]', '["sh", "-c", "( grep -qx target-app /tmp/q4.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "저장된 목록에 target-app 이 있다", "cmd": ["sh", "-c", "grep -qx target-app /tmp/q4.txt"]}]', '[{"title": "Docker 보안", "url": "https://docs.docker.com/engine/security/"}, {"title": "Docker 데몬 공격 면", "url": "https://docs.docker.com/engine/security/#docker-daemon-attack-surface"}, {"title": "빌드 시크릿", "url": "https://docs.docker.com/build/building/secrets/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 532 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 532, 5, '소켓을 :ro 로 붙이면 안전할까', '보안 점검에서 "소켓을 읽기 전용(`-v /var/run/docker.sock:/var/run/docker.sock:ro`)으로 붙이면 되지 않을까요?" 라는 의견이 나왔습니다. 맞는 설명은 무엇인가요?', '`:ro` 는 그 파일(소켓)을 고쳐 쓰는 것을 막는 옵션입니다. 그런데 소켓은 파일 내용을 읽고 쓰는 용도가 아니라 데몬에 요청을 보내는 통로입니다.', NULL, NULL, '[]', 'choice', '["안전해진다. 읽기 전용이라 데몬에 쓸 수 없다", "안전해지지 않는다. :ro 는 소켓 파일 자체를 못 바꾸게 할 뿐, 소켓으로 보내는 API 요청(컨테이너 생성 등)은 막지 못한다", "컨테이너가 시작되지 않는다", "컨테이너 목록 조회만 허용된다"]', 1, '`:ro` 는 마운트된 소켓 파일을 읽기 전용으로 만들 뿐입니다. 소켓에 연결해 API 요청을 보내는 일은 그대로 가능해서, 컨테이너를 만들거나 지우는 요청도 통합니다. 소켓은 통째로 주지 않는 것이 원칙입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 532 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 532, 6, '컨테이너 안 사용자 확인하고 비루트로 바꾸기', '**상황** — 이미지에 `USER` 가 없으면 컨테이너 안 프로세스는 **root(UID 0)** 로 돕니다. 앞에서 본 것처럼 호스트 폴더·소켓이 붙으면 이 root 가 호스트에 영향을 줍니다.
+
+1. `alpine` 을 옵션 없이 실행해 `id` 결과를 `/tmp/q6-root.txt` 에
+2. 같은 `alpine` 을 **UID 1000, GID 1000** 으로 실행해 `id` 결과를 `/tmp/q6-user.txt` 에
+
+저장하세요. (둘 다 `--rm` 으로 일회성 실행)', '실행 사용자는 `docker run` 의 `--user 사용자번호:그룹번호` 로 정합니다. `id` 는 컨테이너 이미지 안에서 실행할 명령 자리에 씁니다.', 'docker run --rm alpine id > /tmp/q6-root.txt
+docker run --rm --user 1000:1000 alpine id > /tmp/q6-user.txt
+cat /tmp/q6-root.txt /tmp/q6-user.txt
+
+# 옵션이 없으면 uid=0(root). --user 로 비루트로 낮춘다', '["sh", "-c", "docker rm -f $(docker ps -aq) >/dev/null 2>&1; docker rmi -f t1 >/dev/null 2>&1; rm -rf /tmp/work /tmp/q*.txt; mkdir -p /tmp/work; docker image inspect alpine >/dev/null 2>&1 || docker pull -q alpine >/dev/null 2>&1; true\\n"]', '["sh", "-c", "( grep -q \\"^uid=0(root)\\" /tmp/q6-root.txt ) && ( grep -q \\"^uid=1000 gid=1000\\" /tmp/q6-user.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "첫 결과는 root(uid=0) 다", "cmd": ["sh", "-c", "grep -q \\"^uid=0(root)\\" /tmp/q6-root.txt"]}, {"label": "둘째 결과는 uid=1000 gid=1000 이다", "cmd": ["sh", "-c", "grep -q \\"^uid=1000 gid=1000\\" /tmp/q6-user.txt"]}]', '[{"title": "Docker 보안", "url": "https://docs.docker.com/engine/security/"}, {"title": "Docker 데몬 공격 면", "url": "https://docs.docker.com/engine/security/#docker-daemon-attack-surface"}, {"title": "빌드 시크릿", "url": "https://docs.docker.com/build/building/secrets/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 532 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 532, 7, '읽기 전용 + 권한 최소화로 한 번에 실행하기', '**상황** — 위험한 것은 하나씩 줄이지 말고 한 번에 겹쳐 줄입니다. `alpine` 으로 컨테이너 `hardened` 를 백그라운드로 띄우세요(`sleep 300` 실행). 조건은 다음과 같습니다.
+- 프로세스는 **UID 1000** 으로 실행
+- 루트 파일시스템은 **읽기 전용**
+- 리눅스 **capability 를 전부 제거**
+- 단, `/tmp` 에는 쓸 수 있어야 함 (메모리 임시 공간 `--tmpfs`)', '조건 하나마다 `docker run` 옵션이 하나씩 있습니다. 끝나면 `docker exec hardened touch` 로 `/` 와 `/tmp` 에 파일을 만들어 결과를 비교해 보세요.', 'docker run -d --name hardened --user 1000 --read-only --cap-drop ALL --tmpfs /tmp alpine sleep 300
+docker exec hardened touch /x        # 읽기 전용이라 실패
+docker exec hardened touch /tmp/x    # tmpfs 라 성공
+
+# 여러 옵션을 겹쳐 쓰면 침투당해도 할 수 있는 일이 크게 줄어든다', '["sh", "-c", "docker rm -f $(docker ps -aq) >/dev/null 2>&1; docker rmi -f t1 >/dev/null 2>&1; rm -rf /tmp/work /tmp/q*.txt; mkdir -p /tmp/work; docker image inspect alpine >/dev/null 2>&1 || docker pull -q alpine >/dev/null 2>&1; true\\n"]', '["sh", "-c", "( [ \\"$(docker inspect -f \\"{{.State.Running}}\\" hardened 2>/dev/null)\\" = true ] ) && ( [ \\"$(docker exec hardened id -u 2>/dev/null)\\" = 1000 ] ) && ( [ \\"$(docker inspect -f \\"{{.HostConfig.ReadonlyRootfs}}\\" hardened 2>/dev/null)\\" = true ] ) && ( docker inspect -f \\"{{.HostConfig.CapDrop}}\\" hardened 2>/dev/null | grep -q ALL ) && ( docker exec hardened touch /tmp/probe 2>/dev/null && ! docker exec hardened touch /probe 2>/dev/null )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "hardened 가 실행 중이다", "cmd": ["sh", "-c", "[ \\"$(docker inspect -f \\"{{.State.Running}}\\" hardened 2>/dev/null)\\" = true ]"]}, {"label": "비루트 사용자(uid 1000)로 돈다", "cmd": ["sh", "-c", "[ \\"$(docker exec hardened id -u 2>/dev/null)\\" = 1000 ]"]}, {"label": "루트 파일시스템이 읽기 전용이다", "cmd": ["sh", "-c", "[ \\"$(docker inspect -f \\"{{.HostConfig.ReadonlyRootfs}}\\" hardened 2>/dev/null)\\" = true ]"]}, {"label": "capability 를 전부 뺐다", "cmd": ["sh", "-c", "docker inspect -f \\"{{.HostConfig.CapDrop}}\\" hardened 2>/dev/null | grep -q ALL"]}, {"label": "/tmp 에는 쓸 수 있고 / 에는 쓸 수 없다", "cmd": ["sh", "-c", "docker exec hardened touch /tmp/probe 2>/dev/null && ! docker exec hardened touch /probe 2>/dev/null"]}]', '[{"title": "Docker 보안", "url": "https://docs.docker.com/engine/security/"}, {"title": "Docker 데몬 공격 면", "url": "https://docs.docker.com/engine/security/#docker-daemon-attack-surface"}, {"title": "빌드 시크릿", "url": "https://docs.docker.com/build/building/secrets/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 532 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 532, 8, 'ENV 로 넣은 비밀번호는 docker history 에 그대로 보인다', '**상황** — 개발자가 편하자고 비밀번호를 이미지 안에 넣었습니다.
+```
+FROM alpine
+ENV DB_PASSWORD=...
+CMD ["sleep", "300"]
+```
+이미 이미지 `t1` 이 빌드되어 있습니다. 이미지를 **실행하지 않고도** 이미지를 받은 누구나 비밀번호를 볼 수 있는지 확인하세요. `docker history` 로 이미지의 각 층(layer)이 만들어진 명령을 **줄임 없이(`--no-trunc`)** 출력해 `/tmp/q8.txt` 에 저장하세요.', '`docker history` 에 이미지 이름을 주고 `--no-trunc` 를 붙입니다. 출력에서 `ENV` 로 시작하는 줄을 찾아 보세요.', 'docker history --no-trunc t1 > /tmp/q8.txt
+grep DB_PASSWORD /tmp/q8.txt
+
+# 이미지는 층마다 만든 명령을 기록한다. ENV·RUN 에 넣은 값은 이미지를 가진 사람 모두에게 보인다', '["sh", "-c", "docker rm -f $(docker ps -aq) >/dev/null 2>&1; docker rmi -f t1 >/dev/null 2>&1; rm -rf /tmp/work /tmp/q*.txt; mkdir -p /tmp/work; docker image inspect alpine >/dev/null 2>&1 || docker pull -q alpine >/dev/null 2>&1; true\\nmkdir -p $(dirname /tmp/work/q8/Dockerfile); cat > /tmp/work/q8/Dockerfile <<''EOF''\\nFROM alpine\\nENV DB_PASSWORD=Sup3rSecret-demo\\nCMD [\\"sleep\\", \\"300\\"]\\nEOF\\ndocker build -q -t t1 /tmp/work/q8 >/dev/null\\n"]', '["sh", "-c", "( grep -q \\"DB_PASSWORD=Sup3rSecret-demo\\" /tmp/q8.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "저장된 출력에 비밀번호가 그대로 보인다", "cmd": ["sh", "-c", "grep -q \\"DB_PASSWORD=Sup3rSecret-demo\\" /tmp/q8.txt"]}]', '[{"title": "Docker 보안", "url": "https://docs.docker.com/engine/security/"}, {"title": "Docker 데몬 공격 면", "url": "https://docs.docker.com/engine/security/#docker-daemon-attack-surface"}, {"title": "빌드 시크릿", "url": "https://docs.docker.com/build/building/secrets/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 532 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 532, 9, 'docker inspect 로 환경변수 읽기', '**상황** — `-e` 로 비밀 값을 넘겨 실행 중인 컨테이너 `app` 이 있습니다. 컨테이너 안에 들어가지 않고도, 도커 권한만 있으면 그 값을 알 수 있는지 확인합니다.
+
+`docker inspect` 를 **Go 템플릿**(`-f ''{{.Config.Env}}''`)으로 실행해 컨테이너 `app` 에 설정된 환경변수 목록을 `/tmp/q9.txt` 에 저장하세요.', '`docker inspect -f` 뒤에 `{{.Config.Env}}` 를 쓰고 컨테이너 이름을 마지막에 적습니다.', 'docker inspect -f ''{{.Config.Env}}'' app > /tmp/q9.txt
+cat /tmp/q9.txt
+
+# 환경변수는 컨테이너 설정에 평문으로 저장된다. docker 권한이 있으면 누구나 읽는다', '["sh", "-c", "docker rm -f $(docker ps -aq) >/dev/null 2>&1; docker rmi -f t1 >/dev/null 2>&1; rm -rf /tmp/work /tmp/q*.txt; mkdir -p /tmp/work; docker image inspect alpine >/dev/null 2>&1 || docker pull -q alpine >/dev/null 2>&1; true\\ndocker run -d --name app -e API_TOKEN=tok-demo-12345 alpine sleep 600 >/dev/null\\n"]', '["sh", "-c", "( grep -q \\"API_TOKEN=tok-demo-12345\\" /tmp/q9.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "저장된 출력에 API_TOKEN 값이 보인다", "cmd": ["sh", "-c", "grep -q \\"API_TOKEN=tok-demo-12345\\" /tmp/q9.txt"]}]', '[{"title": "Docker 보안", "url": "https://docs.docker.com/engine/security/"}, {"title": "Docker 데몬 공격 면", "url": "https://docs.docker.com/engine/security/#docker-daemon-attack-surface"}, {"title": "빌드 시크릿", "url": "https://docs.docker.com/build/building/secrets/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 532 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 532, 10, '시크릿은 실행할 때 파일로 넣기', '**상황** — 대안은 이미지에 넣지 않고 **실행할 때** 넣는 것입니다. 환경변수 대신 호스트의 시크릿 파일을 컨테이너에 **읽기 전용**으로 붙이면, 값이 이미지·`docker inspect` 의 환경변수에 남지 않습니다.
+
+`/tmp/work/db_pass` 파일(비밀번호가 들어 있음)을 `alpine` 컨테이너 `safe` 의 `/run/secrets/db_pass` 에 **읽기 전용**으로 붙여 백그라운드로 띄우세요(`sleep 300` 실행). 환경변수(`-e`)로는 넣지 마세요.', '`-v 호스트파일:컨테이너파일:옵션` 의 끝 옵션으로 읽기 전용을 표시합니다. 끝나면 `docker exec safe cat /run/secrets/db_pass` 와 `docker inspect -f ''{{.Config.Env}}'' safe` 를 비교해 보세요.', 'docker run -d --name safe -v /tmp/work/db_pass:/run/secrets/db_pass:ro alpine sleep 300
+docker exec safe cat /run/secrets/db_pass
+docker inspect -f ''{{.Config.Env}}'' safe
+
+# 파일로 읽히지만 inspect 의 Env 에는 값이 없다. 컨테이너가 지워지면 호스트 파일만 지키면 된다', '["sh", "-c", "docker rm -f $(docker ps -aq) >/dev/null 2>&1; docker rmi -f t1 >/dev/null 2>&1; rm -rf /tmp/work /tmp/q*.txt; mkdir -p /tmp/work; docker image inspect alpine >/dev/null 2>&1 || docker pull -q alpine >/dev/null 2>&1; true\\necho runtime-secret-789 > /tmp/work/db_pass\\n"]', '["sh", "-c", "( [ \\"$(docker inspect -f \\"{{.State.Running}}\\" safe 2>/dev/null)\\" = true ] ) && ( [ \\"$(docker exec safe cat /run/secrets/db_pass 2>/dev/null)\\" = runtime-secret-789 ] ) && ( [ \\"$(docker inspect -f \\"{{range .Mounts}}{{if eq .Destination \\\\\\"/run/secrets/db_pass\\\\\\"}}{{.RW}}{{end}}{{end}}\\" safe 2>/dev/null)\\" = false ] ) && ( ! docker inspect -f \\"{{.Config.Env}}\\" safe 2>/dev/null | grep -q runtime-secret-789 )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "safe 가 실행 중이다", "cmd": ["sh", "-c", "[ \\"$(docker inspect -f \\"{{.State.Running}}\\" safe 2>/dev/null)\\" = true ]"]}, {"label": "컨테이너 안에서 시크릿 파일이 읽힌다", "cmd": ["sh", "-c", "[ \\"$(docker exec safe cat /run/secrets/db_pass 2>/dev/null)\\" = runtime-secret-789 ]"]}, {"label": "마운트가 읽기 전용이다", "cmd": ["sh", "-c", "[ \\"$(docker inspect -f \\"{{range .Mounts}}{{if eq .Destination \\\\\\"/run/secrets/db_pass\\\\\\"}}{{.RW}}{{end}}{{end}}\\" safe 2>/dev/null)\\" = false ]"]}, {"label": "환경변수에는 값이 없다", "cmd": ["sh", "-c", "! docker inspect -f \\"{{.Config.Env}}\\" safe 2>/dev/null | grep -q runtime-secret-789"]}]', '[{"title": "Docker 보안", "url": "https://docs.docker.com/engine/security/"}, {"title": "Docker 데몬 공격 면", "url": "https://docs.docker.com/engine/security/#docker-daemon-attack-surface"}, {"title": "빌드 시크릿", "url": "https://docs.docker.com/build/building/secrets/"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 532 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 532, 11, 'docker 그룹에 사용자 추가', '사용자 `alice` 가 `sudo` 없이 `docker` 명령을 쓸 수 있게 하려면 어떤 그룹에 넣나요? (이 그룹이 사실상 root 권한이라는 점은 앞에서 봤습니다.) 빈칸을 채우세요.', '도커 데몬 소켓(`/var/run/docker.sock`)의 그룹 소유자 이름과 같습니다.', NULL, NULL, '[]', 'fill', '["docker", "wheel", "adm", "dockerroot"]', NULL, '`docker` 그룹이 도커 소켓의 그룹 소유자라서, 이 그룹 사용자는 sudo 없이 데몬에 요청을 보낼 수 있습니다. `wheel` 은 sudo 권한 그룹이고 `adm` 은 로그 읽기 그룹입니다. 추가한 뒤에는 다시 로그인해야 반영됩니다.', '[0]', 'sudo usermod -aG {0} alice', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 532 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 532, 12, '이미 노출된 시크릿 정리 순서', '배포된 이미지에 `ENV DB_PASSWORD=...` 로 비밀번호가 들어 있는 것을 발견했습니다. 이미지를 가진 사람은 누구나 값을 볼 수 있으므로, 무엇이 노출됐는지 확인한 뒤, **이미지를 고치기 전에 새어 나간 값부터 무효화합니다.** 순서대로 놓으세요.', '새어 나간 값이 이미 복사됐을 수 있다는 점과, 무엇이 새어 나갔는지 알아야 무엇을 바꿀지 안다는 점을 함께 생각해 보세요.', NULL, NULL, '[]', 'order', '["Dockerfile 에서 ENV 로 비밀번호를 넣은 줄을 지운다", "새 이미지를 시크릿 없이 실행한다: 비밀번호는 실행할 때 읽기 전용 파일로 마운트한다", "docker history 로 어떤 값이 노출됐는지 확인한다", "시크릿 없는 Dockerfile 로 이미지를 다시 빌드한다", "노출된 비밀번호를 무효화하고 새 값으로 교체한다"]', NULL, '노출된 값은 이미 복사됐을 수 있으니 이미지를 고치기 전에 값부터 교체합니다. 그다음 원인(Dockerfile 의 ENV)을 지우고 다시 빌드하고, 새 값은 실행할 때 파일 마운트 등으로 주입합니다. 이미지만 고치고 값을 그대로 두면 옛 이미지에서 같은 비밀번호가 계속 유효합니다.', '[2, 4, 0, 3, 1]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 532 AND order_index = 12);

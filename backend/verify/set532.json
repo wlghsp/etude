@@ -1,0 +1,12 @@
+{
+  "setId": 532,
+  "answers": {
+    "2": "docker run --rm -v /tmp/work/hostdir:/host alpine sh -c 'echo hello > /host/by-container.txt'\nstat -c %u /tmp/work/hostdir/by-container.txt > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# 컨테이너 안 root 가 호스트 폴더에 쓴 파일은 호스트에서도 root 소유다",
+    "4": "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(which docker):/usr/bin/docker alpine docker ps --format '{{.Names}}' > /tmp/q4.txt\ncat /tmp/q4.txt\n\n# 컨테이너 안인데 호스트의 컨테이너 target-app 이 보인다. 소켓으로 데몬을 직접 조종하는 것이다",
+    "6": "docker run --rm alpine id > /tmp/q6-root.txt\ndocker run --rm --user 1000:1000 alpine id > /tmp/q6-user.txt\ncat /tmp/q6-root.txt /tmp/q6-user.txt\n\n# 옵션이 없으면 uid=0(root). --user 로 비루트로 낮춘다",
+    "7": "docker run -d --name hardened --user 1000 --read-only --cap-drop ALL --tmpfs /tmp alpine sleep 300\ndocker exec hardened touch /x        # 읽기 전용이라 실패\ndocker exec hardened touch /tmp/x    # tmpfs 라 성공\n\n# 여러 옵션을 겹쳐 쓰면 침투당해도 할 수 있는 일이 크게 줄어든다",
+    "8": "docker history --no-trunc t1 > /tmp/q8.txt\ngrep DB_PASSWORD /tmp/q8.txt\n\n# 이미지는 층마다 만든 명령을 기록한다. ENV·RUN 에 넣은 값은 이미지를 가진 사람 모두에게 보인다",
+    "9": "docker inspect -f '{{.Config.Env}}' app > /tmp/q9.txt\ncat /tmp/q9.txt\n\n# 환경변수는 컨테이너 설정에 평문으로 저장된다. docker 권한이 있으면 누구나 읽는다",
+    "10": "docker run -d --name safe -v /tmp/work/db_pass:/run/secrets/db_pass:ro alpine sleep 300\ndocker exec safe cat /run/secrets/db_pass\ndocker inspect -f '{{.Config.Env}}' safe\n\n# 파일로 읽히지만 inspect 의 Env 에는 값이 없다. 컨테이너가 지워지면 호스트 파일만 지키면 된다"
+  }
+}

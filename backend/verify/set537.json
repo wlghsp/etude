@@ -1,0 +1,10 @@
+{
+  "setId": 537,
+  "answers": {
+    "2": "cat /tmp/report/pvs.txt\nawk 'NR>1 && $6!=\"0\" {print $1}' /tmp/report/pvs.txt > /tmp/pv_free.txt\ncat /tmp/pv_free.txt\n\n# 제목 줄(NR==1)은 건너뛰고, PFree(6번째 열)가 0 이 아닌 줄의 장치(1번째 열)를 출력한다",
+    "3": "cat /tmp/report/lvs.txt\nawk '$2==\"vg_data\" {print $1}' /tmp/report/lvs.txt | sort > /tmp/lv_data.txt\ncat /tmp/lv_data.txt\n\n# VG 열이 vg_data 인 줄의 LV 이름(1번째 열)만 모은다",
+    "7": "cat /tmp/report/vgs.txt\nawk '$1==\"vg_data\" {print $NF+0-20}' /tmp/report/vgs.txt > /tmp/left.txt\ncat /tmp/left.txt\n\n# VFree(50.00g) - 20 = 30 이므로 늘릴 수 있다. 실제로는 lvextend -L +20G 를 실행한다",
+    "10": "cat /tmp/report/df_T.txt\nawk 'NR>1 {print $NF, ($2==\"xfs\" ? \"xfs_growfs\" : \"resize2fs\")}' /tmp/report/df_T.txt > /tmp/grow.txt\ncat /tmp/grow.txt\n\n# 종류가 xfs 면 xfs_growfs, ext4 면 resize2fs",
+    "11": "truncate -s 128M /tmp/lab/disk.img\ne2fsck -f -y /tmp/lab/disk.img\nresize2fs /tmp/lab/disk.img\ndumpe2fs -h /tmp/lab/disk.img 2>/dev/null | grep -E 'Block (count|size)'\n\n# LV 를 늘리는 것에 해당하는 것이 truncate, 파일시스템을 늘리는 것이 resize2fs. 크기를 안 주면 장치 끝까지 늘린다"
+  }
+}

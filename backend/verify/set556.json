@@ -1,0 +1,8 @@
+{
+  "setId": 556,
+  "answers": {
+    "2": "docker run -d --name isol --network none alpine sleep 3600\ndocker exec isol ip -o addr > /tmp/none_if.txt\ncat /tmp/none_if.txt\n\n# none: 컨테이너에는 루프백(lo)만 있고 외부로 나가는 인터페이스(eth0)가 없다",
+    "4": "docker run -d --name hostweb --network host alpine sleep 3600\ndocker exec hostweb ls /sys/class/net > /tmp/host_if.txt\ncat /tmp/host_if.txt\n\n# host 모드: 컨테이너가 호스트의 인터페이스를 그대로 본다 (docker0 가 보인다)",
+    "8": "docker network create -d macvlan --subnet 192.0.2.0/24 --gateway 192.0.2.1 -o parent=eth0 lan1\ndocker network inspect lan1\n\n# macvlan: 부모 NIC(eth0) 위에 가상 NIC 를 얹어 컨테이너가 고유 MAC·IP 로 바깥 대역에 직접 보이게 한다\n# ipvlan 은 macvlan 과 비슷하지만 컨테이너마다 MAC 을 만들지 않고 부모 인터페이스의 MAC 을 공유하고 IP 로만 구분한다"
+  }
+}

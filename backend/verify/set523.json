@@ -1,0 +1,12 @@
+{
+  "setId": 523,
+  "answers": {
+    "2": "mariadb -N school -e 'WITH passed AS (SELECT * FROM scores WHERE score >= 85) SELECT class, COUNT(*) AS cnt FROM passed GROUP BY class ORDER BY class' > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# 괄호 안 결과에 passed 라는 이름을 붙이고, 바깥 SELECT 에서 테이블처럼 쓴다",
+    "3": "mariadb -N school -e 'SELECT id, score, ROW_NUMBER() OVER (ORDER BY score DESC, id) AS rn FROM scores ORDER BY rn' > /tmp/q3.txt\ncat /tmp/q3.txt\n\n# 8행이 그대로 남고, 각 행 옆에 번호 열이 하나 붙는다 (GROUP BY 와 다른 점). 동점이어도 번호는 겹치지 않는다",
+    "5": "mariadb -N school -e 'SELECT id, score, RANK() OVER (ORDER BY score DESC) AS rk FROM scores ORDER BY rk, id' > /tmp/q5.txt\ncat /tmp/q5.txt\n\n# 90점 둘은 공동 2위, 다음 85점은 3위가 아니라 4위. ROW_NUMBER 와 달리 동점은 같은 번호",
+    "6": "mariadb -N school -e 'WITH ranked AS (SELECT id, student, DENSE_RANK() OVER (ORDER BY score DESC) AS dr FROM scores) SELECT student FROM ranked WHERE dr = 2 ORDER BY id' > /tmp/q6.txt\ncat /tmp/q6.txt\n\n# 점수가 90점인 kim·park 이 2등. RANK 였다면 다음이 4등이라 \"3등\" 을 찾을 수 없지만 DENSE_RANK 는 빠짐없이 이어진다",
+    "8": "mariadb -N school -e 'SELECT class, student, score, RANK() OVER (PARTITION BY class ORDER BY score DESC) AS rk FROM scores ORDER BY class, rk, id' > /tmp/q8.txt\ncat /tmp/q8.txt\n\n# A 반 kim·park 공동 1위, B 반 choi 1위. 반이 바뀌면 순위가 1 부터 다시 시작한다",
+    "9": "mariadb -N school -e 'SELECT day, visitors, SUM(visitors) OVER (ORDER BY day) AS running FROM daily ORDER BY day' > /tmp/q9.txt\ncat /tmp/q9.txt\n\n# 100, 220, 310, 460, 590. GROUP BY 합계와 달리 5행이 그대로 남고 합계가 한 줄씩 쌓인다",
+    "10": "mariadb -N school -e 'SELECT day, visitors, visitors - LAG(visitors) OVER (ORDER BY day) AS diff FROM daily ORDER BY day' > /tmp/q10.txt\ncat /tmp/q10.txt\n\n# 첫날은 앞 행이 없어 NULL, 이후 20, -30, 60, -20. 전일·전월 대비 같은 비교에 쓴다"
+  }
+}

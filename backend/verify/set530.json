@@ -1,0 +1,11 @@
+{
+  "setId": 530,
+  "answers": {
+    "1": "docker run -d --name web -p 8080:80 nginx:alpine\nsleep 2\nwget -qO- http://localhost:8080 > /tmp/page.txt\nhead -5 /tmp/page.txt\n\n# -p 호스트포트:컨테이너포트. 호스트 8080 으로 온 요청이 컨테이너 80 으로 전달된다",
+    "2": "docker run -d --name web1 -p 8081:80 nginx:alpine\ndocker run -d --name web2 -p 8082:80 nginx:alpine\nsleep 2\nwget -qO- http://localhost:8081 > /tmp/p1.txt\nwget -qO- http://localhost:8082 > /tmp/p2.txt\nhead -3 /tmp/p1.txt /tmp/p2.txt\n\n# 호스트 포트는 컨테이너마다 달라야 한다. 컨테이너 안 포트는 같아도 상관없다 (컨테이너마다 자기만의 네트워크 공간)",
+    "4": "docker run -d --name admin -p 127.0.0.1:8083:80 nginx:alpine\nsleep 2\ndocker port admin\nwget -qO- http://127.0.0.1:8083 > /tmp/admin.txt\nhead -5 /tmp/admin.txt\n\n# 127.0.0.1 에 묶으면 호스트 자신에서만 닿는다. 외부 PC 가 호스트 IP 로 접속하면 거부된다",
+    "6": "docker run -d --name auto -P nginx:alpine\nsleep 2\ndocker port auto 80\ndocker port auto 80 | head -1 | awk -F: '{print $NF}' > /tmp/hostport.txt\ncat /tmp/hostport.txt\n\n# -P 는 EXPOSE 된 모든 포트를 호스트의 임의 포트(보통 32768 이상)에 연결한다",
+    "8": "docker port shop\ndocker port shop 80 | head -1 | awk -F: '{print $NF}' > /tmp/shopport.txt\ncat /tmp/shopport.txt\nwget -qO- http://localhost:$(cat /tmp/shopport.txt) > /tmp/shop.txt\nhead -5 /tmp/shop.txt\n\n# docker port 는 컨테이너 포트 → 호스트 주소:포트 대응을 보여 준다",
+    "9": "docker run -d --name new -p 8080:80 nginx:alpine 2> /tmp/err.txt\ncat /tmp/err.txt\ndocker rm -f new\ndocker run -d --name new -p 8081:80 nginx:alpine\nsleep 2\nwget -qO- http://localhost:8081 | head -3\n\n# 호스트 포트는 하나에 한 컨테이너만. 충돌하면 다른 호스트 포트를 고르거나, 쓰는 쪽을 먼저 내린다. 컨테이너 안 포트(80)는 그대로여도 된다"
+  }
+}

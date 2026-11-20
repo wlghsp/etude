@@ -1,0 +1,9 @@
+{
+  "setId": 545,
+  "answers": {
+    "1": "cat /srv/lab/net/hostnamectl.txt\nawk '/Static hostname/ {print $NF}' /srv/lab/net/hostnamectl.txt > /tmp/host.txt\ncat /tmp/host.txt   # web01.example.com",
+    "4": "cat /srv/lab/net/nmcli-conn.txt\nawk '$4==\"eth0\" {print $1}' /srv/lab/net/nmcli-conn.txt > /tmp/conn.txt\ncat /tmp/conn.txt   # lan-main",
+    "5": "cat /srv/lab/net/lan-main.nmconnection\ngrep '^address1=' /srv/lab/net/lan-main.nmconnection | cut -d= -f2 | cut -d, -f1 > /tmp/ip.txt\ngrep '^address1=' /srv/lab/net/lan-main.nmconnection | cut -d, -f2 > /tmp/gw.txt\ncat /tmp/ip.txt /tmp/gw.txt   # 192.0.2.10/24, 192.0.2.1",
+    "8": "cat /srv/lab/net/ip-route.txt\nawk '$1==\"default\" {print $3}' /srv/lab/net/ip-route.txt > /tmp/run_gw.txt\ncat /tmp/run_gw.txt   # 192.0.2.254\n# 프로필은 192.0.2.1(manual), 실제는 192.0.2.254(proto dhcp): 변경이 아직 적용되지 않았다. nmcli connection up 이 필요하다"
+  }
+}

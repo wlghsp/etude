@@ -1,0 +1,10 @@
+{
+  "setId": 527,
+  "answers": {
+    "2": "redis-cli get user:1                       # 비어 있음 (미스)\nv=$(cat /tmp/origin_user1.txt)             # 원본 조회\nredis-cli set user:1 \"$v\" ex 300           # 캐시에 저장 (300초 뒤 자동 삭제)\nredis-cli get user:1                       # 이제 히트\n\n# 확인 -> 미스면 원본 조회 -> TTL 과 함께 저장. 이 세 단계가 Cache-Aside 읽기",
+    "5": "redis-cli set price:7 1500 keepttl\nredis-cli get price:7\nredis-cli ttl price:7\n\n# 옵션 없는 SET 은 TTL 을 지운다(-1). KEEPTTL 이나 EX 를 붙여 만료를 유지한다",
+    "8": "r=$(redis-cli set lock:hot me nx ex 10)     # 성공하면 OK, 이미 있으면 빈 값(nil)\necho \"$r\" > /tmp/got.txt\nif [ \"$r\" = OK ]; then\n  redis-cli set hot:report \"$(cat /tmp/origin_report.txt)\" ex 60   # 원본 조회 후 캐시 채우기\n  redis-cli del lock:hot                                          # 락 해제\nfi\n\n# 락을 못 잡은 요청은 원본에 가지 않고 잠깐 기다렸다 캐시를 다시 읽는다",
+    "10": "redis-cli hset sess:abc123 user kim role admin\nredis-cli expire sess:abc123 1800\nredis-cli hgetall sess:abc123\nredis-cli ttl sess:abc123\n\n# 세션은 필드가 여럿이라 Hash 가 편하다. 만료는 필드가 아니라 키 전체에 건다",
+    "11": "for k in $(redis-cli --scan); do echo \"$(redis-cli memory usage $k) $k\"; done | sort -rn | head -1 | awk '{print $2}' > /tmp/big.txt\ncat /tmp/big.txt\nredis-cli unlink $(cat /tmp/big.txt)\n\n# --bigkeys 는 자료형별로 가장 큰 키를 보여 주고, MEMORY USAGE 는 키 하나의 실제 바이트 수를 잰다"
+  }
+}

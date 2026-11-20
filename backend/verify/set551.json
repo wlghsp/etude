@@ -1,0 +1,13 @@
+{
+  "setId": 551,
+  "answers": {
+    "2": "docker run --rm -v appdata:/data:ro alpine ls -lR /data > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# 볼륨을 붙인 일회용 컨테이너 안에서 ls 를 실행하면 볼륨 내용이 보인다",
+    "3": "docker run --rm -v appdata:/data:ro -v /tmp/backup:/backup alpine tar czf /backup/appdata.tgz -C /data .\nls -l /tmp/backup\n\n# 헬퍼 컨테이너가 볼륨을 읽어 tar 로 묶고, 결과는 호스트 폴더(/tmp/backup)에 남는다",
+    "4": "docker run --rm -v /tmp/backup:/backup:ro alpine tar tzf /backup/appdata.tgz > /tmp/q4.txt\ncat /tmp/q4.txt\n\n# t 는 list. 풀지 않고 목록만 본다",
+    "6": "docker run --rm -v restored:/data -v /tmp/backup:/backup:ro alpine tar xzf /backup/appdata.tgz -C /data\ndocker run --rm -v restored:/data:ro alpine ls -lnR /data\n\n# 새 볼륨은 처음 붙일 때 만들어진다. root 로 푸는 tar 는 파일 주인(uid)과 권한도 기록된 그대로 복원한다",
+    "7": "docker run --rm --volumes-from db -v /tmp/backup:/backup alpine tar czf /backup/db.tgz -C /var/lib/app .\ntar tzf /tmp/backup/db.tgz 2>/dev/null || docker run --rm -v /tmp/backup:/b:ro alpine tar tzf /b/db.tgz\n\n# --volumes-from 은 지정한 컨테이너의 마운트를 같은 경로로 그대로 물려받는다. 볼륨 이름을 몰라도 된다",
+    "8": "docker run --rm --user 1000:1000 -v appdata:/data:ro -v /tmp/backup:/backup alpine tar czf /backup/appdata.tgz -C /data .\nls -ln /tmp/backup\n\n# 컨테이너 프로세스의 uid 가 새로 만든 파일의 주인이 된다 (호스트에는 그 uid 의 숫자로 보인다)",
+    "9": "docker run --rm -v appdata:/from:ro -v newdata:/to alpine cp -a /from/. /to/\ndocker run --rm -v newdata:/to:ro alpine ls -lnR /to\n\n# -a 는 소유자·권한·하위 폴더를 모두 보존한다. -r 만 쓰면 root 가 만든 새 파일이 돼 주인이 root 로 바뀐다",
+    "11": "docker run --rm --user 1000:1000 -v vault:/data:ro -v /tmp/backup:/backup alpine tar czf /backup/vault.tgz -C /data . 2> /tmp/q11.txt\ncat /tmp/q11.txt\nrm -f /tmp/backup/vault.tgz\ndocker run --rm -v vault:/data:ro -v /tmp/backup:/backup alpine tar czf /backup/vault.tgz -C /data .\n\n# 읽기 권한이 root 에게만 있는 파일은 일반 uid 로 묶을 수 없다. 백업용 헬퍼는 root(기본값)로 실행한다"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "setId": 540,
+  "answers": {
+    "1": "cat /srv/lab/fw/list-all.txt\ngrep '^  services:' /srv/lab/fw/list-all.txt | cut -d: -f2 | tr -s ' ' '\\n' | grep -v '^$' > /tmp/services.txt\ncat /tmp/services.txt   # cockpit, dhcpv6-client, ssh",
+    "3": "cat /srv/lab/fw/runtime-ports.txt /srv/lab/fw/permanent-ports.txt\ntr ' ' '\\n' < /srv/lab/fw/runtime-ports.txt > /tmp/r.txt\ntr ' ' '\\n' < /srv/lab/fw/permanent-ports.txt > /tmp/p.txt\ngrep -vxFf /tmp/p.txt /tmp/r.txt > /tmp/lost.txt   # 9090/tcp 만 남는다\ncat /tmp/lost.txt",
+    "7": "cat /srv/lab/se/sestatus.txt\nawk '/^Current mode/ {print $NF}' /srv/lab/se/sestatus.txt > /tmp/current.txt\nawk '/^Mode from config file/ {print $NF}' /srv/lab/se/sestatus.txt > /tmp/config.txt\n# 현재 permissive, 설정 enforcing: 누군가 setenforce 0 으로 임시 전환했다. 재부팅하면 enforcing 으로 돌아간다.",
+    "8": "cat /srv/lab/se/ls-lZ.txt\nawk 'NR>1 && $5 !~ /httpd_sys_content_t/ {print $10}' /srv/lab/se/ls-lZ.txt > /tmp/wrong.txt\ncat /tmp/wrong.txt   # logo.png, report.html\n# user_home_t(홈에서 mv 한 파일), user_tmp_t(/tmp 에서 옮긴 파일)는 원래 위치의 라벨을 그대로 가져온 것",
+    "9": "grep denied /srv/lab/se/audit.log\ngrep denied /srv/lab/se/audit.log | grep -o 'comm=\"[^\"]*\"' | cut -d'\"' -f2 | sort -u > /tmp/denied.txt\ncat /tmp/denied.txt   # httpd, nginx\n# SYSCALL 줄의 comm 은 denied 줄이 아니므로 제외된다"
+  }
+}

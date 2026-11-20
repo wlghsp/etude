@@ -1,0 +1,11 @@
+{
+  "setId": 509,
+  "answers": {
+    "2": "mariadb -N club -e \"SELECT name, IFNULL(nick,'none') FROM members\" > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# IFNULL(a, b): a 가 NULL 이면 b. 화면·보고서에 NULL 대신 보여 줄 값을 정할 때 쓴다",
+    "3": "mariadb -N club -e \"SELECT name, COALESCE(phone, email, 'none') FROM members\" > /tmp/q3.txt\ncat /tmp/q3.txt\n\n# 왼쪽부터 처음 만나는 NULL 아닌 값. 모두 NULL 이면 마지막 기본값이 나온다",
+    "6": "mariadb -N club -e \"SELECT name, REPLACE(phone,'-','') FROM members WHERE phone IS NOT NULL\" > /tmp/q6.txt\ncat /tmp/q6.txt\n\n# REPLACE(문자열, 찾을것, 바꿀것). 빈 문자열로 바꾸면 그 글자가 지워진다",
+    "8": "mariadb -N club -e 'SELECT ROUND(AVG(score), 1) FROM members' > /tmp/q8.txt\ncat /tmp/q8.txt\n\n# 함수는 겹쳐 쓸 수 있다. 안쪽(AVG)이 먼저 계산되고 그 결과를 바깥(ROUND)이 받는다",
+    "9": "mariadb -N club -e \"SELECT name, DATE_FORMAT(joined,'%Y-%m') FROM members\" > /tmp/q9.txt\ncat /tmp/q9.txt\n\n# 월별로 묶어 세려면 이 값으로 GROUP BY 하면 된다 (월별 가입자 수 등)",
+    "12": "mariadb -N club -e \"SELECT name, CASE WHEN score >= 90 THEN 'A' WHEN score >= 80 THEN 'B' ELSE 'C' END AS grade FROM members\" > /tmp/q12.txt\ncat /tmp/q12.txt\n\n# CASE 는 값을 바꿔 보여 줄 뿐 테이블 데이터를 고치지 않는다"
+  }
+}

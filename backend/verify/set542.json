@@ -1,0 +1,10 @@
+{
+  "setId": 542,
+  "answers": {
+    "2": "visudo -cf /tmp/alice.draft          # syntax error 가 나온다. 규칙에 '=' 가 빠졌다\nsed -i 's/ALL (root)/ALL=(root)/' /tmp/alice.draft\nvisudo -cf /tmp/alice.draft          # parsed OK\ncp /tmp/alice.draft /etc/sudoers.d/alice\nchmod 0440 /etc/sudoers.d/alice\nsudo -l -U alice                     # (root) /usr/bin/id 가 보인다",
+    "3": "echo '%ops ALL=(ALL) ALL' > /etc/sudoers.d/ops\nchmod 0440 /etc/sudoers.d/ops\nvisudo -cf /etc/sudoers.d/ops\nsudo -l -U carol    # (ALL) ALL\nsudo -l -U dave     # not allowed to run sudo",
+    "4": "echo '%webdev ALL=(root) /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx' > /etc/sudoers.d/webdev\nchmod 0440 /etc/sudoers.d/webdev\nvisudo -cf /etc/sudoers.d/webdev\nsudo -l -U gina    # (root) /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx",
+    "7": "visudo -c                           # frank.rules 는 목록에 없다(건너뜀)\ncat /etc/sudoers.d/README | head   # '.' 가 들어간 이름과 ~ 로 끝나는 이름은 건너뜀\nmv /etc/sudoers.d/frank.rules /etc/sudoers.d/frank\nsudo -l -U frank                    # (root) /usr/bin/id",
+    "8": "cat /etc/sudoers.d/deploy\necho 'deploy ALL=(root) NOPASSWD: /usr/local/bin/restart-app.sh' > /etc/sudoers.d/deploy\nvisudo -cf /etc/sudoers.d/deploy\nsu deploy -s /bin/bash -c 'sudo -n /usr/local/bin/restart-app.sh'   # 성공\nsu deploy -s /bin/bash -c 'sudo -n /usr/bin/id'                      # a password is required"
+  }
+}

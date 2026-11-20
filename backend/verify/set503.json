@@ -1,0 +1,11 @@
+{
+  "setId": 503,
+  "answers": {
+    "1": "sed -i 's/^password=.*/password=S3cret/' /tmp/app.cnf\nmariadb --defaults-file=/tmp/app.cnf -N -e 'SELECT 1' > /tmp/ok.txt\ncat /tmp/ok.txt\n\n# 1045 = 계정은 있는데 비밀번호(또는 접속 호스트)가 맞지 않음. 먼저 설정 파일의 값이 맞는지 본다",
+    "2": "sed -i 's/shopp/shop/' /tmp/report.sh\nsh /tmp/report.sh > /tmp/count.txt\ncat /tmp/count.txt\n\n# 1049 = 이름에 해당하는 데이터베이스가 없다. 보통 오타이거나 다른 서버를 보고 있다",
+    "3": "sed -i 's/FROM item /FROM items /' /tmp/report.sh\nsh /tmp/report.sh > /tmp/max.txt\ncat /tmp/max.txt\n\n# 1146 메시지는 '데이터베이스.테이블' 로 알려 준다. 테이블 이름 오타인지, 데이터베이스를 잘못 골랐는지 가른다",
+    "4": "cat > /tmp/add.sql <<'SQL'\nINSERT INTO items (name, price) VALUES ('melon', 3500);\nSQL\nmariadb shop < /tmp/add.sql\nmariadb shop -e 'SELECT * FROM items'\n\n# 1062 = 기본 키·UNIQUE 값이 이미 있다. 기존 행을 덮어쓰는 게 아니라면 id 를 지정하지 않거나 다른 값을 쓴다",
+    "5": "for id in $(mariadb -N -e \"SELECT id FROM information_schema.processlist WHERE user='app'\"); do mariadb -e \"KILL $id\"; done\nsleep 1\nmariadb -uapp -pS3cret -N -e 'SELECT 1' > /tmp/app_ok.txt\ncat /tmp/app_ok.txt\n\n# 한도(max_connections)가 작거나 유휴 세션이 접속을 점유하면 1040. 원인 세션을 정리하고, 반복되면 한도·앱 접속 풀을 점검한다",
+    "6": "ID=$(mariadb -N -e 'SELECT trx_mysql_thread_id FROM information_schema.innodb_trx LIMIT 1')\nmariadb -e \"KILL $ID\"\nsleep 1\nmariadb shop -e 'UPDATE items SET price=1500 WHERE id=1'\nmariadb -N shop -e 'SELECT price FROM items WHERE id=1'\n\n# 1205 의 원인은 대개 오래 열린 트랜잭션. innodb_trx 로 찾고, 업무 영향 확인 후 KILL 한다"
+  }
+}

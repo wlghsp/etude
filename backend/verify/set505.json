@@ -1,0 +1,13 @@
+{
+  "setId": 505,
+  "answers": {
+    "1": "mariadb shop -e 'EXPLAIN SELECT * FROM orders WHERE customer_id = 77'\nmariadb -N shop -e 'EXPLAIN SELECT * FROM orders WHERE customer_id = 77' | cut -f6 > /tmp/key.txt\nmariadb -N shop -e 'EXPLAIN SELECT * FROM orders WHERE customer_id = 77' | cut -f9 > /tmp/rows.txt\ncat /tmp/key.txt /tmp/rows.txt\n\n# key 는 실제로 쓴 인덱스(idx_cust), rows 는 읽을 예상 행 수. 전체 20,000행 중 40행만 읽으면 된다",
+    "2": "cat > /tmp/q2.sql <<'SQL'\nSELECT COUNT(*) FROM orders WHERE created_at >= '2026-03-01' AND created_at < '2026-04-01';\nSQL\nmariadb shop -e \"EXPLAIN $(cat /tmp/q2.sql)\"\nmariadb -N shop < /tmp/q2.sql\n\n# 컬럼에는 손대지 않고 값 쪽 범위로 바꾸면 인덱스(range)를 탄다. 함수를 씌우면 모든 행에 함수를 적용해야 해서 전체를 훑는다",
+    "3": "cat > /tmp/q3.sql <<'SQL'\nSELECT * FROM orders WHERE phone = '01000000077';\nSQL\nmariadb shop -e \"EXPLAIN $(cat /tmp/q3.sql)\"\nmariadb -N shop < /tmp/q3.sql | cut -f1\n\n# 컬럼 타입과 같은 타입으로 비교한다. 문자열 컬럼은 따옴표를 붙인 문자열로 비교해야 컬럼이 변환되지 않아 인덱스를 탄다",
+    "4": "cat > /tmp/q4.sql <<'SQL'\nSELECT * FROM orders WHERE customer_id = 77;\nSQL\nmariadb shop -e \"EXPLAIN $(cat /tmp/q4.sql)\"\nmariadb -N shop < /tmp/q4.sql | wc -l\n\n# 컬럼은 가공하지 않고, 값 쪽에 계산을 둔다 (customer_id = 78 - 1 도 같은 효과)",
+    "6": "mariadb shop -e 'CREATE INDEX idx_created ON orders (created_at)'\nmariadb shop -e \"EXPLAIN $(cat /tmp/q6.sql)\"\n\n# (customer_id, created_at) 인덱스는 created_at 만으로는 못 쓴다 (선두 컬럼 customer_id 가 없다). created_at 이 먼저인 인덱스가 따로 필요하다",
+    "7": "mariadb shop -e 'CREATE INDEX idx_cust_amount ON orders (customer_id, amount)'\nmariadb shop -e \"EXPLAIN $(cat /tmp/q7.sql)\"\n\n# 조회 컬럼 + 조건 컬럼이 모두 인덱스에 있으면 테이블을 읽지 않는다 → Extra: Using index",
+    "8": "mariadb shop -e 'CREATE INDEX idx_cust_created ON orders (customer_id, created_at)'\nmariadb shop -e \"EXPLAIN $(cat /tmp/q8.sql)\" > /tmp/q8.txt\ncat /tmp/q8.txt\n\n# 같음 조건 컬럼 → 정렬 컬럼 순으로 묶으면 인덱스가 이미 정렬되어 있어 filesort 가 필요 없다",
+    "9": "mariadb shop -e 'CREATE INDEX idx_status ON orders (status)'\nmariadb shop -e \"EXPLAIN $(cat /tmp/q9.sql)\"\n\n# GROUP BY 컬럼에 인덱스가 있으면 이미 값끼리 모여 있어 임시 테이블 없이 센다 (Extra: Using index)"
+  }
+}

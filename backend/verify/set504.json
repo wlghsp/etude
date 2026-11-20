@@ -1,0 +1,11 @@
+{
+  "setId": 504,
+  "answers": {
+    "1": "ssh-keygen -q -t ed25519 -N '' -f /tmp/lab/id_demo\nls -l /tmp/lab\n\n# ssh-keygen 은 개인키(id_demo)와 공개키(id_demo.pub) 한 쌍을 만든다. 개인키는 내 컴퓨터에만 둔다",
+    "2": "chmod 600 /tmp/lab/id_demo\nstat -c '%a' /tmp/lab/id_demo\n\n# 개인키는 소유자만 읽을 수 있어야 한다(600). 다른 사람이 읽을 수 있으면 ssh 가 키 사용을 거부한다",
+    "3": "cat /tmp/lab/id_demo.pub > /tmp/lab/register.txt\ncat /tmp/lab/register.txt\n\n# 서버에는 공개키(.pub)만 등록한다. 개인키가 유출되면 누구나 내 계정으로 접속할 수 있다",
+    "4": "cd /tmp/lab/proj\ngit remote set-url origin git@git.example.com:team/app.git\ngit remote -v\n\n# https 는 토큰·비밀번호로, ssh 는 키로 인증한다. 주소 형식도 다르다 (https://호스트/경로 ↔ git@호스트:경로)",
+    "5": "git config --global credential.helper store\ngit config --global credential.helper\n\n# store 는 ~/.git-credentials 에 평문 저장(공용 PC 에서는 위험). cache 는 메모리에 잠시만 둔다",
+    "6": "cd /tmp/lab/proj\ngit config core.sshCommand 'ssh -i /tmp/lab/id_demo'\ngit config core.sshCommand\n\n# 계정이 여러 개일 때 저장소마다 다른 키를 쓰게 한다. -i 는 사용할 개인키 파일을 지정한다"
+  }
+}

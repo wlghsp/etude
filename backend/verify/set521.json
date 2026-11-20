@@ -1,0 +1,13 @@
+{
+  "setId": 521,
+  "answers": {
+    "1": "sed -i 's/alpine:lastest/alpine:latest/' /tmp/work/q1/Dockerfile\ndocker build -t t1 /tmp/work/q1\ndocker run --rm t1 > /tmp/q1.txt\ncat /tmp/q1.txt\n\n# 태그 오타(lastest)를 latest 로 고친다",
+    "2": "cd /tmp/work/q2\nsed -i 's#COPY ../shared/app.conf#COPY shared/app.conf#' app/Dockerfile\ndocker build -f app/Dockerfile -t t2 .\ndocker run --rm t2 > /tmp/q2.txt\ncat /tmp/q2.txt\n\n# 컨텍스트를 q2 로 올리고 COPY 경로를 컨텍스트 기준(shared/...)으로 바꾼다",
+    "3": "cd /tmp/work/q3\nsed -i '/^\\*\\.txt$/d' .dockerignore\ndocker build -t t3 .\ndocker run --rm t3 > /tmp/q3.txt\ncat /tmp/q3.txt\n\n# *.txt 가 config.txt 를 가리고 있었다. 그 줄을 지우면 COPY 가 파일을 찾는다",
+    "4": "cd /tmp/work/q4\nsed -i 's#^RUN cp#RUN mkdir -p /etc/myapp \\&\\& cp#' Dockerfile\ndocker build -t t4 .\ndocker run --rm t4 > /tmp/q4.txt\ncat /tmp/q4.txt\n\n# cp 하기 전에 mkdir -p 로 대상 폴더를 만든다",
+    "5": "docker build --no-cache -t t5 /tmp/work/q5\ndocker run --rm t5 > /tmp/q5.txt\ncat /tmp/q5.txt\n\n# --no-cache 는 모든 단계를 캐시 없이 다시 실행한다",
+    "6": "cd /tmp/work/q6\nsed -i '1i #!/bin/sh' run.sh\ndocker build -t t6 .\ndocker run --rm t6 > /tmp/q6.txt\ncat /tmp/q6.txt\n\n# 첫 줄에 #!/bin/sh 를 넣어 인터프리터를 알려 준다",
+    "7": "cd /tmp/work/q7\nsed -i '1s#.*#\\#!/bin/sh#' run.sh\ndocker build -t t7 .\ndocker run --rm t7 > /tmp/q7.txt\ncat /tmp/q7.txt\n\n# alpine 에는 bash 가 없으니 shebang 을 #!/bin/sh 로 바꾼다",
+    "8": "cd /tmp/work/q8\nsed -i 's/ &\"\\]/\"]/' Dockerfile\ndocker build -t t8 .\ndocker run -d --name q8 t8\ndocker ps\n\n# 메인 프로세스를 앞에서 실행하면 컨테이너가 살아 있다"
+  }
+}

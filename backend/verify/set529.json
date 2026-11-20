@@ -1,0 +1,12 @@
+{
+  "setId": 529,
+  "answers": {
+    "1": "wget -qO- http://localhost:5000/v2/team/app/tags/list > /tmp/tags.txt\ncat /tmp/tags.txt\nsed -i 's/1\\.11/1.1/' /tmp/pull1.sh\nsh /tmp/pull1.sh\n\n# 레지스트리에 있는 태그는 1.0, 1.1 뿐이다. 존재하지 않는 1.11 을 요청해서 not found 였다",
+    "2": "wget -qO- http://localhost:5000/v2/team/app/tags/list\ndocker run --rm localhost:5000/team/app:1.1 > /tmp/q2.txt 2>/dev/null\ncat /tmp/q2.txt\n\n# latest 는 올린 적이 없다. 목록에서 가장 높은 1.1 을 명시한다",
+    "4": "wget -qO- http://localhost:5000/v2/_catalog > /tmp/repos.txt\ncat /tmp/repos.txt\nsed -i 's/wroker/worker/' /tmp/pull3.sh\nsh /tmp/pull3.sh > /tmp/q3.txt 2>/dev/null\ncat /tmp/q3.txt\n\n# 저장소는 team/app, team/worker, tools/cli. wroker 는 오타",
+    "5": "sed -i 's#Team/app#team/app#' /tmp/run4.sh\nsh /tmp/run4.sh > /tmp/q4.txt 2>/dev/null\ncat /tmp/q4.txt\n\n# 저장소 이름은 소문자만 허용된다 (Team -> team)",
+    "6": "docker ps -a --filter name=reg\ndocker start reg\nsleep 2\nsh /tmp/pull5.sh\ndocker run --rm localhost:5000/team/app:1.1 > /tmp/q5.txt\ncat /tmp/q5.txt\n\n# 컨테이너를 지우지 않고 멈춘 것이라 start 만 하면 이미지가 그대로 있다",
+    "7": "sh /tmp/pull6.sh 2> /tmp/err6.txt\ncat /tmp/err6.txt\nsed -i 's#[0-9.]*:5000#localhost:5000#' /tmp/pull6.sh\nsh /tmp/pull6.sh\n\n# IP 주소의 HTTP 레지스트리는 기본으로 거부된다. localhost(루프백)는 HTTP 가 허용되어 같은 레지스트리를 받을 수 있다",
+    "9": "echo etude-pass1 | docker login localhost:5001 -u student --password-stdin\ndocker run --rm localhost:5001/private/app:1.0 > /tmp/q7.txt 2>/dev/null\ncat /tmp/q7.txt\n\n# 로그인하면 자격 증명이 저장되어 pull·run 이 통과한다"
+  }
+}

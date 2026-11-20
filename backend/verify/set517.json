@@ -1,0 +1,13 @@
+{
+  "setId": 517,
+  "answers": {
+    "1": "runuser -u nobody -- cat /srv/lab/own/token.txt   # Permission denied 확인\nls -l /srv/lab/own/token.txt                        # 소유자 root, 모드 -rw------- 확인\nchown nobody /srv/lab/own/token.txt                 # 소유자를 nobody 로\nrunuser -u nobody -- cat /srv/lab/own/token.txt   # 읽힌다",
+    "2": "runuser -u nobody -- cat /srv/lab/mode/report.txt   # Permission denied\nls -l /srv/lab/mode/report.txt                         # -rw-r----- : 그 외 사용자 칸이 ---\nchmod o+r /srv/lab/mode/report.txt                     # 그 외 사용자에게 읽기만 추가\nrunuser -u nobody -- cat /srv/lab/mode/report.txt",
+    "3": "id nobody                       # 소속 그룹에 dev 가 없다\nls -l /srv/lab/grp/team.txt     # 그룹이 dev, 모드 -rw-r-----\nusermod -aG dev nobody          # nobody 를 dev 그룹에 추가 (-a: 기존 그룹 유지)\nrunuser -u nobody -- cat /srv/lab/grp/team.txt",
+    "4": "runuser -u nobody -- cat /srv/lab/up/public/info.txt   # Permission denied\nnamei -l /srv/lab/up/public/info.txt                    # up 디렉터리가 drwx------ 임을 찾는다\nchmod o+x /srv/lab/up                                   # 그 외 사용자에게 통과(실행) 권한만 추가\nrunuser -u nobody -- cat /srv/lab/up/public/info.txt",
+    "5": "curl -s http://127.0.0.1:8080; echo rc=$?           # Connection refused\nss -ltn | grep 8080                                   # 아무것도 안 나옴: 듣는 프로세스 없음\nnohup perl /opt/lab/web.pl 127.0.0.1 8080 >/dev/null 2>&1 &\nsleep 1\ncurl -s http://127.0.0.1:8080 > /tmp/out.txt\ncat /tmp/out.txt",
+    "6": "ss -ltnp | grep 8080                                 # 127.0.0.1:8080 만 듣고 있고 pid 가 보인다\npkill -x perl                                          # 기존 서비스 종료 (또는 kill <pid>)\nnohup perl /opt/lab/web.pl 0.0.0.0 8080 >/dev/null 2>&1 &\nsleep 1\ncurl -s http://$(hostname -I | awk '{print $1}'):8080  # 서버 주소로도 응답",
+    "7": "curl -s http://127.0.0.1:8080; echo rc=$?     # Connection refused (8080 은 아무도 안 듣는다)\nss -ltnp                                       # perl 이 9091 을 듣고 있다\ncurl -s http://127.0.0.1:9091 > /tmp/out.txt\ncat /tmp/out.txt",
+    "8": "cat /tmp/cases/*.log\ngrep -l 'refused' /tmp/cases/*.log > /tmp/refused.txt\ngrep -l 'timed out' /tmp/cases/*.log > /tmp/timeout.txt\n\n# refused → 서비스가 안 떠 있거나 주소·포트가 틀림 (서버 쪽을 본다)\n# timed out → 방화벽·보안 그룹·경로 문제 (중간 경로를 본다)\n# e.log 는 이름을 못 찾는 DNS 문제라 둘 다 아니다"
+  }
+}

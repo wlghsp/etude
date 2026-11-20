@@ -1,0 +1,14 @@
+{
+  "setId": 506,
+  "answers": {
+    "1": "mariadb -e 'SET GLOBAL slow_query_log_file=\"/tmp/my_slow.log\"; SET GLOBAL long_query_time=0; SET GLOBAL slow_query_log=1'\nmariadb shop -e 'SELECT COUNT(*) FROM orders WHERE amount + 0 = 2500'\ncat /tmp/my_slow.log\n\n# long_query_time=0 이면 모든 쿼리가 기록된다. 운영에서는 1~2초처럼 현실적인 값을 쓰고, 조사가 끝나면 끈다",
+    "2": "mariadb-dumpslow -s t -t 1 /tmp/slow.log > /tmp/top.txt\ncat /tmp/top.txt\n\n# 숫자·문자열 값은 N·S 로 가려 같은 모양끼리 묶는다. 총 시간이 큰 것이 서버를 가장 오래 붙잡은 후보다",
+    "3": "mariadb shop -e 'ANALYZE FORMAT=JSON SELECT * FROM orders WHERE customer_id = 777' > /tmp/before.txt\ncat /tmp/before.txt\n\n# 인덱스가 없어 access_type 이 ALL(전체 스캔)이고 r_rows 가 20만이다. 고치기 전 기준 값으로 남겨 둔다",
+    "4": "mariadb shop -e 'CREATE INDEX idx_customer ON orders(customer_id)'\nmariadb shop -e 'ANALYZE FORMAT=JSON SELECT * FROM orders WHERE customer_id = 777' > /tmp/after.txt\ngrep r_rows /tmp/before.txt /tmp/after.txt\n\n# 같은 쿼리를 같은 방법으로 전후 비교한다. 전체 스캔(r_rows 20만)이 인덱스 조회(r_rows 100 안팎)로 바뀐다",
+    "5": "mariadb shop -e 'CREATE INDEX idx_status_created ON orders(status, created_at)'\nmariadb shop -e \"ANALYZE FORMAT=JSON SELECT id FROM orders WHERE status='PAID' AND created_at >= '2026-09-01'\" | grep r_rows\n\n# = 조건 열(status)을 앞에, 범위 조건 열(created_at)을 뒤에 둔 복합 인덱스. 한 번에 좁혀 들어간다",
+    "6": "mariadb shop -e 'CREATE INDEX idx_coupon ON orders(coupon)'\nmariadb shop -e \"ANALYZE FORMAT=JSON SELECT * FROM orders WHERE customer_id=5 OR coupon='C3'\" | grep r_rows\n\n# OR 는 양쪽 다 인덱스가 있어야 한다. 양쪽에 있으면 index_merge 로 각각 찾아 합친다",
+    "7": "cat > /tmp/fast.sql <<'SQL'\nSELECT COUNT(*) FROM orders o\nJOIN (SELECT customer_id, AVG(amount) av FROM orders GROUP BY customer_id) a ON a.customer_id = o.customer_id\nWHERE o.amount > a.av;\nSQL\nmariadb -N shop < /tmp/fast.sql > /tmp/cnt.txt\ncat /tmp/cnt.txt\n\n# 고객별 평균을 GROUP BY 로 한 번만 구해 두고 JOIN 한다. 행마다 서브쿼리를 되풀이하지 않는다",
+    "8": "cat > /tmp/next.sql <<'SQL'\nSELECT id FROM orders WHERE id > 150020 ORDER BY id LIMIT 20;\nSQL\nmariadb -N shop < /tmp/next.sql > /tmp/page.txt\nhead -2 /tmp/page.txt; wc -l < /tmp/page.txt\n\n# 기본키 인덱스에서 150020 바로 뒤부터 20행만 읽는다. 건너뛸 행을 읽지 않으니 몇 번째 페이지든 일정하게 빠르다",
+    "9": "mariadb -e 'ANALYZE TABLE st.big'\nmariadb -N -e \"SELECT n_rows FROM mysql.innodb_table_stats WHERE database_name='st' AND table_name='big'\" > /tmp/nrows.txt\ncat /tmp/nrows.txt\n\n# 데이터가 크게 바뀐 뒤 통계가 낡았다고 의심되면 ANALYZE TABLE. 실행 계획이 갑자기 이상해졌을 때 점검 항목 중 하나다"
+  }
+}

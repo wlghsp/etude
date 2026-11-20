@@ -1,0 +1,10 @@
+{
+  "setId": 526,
+  "answers": {
+    "2": "mariadb -N shop -e 'SELECT MIN(customer_name) FROM sales_dirty GROUP BY customer_id HAVING COUNT(DISTINCT customer_city) > 1' > /tmp/conflict.txt\ncat /tmp/conflict.txt\n\n# 같은 고객 정보가 여러 행에 반복되면 일부만 고쳤을 때 값이 어긋난다 (갱신 이상). 고객 정보를 한 곳에만 두면 이 문제가 없다",
+    "3": "mariadb shop -e 'CREATE TABLE contact_phone (name VARCHAR(20), phone VARCHAR(20)); INSERT INTO contact_phone VALUES (\"kim\",\"010-1111-0001\"),(\"kim\",\"010-1111-0002\"),(\"lee\",\"010-2222-0003\");'\nmariadb shop -e 'SELECT * FROM contact_phone'\n\n# 번호 하나가 한 행이 되어 칸마다 값이 하나다 (1NF). 번호가 늘어도 열을 바꾸지 않고 행만 추가하면 된다",
+    "7": "mariadb shop -e 'CREATE TABLE customers (customer_id INT PRIMARY KEY, customer_name VARCHAR(20), customer_city VARCHAR(20)); INSERT INTO customers SELECT DISTINCT customer_id, customer_name, customer_city FROM sales;'\nmariadb shop -e 'SELECT * FROM customers'\n\n# 반복되던 고객 정보를 한 곳으로 모은다. 6개 주문 행이 고객 3행이 된다",
+    "8": "mariadb shop -e 'CREATE TABLE orders (order_id INT PRIMARY KEY, customer_id INT, product VARCHAR(20), price INT); INSERT INTO orders SELECT order_id, customer_id, product, price FROM sales;'\nmariadb shop -e 'SELECT * FROM orders'\n\n# 주문 표에는 고객을 가리키는 번호만 남기고 이름·도시는 빠진다. 고객 정보가 한 곳에만 있게 된다",
+    "9": "mariadb -N shop -e 'SELECT o.order_id, c.customer_name, c.customer_city, o.product, o.price FROM orders o JOIN customers c ON o.customer_id = c.customer_id ORDER BY o.order_id' > /tmp/joined.txt\ncat /tmp/joined.txt\n\n# JOIN 으로 원래의 큰 표와 같은 결과가 복원된다. 정규화는 정보를 버리는 것이 아니라 나눠 저장하는 것이다"
+  }
+}

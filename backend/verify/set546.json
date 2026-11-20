@@ -1,0 +1,12 @@
+{
+  "setId": 546,
+  "answers": {
+    "1": "cat /etc/rsyslog.conf\ngrep -v '^#' /etc/rsyslog.conf | grep -o 'file=\"/var/log[^\"]*\"' | cut -d'\"' -f2 > /tmp/q1.txt\ncat /tmp/q1.txt   # messages, secure, maillog, cron, spooler, boot.log 여섯 파일",
+    "3": "grep messages /etc/rsyslog.conf\ngrep '/var/log/messages' /etc/rsyslog.conf | awk '{print $1}' | tr ';' '\\n' | grep '\\.none$' | sed 's/\\.none$//' > /tmp/q3.txt\ncat /tmp/q3.txt   # mail, authpriv, cron (이 종류들은 각자 다른 파일로 간다)",
+    "4": "echo 'local5.* action(type=\"omfile\" file=\"/var/log/myapp.log\")' > /etc/rsyslog.d/myapp.conf\nrsyslogd -N1   # End of config validation run. 오류 없음\n# 적용은 rsyslog 서비스 재시작(systemctl restart rsyslog)으로 한다. 샌드박스에서는 띄우지 않았다.",
+    "5": "grep -v '^#' /etc/logrotate.conf | grep -v '^$'\ngrep -E '^(daily|weekly|monthly)$' /etc/logrotate.conf > /tmp/q5.txt\nawk '$1==\"rotate\" {print $2}' /etc/logrotate.conf >> /tmp/q5.txt\ncat /tmp/q5.txt   # weekly, 4  (4주치 보관)",
+    "7": "cat > /etc/logrotate.d/myapp <<'EOF'\n/var/log/myapp/app.log {\n    daily\n    rotate 7\n    compress\n    missingok\n    notifempty\n}\nEOF\nlogrotate -d /etc/logrotate.d/myapp   # after 1 days (7 rotations)\n# -d 는 아무것도 바꾸지 않는다. 설정이 맞는지 보는 용도",
+    "8": "logrotate -f /etc/logrotate.d/myapp\nls -l /var/log/myapp   # app.log(빈 새 파일), app.log.1.gz(압축된 옛 로그)\nzcat /var/log/myapp/app.log.1.gz | head -3",
+    "9": "sed -i 's/rotate 3/rotate 2/' /etc/logrotate.d/myapp\nlogrotate -f /etc/logrotate.d/myapp\nls -l /var/log/myapp   # app.log.1.gz, app.log.2.gz 만 남는다"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "setId": 518,
+  "answers": {
+    "1": "cat /etc/apt/sources.list.d/lab.list\nsed -i 's#/tmp/rep #/tmp/repo #' /etc/apt/sources.list.d/lab.list\napt-get update\napt-get install -y hello-lab\n\n# File not found = 저장소 주소(경로)에 파일이 없다. 대부분 오타이므로 오류에 찍힌 경로를 실제와 비교한다",
+    "2": "sed -i 's#^deb #deb [trusted=yes] #' /etc/apt/sources.list.d/lab.list\ncat /etc/apt/sources.list.d/lab.list\napt-get update\napt-get install -y hello-lab\n\n# trusted=yes 는 서명 검사를 건너뛴다. 내가 직접 만든 연습 저장소에만 쓰고, 외부 저장소는 공개키를 받아 signed-by 로 지정한다",
+    "3": "apt-get update\napt-get install -y notice-lab\n\n# Unable to locate package = 내 목록에 그 이름이 없다. 오타가 아니라면 update 로 목록을 새로 받는다",
+    "4": "ps aux | grep '[p]erl'   # 오류 메시지의 번호(PID)가 어떤 프로세스인지 확인\nkill $(pgrep -x perl)\napt-get install -y hello-lab\n\n# 잠금은 쥔 프로세스가 끝나면 풀린다. 진행 중인 apt/dpkg 라면 끝나길 기다리고, 멈춘 프로세스임을 확인한 뒤에만 종료한다. 잠금 파일을 지우지 않는다",
+    "5": "dpkg -s pend-lab | grep Status\ndpkg --configure -a\ndpkg -s pend-lab | grep Status\napt-get install -y other-lab\n\n# --configure -a 는 풀어 놓기만 하고 설정이 끝나지 않은 모든 패키지의 설정을 마무리한다. 그 전에는 apt 가 새 작업을 거부한다",
+    "6": "dpkg -s app-lab | grep Status\napt-get install -f -y\ndpkg -s app-lab libdep-lab | grep Status\n\n# apt-get install -f (--fix-broken) 는 의존성이 빠진 패키지를 보고 저장소에서 필요한 것을 받아 설치를 마무리한다",
+    "7": "apt-mark showhold\napt-mark unhold hello-lab\napt-get install -y --only-upgrade hello-lab\ndpkg-query -W hello-lab\n\n# hold 는 업그레이드를 막는 표시다. 풀지 않고 강제로 바꾸는 옵션도 있지만, 왜 고정했는지 알아본 뒤 푸는 것이 안전하다",
+    "8": "cp /tmp/extra/libdep2-lab_2.0_all.deb /tmp/repo/\n/tmp/mkrepo.sh\napt-get update\napt-get install -y app2-lab\ndpkg-query -W libdep2-lab app2-lab\n\n# 버전 조건(>= 2.0)을 만족하는 패키지가 저장소 목록에 있어야 한다. 파일만 복사하면 부족하고, 저장소 색인과 apt 의 목록을 모두 새로 만들어야 보인다"
+  }
+}

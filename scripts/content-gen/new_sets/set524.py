@@ -1,0 +1,75 @@
+# 세트 524: DB 보안 기본 (docs/specs/spec_gap_set524.md). 로컬 DB 미리보기: python3 scripts/content-gen/new_sets/set524.py
+import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..')); from gen_pilot_sets import *
+
+# 이전 문제가 남긴 '외부 노출' 설정 파일이 있으면 지우고 서버를 내렸다가 DBUP 으로 다시 올린다
+EXPCNF = "/etc/mysql/mariadb.conf.d/99-exposed.cnf"
+FIXBIND = (f"if [ -f {EXPCNF} ]; then rm -f {EXPCNF}; mariadb-admin shutdown >/dev/null 2>&1; "
+           "for i in $(seq 1 60); do mariadb -e 'select 1' >/dev/null 2>&1 || break; sleep 0.5; done; fi")
+USERS = "DROP USER IF EXISTS \"\"@\"localhost\"; DROP USER IF EXISTS \"guest\"@\"%\"; DROP USER IF EXISTS \"tmpuser\"@\"localhost\";"
+BASE = (FIXBIND + "; " + DBUP + "; mariadb -e '" + USERS + " DROP DATABASE IF EXISTS shop; CREATE DATABASE shop; "
+        "CREATE TABLE shop.members (id INT PRIMARY KEY, name VARCHAR(20), pw VARCHAR(40)); "
+        "INSERT INTO shop.members VALUES (1,\"admin\",\"zq81xk\"),(2,\"alice\",\"a1b2c3\"),(3,\"bob\",\"d4e5f6\"),(4,\"carol\",\"g7h8i9\");'; "
+        "rm -rf /tmp/backup /tmp/.prep_base; " + CLEAN)
+# 바인딩 문제용: 현재까지의 PREPARE 실행 횟수를 기록해 둔다 (학습자가 실제로 PREPARE 를 썼는지 보려고)
+PREPBASE = "; mariadb -N -e \"SHOW GLOBAL STATUS LIKE 'Com_prepare_sql'\" | cut -f2 > /tmp/.prep_base"
+# bind-address 를 0.0.0.0(모든 곳) 으로 연 상태로 서버를 다시 띄운다
+EXPOSED = (BASE + f"; mariadb-admin shutdown >/dev/null 2>&1; for i in $(seq 1 60); do mariadb -e 'select 1' >/dev/null 2>&1 || break; sleep 0.5; done; "
+           f"printf '[mysqld]\\nbind-address = 0.0.0.0\\n' > {EXPCNF}; " + DBUP)
+RISKY = BASE + "; mariadb -e 'CREATE USER \"\"@\"localhost\"; CREATE USER \"guest\"@\"%\"; CREATE USER \"tmpuser\"@\"localhost\"; CREATE USER \"appuser\"@\"localhost\" IDENTIFIED BY \"AppPass1\";'"
+FILES = (BASE + "; mkdir -p /tmp/backup && mariadb-dump shop > /tmp/backup/shop_dump.sql && "
+         "printf '[client]\\nuser=appuser\\npassword=AppPass1\\n' > /tmp/backup/client.cnf && echo 'daily backup' > /tmp/backup/readme.txt && chmod 644 /tmp/backup/*")
+def one(sql): return f"mariadb -N -e '{sql}'"
+
+b = SetBuilder(524, 'DB 보안 기본: SQL 인젝션·접속 노출·민감 정보 점검',
+               'MariaDB 보안의 기본을 직접 확인합니다. 문자열을 이어 붙인 쿼리가 SQL 인젝션에 뚫리는 것을 재현하고, PREPARE/EXECUTE 파라미터 바인딩으로 막아 보며, bind-address 로 서버 노출 범위를 점검·수정하고, 비밀번호 없는 계정·익명 계정을 찾아 정리하고, 접속 암호화(have_ssl) 상태를 확인하고, 덤프 파일과 설정 파일의 권한을 chmod 600 으로 좁힙니다.',
+               'linux-db', '데이터베이스', 20, 745, '🔒',
+               [{"title": "Prepared Statements", "url": "https://mariadb.com/kb/en/prepared-statements/"}, {"title": "Securing MariaDB", "url": "https://mariadb.com/kb/en/securing-mariadb/"}, {"title": "Secure Connections Overview", "url": "https://mariadb.com/kb/en/secure-connections-overview/"}], 3)
+
+b.nt('SQL 인젝션 재현: 조건이 항상 참이 된다', '쇼핑몰 로그인이 아래처럼 **입력값을 문자열에 이어 붙여** 쿼리를 만든다고 합시다. (쉘 변수 `$U`, `$P` 가 사용자가 입력한 아이디·비밀번호입니다.)\n\n```\nmariadb -N -e "SELECT name FROM shop.members WHERE name=\'$U\' AND pw=\'$P\'"\n```\n\n정상이라면 아이디·비밀번호가 둘 다 맞아야 한 행이 나옵니다. 그런데 비밀번호 칸에 `\' OR \'1\'=\'1` 을 넣으면 쿼리 문법이 바뀝니다. **아이디는 존재하지 않는 `nobody`, 비밀번호 칸에 위 문자열**을 넣어 이 쿼리를 실행하고, 결과를 `/tmp/login.txt` 에 저장하세요. (실제 비밀번호는 모르는 상태입니다.)',
+     '변수 `$U`, `$P` 를 먼저 정한 뒤 위 명령을 실행합니다. 입력의 따옴표가 쿼리 문법을 어떻게 바꾸는지 그려 보세요.',
+     "U=nobody\nP=\"' OR '1'='1\"\nmariadb -N -e \"SELECT name FROM shop.members WHERE name='$U' AND pw='$P'\" > /tmp/login.txt\ncat /tmp/login.txt\n\n# 완성된 쿼리: WHERE name='nobody' AND pw='' OR '1'='1' . AND 가 OR 보다 먼저 계산되므로 뒤의 '1'='1' 이 항상 참이라 모든 행이 나온다. 입력값이 데이터가 아니라 SQL 문법으로 해석된 것이 인젝션이다",
+     BASE, [chk('파일이 있다', '[ -s /tmp/login.txt ]'), chk('회원 4명이 모두 나왔다', '[ "$(sort /tmp/login.txt | tr \'\\n\' \' \')" = "admin alice bob carol " ]')])
+b.nt('주석으로 비밀번호 검사 건너뛰기', '이번에는 **비밀번호 조건 자체를 주석 처리**하는 입력입니다. 아이디 칸(`$U`)에 `admin\'-- ` 를 넣으면 뒤쪽이 주석이 되어 비밀번호 검사가 사라집니다. (MariaDB 에서 `--` 주석은 **뒤에 공백이 있어야** 하므로 `-- ` 끝에 공백을 둡니다.) 비밀번호 칸(`$P`)에는 아무 값이나 넣고, 같은 쿼리를 실행해 **결과를 `/tmp/admin.txt`** 에 저장하세요. 결과가 `admin` 한 행이어야 합니다.',
+     '`U="admin\'-- "` (끝 공백 포함)으로 정하고 앞 문제와 같은 명령을 실행합니다. 완성된 쿼리를 머릿속으로 그려 보면 `pw=` 조건이 어떻게 사라지는지 보입니다.',
+     "U=\"admin'-- \"\nP=anything\nmariadb -N -e \"SELECT name FROM shop.members WHERE name='$U' AND pw='$P'\" > /tmp/admin.txt\ncat /tmp/admin.txt\n\n# 완성된 쿼리: WHERE name='admin'-- ' AND pw='anything' . '-- ' 뒤는 전부 주석이라 name 조건만 남아, 비밀번호를 몰라도 admin 으로 통과한다",
+     BASE, [chk('파일이 있다', '[ -s /tmp/admin.txt ]'), chk('admin 한 행이다', '[ "$(cat /tmp/admin.txt)" = admin ]')])
+b.choice('인젝션이 가능한 진짜 이유', '앞 두 실습에서 쿼리가 뚫린 근본 원인은 무엇인가요?', '입력값이 쿼리 안에서 "값"으로 취급됐는지, "문법"으로 취급됐는지 생각해 보세요.',
+         ['사용자 입력을 SQL 문자열에 그대로 이어 붙여서, 입력 속 따옴표와 키워드가 SQL 문법으로 해석됐다', 'MariaDB 서버의 버전이 오래되어 보안 버그가 있었다', '비밀번호 컬럼이 VARCHAR 타입이라서', '접속 계정이 root 였기 때문에'], 0,
+         '입력을 문자열로 이어 붙이면 DB 는 "데이터"와 "명령"을 구분하지 못합니다. 입력에 들어 있던 따옴표(`\'`)가 문자열을 끝내 버리고 뒤의 `OR`·`--` 가 명령으로 실행됐습니다. 서버 버전·컬럼 타입·접속 계정과는 무관합니다. (최소 권한 계정은 피해를 줄여 줄 뿐 인젝션 자체를 막지는 못합니다.)')
+b.nt('파라미터 바인딩으로 막기: PREPARE / EXECUTE', '같은 로그인 쿼리를 **파라미터 바인딩**으로 바꿔 봅니다. 먼저 SQL 틀을 `PREPARE` 로 등록하고(값 자리는 `?`), 나중에 `EXECUTE` 로 값을 채웁니다. 값은 항상 **데이터**로만 쓰이고 SQL 문법이 되지 않습니다. 한 번의 `mariadb -e` 안에서(같은 세션) 다음을 실행해 `/tmp/safe.txt` 에 결과를 저장하세요.\n\n1. `SELECT COUNT(*) FROM shop.members WHERE name=? AND pw=?` 를 `PREPARE` (이름은 자유)\n2. 변수 `@u` 에 `nobody`, `@p` 에 `\' OR \'1\'=\'1` 을 설정\n3. `EXECUTE` 로 `@u`, `@p` 를 넣어 실행\n\n앞 문제에서는 4행이 나온 입력이지만, 이번에는 일치하는 행이 **0** 이어야 합니다.',
+     '`PREPARE` 로 틀을 등록하고 `SET` 으로 변수를 정한 뒤 `EXECUTE` 로 값을 넘깁니다. 이 문장들을 세미콜론으로 이어 `-e` 에 넣고, 결과는 `-N` 과 `>` 로 저장합니다.',
+     "mariadb -N -e \"PREPARE s FROM 'SELECT COUNT(*) FROM shop.members WHERE name=? AND pw=?'; SET @u='nobody'; SET @p=\\\"' OR '1'='1\\\"; EXECUTE s USING @u, @p;\" > /tmp/safe.txt\ncat /tmp/safe.txt\n\n# 같은 악성 문자열이지만 통째로 '비밀번호라는 값' 으로만 비교되어 일치하는 행이 없다(0). 앱 코드에서는 DB 라이브러리의 파라미터 바인딩(?, :name)이 같은 일을 한다",
+     BASE + PREPBASE, [chk('파일이 있다', '[ -s /tmp/safe.txt ]'), chk('일치하는 행이 0 이다', '[ "$(cat /tmp/safe.txt)" = 0 ]'), chk('PREPARE 를 실제로 썼다', '[ "$(mariadb -N -e "SHOW GLOBAL STATUS LIKE \'Com_prepare_sql\'" | cut -f2)" -gt "$(cat /tmp/.prep_base)" ]')])
+b.fill('EXECUTE 로 값 넣기', '등록한 문장 `s` 의 `?` 자리에 `@u`, `@p` 를 채워 실행하는 구문의 빈칸을 채우세요.', 'PREPARE 한 문장의 `?` 자리에 변수를 넘길 때 EXECUTE 뒤에 붙는 키워드입니다.',
+       "EXECUTE s {0} @u, @p;", ['USING', 'WITH', 'BIND', 'VALUES'], [0],
+       '`EXECUTE 이름 USING @변수, ...` 가 PREPARE 한 문장의 `?` 에 값을 순서대로 넣습니다. WITH·BIND·VALUES 는 이 구문에 쓰이지 않습니다. 이렇게 넣은 값은 SQL 문법이 아니라 데이터로만 처리되어 인젝션이 막힙니다.')
+b.nt('서버가 어디까지 열려 있나: bind-address 점검', '점검 중인 DB 서버가 **외부에서 접속될 수 있는지** 확인하려 합니다. `bind-address` 는 MariaDB 가 어느 네트워크 주소로 접속을 받을지 정하는 설정입니다. (`127.0.0.1` 은 서버 자신만, `0.0.0.0` 은 모든 곳)\n\n서버가 **실제로 사용 중인 `bind_address` 값**(변수)만 `/tmp/bind.txt` 에 저장하세요. 그리고 `ss -ltn` 으로 3306 포트가 어느 주소에서 열려 있는지도 눈으로 확인해 보세요.',
+     '`SELECT @@bind_address` 또는 `SHOW VARIABLES LIKE \'bind_address\'` 로 현재 값을 봅니다. 값만 저장하려면 `-N` 과 `SELECT @@변수` 가 편합니다. 설정이 여러 파일에 있다면 `grep -r bind /etc/mysql` 로 찾습니다.',
+     "mariadb -N -e 'SELECT @@bind_address' > /tmp/bind.txt\ncat /tmp/bind.txt\nss -ltn | grep 3306\ngrep -r bind-address /etc/mysql\n\n# 0.0.0.0 이면 모든 네트워크 인터페이스에서 접속을 받는다. 설정 파일이 여러 개일 때는 나중에 읽는 파일이 이긴다(99-exposed.cnf 가 50-server.cnf 를 덮어쓴다)",
+     EXPOSED, [chk('파일에 값이 있다', '[ -s /tmp/bind.txt ]'), chk('현재 서버의 bind_address 와 같다', '[ "$(cat /tmp/bind.txt)" = "$(mariadb -N -e \'SELECT @@bind_address\')" ]'), chk('서버가 외부에 열린 상태였다(0.0.0.0)', 'grep -qx 0.0.0.0 /tmp/bind.txt')])
+b.nt('노출 범위 줄이기: bind-address 를 127.0.0.1 로', '앞 문제에서 서버가 `0.0.0.0` 으로 모든 곳에 열려 있는 것을 확인했습니다. 이 서버의 앱은 같은 서버 안에서만 DB 에 접속하므로 **서버 자신(`127.0.0.1`)만 받도록** 바꾸세요. 설정 파일 `/etc/mysql/mariadb.conf.d/99-exposed.cnf` 의 값을 고친 뒤 **서버를 재시작**해야 적용됩니다. (설정 파일 변경은 재시작해야 반영됩니다.) 재시작 후 서버가 정상 동작하고 `bind_address` 가 `127.0.0.1` 이어야 합니다.',
+     '`sed -i` 로 설정 값을 바꾸거나 편집기로 고칩니다. 서버 종료는 `mariadb-admin shutdown`, 다시 올리기는 이 실습 환경에서 `nohup mysqld_safe >/dev/null 2>&1 &` 입니다. 올라올 때까지 몇 초 걸립니다.',
+     f"sed -i 's/0.0.0.0/127.0.0.1/' {EXPCNF}\nmariadb-admin shutdown\nsleep 3\nnohup mysqld_safe >/dev/null 2>&1 &\nsleep 8\nmariadb -N -e 'SELECT @@bind_address'\n\n# 설정 파일 수정만으로는 안 바뀐다. 재시작해야 새 값이 적용된다. 앱이 다른 서버에 있다면 0.0.0.0 대신 그 서버가 속한 내부망 주소만 지정하고 방화벽도 함께 쓴다",
+     EXPOSED, [chk('서버가 살아 있다', 'mariadb -N -e "SELECT 1" | grep -qx 1'), chk('bind_address 가 127.0.0.1 이다', one('SELECT @@bind_address') + ' | grep -qx 127.0.0.1'), chk('3306 이 127.0.0.1 에서만 열려 있다', 'ss -ltn | grep -q "127.0.0.1:3306" && ! ss -ltn | grep -q "0.0.0.0:3306"')])
+b.nt('위험한 기본 계정 찾기: 비밀번호 없는 계정·익명 계정', '새로 설치했거나 오래 방치된 서버에는 **비밀번호가 없는 계정**이나 **익명(이름이 빈) 계정**이 남아 있을 수 있습니다. 누구나 비밀번호 없이 접속할 수 있어 위험합니다. 계정 정보는 `mysql.user` 테이블에 있고, 비밀번호 해시는 `authentication_string` 열입니다(비어 있으면 비밀번호 없음).\n\n비밀번호가 비어 있거나 이름이 빈 계정의 **`user`, `host`** 를 `/tmp/risky.txt` 에 저장하세요. (`mariadb.sys` 는 접속이 잠긴 내부 계정이라 나와도 괜찮고, `appuser` 처럼 비밀번호가 있는 계정은 나오면 안 됩니다.)',
+     '`mysql.user` 에서 `authentication_string` 이 빈 행과 `user` 가 빈 행을 함께 찾습니다. 두 조건은 OR 로 잇습니다. 이 서버의 `root`·`mysql` 계정은 접속 방식이 달라 해시 열이 비어 있지 않습니다.',
+     "mariadb -N -e \"SELECT user, host FROM mysql.user WHERE authentication_string = '' OR user = ''\" > /tmp/risky.txt\ncat /tmp/risky.txt\n\n# 이름이 빈 계정(''@'localhost')은 아무 이름으로나 접속할 수 있는 익명 계정이다. 비밀번호가 없는 'guest'@'%' 는 네트워크 어디서나 들어온다. 이런 계정은 비밀번호를 걸거나 지운다",
+     RISKY, [chk('파일이 있다', '[ -s /tmp/risky.txt ]'), chk('guest 가 있다', 'grep -q "^guest" /tmp/risky.txt'), chk('tmpuser 가 있다', 'grep -q "^tmpuser" /tmp/risky.txt'), chk('익명 계정(이름이 빈)이 있다', 'grep -q "^[[:space:]]" /tmp/risky.txt'), chk('비밀번호 있는 appuser 는 없다', '! grep -q appuser /tmp/risky.txt')])
+b.nt('위험한 계정 정리하기', '앞에서 찾은 위험한 계정을 정리합니다.\n\n- 익명 계정(`\'\'@\'localhost\'`)과 `\'guest\'@\'%\'` 는 쓰지 않으므로 **삭제**\n- `\'tmpuser\'@\'localhost\'` 는 필요하므로 삭제하지 말고 **비밀번호를 `TmpPass7` 로 설정**\n\n끝나면 비밀번호 없는 계정이 남지 않아야 하고, `tmpuser` 는 새 비밀번호로만 접속되어야 합니다. `appuser` 는 건드리지 마세요.',
+     '이름이 빈 계정은 `DROP USER \'\'@\'localhost\';` 처럼 작은따옴표 두 개로 씁니다. 비밀번호 설정은 `ALTER USER ... IDENTIFIED BY ...` 입니다. 확인은 앞 문제의 조회를 다시 실행해 보세요.',
+     "mariadb -e \"DROP USER ''@'localhost'; DROP USER 'guest'@'%'; ALTER USER 'tmpuser'@'localhost' IDENTIFIED BY 'TmpPass7'\"\nmariadb -N -e \"SELECT user, host FROM mysql.user WHERE authentication_string = '' OR user = ''\"\n\n# 조회에 mariadb.sys(잠긴 내부 계정)만 남으면 정리가 끝난 것이다. 계정을 지울 때는 이름·호스트 두 부분을 정확히 쓴다",
+     RISKY, [chk('익명 계정이 없다', one('SELECT COUNT(*) FROM mysql.user WHERE user=""') + ' | grep -qx 0'), chk('guest 가 없다', one('SELECT COUNT(*) FROM mysql.user WHERE user="guest"') + ' | grep -qx 0'), chk('tmpuser 는 새 비밀번호로 접속된다', 'mariadb -utmpuser -pTmpPass7 -N -e "SELECT 1" | grep -qx 1'), chk('tmpuser 는 비밀번호 없이는 거부된다', '! mariadb -utmpuser -e "SELECT 1" >/dev/null 2>&1'), chk('비밀번호 없는 계정이 mariadb.sys 외에 없다', one('SELECT COUNT(*) FROM mysql.user WHERE authentication_string="" AND user<>"mariadb.sys"') + ' | grep -qx 0'), chk('appuser 는 남아 있다', one('SELECT COUNT(*) FROM mysql.user WHERE user="appuser"') + ' | grep -qx 1')])
+b.nt('접속 암호화(TLS) 상태 확인', 'DB 접속이 암호화되는지 확인합니다. MariaDB 는 서버에 인증서가 설정되어 있어야 TLS 접속을 지원합니다. 변수 **`have_ssl`** 은 서버가 TLS 를 쓸 수 있는지(`YES`/`DISABLED`)를, **`require_secure_transport`** 는 TLS 가 아닌 접속을 거부하는지(`ON`/`OFF`)를 나타냅니다.\n\n두 변수의 이름과 현재 값을 `/tmp/tls.txt` 에 저장하세요. (두 줄이 나오면 됩니다.)',
+     '`SHOW VARIABLES WHERE Variable_name IN (\'have_ssl\', \'require_secure_transport\');` 를 `-N` 으로 실행해 저장합니다. 값이 `DISABLED` 인지 `YES` 인지 직접 보세요.',
+     "mariadb -N -e \"SHOW VARIABLES WHERE Variable_name IN ('have_ssl', 'require_secure_transport')\" > /tmp/tls.txt\ncat /tmp/tls.txt\n\n# have_ssl=DISABLED 는 서버에 인증서(ssl_cert, ssl_key)가 설정되지 않아 TLS 접속이 불가능하다는 뜻이다. 이 상태로 네트워크를 통해 접속하면 비밀번호와 데이터가 암호화 없이 오간다. 같은 서버 안의 소켓 접속은 네트워크를 타지 않는다",
+     BASE, [chk('파일이 있다', '[ -s /tmp/tls.txt ]'), chk('have_ssl 이 현재 값과 같다', 'grep -q "^have_ssl[[:space:]]*$(mariadb -N -e \'SELECT @@have_ssl\')$" /tmp/tls.txt'), chk('require_secure_transport 도 있다', 'grep -q "^require_secure_transport" /tmp/tls.txt')])
+b.nt('덤프·설정 파일의 민감 정보 권한 좁히기', '`/tmp/backup` 디렉터리에 백업 담당자가 남긴 파일이 있습니다.\n\n- `shop_dump.sql` : 데이터베이스 덤프(회원 데이터가 통째로 들어 있음)\n- `client.cnf` : 접속 설정 파일(**평문 비밀번호**가 적혀 있음)\n- `readme.txt` : 메모 (민감하지 않음)\n\n`ls -l` 로 보면 모두 다른 사용자도 읽을 수 있습니다. 민감한 **두 파일만** 소유자만 읽고 쓸 수 있게(권한 숫자 `600`) 바꾸세요. `readme.txt` 는 그대로 둡니다.',
+     '`ls -l /tmp/backup` 의 맨 앞 `-rw-r--r--` 가 권한입니다. 끝 세 글자(`r--`)가 "다른 사용자" 몫입니다. 권한은 `chmod 숫자 파일` 로 바꿉니다.',
+     "ls -l /tmp/backup\nchmod 600 /tmp/backup/shop_dump.sql /tmp/backup/client.cnf\nls -l /tmp/backup\n\n# 600 = 소유자만 읽기·쓰기, 그룹·다른 사용자는 권한 없음. 덤프와 평문 비밀번호가 든 설정 파일은 다른 사용자가 읽지 못하게 하는 것이 기본이다. 비밀번호는 명령줄(-p비밀번호)에 쓰면 ps 로 보이므로 이런 파일에 두고 권한을 좁히는 편이 낫다",
+     FILES, [chk('shop_dump.sql 이 600 이다', '[ "$(stat -c %a /tmp/backup/shop_dump.sql)" = 600 ]'), chk('client.cnf 가 600 이다', '[ "$(stat -c %a /tmp/backup/client.cnf)" = 600 ]'), chk('readme.txt 는 그대로 644 이다', '[ "$(stat -c %a /tmp/backup/readme.txt)" = 644 ]'), chk('파일 내용은 그대로다', 'grep -q "AppPass1" /tmp/backup/client.cnf && [ -s /tmp/backup/shop_dump.sql ]')])
+b.choice('스크립트에서 DB 비밀번호를 다루는 가장 안전한 방법', '백업 스크립트가 DB 에 접속해야 합니다. 비밀번호를 다루는 방법 중 가장 안전한 것은 무엇인가요?', '다른 사용자가 볼 수 있는 곳(프로세스 목록·공개 권한 파일·공유 저장소)에 비밀번호가 남지 않는지 따져 보세요.',
+         ['접속 설정 파일(`[client] password=...`)에 적고 `chmod 600` 으로 소유자만 읽게 한 뒤 `--defaults-extra-file` 로 지정한다', '스크립트 안에 `mariadb -uapp -pSecret123` 처럼 직접 적는다', '비밀번호를 적은 파일을 누구나 읽을 수 있게 두고 Git 저장소에 함께 올린다', '비밀번호가 없는 계정으로 접속하게 만들어 비밀번호 문제를 없앤다'], 0,
+         '명령줄에 `-p비밀번호` 를 쓰면 `ps` 로 다른 사용자에게 보이고 셸 기록에도 남습니다. 파일에 적되 권한을 600 으로 좁히고 저장소에는 올리지 않는 것이 기본입니다. 비밀번호 없는 계정은 누구나 접속할 수 있어 가장 위험합니다.')
+
+if __name__ == '__main__':
+    preview(b)

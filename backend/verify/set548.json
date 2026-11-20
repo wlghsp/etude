@@ -1,0 +1,11 @@
+{
+  "setId": 548,
+  "answers": {
+    "2": "cat /srv/lab/iostat.txt\nawk '/^Device/ {t=1; next} t && ($6+0 >= 20 || $12+0 >= 20) {print $1}' /srv/lab/iostat.txt > /tmp/slow.txt\ncat /tmp/slow.txt   # sda",
+    "4": "cat /srv/lab/sar-u.txt\ngrep -E '^[0-9]{2}:' /srv/lab/sar-u.txt | grep -v CPU | sort -k8 -n | head -1 | awk '{print $1}' > /tmp/peak.txt\ncat /tmp/peak.txt   # 10:30:01 (idle 6.4, iowait 38.5)\n# iowait 도 같이 높다: 이 시각의 병목은 CPU 가 아니라 디스크일 가능성이 크다",
+    "6": "cat /srv/lab/dmesg-oom.txt\ngrep 'Out of memory: Killed process' /srv/lab/dmesg-oom.txt | awk '{print $12}' | tr -d '()' > /tmp/victim.txt\ngrep 'Out of memory: Killed process' /srv/lab/dmesg-oom.txt | awk '{print $11}' > /tmp/victim_pid.txt\ncat /tmp/victim.txt /tmp/victim_pid.txt   # mysqld, 2210",
+    "8": "ps -ef | grep 'sleep 300'\nP=$(pgrep -f '^sleep 3000$')\nls -l /proc/$P/fd | grep /srv/lab > /tmp/openfiles.txt\ncat /tmp/openfiles.txt   # 7 -> data.csv, 8 -> app.log",
+    "9": "cat /srv/lab/lsof.txt\ngrep ':8080 (LISTEN)' /srv/lab/lsof.txt | awk '{print $2}' > /tmp/pid8080.txt\ncat /tmp/pid8080.txt   # 4321 (java)\n# 실제 서버에서는: lsof -nP -iTCP:8080 -sTCP:LISTEN",
+    "10": "bash -c '( ulimit -n 12; for i in $(seq 1 30); do exec {fd}</etc/hostname || break; done )' 2> /tmp/err.txt   # (bash 에서는 괄호 부분만 치면 된다)\ncat /tmp/err.txt   # ...Too many open files\nulimit -n          # 현재 셸은 그대로(서브셸에서만 낮췄다)"
+  }
+}

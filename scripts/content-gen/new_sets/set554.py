@@ -1,0 +1,93 @@
+import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..')); from gen_pilot_sets import *
+# 세트 554 도커 로그·이벤트·자원 보기로 운영하기. 명세: docs/specs/spec_gap_set554.md
+# 샌드박스 docker(dind). 이미지는 alpine 만 쓴다. 각 문제의 setup 은 앞 문제의 컨테이너·임시 파일을 먼저 정리한다.
+
+CLEAN = "docker rm -f $(docker ps -aq) >/dev/null 2>&1; rm -f /tmp/q*.txt /tmp/.q*; "
+
+b = SetBuilder(554, '로그·이벤트·자원 보기로 운영하기',
+               '컨테이너가 이상할 때 도커가 남긴 흔적을 읽는 세트입니다. 로그 드라이버가 무엇인지 확인하고, 컨테이너 단위 --log-opt 로 로그 크기를 제한해 효과를 보고, docker events 의 die·start 사건으로 재시작을 추적하고, --restart 정책을 바꾸고, docker stats 와 docker ps -s 로 자원을 많이 쓰는 컨테이너를 찾습니다.',
+               'docker', '도커', 66, 814, '📈',
+               [{"title": "로그 드라이버 설정", "url": "https://docs.docker.com/engine/logging/configure/"}, {"title": "docker events", "url": "https://docs.docker.com/reference/cli/docker/system/events/"}, {"title": "docker stats", "url": "https://docs.docker.com/reference/cli/docker/container/stats/"}, {"title": "재시작 정책", "url": "https://docs.docker.com/engine/containers/start-containers-automatically/"}], 2)
+
+# 1. 로그 드라이버 확인
+b.nt('로그 드라이버가 무엇인지 확인하기',
+     '컨테이너 로그는 **로그 드라이버**가 어디에 어떻게 저장할지 정합니다. 엔진 전체의 기본 드라이버가 있고, 컨테이너를 만들 때 `--log-driver` 로 따로 정할 수도 있습니다. 컨테이너 `logd` 는 기본값이 아닌 드라이버로 만들어져 있습니다. **엔진의 기본 로그 드라이버 이름**과 **`logd` 가 쓰는 드라이버 이름**을 공백으로 이어 한 줄로 `/tmp/q1.txt` 에 저장하세요. (예: `aaa bbb`)',
+     '엔진 전체 정보는 `docker info` 에, 컨테이너 설정은 `docker inspect` 에 있습니다. 둘 다 `-f` 템플릿으로 한 값만 뽑을 수 있고, 컨테이너의 로그 설정은 호스트 설정 구역 안에 있습니다.',
+     "docker info -f '{{.LoggingDriver}}'\ndocker inspect -f '{{.HostConfig.LogConfig.Type}}' logd\necho \"$(docker info -f '{{.LoggingDriver}}') $(docker inspect -f '{{.HostConfig.LogConfig.Type}}' logd)\" > /tmp/q1.txt\ncat /tmp/q1.txt\n\n# 엔진 기본값은 docker info, 컨테이너별 값은 inspect 의 HostConfig.LogConfig.Type 에 있다",
+     CLEAN + "docker run -d --name logd --log-driver local alpine sleep 3600 >/dev/null; ",
+     [chk('엔진 기본 드라이버와 logd 의 드라이버를 순서대로 저장했다', '[ "$(cat /tmp/q1.txt)" = "$(docker info -f \'{{.LoggingDriver}}\') $(docker inspect -f \'{{.HostConfig.LogConfig.Type}}\' logd)" ]'),
+      chk('logd 의 드라이버가 local 이다', '[ "$(docker inspect -f \'{{.HostConfig.LogConfig.Type}}\' logd)" = local ]')])
+
+# 2. --log-opt 적용
+b.nt('컨테이너 단위로 로그 크기 제한 걸기',
+     '로그 드라이버 기본값 그대로면 로그 파일이 계속 자라 디스크를 채울 수 있습니다. 엔진 설정 파일(`daemon.json`)을 바꾸지 않고도 **컨테이너를 만들 때** `--log-opt 키=값` 으로 그 컨테이너만 제한할 수 있습니다. `json-file` 드라이버의 `max-size` 는 로그 파일 하나의 최대 크기, `max-file` 은 보관할 파일 개수입니다. `alpine` 이미지로 `sleep 3600` 을 실행하는 컨테이너 **`capped`** 를 백그라운드로 만들되, 로그 파일 하나는 **10k**, 보관 파일은 **2개**로 제한하세요.',
+     '`docker run` 의 로그 관련 옵션 두 가지(`--log-driver`, `--log-opt`)를 `docker run --help` 에서 찾아 보세요. `--log-opt` 는 설정 하나마다 한 번씩 씁니다.',
+     "docker run -d --name capped --log-driver json-file --log-opt max-size=10k --log-opt max-file=2 alpine sleep 3600\ndocker inspect -f '{{.HostConfig.LogConfig.Config}}' capped\n\n# --log-opt 는 키=값 한 쌍마다 따로 쓴다. 컨테이너를 만들 때만 정할 수 있다",
+     CLEAN,
+     [chk('capped 가 실행 중이다', '[ "$(docker inspect -f {{.State.Running}} capped 2>/dev/null)" = true ]'),
+      chk('max-size 가 10k 이다', '[ "$(docker inspect -f \'{{index .HostConfig.LogConfig.Config "max-size"}}\' capped 2>/dev/null)" = 10k ]'),
+      chk('max-file 이 2 이다', '[ "$(docker inspect -f \'{{index .HostConfig.LogConfig.Config "max-file"}}\' capped 2>/dev/null)" = 2 ]')])
+
+# 3. 효과 확인
+b.nt('로그 제한의 효과: 오래된 줄이 사라졌다',
+     '컨테이너 `spam` 은 `max-size=1k`, `max-file=3` 으로 제한된 채 시작하자마자 `line-0` 부터 `line-299` 까지 300줄을 출력했습니다. 한도를 넘은 오래된 로그 파일은 지워지므로 **처음 줄들은 이미 사라졌습니다**. `docker logs spam` 의 **맨 첫 줄**을 `/tmp/q3.txt` 에 저장하세요. (첫 줄이 어느 번호인지 직접 확인해서 저장합니다.)',
+     '`docker logs` 의 결과를 `head` 로 자르면 첫 줄만 남습니다. 저장할 줄은 눈으로 한 번 확인해 보세요.',
+     "docker logs spam | wc -l\ndocker logs spam | head -1 | tee /tmp/q3.txt\n\n# 로테이션이 오래된 파일을 지워서 line-0 이 아니라 뒤쪽 번호부터 남는다",
+     CLEAN + "docker run -d --name spam --log-opt max-size=1k --log-opt max-file=3 alpine sh -c 'i=0; while [ $i -lt 300 ]; do echo line-$i xxxxxxxxxxxxxxxx; i=$((i+1)); done; sleep 3600' >/dev/null; sleep 3; ",
+     [chk('저장한 줄이 지금 logs 의 첫 줄과 같다', '[ -s /tmp/q3.txt ] && [ "$(cat /tmp/q3.txt)" = "$(docker logs spam 2>&1 | head -1)" ]'),
+      chk('첫 줄이 line-0 이 아니다 (오래된 로그가 사라졌다)', '! grep -q "^line-0 " /tmp/q3.txt'),
+      chk('spam 은 그대로 실행 중이다', '[ "$(docker inspect -f {{.State.Running}} spam 2>/dev/null)" = true ]')])
+
+# 4. events 로 재시작 추적
+b.nt('events 로 재시작 흔적 추적하기',
+     '컨테이너 `flap` 은 1초 뒤 종료 코드 1 로 끝나는데 `--restart on-failure:3` 정책 때문에 도커가 **다시 시작**했고, 지금은 재시작 한도에 도달해 멈춰 있습니다. 정책에 따른 재시작은 `restart` 라는 사건이 아니라 **`die`(끝남) 다음에 `start`(시작)** 가 반복되는 모양으로 `docker events` 에 남습니다. `--since 10m` 으로 지난 10분을 보고 `--until` 에는 **지금보다 1초 뒤의 유닉스 시각**(`$(( $(date +%s) + 1 ))`)을 주세요. (`--until` 이 없으면 새 사건을 계속 기다립니다.) `--filter` 로 대상을 `flap` 컨테이너의 `die` 사건으로만 좁히고, `--format \'{{.Actor.Attributes.exitCode}}\'` 로 **종료 코드만** 출력해 `/tmp/q4.txt` 에 저장하세요.',
+     '`--filter` 는 여러 번 쓸 수 있고, 종류(`container`, `event`)별로 `종류=값` 형태입니다. 출력이 비면 기간(`--since`)을 확인해 보세요.',
+     "docker events --since 10m --until \"$(( $(date +%s) + 1 ))\" --filter container=flap --filter event=die --format '{{.Actor.Attributes.exitCode}}' > /tmp/q4.txt\ncat /tmp/q4.txt\n\n# 처음 실행 1번 + 재시작 3번 = die 4번. 필터를 container 와 event 두 개 쓰면 둘 다 만족하는 사건만 나온다",
+     CLEAN + "docker run -d --name flap --restart on-failure:3 alpine sh -c 'sleep 1; exit 1' >/dev/null; sleep 8; ",
+     [chk('종료 코드만 저장됐다 (모두 1)', '[ -s /tmp/q4.txt ] && ! grep -qv "^1$" /tmp/q4.txt'),
+      chk('die 횟수가 재시작 횟수 + 1 이상이다 (처음 실행 + 재시작)', '[ "$(wc -l < /tmp/q4.txt)" -ge "$(( $(docker inspect -f {{.RestartCount}} flap) + 1 ))" ]')])
+
+# 5. 재시작 정책 바꾸기
+b.nt('실행 중인 컨테이너의 재시작 정책 바꾸기',
+     '컨테이너 `app` 은 `--restart` 없이(기본값 `no`) 만들어져 지금 실행 중입니다. 서버를 재부팅하거나 도커가 다시 떠도 자동으로 살아나게 하고 싶지만, **컨테이너를 지우고 새로 만들면 안 됩니다**(같은 컨테이너여야 합니다). 정책을 수동으로 멈춘 경우에는 다시 올리지 않는 `unless-stopped` 로 바꾸세요.',
+     '실행 중인 컨테이너의 설정 일부는 `docker update` 로 바꿀 수 있습니다. `docker update --help` 에서 재시작 정책 옵션을 찾으세요.',
+     "docker update --restart unless-stopped app\ndocker inspect -f '{{.HostConfig.RestartPolicy.Name}}' app\n\n# docker update 는 실행 중인 컨테이너의 재시작 정책·자원 한도를 다시 만들지 않고 바꾼다",
+     CLEAN + "docker run -d --name app alpine sleep 3600 >/dev/null; docker inspect -f '{{.Id}}' app > /tmp/.q5id; ",
+     [chk('재시작 정책이 unless-stopped 이다', '[ "$(docker inspect -f \'{{.HostConfig.RestartPolicy.Name}}\' app 2>/dev/null)" = unless-stopped ]'),
+      chk('같은 컨테이너다 (새로 만들지 않았다)', '[ "$(docker inspect -f {{.Id}} app 2>/dev/null)" = "$(cat /tmp/.q5id)" ]'),
+      chk('app 이 실행 중이다', '[ "$(docker inspect -f {{.State.Running}} app 2>/dev/null)" = true ]')])
+
+# 6. stats 로 CPU 범인 찾기
+b.nt('docker stats 로 CPU 를 많이 쓰는 컨테이너 찾기',
+     '서버가 느립니다. 컨테이너 `svc-a`, `svc-b`, `svc-c` 가 실행 중인데 그중 하나가 CPU 를 계속 소모하고 있습니다. `docker stats` 는 기본으로 화면을 계속 갱신하므로, 스크립트나 기록에는 **한 번만 출력**하는 옵션을 씁니다. CPU 사용률이 가장 높은 컨테이너의 **이름만** `/tmp/q6.txt` 에 저장하세요. 컨테이너는 멈추지 말고 그대로 두세요.',
+     '`docker stats --help` 에서 한 번만 출력하는 옵션과 열을 고르는 `--format` 을 찾아 보세요. 열 이름은 `{{.Name}}`, `{{.CPUPerc}}` 처럼 쓰고, CPU 열 값이 가장 큰 줄의 이름을 확인하면 됩니다.',
+     "docker stats --no-stream --format '{{.Name}} {{.CPUPerc}}'\necho svc-b > /tmp/q6.txt   # CPUPerc 가 가장 높은 줄의 이름\ncat /tmp/q6.txt\n\n# --no-stream 은 한 번만 출력하고 끝낸다. 갱신하는 화면은 q 가 아니라 Ctrl+C 로 끝낸다",
+     CLEAN + "for n in svc-a svc-c; do docker run -d --name $n alpine sleep 3600 >/dev/null; done; docker run -d --name svc-b alpine sh -c 'while :; do :; done' >/dev/null; sleep 3; ",
+     [chk('CPU 를 많이 쓰는 컨테이너 이름을 저장했다', '[ "$(cat /tmp/q6.txt)" = svc-b ]'),
+      chk('세 컨테이너가 모두 실행 중이다', '[ "$(docker ps -q --filter name=svc- | wc -l)" = 3 ]')])
+
+# 7. 쓰기 레이어 용량으로 범인 찾기
+b.nt('디스크를 많이 쓰는 컨테이너 찾기 (쓰기 레이어)',
+     '호스트 디스크가 줄고 있습니다. 컨테이너 `job-1`, `job-2`, `job-3` 이 실행 중이고 그중 하나가 자기 파일 시스템에 큰 파일을 썼습니다. 컨테이너가 쓴 데이터는 이미지 위의 **쓰기 레이어**에 쌓이며, 컨테이너 목록에 크기 열을 붙여 볼 수 있습니다. 쓰기 레이어가 가장 큰 컨테이너의 **이름만** `/tmp/q7.txt` 에 저장하세요. 컨테이너는 지우지 마세요.',
+     '`docker ps --help` 에서 크기를 보여 주는 옵션을 찾으세요. 크기는 `SIZE` 열에 `쓰기 레이어 (virtual 이미지 포함 전체)` 모양으로 나옵니다. 앞쪽 값만 비교하면 됩니다.',
+     "docker ps -s --format '{{.Names}} {{.Size}}'\necho job-2 > /tmp/q7.txt   # SIZE 앞쪽 값이 가장 큰 컨테이너\ncat /tmp/q7.txt\n\n# docker ps -s 의 SIZE 는 컨테이너가 쓴 데이터(쓰기 레이어). docker system df -v 에서도 컨테이너별로 볼 수 있다",
+     CLEAN + "docker run -d --name job-1 alpine sh -c 'dd if=/dev/zero of=/f bs=1M count=1 2>/dev/null; sleep 3600' >/dev/null; docker run -d --name job-2 alpine sh -c 'dd if=/dev/zero of=/f bs=1M count=30 2>/dev/null; sleep 3600' >/dev/null; docker run -d --name job-3 alpine sh -c 'dd if=/dev/zero of=/f bs=1M count=1 2>/dev/null; sleep 3600' >/dev/null; sleep 3; ",
+     [chk('쓰기 레이어가 가장 큰 컨테이너 이름을 저장했다', '[ "$(cat /tmp/q7.txt)" = job-2 ]'),
+      chk('세 컨테이너가 그대로 있다', '[ "$(docker ps -q --filter name=job- | wc -l)" = 3 ]')])
+
+b.choice('로그 제한의 최대 보관량',
+         '컨테이너를 `--log-driver json-file --log-opt max-size=10m --log-opt max-file=3` 으로 만들었습니다. 이 컨테이너의 로그가 디스크를 쓰는 양은 **대략 최대** 얼마일까요?',
+         '`max-size` 는 파일 하나의 크기, `max-file` 은 파일 개수입니다. 둘을 어떻게 합치면 전체 상한이 될까요?',
+         ['약 30MB (파일 3개 × 10MB)', '약 10MB (max-size 가 전체 상한)', '약 13MB (10MB + 3MB)', '제한이 없다 (daemon.json 에 적어야만 적용된다)'], 0,
+         '파일 하나가 `max-size` 에 도달하면 새 파일로 넘어가고, 파일이 `max-file` 개를 넘으면 가장 오래된 파일을 지웁니다. 그래서 상한은 대략 `max-size × max-file` 입니다. `--log-opt` 는 컨테이너 단위로 적용되므로 `daemon.json` 없이도 효과가 있습니다.')
+
+b.fill('자원 사용량을 한 번만 출력하기', '실행 중인 컨테이너의 CPU·메모리 사용량을 **갱신하지 않고 한 번만** 출력하는 명령입니다. 빈칸을 채우세요.', '화면을 계속 새로 그리지 않고 "스트림 없이" 끝내는 옵션입니다.',
+       'docker stats {0}', ['--no-stream', '--all', '--no-trunc', '--format'], [0],
+       '`--no-stream` 은 첫 결과만 출력하고 끝냅니다. `--all` 은 멈춘 컨테이너까지 포함하고(그래도 계속 갱신), `--no-trunc` 는 긴 ID 를 줄이지 않으며, `--format` 은 출력 열을 고르지만 단독으로는 값이 필요합니다.')
+
+b.order('계속 재시작되는 컨테이너 추적 순서', '컨테이너 `api` 가 자꾸 다시 뜬다는 신고를 받았습니다. 아래 점검을 **넓은 범위에서 좁은 범위로** 좁혀 가는 순서로 놓으세요. 각 단계는 앞 단계의 결과를 보고 이어집니다.', '"문제가 있는가 → 얼마나 반복되는가 → 언제부터인가 → 왜인가" 처럼 질문이 점점 구체적이 되는 흐름을 떠올려 보세요.',
+        ['`docker ps -a` 로 컨테이너 목록과 STATUS 를 본다', '`docker logs --tail 20 api` 로 종료 직전에 남긴 메시지를 읽는다', '`docker events --since 10m --until ... --filter container=api --filter event=die` 로 종료 사건을 모아 본다', '`docker inspect -f \'{{.RestartCount}}\' api` 로 누적 수치 하나를 뽑는다'], [0, 3, 2, 1],
+        '먼저 `ps -a` 로 문제가 맞는지(상태) 확인하고, 재시작 횟수로 심각도를 보며, `events` 로 언제부터 반복됐는지 시점을 잡은 뒤, 마지막으로 `logs` 의 종료 직전 메시지에서 원인을 찾습니다. 범위를 넓은 것에서 좁은 것으로 좁혀 가는 흐름이며, 현장에서는 상황에 따라 로그를 먼저 보기도 합니다.')
+
+if __name__ == '__main__':
+    preview(b)

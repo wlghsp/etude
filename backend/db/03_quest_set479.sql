@@ -12,7 +12,7 @@ bash /tmp/lab/args.sh "a b" c
 # "$@" 는 인자 경계를 보존한다. 따옴표 없이 $@ 를 쓰면 공백에서 쪼개진다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*; mkdir -p /tmp/lab"]', '["sh", "-c", "( [ -f /tmp/lab/args.sh ] ) && ( [ \\"$(bash /tmp/lab/args.sh \\"a b\\" c | wc -l)\\" -eq 2 ] ) && ( [ \\"$(bash /tmp/lab/args.sh \\"a b\\" c | head -n 1)\\" = \\"a b\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "파일이 있다", "cmd": ["sh", "-c", "[ -f /tmp/lab/args.sh ]"]}, {"label": "인자 2개가 2줄로 나온다", "cmd": ["sh", "-c", "[ \\"$(bash /tmp/lab/args.sh \\"a b\\" c | wc -l)\\" -eq 2 ]"]}, {"label": "첫 줄이 \\"a b\\" 다", "cmd": ["sh", "-c", "[ \\"$(bash /tmp/lab/args.sh \\"a b\\" c | head -n 1)\\" = \\"a b\\" ]"]}]', '[{"title": "Bash 매뉴얼 — 위치 매개변수", "url": "https://www.gnu.org/software/bash/manual/bash.html#Positional-Parameters"}]'),
   (479, 2, '인자를 하나씩 밀어내며 합 구하기 (shift)', '**배경** — `shift` 는 인자를 **왼쪽으로 한 칸씩 밀어** `$1` 을 버리고 `$2` 가 `$1` 이 되게 합니다. `$#`(남은 인자 수)와 함께 `while [ $# -gt 0 ]` 로 인자를 모두 소비하는 반복을 만듭니다.
 
-**문제** — `/tmp/lab/sum.sh` 를 만드세요. 받은 **모든 숫자 인자의 합**을 한 줄로 출력해야 합니다. `bash /tmp/lab/sum.sh 1 2 3 4` 는 `10` 을 출력합니다. (`while` 과 `shift` 를 쓰세요.)', '`total=0; while [ $# -gt 0 ]; do total=$((total + $1)); shift; done; echo $total`', 'cat > /tmp/lab/sum.sh <<''EOF''
+**문제** — `/tmp/lab/sum.sh` 를 만드세요. 받은 **모든 숫자 인자의 합**을 한 줄로 출력해야 합니다. `bash /tmp/lab/sum.sh 1 2 3 4` 는 `10` 을 출력합니다. 인자가 하나도 없으면 `0` 을 출력합니다. (`while` 과 `shift` 를 쓰세요.)', '`total=0; while [ $# -gt 0 ]; do total=$((total + $1)); shift; done; echo $total`', 'cat > /tmp/lab/sum.sh <<''EOF''
 #!/bin/bash
 total=0
 while [ $# -gt 0 ]; do
@@ -67,7 +67,7 @@ bash /tmp/lab/arr.sh
 # ${#배열[@]} 는 개수, 인덱스는 0부터. 마지막 원소 인덱스는 개수 - 1', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*; mkdir -p /tmp/lab"]', '["sh", "-c", "( [ \\"$(bash /tmp/lab/arr.sh | tr \\"\\\\n\\" ,)\\" = \\"4,choi,\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "출력이 4 와 choi 두 줄이다", "cmd": ["sh", "-c", "[ \\"$(bash /tmp/lab/arr.sh | tr \\"\\\\n\\" ,)\\" = \\"4,choi,\\" ]"]}]', '[{"title": "Bash 매뉴얼 — 배열", "url": "https://www.gnu.org/software/bash/manual/bash.html#Arrays"}]'),
   (479, 6, '이름으로 찾는 배열 (연관 배열)', '**배경** — `declare -A age` 로 **연관 배열**(키-값)을 만듭니다. `age[kim]=30` 처럼 넣고, `${age[kim]}` 로 꺼내고, `${!age[@]}` 는 **키 목록**입니다. 키 순서는 보장되지 않으므로 출력하려면 `sort` 로 정렬합니다.
 
-**문제** — `/tmp/lab/assoc.sh` 를 만드세요. `kim` 은 30, `lee` 는 25 로 저장하고, 각 키마다 `키=값` 을 한 줄씩 **키 알파벳순**으로 출력합니다 (`kim=30`, `lee=25`).', '`declare -A age` → 값 넣기 → `for k in "${!age[@]}"; do echo "$k=${age[$k]}"; done | sort`', 'cat > /tmp/lab/assoc.sh <<''EOF''
+**문제** — `/tmp/lab/assoc.sh` 를 만드세요. `kim` 은 30, `lee` 는 25 로 저장하고, 각 키마다 `키=값` 을 한 줄씩 **키 알파벳순**으로 출력합니다 (`kim=30`, `lee=25`). 연관 배열은 `declare -A` 로 만드세요.', '`declare -A age` → 값 넣기 → `for k in "${!age[@]}"; do echo "$k=${age[$k]}"; done | sort`', 'cat > /tmp/lab/assoc.sh <<''EOF''
 #!/bin/bash
 declare -A age
 age[kim]=30
@@ -89,7 +89,7 @@ bash /tmp/lab/split.sh
 # echo "10 20" | read a b 는 서브쉘에서 읽어 변수가 사라진다. <<< 는 그렇지 않다', '["sh", "-c", "rm -rf /tmp/lab /tmp/q*; mkdir -p /tmp/lab"]', '["sh", "-c", "( [ \\"$(bash /tmp/lab/split.sh)\\" = 30 ] ) && ( grep -q \\"<<<\\" /tmp/lab/split.sh )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "출력이 30 이다", "cmd": ["sh", "-c", "[ \\"$(bash /tmp/lab/split.sh)\\" = 30 ]"]}, {"label": "here-string 을 썼다", "cmd": ["sh", "-c", "grep -q \\"<<<\\" /tmp/lab/split.sh"]}]', '[{"title": "Bash 매뉴얼 — Here 문자열", "url": "https://www.gnu.org/software/bash/manual/bash.html#Redirections"}]'),
   (479, 8, '함수로 둘 중 큰 값 고르기 (local)', '**배경** — 함수는 `이름() { … }` 로 만들고, 받은 인자는 함수 안에서 `$1 $2` 입니다. 함수 안에서만 쓰는 변수는 `local` 로 선언해 바깥 변수를 덮어쓰지 않게 합니다. 값을 돌려줄 때는 보통 `echo` 로 출력하고 `$( … )` 로 받습니다.
 
-**문제** — `/tmp/lab/max.sh` 를 만드세요. 함수 `max` 가 두 인자 중 **큰 수**를 출력하고, 스크립트는 받은 두 인자(`$1`, `$2`)로 `max` 를 호출해 결과를 출력합니다. `bash /tmp/lab/max.sh 3 9` 는 `9` 입니다.', '`max() { local a=$1 b=$2; if [ "$a" -gt "$b" ]; then echo "$a"; else echo "$b"; fi; }` → `max "$1" "$2"`', 'cat > /tmp/lab/max.sh <<''EOF''
+**문제** — `/tmp/lab/max.sh` 를 만드세요. 함수 `max` 가 두 인자 중 **큰 수**를 출력하고, 스크립트는 받은 두 인자(`$1`, `$2`)로 `max` 를 호출해 결과를 출력합니다. `bash /tmp/lab/max.sh 3 9` 는 `9` 입니다. 함수 안 변수는 `local` 로 선언하세요.', '`max() { local a=$1 b=$2; if [ "$a" -gt "$b" ]; then echo "$a"; else echo "$b"; fi; }` → `max "$1" "$2"`', 'cat > /tmp/lab/max.sh <<''EOF''
 #!/bin/bash
 max() {
   local a=$1 b=$2

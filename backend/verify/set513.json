@@ -1,0 +1,14 @@
+{
+  "setId": 513,
+  "answers": {
+    "1": "mariadb -e 'SHOW FULL PROCESSLIST'\nmariadb -N -e \"SELECT id FROM information_schema.processlist WHERE user='report'\" > /tmp/ids.txt\ncat /tmp/ids.txt\n\n# PROCESSLIST 의 Id 가 KILL 할 때 쓰는 번호. Time 이 길고 Info 가 같은 쿼리가 줄지어 있으면 폭주 신호다",
+    "2": "for id in $(mariadb -N -e \"SELECT id FROM information_schema.processlist WHERE user='report'\"); do mariadb -e \"KILL QUERY $id\"; done\nsleep 1\nmariadb -e 'SHOW FULL PROCESSLIST'\n\n# 조회·반복문 모두 user 로 범위를 좁혀야 한다. 범위를 안 좁히고 전부 KILL 하면 정상 서비스까지 끊긴다",
+    "3": "mariadb -N shop -e 'EXPLAIN SELECT * FROM orders WHERE customer_id = 77' | cut -f4 > /tmp/type.txt\nmariadb -N shop -e 'EXPLAIN SELECT * FROM orders WHERE customer_id = 77' | cut -f9 > /tmp/rows.txt\ncat /tmp/type.txt /tmp/rows.txt\n\n# type=ALL 이고 rows 가 테이블 전체 행 수와 비슷하면 인덱스를 못 타고 다 읽는 중이다",
+    "4": "mariadb shop -e 'CREATE INDEX idx_orders_customer ON orders (customer_id)'\nmariadb shop -e 'EXPLAIN SELECT * FROM orders WHERE customer_id = 77'\n\n# 이제 type=ref, rows 는 수백 건으로 줄어든다. 인덱스는 조회를 빠르게 하는 대신 쓰기와 용량 비용이 든다",
+    "5": "mariadb -e \"SET GLOBAL slow_query_log_file='/tmp/slow.log'; SET GLOBAL long_query_time=1; SET GLOBAL slow_query_log=1\"\nmariadb -e 'SELECT SLEEP(2)'\ncat /tmp/slow.log\n\n# SET GLOBAL 은 새로 맺는 접속부터 적용된다. 재시작하면 사라지니 영구 설정은 설정 파일(my.cnf)에도 적는다",
+    "6": "grep ERROR /tmp/lab/error.log\nsed -i 's/innodb_buffer_pool_sizee/innodb_buffer_pool_size/' /tmp/lab/my.cnf\nnohup mariadbd --defaults-file=/tmp/lab/my.cnf >/dev/null 2>&1 &\nfor i in $(seq 1 60); do mariadb -S /tmp/lab/mysql.sock -e 'select 1' >/dev/null 2>&1 && break; sleep 0.5; done\nmariadb -S /tmp/lab/mysql.sock -N -e 'SELECT @@innodb_buffer_pool_size' > /tmp/bp.txt\ncat /tmp/bp.txt\n\n# [ERROR] unknown variable 줄이 원인(변수 이름 오타). 설정을 고친 뒤 다시 띄우고 'ready for connections' 로 확인한다",
+    "7": "du -sk /var/lib/mysql/*/ | sort -n\ndu -sk /var/lib/mysql/*/ | sort -n | tail -1 | awk '{print $2}' | xargs basename > /tmp/big_db.txt\nls -S /var/lib/mysql/$(cat /tmp/big_db.txt) | head -1 > /tmp/big_file.txt\ncat /tmp/big_db.txt /tmp/big_file.txt\n\n# 어디가 큰지 모르면 du 로 위에서부터 좁혀 간다. InnoDB 는 테이블마다 .ibd 파일이 하나다",
+    "8": "mariadb -S /tmp/lab/mysql.sock -e 'SHOW BINARY LOGS'\nmariadb -S /tmp/lab/mysql.sock -e \"PURGE BINARY LOGS TO 'binlog.000004'\"\nmariadb -S /tmp/lab/mysql.sock -e 'SET GLOBAL binlog_expire_logs_seconds=259200'\nmariadb -S /tmp/lab/mysql.sock -e 'SHOW BINARY LOGS'\nls /tmp/lab\n\n# PURGE BINARY LOGS TO 'X' 는 X 보다 앞선 파일을 지운다(X 는 남는다). 복제나 복구가 아직 읽을 로그는 지우면 안 되니 확인 후에 한다",
+    "9": "mariadb -e 'DELETE FROM archive.events_log WHERE id <= 180000'\nls -l /var/lib/mysql/archive/events_log.ibd\nmariadb -e 'OPTIMIZE TABLE archive.events_log'\nls -l /var/lib/mysql/archive/events_log.ibd\n\n# DELETE 후에는 파일 크기가 그대로. OPTIMIZE TABLE(테이블 재구성)로 빈 공간을 돌려받는다. 재구성 중에는 임시로 디스크를 더 쓰니 여유 공간이 있을 때 한다"
+  }
+}

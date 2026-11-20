@@ -1,0 +1,12 @@
+{
+  "setId": 553,
+  "answers": {
+    "1": "docker image ls nginx\ndocker image inspect -f '{{.Size}}' nginx:1.27 > /tmp/q1.txt\ncat /tmp/q1.txt\n\n# 기본 nginx(Debian 계열)가 alpine 판보다 훨씬 크다. inspect 의 Size 는 바이트 단위",
+    "3": "docker history --no-trunc t3\necho assets.dat > /tmp/q3.txt\ncat /tmp/q3.txt\n\n# SIZE 가 가장 큰 레이어(40MB)의 명령이 /opt/assets.dat 를 만들었다",
+    "4": "cd /tmp/work/q4\nsed -i -e '/^RUN dd/{N;s#\\nRUN # \\&\\& #}' Dockerfile\ncat Dockerfile\ndocker build -t t4 .\ndocker run --rm t4 > /tmp/q4.txt\ncat /tmp/q4.txt\n\n# 캐시를 만든 RUN 안에서 곧바로 지우면 레이어에 남지 않는다",
+    "6": "cd /tmp/work/q6\ncat > Dockerfile <<'EOF'\nFROM alpine:3.19 AS build\nRUN dd if=/dev/zero of=/opt/toolchain.bin bs=1M count=40 2>/dev/null\nRUN echo '#!/bin/sh' > /app.sh && echo 'echo built-app' >> /app.sh && chmod +x /app.sh\n\nFROM alpine:3.19\nCOPY --from=build /app.sh /app.sh\nCMD [\"/app.sh\"]\nEOF\ndocker build -t t6 .\ndocker run --rm t6 > /tmp/q6.txt\ncat /tmp/q6.txt\n\n# 도구는 build 단계에만 있고, 최종 이미지에는 app.sh 만 복사된다",
+    "7": "docker run --rm --user 1000:1000 -v /tmp/work/q7/out:/out alpine:3.19 sh -c 'echo done > /out/result.txt'\nls -ln /tmp/work/q7/out\n\n# --user 를 주면 컨테이너 안 프로세스가 uid 1000 으로 돌아 호스트 파일도 1000 소유가 된다",
+    "8": "cd /tmp/work/q8\nsed -i 's#^RUN mkdir -p /data#RUN mkdir -p /data \\&\\& chown app /data#' Dockerfile\ncat Dockerfile\ndocker build -t t8 .\ndocker run --rm t8 > /tmp/q8.txt\ncat /tmp/q8.txt\n\n# 폴더 주인을 app 으로 바꾼 뒤 USER app 으로 전환한다 (chown 은 USER 앞에서 root 로)",
+    "11": "cd /tmp/work/q11\nsed -i 's#^FROM alpine.*#FROM alpine:3.19#' Dockerfile\ndocker build -t t11 .\ndocker run --rm t11 > /tmp/q11.txt\ncat /tmp/q11.txt\n\n# 태그를 3.19 로 고정하면 같은 베이스를 반복해서 받는다"
+  }
+}
