@@ -1,0 +1,12 @@
+{
+  "setId": 567,
+  "answers": {
+    "1": "echo $(( (1 << (32 - 26)) - 2 )) > /tmp/hosts_26.txt\ncat /tmp/hosts_26.txt\n\n# /24 는 254, /26 은 62, /30 은 2. 네트워크 주소와 브로드캐스트 주소는 장비에 줄 수 없어 2 를 뺀다",
+    "2": "mask=$(( (0xFFFFFFFF << (32-26)) & 0xFFFFFFFF ))\nint2ip $(( $(ip2int 192.0.2.77) & mask )) > /tmp/net.txt\ncat /tmp/net.txt\n\n# 192.0.2.77 의 마지막 바이트 77 은 64~127 구간(/26 은 64 단위)이라 네트워크 주소는 192.0.2.64",
+    "3": "mask=$(( (0xFFFFFFFF << (32-26)) & 0xFFFFFFFF ))\nnet=$(( $(ip2int 192.0.2.77) & mask ))\nint2ip $(( net | (~mask & 0xFFFFFFFF) )) > /tmp/bcast.txt\ncat /tmp/bcast.txt\n\n# 사용 가능한 호스트 범위는 192.0.2.65 ~ 192.0.2.126. 네트워크(64)와 브로드캐스트(127)는 장비에 못 준다",
+    "4": "while read a b p; do m=$(( (0xFFFFFFFF << (32-p)) & 0xFFFFFFFF )); if [ $(( $(ip2int $a) & m )) -eq $(( $(ip2int $b) & m )) ]; then echo yes; else echo no; fi; done < /tmp/pairs.cfg > /tmp/same.txt\ncat /tmp/same.txt\n\n# 같은 /24 안이라도 /26 으로 쪼개져 있으면 다른 서브넷일 수 있다. 접두 길이를 꼭 함께 본다",
+    "5": "base=$(ip2int 198.51.100.0)\nfor i in 0 1 2 3; do int2ip $(( base + i * 64 )); done > /tmp/subnets.txt\ncat /tmp/subnets.txt\n\n# 198.51.100.0, .64, .128, .192 (각각 /26). 접두 길이가 2 늘면(24→26) 서브넷이 2^2 = 4 개가 된다",
+    "6": "while read h g p; do m=$(( (0xFFFFFFFF << (32-p)) & 0xFFFFFFFF )); if [ $(( $(ip2int $h) & m )) -ne $(( $(ip2int $g) & m )) ]; then echo $h; fi; done < /tmp/hosts.cfg > /tmp/bad_gw.txt\ncat /tmp/bad_gw.txt\n\n# 192.0.2.130/26 은 128~191 구간인데 게이트웨이 192.0.2.1 은 0~63 구간이라 닿지 못한다. 마스크를 잘못 준 경우도 같은 증상이다",
+    "7": "ip -4 -br addr show lo\nip -4 -o addr show lo | awk '{print $4}' > /tmp/lo_addr.txt\ncat /tmp/lo_addr.txt\nip=$(cut -d/ -f1 /tmp/lo_addr.txt); p=$(cut -d/ -f2 /tmp/lo_addr.txt)\nm=$(( (0xFFFFFFFF << (32-p)) & 0xFFFFFFFF ))\nint2ip $(( $(ip2int $ip) & m )) > /tmp/lo_net.txt\ncat /tmp/lo_net.txt\n\n# 127.0.0.1/8 의 네트워크 주소는 127.0.0.0. 127.0.0.0/8 전체가 루프백 전용 대역이다"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "setId": 576,
+  "answers": {
+    "1": "cat /tmp/curl_errs.log\ngrep 'resolve host' /tmp/curl_errs.log | grep -o '([0-9]*)' | tr -d '()' > /tmp/dns_code.txt\ngrep 'certificate' /tmp/curl_errs.log | grep -o '([0-9]*)' | tr -d '()' > /tmp/tls_code.txt\ncat /tmp/dns_code.txt /tmp/tls_code.txt\n\n# 6 은 이름 해석 실패, 60 은 인증서 검증 실패, 7 은 연결 거부, 28 은 시간 초과, 35 는 핸드셰이크 중 끊김이다. 번호만 봐도 어느 층을 볼지 정해진다",
+    "2": "cat /tmp/loop.log\ngrep -c '^HTTP/1.1 301' /tmp/loop.log > /tmp/redirects.txt\ncat /tmp/redirects.txt\n\n# 4 번. 앞단(로드밸런서)이 http 를 https 로 보내는데 뒤 서버가 https 요청을 다시 http 로 돌려보내는 식의 설정 충돌이 흔한 원인이다. 어느 쪽이 스킴을 바꾸는지 각각 curl -I 로 확인한다",
+    "3": "cat /tmp/proxy_access.log\nawk '$NF != \"\" {print $(NF-1)}' /tmp/proxy_access.log | grep -c '^502$' > /tmp/c502.txt\nawk '{print $(NF-1)}' /tmp/proxy_access.log | grep -c '^504$' > /tmp/c504.txt\ncat /tmp/c502.txt /tmp/c504.txt\n\n# 502 는 처리 시간이 1~2ms 로 매우 짧다(업스트림이 즉시 거부·연결 실패). 504 는 60 초 근처다(업스트림이 응답하지 않아 프록시가 제한 시간까지 기다림)",
+    "4": "getent hosts old-api.example.com\ngrep -v 'old-api.example.com' /etc/hosts > /tmp/hosts.new\ncat /tmp/hosts.new > /etc/hosts\nrm -f /tmp/hosts.new\ngetent hosts keep.example.com\n\n# hosts 는 DNS 보다 먼저 보므로 낡은 항목이 남으면 DNS 를 고쳐도 이 서버만 계속 옛 주소로 간다. 지울 때는 다른 항목이 함께 사라지지 않게 한다",
+    "5": "cat /tmp/dns_try.log\ngrep -c NXDOMAIN /tmp/dns_try.log > /tmp/failed.txt\ncat /tmp/failed.txt\n\n# 2 번. 이름이 끝에 점이 있는 완전한 이름(www.example.com.)이면 검색 도메인을 붙이지 않는다. 질의가 느리면 /etc/resolv.conf 의 options 줄(ndots)과 search 를 확인한다",
+    "6": "cat /tmp/cert.log\nEND=$(grep notAfter /tmp/cert.log | cut -d= -f2)\nA=$(date -u -d \"$END\" +%s)\nB=$(date -u -d '2026-11-20 00:00:00' +%s)\necho $(( (B - A) / 86400 )) > /tmp/expired_days.txt\ncat /tmp/expired_days.txt\n\n# 319 일. 인증서 만료는 갑자기 오는 흔한 장애다. 만료일은 openssl x509 -noout -enddate 로 확인하고 미리 알림을 걸어 둔다"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "setId": 582,
+  "answers": {
+    "1": "cat /tmp/iostat.log\ngrep '^sd' /tmp/iostat.log | sort -k8 -n -r | head -1 | awk '{print $1}' > /tmp/busy.txt\ncat /tmp/busy.txt\n\n# sda 가 99.8% 로 사실상 포화다. 포화된 디스크에서는 요청이 줄을 서서 지연(await)이 늘어난다",
+    "2": "grep '^sd' /tmp/iostat.log | awk '$6 > 10 {print $1}' | sort > /tmp/slow.txt\ncat /tmp/slow.txt\n\n# HDD 에서 await 가 수십 ms 이면 병목이다. sda(45ms)와 sdc(14.5ms)가 해당한다. NVMe·SSD 는 보통 1ms 안팎이어야 정상이다",
+    "3": "head -3 /tmp/iostat.log\nsed -n '2p' /tmp/iostat.log | awk '{print $4}' > /tmp/iowait.txt\ncat /tmp/iowait.txt\n\n# iowait 가 높으면 CPU 는 한가한데 디스크를 기다리는 중이라 디스크가 병목이라는 신호다. 다만 iowait 자체는 CPU 를 쓰지 않는 대기 시간이다",
+    "4": "cat /tmp/vmstat.log\ntail -1 /tmp/vmstat.log | awk '{print $2}' > /tmp/blocked.txt\ntail -1 /tmp/vmstat.log | awk '{print $16}' > /tmp/wa.txt\ncat /tmp/blocked.txt /tmp/wa.txt\n\n# 처음 줄은 부팅 이후 평균이라 현재를 반영하지 않는다. 뒤 줄에서 b 가 6~7, wa 가 50% 넘게 올라 디스크 쓰기(bo 약 10000)가 병목임을 보여 준다",
+    "5": "cat /tmp/fio.log\ngrep -m1 -o 'IOPS=[0-9]*' /tmp/fio.log | cut -d= -f2 > /tmp/iops.txt\ncat /tmp/iops.txt\n\n# 무작위 읽기는 IOPS(8204)가 중요하고 순차 읽기는 처리량(550MiB/s)이 중요하다. 작업 특성에 따라 봐야 할 지표가 다르다",
+    "6": "grep -o 'BW=[0-9.]*MiB/s' /tmp/fio.log\nR=$(grep -o 'BW=[0-9.]*MiB/s' /tmp/fio.log | head -1 | cut -d= -f2 | cut -d. -f1 | tr -d 'MiB/s')\nS=$(grep -o 'BW=[0-9.]*MiB/s' /tmp/fio.log | tail -1 | cut -d= -f2 | cut -d. -f1 | tr -d 'MiB/s')\necho $((S / R)) > /tmp/ratio.txt\ncat /tmp/ratio.txt\n\n# 550 ÷ 32 = 17 배. 같은 디스크라도 작은 무작위 I/O 는 처리량이 크게 떨어진다. 용도에 맞는 지표와 시험 방식을 골라야 한다"
+  }
+}

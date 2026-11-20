@@ -1,0 +1,67 @@
+import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..')); from gen_pilot_sets import *
+# 세트 560: 문자셋·collation·시간대. 명세: docs/specs/spec_gap_set560.md
+# 선행: 164·334(자료형·utf8mb4 언급), 371(ALTER). 이 샌드박스의 mariadb 클라이언트 기본 접속 문자셋은 latin1 이라 한글을 넣을 때 접속 문자셋을 맞춰야 한다(이 세트의 핵심 함정).
+
+CS = (DBUP + """; mariadb -e 'DROP DATABASE IF EXISTS shop; CREATE DATABASE shop CHARACTER SET latin1; USE shop; CREATE TABLE memo (id INT AUTO_INCREMENT PRIMARY KEY, body VARCHAR(100)) ENGINE=InnoDB DEFAULT CHARSET=latin1; CREATE TABLE memo2 (id INT AUTO_INCREMENT PRIMARY KEY, body VARCHAR(100)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; CREATE TABLE users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(20)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci; INSERT INTO users (name) VALUES ("Abc"),("abc"),("ABC"),("xyz"); SET time_zone="+00:00"; CREATE TABLE ev (ts TIMESTAMP NOT NULL DEFAULT "2026-01-01 00:00:00", dt DATETIME NOT NULL DEFAULT "2026-01-01 00:00:00") ENGINE=InnoDB; INSERT INTO ev () VALUES ();'; """ + CLEAN)
+HANGUL = "ED959CEAB880"  # '한글' 의 UTF-8 바이트(HEX)
+HEXOK = lambda t: f'[ "$(mariadb -N shop -e "SELECT COUNT(*) FROM {t} WHERE HEX(body)=\'{HANGUL}\'")" -ge 1 ]'
+
+b = SetBuilder(560, '문자셋·collation·시간대: 한글 깨짐, 대소문자 비교, TIMESTAMP 와 DATETIME',
+               '한글이 깨지거나 저장이 안 될 때, 대소문자가 구분되지 않을 때, 시간이 9시간 어긋날 때의 원인을 직접 확인합니다. 서버·DB·테이블 문자셋 읽기, LENGTH 와 CHAR_LENGTH, 접속 문자셋(SET NAMES)이 어긋난 입력, 테이블을 utf8mb4 로 변환, collation 에 따른 대소문자 비교(_ci 와 _bin), 시간대 설정에 따른 TIMESTAMP·DATETIME 표시, CONVERT_TZ 를 실습합니다.',
+               'linux-db', '데이터베이스', 46, 820, '🔤',
+               [{"title": "문자셋과 collation", "url": "https://mariadb.com/kb/en/character-sets/"}, {"title": "TIMESTAMP 와 DATETIME", "url": "https://mariadb.com/kb/en/timestamp/"}], 3)
+
+# 1
+b.nt('서버와 DB 의 문자셋이 다를 수 있다', '문자셋(character set)은 글자를 바이트로 저장하는 규칙입니다. 서버의 기본값과 데이터베이스마다 정한 값은 **서로 다를 수 있습니다.** 아래 두 값을 저장하세요. (값만)\n- `/tmp/server.txt` : **서버 기본 문자셋** (`character_set_server`)\n- `/tmp/db.txt` : **`shop` 데이터베이스의 기본 문자셋** (`information_schema.schemata` 의 `default_character_set_name`)',
+     '앞쪽은 `SELECT @@변수;`, 뒤쪽은 `information_schema.schemata` 에서 `schema_name=\'shop\'` 으로 조회합니다. `-N` 은 제목 줄을 빼 줍니다.',
+     "mariadb -N -e 'SELECT @@character_set_server' > /tmp/server.txt\nmariadb -N -e \"SELECT default_character_set_name FROM information_schema.schemata WHERE schema_name='shop'\" > /tmp/db.txt\ncat /tmp/server.txt /tmp/db.txt\n\n# 서버는 utf8mb4 지만 shop DB 는 latin1 로 만들어져 있다. 새 테이블은 DB 의 기본값을 따르므로 DB 가 latin1 이면 한글이 안 들어간다",
+     CS, [chk('서버 문자셋이 utf8mb4 다', '[ "$(cat /tmp/server.txt)" = utf8mb4 ]'), chk('shop DB 가 latin1 이다', '[ "$(cat /tmp/db.txt)" = latin1 ]')])
+# 2
+b.nt('LENGTH 와 CHAR_LENGTH: 바이트 수와 글자 수', '`LENGTH` 는 **바이트 수**, `CHAR_LENGTH` 는 **글자 수**를 돌려줍니다. utf8mb4 에서 한글 한 글자는 3바이트입니다. `\'한글\'` 에 대해 두 값을 구해 `/tmp/bytes.txt`(바이트 수), `/tmp/chars.txt`(글자 수)에 저장하세요. (숫자만)\n\n**주의:** 이 터미널의 `mariadb` 는 접속 문자셋을 따로 주지 않으면 `latin1` 로 연결됩니다. 한글이 올바른 글자로 전달되도록 접속 문자셋을 `utf8mb4` 로 맞추세요. (`mariadb --help` 에서 `default-character-set` 을 찾아 보세요.)',
+     '클라이언트 옵션 `--default-character-set=문자셋` 을 `mariadb` 뒤에 붙입니다. 접속 문자셋이 틀리면 글자 수가 한글 두 글자가 아니라 바이트 수로 나옵니다.',
+     "mariadb --default-character-set=utf8mb4 -N -e \"SELECT LENGTH('한글')\" > /tmp/bytes.txt\nmariadb --default-character-set=utf8mb4 -N -e \"SELECT CHAR_LENGTH('한글')\" > /tmp/chars.txt\ncat /tmp/bytes.txt /tmp/chars.txt\n\n# 6 바이트, 2 글자. 접속 문자셋을 안 맞추면 latin1 로 해석되어 글자 수가 6 으로 나온다",
+     CS, [chk('바이트 수가 6 이다', '[ "$(cat /tmp/bytes.txt)" = 6 ]'), chk('글자 수가 2 다', '[ "$(cat /tmp/chars.txt)" = 2 ]')])
+# 3
+b.nt('접속 문자셋이 틀리면 저장될 때 이미 깨진다', '`shop.memo2` 테이블은 이미 `utf8mb4` 입니다. 그런데 **접속 문자셋을 안 맞추고** 한글을 넣으면 서버가 클라이언트(`latin1`)가 보낸 바이트를 한 글자씩 잘못 변환해 저장합니다. 겉으로는 오류가 없습니다.\n\n`shop.memo2` 에 `body` 가 **`한글`** 인 행을 **올바르게** 넣으세요. (같은 `mariadb -e` 안에서 `SET NAMES utf8mb4;` 로 맞추거나 접속 옵션을 쓰세요.)\n\n올바른 저장인지는 UTF-8 바이트 `ED959CEAB880` 와 같은지로 확인합니다.',
+     '`SET NAMES utf8mb4;` 는 이번 접속이 클라이언트·결과 모두 utf8mb4 를 쓰도록 맞춥니다. INSERT 앞에 둡니다. 저장 값은 `SELECT HEX(body) FROM memo2;` 로 확인할 수 있습니다.',
+     "mariadb shop -e \"SET NAMES utf8mb4; INSERT INTO memo2 (body) VALUES ('한글')\"\nmariadb -N shop -e 'SELECT body, HEX(body) FROM memo2'\n\n# SET NAMES 없이 넣으면 HEX 가 C3AD... 처럼 이중 인코딩된 값이 된다(한글이 깨져 저장). 입력 단계의 접속 문자셋을 먼저 맞춘다",
+     CS, [chk('한글이 올바른 바이트로 저장됐다', HEXOK('memo2'))])
+# 4
+b.nt('테이블을 utf8mb4 로 바꿔 한글 저장하기', '`shop.memo` 테이블은 `latin1` 로 만들어져 있어 한글을 넣으려 하면 `ERROR 1366 Incorrect string value` 로 거절됩니다. 먼저 접속 문자셋을 `utf8mb4` 로 맞추고 넣어 보며 오류를 확인한 뒤, **테이블 자체를 `utf8mb4` 로 변환**하고 `body` 가 **`한글`** 인 행을 넣으세요. (기존 컬럼도 함께 변환되어야 합니다.)',
+     '테이블 기본값과 기존 컬럼을 한 번에 바꾸는 ALTER 형식을 찾아 보세요. 접속 문자셋은 앞 문제처럼 맞춥니다.',
+     "mariadb shop -e \"SET NAMES utf8mb4; INSERT INTO memo (body) VALUES ('한글')\"   # 1366 오류를 확인\nmariadb shop -e 'ALTER TABLE memo CONVERT TO CHARACTER SET utf8mb4'\nmariadb shop -e \"SET NAMES utf8mb4; INSERT INTO memo (body) VALUES ('한글')\"\nmariadb -N shop -e 'SHOW CREATE TABLE memo'\n\n# CONVERT TO 는 테이블 기본값과 기존 문자 컬럼을 모두 바꾼다. 'DEFAULT CHARSET=' 만 바꾸면 기존 컬럼은 그대로다",
+     CS, [chk('테이블이 utf8mb4 다', '[ "$(mariadb -N -e "SELECT CCSA.character_set_name FROM information_schema.tables T JOIN information_schema.collation_character_set_applicability CCSA ON CCSA.collation_name=T.table_collation WHERE T.table_schema=\'shop\' AND T.table_name=\'memo\'")" = utf8mb4 ]'), chk('body 컬럼도 utf8mb4 다', '[ "$(mariadb -N -e "SELECT character_set_name FROM information_schema.columns WHERE table_schema=\'shop\' AND table_name=\'memo\' AND column_name=\'body\'")" = utf8mb4 ]'), chk('한글이 올바르게 저장됐다', HEXOK('memo'))])
+# 5
+b.nt('collation: 대소문자를 구분할까', 'collation 은 글자를 **비교하고 정렬하는 규칙**입니다. `shop.users` 의 `name` 열은 `utf8mb4_general_ci` (`ci` = case insensitive, 대소문자 무시)이고 `Abc`·`abc`·`ABC`·`xyz` 가 들어 있습니다. 아래를 저장하세요.\n- `/tmp/ci.txt` : `WHERE name = \'abc\'` 로 찾은 **행 수** (기본 규칙 그대로)\n- `/tmp/exact.txt` : **소문자 `abc` 와 정확히 같은** 행 수 (대소문자를 구분하도록 비교)\n\n(`COLLATE` 를 쓰면 접속 문자셋과 맞지 않을 때 `ERROR 1253` 이 납니다. `BINARY` 로 비교해도 됩니다.)',
+     '비교를 바이트 단위로 하는 방법을 찾아 보세요. (`COLLATE` 를 쓰려면 접속 문자셋을 먼저 맞춰야 합니다.)',
+     "mariadb -N shop -e \"SELECT COUNT(*) FROM users WHERE name='abc'\" > /tmp/ci.txt\nmariadb -N shop -e \"SELECT COUNT(*) FROM users WHERE BINARY name='abc'\" > /tmp/exact.txt\ncat /tmp/ci.txt /tmp/exact.txt\n\n# _ci 는 Abc·abc·ABC 를 모두 같게 보아 3건, BINARY(또는 _bin)는 1건. 로그인 이름 비교처럼 대소문자 정책이 중요하면 collation 을 일부러 고른다",
+     CS, [chk('기본 비교는 3건이다', '[ "$(cat /tmp/ci.txt)" = 3 ]'), chk('정확 비교는 1건이다', '[ "$(cat /tmp/exact.txt)" = 1 ]')])
+# 6
+b.nt('TIMESTAMP 는 시간대를 따라가고 DATETIME 은 그대로다', '`shop.ev` 의 한 행에 `ts`(`TIMESTAMP`)와 `dt`(`DATETIME`)가 모두 **UTC 기준 `2026-01-01 00:00:00`** 으로 저장되어 있습니다. 세션의 시간대를 **한국 시간(`+09:00`)** 으로 바꾸고(`SET time_zone=\'+09:00\';`) 두 열을 읽어, 각각 `/tmp/ts.txt`, `/tmp/dt.txt` 에 저장하세요. (값만)',
+     '시간대 설정과 `SELECT ts FROM ev` 는 **같은 접속**(한 번의 `mariadb -e`) 안에서 실행합니다. 두 열의 값이 같은지 다른지 눈으로 비교해 보세요.',
+     "mariadb -N shop -e \"SET time_zone='+09:00'; SELECT ts FROM ev\" > /tmp/ts.txt\nmariadb -N shop -e \"SET time_zone='+09:00'; SELECT dt FROM ev\" > /tmp/dt.txt\ncat /tmp/ts.txt /tmp/dt.txt\n\n# TIMESTAMP 는 내부에 UTC 로 저장하고 읽을 때 세션 시간대로 바꿔 보여 준다(09:00). DATETIME 은 넣은 글자 그대로(00:00)다",
+     CS, [chk('ts 가 09 시로 보였다', '[ "$(cat /tmp/ts.txt)" = "2026-01-01 09:00:00" ]'), chk('dt 는 00 시 그대로다', '[ "$(cat /tmp/dt.txt)" = "2026-01-01 00:00:00" ]')])
+# 7
+b.nt('서버 시간대 읽기와 CONVERT_TZ', '서버가 쓰는 **시스템 시간대 이름**(`system_time_zone`)을 `/tmp/sys.txt` 에 저장하고, `CONVERT_TZ` 로 **UTC `2026-03-01 15:00:00` 을 `+09:00` 시각으로 바꾼 값**을 `/tmp/kst.txt` 에 저장하세요. (값만. 이름 대신 `+00:00` 같은 오프셋을 써야 시간대 테이블 없이도 동작합니다.)',
+     '`SELECT CONVERT_TZ(시각, 원래시간대, 바꿀시간대);` 입니다. 시스템 시간대는 `SELECT @@system_time_zone;` 입니다.',
+     "mariadb -N -e 'SELECT @@system_time_zone' > /tmp/sys.txt\nmariadb -N -e \"SELECT CONVERT_TZ('2026-03-01 15:00:00', '+00:00', '+09:00')\" > /tmp/kst.txt\ncat /tmp/sys.txt /tmp/kst.txt\n\n# 서버가 UTC 면 로그·TIMESTAMP 를 한국 시간으로 볼 때 9시간을 더해야 한다. 이름('Asia/Seoul') 변환은 mysql_tzinfo_to_sql 로 시간대 테이블을 채워야 쓸 수 있다",
+     CS, [chk('시스템 시간대가 UTC 다', '[ "$(cat /tmp/sys.txt)" = UTC ]'), chk('변환 결과가 맞다', '[ "$(cat /tmp/kst.txt)" = "2026-03-02 00:00:00" ]')])
+# 8
+b.choice('utf8 로 만들었는데 이모지가 안 들어간다', 'MariaDB 에서 `CHARACTER SET utf8` 로 만든 컬럼에 `🙂` 를 넣으면 `Incorrect string value` 오류가 납니다. 이유로 알맞은 것은?', '한글(3바이트)은 되고 이모지는 안 되는 이유가 무엇인지 생각해 보세요.',
+         ['utf8 은 글자당 최대 3바이트라 이모지를 못 담는다', '이모지는 어떤 문자셋에도 저장할 수 없다', 'utf8 은 한글을 지원하지 않는다', 'VARCHAR 길이가 모자라서 거절된다'], 0,
+         'MariaDB(MySQL)의 `utf8` 은 최대 3바이트짜리 utf8mb3 입니다. 이모지 같은 4바이트 글자는 `utf8mb4` 가 필요합니다. 한글은 3바이트라 utf8 로도 저장됩니다. 새 테이블은 utf8mb4 를 쓰는 것이 안전합니다.')
+# 9
+b.choice('abc 가 있는데 ABC 를 넣었더니 Duplicate entry', '`email` 열에 `UNIQUE` 가 걸려 있고 `abc@example.com` 이 이미 있습니다. `ABC@example.com` 을 넣었더니 `ERROR 1062 Duplicate entry` 가 났습니다. 가장 알맞은 설명은?', '"같은 값인지"를 판단하는 규칙이 무엇인지 생각해 보세요.',
+         ['collation 이 _ci 라 두 값을 같다고 본다', '대문자는 UNIQUE 열에 넣을 수 없기 때문이다', '서버의 문자셋이 latin1 이라서 대문자가 깨졌기 때문이다', '두 값의 바이트 수가 달라 인덱스가 충돌했기 때문이다'], 0,
+         'UNIQUE 는 collation 의 비교 규칙으로 중복을 판단합니다. _ci(case insensitive) 에서는 abc 와 ABC 가 같으므로 중복입니다. 대소문자를 다른 값으로 저장해야 한다면 _bin 이나 _cs 계열 collation 을 쓰되, 로그인 이름처럼 대소문자 정책을 먼저 정하는 것이 좋습니다.')
+# 10
+b.fill('테이블을 이모지까지 저장 가능하게 변환', '한글과 이모지(`🙂`)를 모두 저장할 수 있게 테이블을 변환하는 명령에서 빈칸의 문자셋을 채우세요.', '글자당 최대 4바이트를 쓰는 문자셋입니다.',
+       'ALTER TABLE memo CONVERT TO CHARACTER SET {0};', ['utf8mb4', 'utf8', 'latin1', 'ascii'], [0],
+       '`utf8mb4` 는 최대 4바이트로 이모지까지 지원합니다. `utf8` 은 3바이트(utf8mb3)라 이모지가 안 되고, `latin1` 과 `ascii` 는 한글을 저장할 수 없습니다.')
+# 11
+b.order('한글이 깨질 때 점검하는 순서', '화면에 한글이 `?` 나 이상한 글자로 보입니다. **넓은 설정에서 좁은 설정 순으로**, 접속 → 데이터베이스 → 테이블·컬럼 을 차례로 확인하고, 어긋난 곳을 찾으면 마지막에 고치는 순서로 놓으세요.', '확인은 모두 하고 나서 고친다는 점을 생각해 보세요.',
+        ['테이블·컬럼 문자셋과 collation 확인', '어긋난 곳(접속 설정 또는 테이블)을 utf8mb4 로 맞춤', '클라이언트의 접속 문자셋(character_set_client·connection) 확인', '데이터베이스 기본 문자셋 확인'], [2, 3, 0, 1],
+        '접속 문자셋 → 데이터베이스 기본값 → 테이블·컬럼 문자셋 순으로 넓은 설정에서 좁은 설정까지 확인하고, 어긋난 곳을 찾으면 마지막에 utf8mb4 로 맞춥니다. 이미 깨져 저장된 데이터는 변환만으로 복구되지 않을 수 있어 원본 재입력이 필요할 수 있습니다.')
+
+if __name__ == '__main__':
+    preview(b)

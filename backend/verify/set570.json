@@ -1,0 +1,12 @@
+{
+  "setId": 570,
+  "answers": {
+    "1": "cat /tmp/dig_full.log\ngrep -o 'status: [A-Z]*' /tmp/dig_full.log | cut -d' ' -f2 > /tmp/status.txt\ngrep 'SERVER:' /tmp/dig_full.log | cut -d' ' -f3 | cut -d'#' -f1 > /tmp/server.txt\ncat /tmp/status.txt /tmp/server.txt\n\n# NOERROR 는 정상 응답. SERVER 는 resolv.conf 의 nameserver 중 실제로 답한 서버다",
+    "2": "awk '$3 ~ /^IN$/ && $4 ~ /^A$/ {print $NF}' /tmp/dig_full.log | sort > /tmp/ips.txt\ncat /tmp/ips.txt\n\n# 같은 이름에 주소가 둘이면 클라이언트는 보통 둘 중 하나(순서는 서버가 돌려 가며 바꿈)를 쓴다. 이것이 DNS 라운드 로빈이다",
+    "3": "cat /tmp/dig_nx.log\ngrep '^;missing' /tmp/dig_nx.log | awk '{print $1}' | cut -c2- > /tmp/nx_name.txt\ngrep -o 'status: [A-Z]*' /tmp/dig_nx.log | cut -d' ' -f2 > /tmp/nx_status.txt\ncat /tmp/nx_name.txt /tmp/nx_status.txt\n\n# NXDOMAIN 은 이름 자체가 없다는 뜻이다. 이름 오타·삭제된 레코드를 먼저 의심한다. ANSWER 가 0 이고 AUTHORITY 에 SOA 가 오는 것이 특징이다",
+    "4": "A=$(grep '^www' /tmp/dig_t1.log | awk '{print $2}')\nB=$(grep '^www' /tmp/dig_t2.log | awk '{print $2}')\necho $((A - B)) > /tmp/elapsed.txt\ncat /tmp/elapsed.txt\n\n# 300 에서 240 으로 60 초 줄었다. 질의 사이에 60 초가 지났고(WHEN 도 1분 차이), 캐시에서 온 응답이라 Query time 이 0 msec 다. TTL 이 0 이 되면 다시 권한 서버에 묻는다",
+    "5": "grep -c ';; Received' /tmp/dig_trace.log > /tmp/steps.txt\ngrep ';; Received' /tmp/dig_trace.log | tail -1 | cut -d'(' -f2 | cut -d')' -f1 > /tmp/auth.txt\ncat /tmp/steps.txt /tmp/auth.txt\n\n# 루트 → com → example.com 의 권한 서버 → 답. 어느 단계에서 끊기거나 엉뚱한 답이 오는지 위임을 따라가며 확인할 수 있다",
+    "6": "getent hosts api.example.com\ngetent hosts api.example.com | awk '{print $1}' > /tmp/api_ip.txt\ncat /tmp/api_ip.txt\n\n# dig 가 DNS 만 묻는 것과 달리 getent 는 nsswitch.conf 의 순서(files → dns)를 따른다. 앱이 보는 결과와 dig 결과가 다르면 hosts 부터 의심한다",
+    "7": "cat /tmp/resolv_sample.conf\ngrep '^nameserver' /tmp/resolv_sample.conf | head -1 | awk '{print $2}' > /tmp/ns1.txt\ngrep -o 'ndots:[0-9]*' /tmp/resolv_sample.conf | cut -d: -f2 > /tmp/ndots.txt\ncat /tmp/ns1.txt /tmp/ndots.txt\n\n# ndots:5 면 점이 5개 미만인 이름(www.example.com 도 해당)은 search 도메인을 먼저 붙여 시도해 처음 응답이 느려질 수 있다"
+  }
+}

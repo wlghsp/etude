@@ -1,0 +1,11 @@
+{
+  "setId": 584,
+  "answers": {
+    "1": "cat /tmp/domiflist.log /tmp/leases.log\nMAC=$(grep vnet3 /tmp/domiflist.log | awk '{print $5}')\ngrep \"$MAC\" /tmp/leases.log | awk '{print $5}' | cut -d/ -f1 > /tmp/web01_ip.txt\ncat /tmp/web01_ip.txt\n\n# 게스트가 호스트 이름을 알리지 않는 경우가 많아 MAC 으로 찾는다. VM 에 IP 가 안 보일 때 임대 목록에 그 MAC 이 있는지 보면 DHCP 문제인지 게스트 내부 문제인지 가른다. 임대는 있는데 게스트가 못 받으면 게스트 NIC 설정을 본다",
+    "2": "cat /tmp/migrate_err.log\necho 'virsh migrate --live --copy-storage-all web01 qemu+ssh://dest.example.com/system' > /tmp/migrate.txt\ncat /tmp/migrate.txt\n\n# 디스크 복사 옵션을 쓰려면 대상 호스트에 같은 경로·같은 크기의 빈 이미지를 미리 만들어 둬야 한다(libvirt 가 만들지 않는다). 공유 스토리지가 있으면 디스크 복사 옵션이 필요 없다. 변경분만 복사하는 --copy-storage-inc 도 있다. 두 호스트의 CPU 모델 호환도 확인해야 한다",
+    "3": "cat /tmp/stats.log\ntail -n +2 /tmp/stats.log | sort -k3 -n -r | head -1 | awk '{print $1}' > /tmp/steal.txt\ncat /tmp/steal.txt\n\n# db01 은 CPU 사용률은 낮은데 steal 이 높다. 호스트의 vCPU 총합이 물리 코어보다 많은 오버커밋이거나 다른 VM(batch)이 CPU 를 몰아 쓰는 상황이다",
+    "4": "cat /tmp/chain.log\ngrep -c '^image:' /tmp/chain.log > /tmp/chain_len.txt\ngrep '^image:' /tmp/chain.log | tail -1 | awk '{print $2}' > /tmp/base.txt\ncat /tmp/chain_len.txt /tmp/base.txt\n\n# 체인이 길수록 읽기가 느려지고 중간 파일 하나가 사라지면 그 위가 모두 쓸모없어진다. 오래된 스냅샷은 commit 으로 합쳐 정리한다",
+    "5": "cat /tmp/check.log\ngrep 'errors were found' /tmp/check.log | awk '{print $1}' > /tmp/errors.txt\ngrep 'leaked clusters were found' /tmp/check.log | awk '{print $1}' > /tmp/leaks.txt\ncat /tmp/errors.txt /tmp/leaks.txt\n\n# 실행 중인 VM 의 이미지에는 check 를 하지 않는다(끄거나 읽기 전용으로). 오류(refcount 불일치)는 데이터 손상 가능성이 있어 이미지 백업 후 수리(-r)한다. 누수는 공간만 낭비하며 -r leaks 로 정리할 수 있다",
+    "6": "echo 'virsh shutdown --mode agent web01' > /tmp/stop.txt\ncat /tmp/stop.txt\n\n# 에이전트(qemu-guest-agent)가 설치돼 있어야 동작한다. 그래도 안 되면 마지막으로 destroy(전원을 뽑는 것과 같음)를 쓰고, 그 전에 데이터 손상 가능성을 고려한다"
+  }
+}

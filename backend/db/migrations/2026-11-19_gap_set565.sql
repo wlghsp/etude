@@ -1,0 +1,89 @@
+-- 세트 565. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set565.sql, 05·06·08. docs/specs/spec_pilot_gap_sets.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 565, 'TCP 연결의 일생: LISTEN·ESTABLISHED·TIME_WAIT·CLOSE_WAIT 직접 만들고 읽기', 'TCP 연결의 상태가 어떻게 바뀌는지 nc 와 ss 로 직접 만들어 읽습니다. 연결을 기다리는 LISTEN, 연결 거부(Connection refused)와 성공, 연결이 맺어진 ESTABLISHED 와 상대의 임시 포트 읽기, 먼저 닫은 쪽에 남는 TIME_WAIT, 상대가 닫았는데 내가 안 닫은 CLOSE_WAIT 과 범인 프로세스 찾기·정리, 3-way 핸드셰이크와 종료 흐름을 연습합니다.', 'linux', '네트워크'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 565);
+UPDATE quest_set SET display_order = 825, unit_id = (SELECT id FROM unit WHERE id = 68), icon = '🤝' WHERE id = 565;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 565, 1, '연결을 기다리는 서버: LISTEN', '서버 프로그램은 먼저 포트를 열고 **연결이 오기를 기다립니다.** 이 상태를 `LISTEN` 이라고 합니다. `nc`(netcat)로 **TCP 포트 `9000` 에서 연결을 기다리는 서버**를 백그라운드로 띄우고(끝에 `&`), `ss` 로 확인해 **그 서버의 `Local Address:Port` 값**을 `/tmp/listen.txt` 에 저장하세요. (값만, `주소:포트` 형태)', '`nc -l 포트` 가 연결을 기다립니다. 듣고 있는 소켓은 `ss -ltn` (`-l` 리스닝, `-t` TCP, `-n` 숫자)로 봅니다. 출력의 `Local Address:Port` 열에서 9000 인 줄만 `grep` 으로 고르고 `awk` 로 열을 뽑으세요.', 'nohup nc -l 9000 >/dev/null 2>&1 &
+sleep 1
+ss -ltn | grep 9000
+ss -ltn | grep '':9000'' | awk ''{print $4}'' > /tmp/listen.txt
+cat /tmp/listen.txt
+
+# 0.0.0.0:9000 은 모든 주소의 9000 번에서 받겠다는 뜻이다. 127.0.0.1:9000 이면 같은 서버 안에서만 접속된다', '["sh", "-c", "pkill -x nc >/dev/null 2>&1; pkill -x perl >/dev/null 2>&1; pkill -x sleep >/dev/null 2>&1; sleep 0.5; rm -f /tmp/*.txt"]', '["sh", "-c", "( ss -ltn | grep -q \\":9000\\" ) && ( [ \\"$(cat /tmp/listen.txt)\\" = \\"$(ss -ltn | grep '':9000'' | awk ''{print $4}'')\\" ] ) && ( grep -q \\":9000$\\" /tmp/listen.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "9000 이 LISTEN 중이다", "cmd": ["sh", "-c", "ss -ltn | grep -q \\":9000\\""]}, {"label": "저장한 값이 맞다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/listen.txt)\\" = \\"$(ss -ltn | grep '':9000'' | awk ''{print $4}'')\\" ]"]}, {"label": "포트 번호가 9000 이다", "cmd": ["sh", "-c", "grep -q \\":9000$\\" /tmp/listen.txt"]}]', '[{"title": "TCP 상태 다이어그램", "url": "https://www.rfc-editor.org/rfc/rfc9293#name-state-machine-overview"}, {"title": "ss 매뉴얼", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 565 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 565, 2, '거부(refused)와 성공 비교', '`nc -zv 주소 포트` 는 **연결이 되는지만 시험**합니다(`-z` 데이터 없이, `-v` 결과 자세히). 지금 `127.0.0.1` 의 `9999` 포트에는 **아무도 기다리고 있지 않습니다.**
+
+1. 지금 상태에서 `nc -zv 127.0.0.1 9999` 를 실행해 나온 **메시지를 `/tmp/refused.txt`** 에 저장
+2. `9999` 포트에서 기다리는 서버를 띄운 뒤(백그라운드) 같은 시험을 해서 나온 **메시지를 `/tmp/ok.txt`** 에 저장
+
+(`nc` 의 메시지는 표준 에러로 나옵니다.)', '메시지가 에러 출력으로 나오니 `2> 파일` 로 저장합니다(`>` 와 다릅니다). 서버를 띄운 직후에는 `sleep 1` 로 잠깐 기다리세요. 시험 한 번이 서버의 연결 하나를 소모합니다.', 'nc -zv 127.0.0.1 9999 2> /tmp/refused.txt
+nohup nc -l 9999 >/dev/null 2>&1 &
+sleep 1
+nc -zv 127.0.0.1 9999 2> /tmp/ok.txt
+cat /tmp/refused.txt /tmp/ok.txt
+
+# Connection refused: 그 주소에는 닿았지만 포트에서 기다리는 프로그램이 없어 즉시 거절(RST)당했다. 방화벽이 패킷을 버리면 거절이 아니라 한참 뒤 timed out 이 난다', '["sh", "-c", "pkill -x nc >/dev/null 2>&1; pkill -x perl >/dev/null 2>&1; pkill -x sleep >/dev/null 2>&1; sleep 0.5; rm -f /tmp/*.txt"]', '["sh", "-c", "( grep -qi \\"refused\\" /tmp/refused.txt ) && ( grep -qi \\"succeeded\\" /tmp/ok.txt )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "refused 메시지가 기록됐다", "cmd": ["sh", "-c", "grep -qi \\"refused\\" /tmp/refused.txt"]}, {"label": "성공 메시지가 기록됐다", "cmd": ["sh", "-c", "grep -qi \\"succeeded\\" /tmp/ok.txt"]}]', '[{"title": "TCP 상태 다이어그램", "url": "https://www.rfc-editor.org/rfc/rfc9293#name-state-machine-overview"}, {"title": "ss 매뉴얼", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 565 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 565, 3, 'ESTABLISHED: 상대의 임시 포트 읽기', '서버(`9100` 포트)와 클라이언트 하나가 **이미 연결을 맺고** 있습니다. 클라이언트는 연결할 때 운영체제가 정해 준 **임시(ephemeral) 포트**를 씁니다. 서버 쪽에서 본 이 연결(상태 `ESTAB`)의 **상대(클라이언트) 포트 번호**를 `/tmp/cport.txt` 에 저장하세요. (번호만)', '`ss` 의 상태 필터와 포트 조건으로 서버 쪽 소켓만 골라 보세요. 출력의 `Peer Address:Port` 열에서 포트 부분만 뽑습니다.', 'ss -tn state established ''( sport = :9100 )''
+ss -tn state established ''( sport = :9100 )'' | tail -n +2 | awk ''{print $4}'' | sed ''s/.*://'' > /tmp/cport.txt
+cat /tmp/cport.txt
+
+# 서버는 고정 포트(9100), 클라이언트는 매번 달라지는 임시 포트를 쓴다. 연결은 (주소, 포트) 네 값의 조합으로 구별된다', '["sh", "-c", "pkill -x nc >/dev/null 2>&1; pkill -x perl >/dev/null 2>&1; pkill -x sleep >/dev/null 2>&1; sleep 0.5; rm -f /tmp/*.txt; nohup perl -MIO::Socket::INET -e ''$s=IO::Socket::INET->new(Listen=>5,LocalPort=>9100,ReuseAddr=>1) or die; while($c=$s->accept){push @k,$c}'' >/dev/null 2>&1 & sleep 0.5; nohup sh -c ''sleep 600 | nc 127.0.0.1 9100'' >/dev/null 2>&1 & sleep 1"]', '["sh", "-c", "( [ -s /tmp/cport.txt ] ) && ( [ \\"$(cat /tmp/cport.txt)\\" = \\"$(ss -tn state established ''( sport = :9100 )'' | tail -n +2 | awk ''{print $4}'' | sed ''s/.*://'')\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "포트가 저장됐다", "cmd": ["sh", "-c", "[ -s /tmp/cport.txt ]"]}, {"label": "실제 클라이언트 포트와 같다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/cport.txt)\\" = \\"$(ss -tn state established ''( sport = :9100 )'' | tail -n +2 | awk ''{print $4}'' | sed ''s/.*://'')\\" ]"]}]', '[{"title": "TCP 상태 다이어그램", "url": "https://www.rfc-editor.org/rfc/rfc9293#name-state-machine-overview"}, {"title": "ss 매뉴얼", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 565 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 565, 4, 'TIME_WAIT: 먼저 닫은 쪽에 남는 상태', '`9101` 포트에서 기다리는 서버가 있습니다. **클라이언트가 먼저 연결을 닫으면** 그쪽 소켓은 한동안 `TIME-WAIT` 상태로 남습니다(마지막 ACK 가 유실되거나 옛 패킷이 뒤늦게 오는 경우를 대비하는 정상 동작입니다).
+
+`echo hi | nc -N 127.0.0.1 9101` 로 연결해 한 줄을 보내고 닫은 뒤, `9101` 이 관련된 **`TIME-WAIT` 소켓의 개수**를 `/tmp/tw.txt` 에 저장하세요. (숫자만)', '`ss -tan state time-wait` 는 TIME-WAIT 소켓을 보여 줍니다. 그중 9101 이 들어간 줄만 `grep -c` 로 세세요. TIME-WAIT 은 약 60초 뒤 사라지니 만든 직후에 확인합니다.', 'echo hi | nc -N 127.0.0.1 9101
+sleep 1
+ss -tan state time-wait
+ss -tan state time-wait | tail -n +2 | grep -c '':9101'' > /tmp/tw.txt
+cat /tmp/tw.txt
+
+# 먼저 close 한 쪽(여기서는 클라이언트)에 TIME-WAIT 이 남는다. 짧은 연결이 많은 서버에서 수천 개 보이는 것은 대개 정상이다', '["sh", "-c", "pkill -x nc >/dev/null 2>&1; pkill -x perl >/dev/null 2>&1; pkill -x sleep >/dev/null 2>&1; sleep 0.5; rm -f /tmp/*.txt; nohup nc -l 9101 >/dev/null 2>&1 & sleep 0.5"]', '["sh", "-c", "( [ \\"$(cat /tmp/tw.txt)\\" -ge 1 ] ) && ( ss -tan state time-wait | grep -q \\":9101\\" )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "개수가 1 이상이다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/tw.txt)\\" -ge 1 ]"]}, {"label": "TIME-WAIT 이 실제로 있다", "cmd": ["sh", "-c", "ss -tan state time-wait | grep -q \\":9101\\""]}]', '[{"title": "TCP 상태 다이어그램", "url": "https://www.rfc-editor.org/rfc/rfc9293#name-state-machine-overview"}, {"title": "ss 매뉴얼", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 565 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 565, 5, 'CLOSE_WAIT: 내가 안 닫아서 남는 상태', '`9102` 포트의 서버 프로그램이 클라이언트 연결을 받았는데, **클라이언트가 끊은 뒤에도 서버 코드가 `close` 를 하지 않았습니다.** 이때 서버 쪽 소켓은 `CLOSE-WAIT` 에 남습니다. 앱이 연결을 정리하지 않는 버그의 전형적인 증상이며, TIME-WAIT 과 달리 **시간이 지나도 사라지지 않습니다.**
+
+`CLOSE-WAIT` 소켓을 붙잡고 있는 **프로세스의 PID** 를 `/tmp/pid.txt` 에 저장하세요. (번호만)', '`ss` 의 프로세스 표시 옵션을 찾아 보세요. 출력에서 pid 가 어떤 모양으로 나오는지 먼저 눈으로 확인한 뒤 그 부분만 뽑습니다.', 'ss -tanp state close-wait
+ss -tanp state close-wait | tail -n +2 | grep -o ''pid=[0-9]*'' | head -1 | cut -d= -f2 > /tmp/pid.txt
+cat /tmp/pid.txt
+
+# CLOSE-WAIT 이 계속 쌓이면 그 앱이 소켓을 닫지 않는 것(연결 누수). 원인은 상대 서버가 아니라 이 프로세스의 코드다', '["sh", "-c", "pkill -x nc >/dev/null 2>&1; pkill -x perl >/dev/null 2>&1; pkill -x sleep >/dev/null 2>&1; sleep 0.5; rm -f /tmp/*.txt; nohup perl -MIO::Socket::INET -e ''$s=IO::Socket::INET->new(Listen=>5,LocalPort=>9102,ReuseAddr=>1) or die; while($c=$s->accept){push @k,$c}'' >/dev/null 2>&1 & sleep 0.5; echo hello | nc -N -w 1 127.0.0.1 9102; sleep 0.5"]', '["sh", "-c", "( [ -s /tmp/pid.txt ] ) && ( [ \\"$(cat /tmp/pid.txt)\\" = \\"$(ss -tanp state close-wait | tail -n +2 | grep -o ''pid=[0-9]*'' | head -1 | cut -d= -f2)\\" ] )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "PID 가 저장됐다", "cmd": ["sh", "-c", "[ -s /tmp/pid.txt ]"]}, {"label": "실제 소켓 소유 프로세스와 같다", "cmd": ["sh", "-c", "[ \\"$(cat /tmp/pid.txt)\\" = \\"$(ss -tanp state close-wait | tail -n +2 | grep -o ''pid=[0-9]*'' | head -1 | cut -d= -f2)\\" ]"]}]', '[{"title": "TCP 상태 다이어그램", "url": "https://www.rfc-editor.org/rfc/rfc9293#name-state-machine-overview"}, {"title": "ss 매뉴얼", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 565 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 565, 6, 'CLOSE_WAIT 정리하기', '앞 문제와 같은 상황입니다. `CLOSE-WAIT` 소켓을 붙잡고 있는 프로세스를 찾아 **그 프로세스를 종료해** 소켓이 사라지게 하세요. (운영에서는 앱을 고치는 것이 근본 해결이지만, 급할 때는 재시작으로 연결을 정리합니다. 다른 프로세스는 건드리지 마세요.)', '앞 문제처럼 소켓을 쥔 프로세스를 찾아 종료하세요. 끝난 뒤 다시 확인합니다.', 'ss -tanp state close-wait
+kill $(ss -tanp state close-wait | tail -n +2 | grep -o ''pid=[0-9]*'' | head -1 | cut -d= -f2)
+sleep 1
+ss -tanp state close-wait
+
+# 프로세스가 끝나면 운영체제가 소켓을 정리한다. 재시작은 증상 완화일 뿐 같은 버그가 다시 쌓는다', '["sh", "-c", "pkill -x nc >/dev/null 2>&1; pkill -x perl >/dev/null 2>&1; pkill -x sleep >/dev/null 2>&1; sleep 0.5; rm -f /tmp/*.txt; nohup perl -MIO::Socket::INET -e ''$s=IO::Socket::INET->new(Listen=>5,LocalPort=>9102,ReuseAddr=>1) or die; while($c=$s->accept){push @k,$c}'' >/dev/null 2>&1 & sleep 0.5; echo hello | nc -N -w 1 127.0.0.1 9102; sleep 0.5"]', '["sh", "-c", "( ! ss -tan state close-wait | grep -q \\":9102\\" ) && ( ! pgrep -f \\"perl.*[L]ocalPort=>9102\\" >/dev/null )"]', 'terminal', NULL, NULL, NULL, NULL, NULL, '[{"label": "CLOSE-WAIT 이 사라졌다", "cmd": ["sh", "-c", "! ss -tan state close-wait | grep -q \\":9102\\""]}, {"label": "서버 프로세스가 종료됐다", "cmd": ["sh", "-c", "! pgrep -f \\"perl.*[L]ocalPort=>9102\\" >/dev/null"]}]', '[{"title": "TCP 상태 다이어그램", "url": "https://www.rfc-editor.org/rfc/rfc9293#name-state-machine-overview"}, {"title": "ss 매뉴얼", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}]'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 565 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 565, 7, 'refused 와 timed out 의 차이', '서버에 접속을 시도했더니 어떤 때는 즉시 `Connection refused` 가 나오고, 어떤 때는 한참 기다린 뒤 `Connection timed out` 이 납니다. 가장 알맞은 해석은?', '응답이 돌아왔는지, 아무 응답이 없는지를 구분해 보세요.', NULL, NULL, '[]', 'choice', '["refused 는 서버가 꺼져 있다는 뜻이고 timed out 은 포트가 열려 있다는 뜻이다", "refused 는 포트가 닫혀 즉시 거절된 것, timed out 은 응답이 없는 것", "둘 다 방화벽 때문이며 두 오류 사이에 아무 차이가 없다", "refused 는 DNS 오류이고 timed out 은 TCP 오류이다"]', 1, 'refused 는 상대 호스트가 RST 로 즉시 거절한 것이라 호스트에는 닿았고 그 포트가 닫혀 있다는 뜻입니다(REJECT 규칙도 같은 모양). timed out 은 SYN 에 아무 응답이 없는 것으로 방화벽 DROP·경로 문제·서버 다운 등을 의심합니다. 서버가 꺼져 있으면 보통 timed out 이 납니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 565 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 565, 8, 'TIME_WAIT 은 누구에게, 왜 남나', '서버에서 `ss` 로 보니 `TIME-WAIT` 소켓이 수천 개 있습니다. 올바른 설명은?', '"연결을 먼저 닫은 쪽"과 "정상 동작"이라는 두 단서를 떠올려 보세요.', NULL, NULL, '[]', 'choice', '["연결을 먼저 닫은 쪽에 약 60초 남는 정상 동작이다", "상대가 연결을 닫지 않아 영원히 남는 오류 상태이다", "서버 프로세스가 소켓을 닫지 않아 생기는 누수이다", "연결이 아직 맺어지지 않고 SYN 만 오간 상태이다"]', 0, 'TIME-WAIT 은 먼저 close 한 쪽이 마지막 ACK 를 보낸 뒤 일정 시간(약 2MSL, 리눅스 60초) 기다리는 정상 상태입니다. 영원히 남는 누수는 CLOSE-WAIT 이고, SYN 만 오간 상태는 SYN-SENT/SYN-RECV 입니다. 단, 짧은 연결이 매우 많으면 포트 고갈이 생길 수 있어 연결 재사용(keep-alive)이나 풀링을 검토합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 565 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 565, 9, 'CLOSE_WAIT 이 계속 늘어난다', '애플리케이션 서버에 `CLOSE-WAIT` 소켓이 점점 늘어납니다. 가장 먼저 의심할 것은?', '상대는 이미 FIN 을 보냈는데 내 쪽이 아직 닫지 않은 상태입니다.', NULL, NULL, '[]', 'choice', '["상대 서버 쪽 네트워크 장비가 고장 난 것", "서버의 DNS 설정이 잘못되어 이름을 못 푸는 것", "서버 디스크 용량이 부족해 소켓을 못 만드는 것", "앱이 끊긴 연결을 close 하지 않는 코드 문제"]', 3, 'CLOSE-WAIT 은 상대가 FIN 을 보내 종료를 알렸는데 내 앱이 소켓을 닫지 않아 남는 상태이므로 원인은 내 앱 코드(연결 누수)인 경우가 대부분입니다. ss -p 로 프로세스를 찾고, 커넥션 풀·예외 처리에서 close 가 빠지지 않았는지 점검합니다. 네트워크·DNS·디스크는 이 증상과 직접 관련이 없습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 565 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 565, 10, '연결을 여는 첫 메시지', 'TCP 연결은 3단계(3-way 핸드셰이크)로 맺습니다. 클라이언트가 먼저 보내는 첫 메시지의 이름을 채우세요.', '"동기화 요청"의 약자입니다.', NULL, NULL, '[]', 'fill', '["SYN", "FIN", "RST", "PSH"]', NULL, '`SYN`(synchronize)은 연결 요청이고, 서버가 `SYN-ACK` 로 응답하고, 클라이언트가 `ACK` 로 확인하면 ESTABLISHED 가 됩니다. `FIN` 은 정상 종료, `RST` 는 강제 중단·거부, `PSH` 는 데이터를 바로 전달하라는 표시입니다.', '[0]', '클라이언트 → 서버: {0},  서버 → 클라이언트: SYN-ACK,  클라이언트 → 서버: ACK', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 565 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 565, 11, '3-way 핸드셰이크 순서', 'TCP 연결이 맺어지고 데이터를 주고받기까지의 순서입니다. 세 번의 메시지 교환 뒤에 데이터가 오갑니다. 올바른 순서로 놓으세요.', '누가 먼저 말을 걸고, 누구의 확인으로 끝나는지 생각해 보세요.', NULL, NULL, '[]', 'order', '["클라이언트가 ACK 로 확인한다", "서버가 SYN-ACK 로 응답한다", "클라이언트가 SYN 으로 연결을 요청한다", "양쪽이 데이터를 주고받는다"]', NULL, '클라이언트가 SYN 으로 요청하면 서버가 SYN-ACK 로 응답하고, 클라이언트가 ACK 를 보내면 양쪽 모두 ESTABLISHED 가 되어 데이터를 주고받습니다. 이 세 번의 교환이 3-way 핸드셰이크입니다.', '[2, 1, 0, 3]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 565 AND order_index = 11);

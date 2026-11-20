@@ -1,0 +1,11 @@
+{
+  "setId": 598,
+  "answers": {
+    "1": "cat /tmp/vgs_warn.log\ngrep -m1 'with uuid' /tmp/vgs_warn.log | awk '{print $NF}' | tr -d '.' > /tmp/missing_uuid.txt\ncat /tmp/missing_uuid.txt\n\n# 디스크(PV)가 연결되지 않았거나 고장나서 VG 가 완전하지 않다. 케이블·컨트롤러부터 확인하고 PV 가 돌아오면 vgextend --restoremissing 등으로 복구한다",
+    "2": "grep '^  vg0' /tmp/vgs_warn.log\ngrep '^  vg0' /tmp/vgs_warn.log | awk '{print $2}' > /tmp/pv.txt\ngrep '^  vg0' /tmp/vgs_warn.log | awk '{print $3}' > /tmp/lv.txt\ncat /tmp/pv.txt /tmp/lv.txt\n\n# 3 개의 PV 중 하나가 없다. VG 가 partial 이면 LV 활성화가 거부되거나 데이터 일부를 읽지 못할 수 있다. 쓰기 전에 원인부터 파악한다",
+    "3": "cat /tmp/lvs_state.log\nawk 'NR>1 && substr($3,5,1) != \"a\" {print $1}' /tmp/lvs_state.log > /tmp/inactive.txt\ncat /tmp/inactive.txt\n\n# data LV 는 활성화되지 않아 마운트할 수 없다. 원인(PV 누락 등)을 해결한 뒤 활성화한다",
+    "4": "echo 'lvchange -ay vg0/data' > /tmp/activate.txt\ncat /tmp/activate.txt\n\n# VG 가 partial 이면 거부될 수 있다. 데이터 보호가 우선이고 누락 PV 를 먼저 복구한다. 급하면 --activationmode partial 이 있으나 일부 데이터를 읽지 못할 수 있다",
+    "5": "cat /tmp/boot_md.log\ngrep '^md0' /tmp/boot_md.log | grep -o 'sd[a-z0-9]*\\[[0-9]*\\]' | cut -d'[' -f1 > /tmp/alive.txt\ncat /tmp/alive.txt\n\n# 미러 한쪽이 빠져 중복이 없다. 나머지 한 디스크가 고장나면 데이터를 잃으니 먼저 백업을 확인하고 새 디스크를 --add 해 재구축한다. auto-read-only 는 처음 쓰기 전까지 읽기 전용이라는 뜻이다",
+    "6": "cat /tmp/nfs_hang.log\ngrep -o 'hard\\|soft' /tmp/nfs_hang.log | head -1 > /tmp/opt.txt\ngrep -c 'not responding' /tmp/nfs_hang.log > /tmp/msgs.txt\ncat /tmp/opt.txt /tmp/msgs.txt\n\n# hard 마운트는 서버가 돌아올 때까지 무한히 재시도해 df·ls 같은 명령까지 멈춘다. 서버·네트워크를 복구하거나 필요하면 lazy 언마운트(umount -l)로 프로세스를 풀어 준다"
+  }
+}

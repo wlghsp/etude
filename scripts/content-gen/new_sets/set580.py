@@ -1,0 +1,104 @@
+import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..')); from gen_pilot_sets import *
+# 세트 580: LVM·RAID 상태 출력 읽기. 명세: docs/specs/spec_gap_set580.md
+# 샌드박스 linux(비특권, lvm2·mdadm 없음). pvs·vgs·lvs, /proc/mdstat, mdadm --detail 의 샘플 출력을 읽고 판단한다.
+
+S80 = """rm -f /tmp/*.txt /tmp/*.log
+cat > /tmp/pvs.log <<'EOF'
+  PV         VG  Fmt  Attr PSize   PFree
+  /dev/sdb   vg0 lvm2 a--  100.00g  20.00g
+  /dev/sdc   vg0 lvm2 a--  100.00g 100.00g
+  /dev/sdd   vg0 lvm2 a--   50.00g      0
+EOF
+cat > /tmp/vgs.log <<'EOF'
+  VG  #PV #LV #SN Attr   VSize   VFree
+  vg0   3   3   1 wz--n- 249.99g 120.00g
+EOF
+cat > /tmp/lvs.log <<'EOF'
+  LV   VG  Attr       LSize   Origin Data%
+  data vg0 owi-aos--- 105.00g
+  logs vg0 -wi-ao----  20.00g
+  snap vg0 swi-I-s---   5.00g data   100.00
+EOF
+cat > /tmp/mdstat.log <<'EOF'
+Personalities : [raid1] [raid6] [raid5] [raid4]
+md0 : active raid5 sdi1[2] sdh1[1] sdg1[0]
+      209584128 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/3] [UUU]
+
+md1 : active raid1 sdf1[1](F) sde1[0]
+      104792064 blocks super 1.2 [2/1] [U_]
+
+unused devices: <none>
+EOF
+cat > /tmp/mdadm_detail.log <<'EOF'
+/dev/md1:
+           Version : 1.2
+     Raid Level : raid1
+     Array Size : 104792064 (99.94 GiB 107.31 GB)
+   Raid Devices : 2
+  Total Devices : 2
+          State : clean, degraded
+ Active Devices : 1
+Working Devices : 1
+ Failed Devices : 1
+  Spare Devices : 0
+
+    Number   Major   Minor   RaidDevice State
+       0       8       65        0      active sync   /dev/sde1
+       1       8       81        1      faulty   /dev/sdf1
+EOF
+true"""
+
+b = SetBuilder(580, 'LVM·RAID 상태 읽기: pvs·vgs·lvs 와 /proc/mdstat 로 문제 찾기',
+               '서버의 볼륨(LVM)과 RAID 상태를 보여 주는 명령 출력을 읽고 이상을 찾는 연습입니다. VG 의 남은 용량, 여유가 없는 PV, 스냅샷이 가득 차 무효가 된 LV 를 읽고, /proc/mdstat 의 [UU]·[U_] 표기와 (F) 표시로 장애 어레이와 고장난 디스크를 찾으며, RAID 의 한계와 교체 절차를 정리합니다. 샌드박스에는 LVM·RAID 도구가 없어 샘플 출력을 읽는 방식입니다.',
+               'linux', '스토리지', 21, 840, '🧩',
+               [{"title": "lvs 매뉴얼", "url": "https://man7.org/linux/man-pages/man8/lvs.8.html"}, {"title": "리눅스 RAID 위키", "url": "https://raid.wiki.kernel.org/index.php/Mdstat"}], 5)
+
+# 1
+b.nt('VG 에 남은 용량', '`/tmp/vgs.log` 는 `vgs` 의 출력입니다. 볼륨 그룹 `vg0` 에서 새 LV 를 만들거나 기존 LV 를 늘릴 때 쓸 수 있는 **남은 용량(`VFree`)** 을 단위까지 그대로 `/tmp/vfree.txt` 에 저장하세요.',
+     '맨 윗줄의 열 이름으로 어느 칸이 남은 용량인지 확인하고, 데이터 줄에서 그 칸을 뽑으세요.',
+     "cat /tmp/vgs.log\ntail -1 /tmp/vgs.log | awk '{print $NF}' > /tmp/vfree.txt\ncat /tmp/vfree.txt\n\n# VSize 는 전체, VFree 는 아직 어느 LV 에도 할당하지 않은 용량이다. LV 를 늘리려면 VFree 가 있어야 하고 없으면 PV(디스크)를 추가한다(vgextend)",
+     S80, [chk('120.00g 다', '[ "$(cat /tmp/vfree.txt)" = 120.00g ]')])
+# 2
+b.nt('여유가 없는 PV', '`/tmp/pvs.log` 는 `pvs` 의 출력입니다. 볼륨 그룹을 이루는 물리 볼륨(PV, 디스크) 중 **남은 용량(`PFree`)이 0 인 PV 의 장치 이름**을 `/tmp/full_pv.txt` 에 저장하세요.',
+     '마지막 열이 PFree 입니다. 값이 0 인 줄을 찾으세요.',
+     "cat /tmp/pvs.log\nawk '$NF == \"0\" {print $1}' /tmp/pvs.log > /tmp/full_pv.txt\ncat /tmp/full_pv.txt\n\n# 이 PV 는 전부 LV 에 할당됐다. pvmove 로 디스크를 비워 교체하려면 다른 PV 에 옮길 여유(여기서는 sdb 20g + sdc 100g)가 있어야 한다",
+     S80, [chk('/dev/sdd 다', '[ "$(cat /tmp/full_pv.txt)" = /dev/sdd ]')])
+# 3
+b.nt('무효가 된 스냅샷', '`/tmp/lvs.log` 는 `lvs` 의 출력입니다. `Attr` 열은 LV 의 상태를 문자 하나씩으로 나타내며 **다섯 번째 글자가 대문자 `I`** 이면 스냅샷이 가득 차 **무효(Invalid)** 가 되었다는 뜻입니다. 무효가 된 LV 의 **이름**을 `/tmp/invalid_lv.txt` 에 저장하세요.',
+     'Attr 의 몇 번째 글자인지 세어 보세요.',
+     "cat /tmp/lvs.log\nawk 'NR>1 && substr($3,5,1) == \"I\" {print $1}' /tmp/lvs.log > /tmp/invalid_lv.txt\ncat /tmp/invalid_lv.txt\n\n# 스냅샷이 변경분을 담는 공간(5g)을 다 쓰면(Data% 100) 무효가 되어 복구할 수 없다. 스냅샷은 오래 두지 말고 사용률을 감시한다",
+     S80, [chk('snap 이다', '[ "$(cat /tmp/invalid_lv.txt)" = snap ]')])
+# 4
+b.nt('장애 난 어레이 찾기', '`/tmp/mdstat.log` 는 `/proc/mdstat` 의 내용입니다. 어레이 줄 끝의 `[UU]` 는 디스크가 모두 정상이라는 뜻이고 `_` 가 있으면 그 자리의 디스크가 빠진 **성능 저하(degraded)** 상태입니다. 이상이 있는 **어레이 이름**을 `/tmp/degraded_md.txt` 에 저장하세요.',
+     '상태 표기에서 빠진 디스크를 뜻하는 표시를 찾고, 그것이 어느 어레이의 것인지 따라가 보세요.',
+     "cat /tmp/mdstat.log\nawk '/^md/{name=$1} /\\[[U_]*_[U_]*\\]/{print name}' /tmp/mdstat.log > /tmp/degraded_md.txt\ncat /tmp/degraded_md.txt\n\n# [3/3] [UUU] 는 3 개 중 3 개 정상, [2/1] [U_] 는 2 개 중 1 개만 동작이라는 뜻이다. 이 상태에서는 남은 디스크 하나가 또 고장나면 데이터를 잃는다",
+     S80, [chk('md1 이다', '[ "$(cat /tmp/degraded_md.txt)" = md1 ]')])
+# 5
+b.nt('고장난 디스크', '같은 `/tmp/mdstat.log` 에서 디스크 이름 뒤에 `(F)` 가 붙은 것은 **고장(Failed)** 으로 표시된 디스크입니다. 고장난 디스크의 **이름**(`sdf1` 처럼, 대괄호 번호 제외)을 `/tmp/failed_disk.txt` 에 저장하세요.',
+     '`(F)` 가 붙은 항목을 찾고 디스크 이름 부분만 남기세요.',
+     "grep -o '[a-z0-9]*\\[[0-9]*\\](F)' /tmp/mdstat.log | cut -d'[' -f1 > /tmp/failed_disk.txt\ncat /tmp/failed_disk.txt\n\n# 교체 절차: 장애 확인 → --remove 로 제거 → 새 디스크 --add → 재구축(resync) 진행 확인. 재구축 동안 성능이 떨어지고 남은 디스크에 부하가 몰린다",
+     S80, [chk('sdf1 이다', '[ "$(cat /tmp/failed_disk.txt)" = sdf1 ]')])
+# 6
+b.nt('mdadm --detail 읽기', '`/tmp/mdadm_detail.log` 는 장애 난 어레이에 `mdadm --detail` 을 한 결과입니다. **`Failed Devices`(고장 난 디스크 수)** 값과 어레이의 **`State`** 전체 문자열을 저장하세요.\n- `/tmp/failed_count.txt` : Failed Devices 숫자\n- `/tmp/md_state.txt` : State 값 (쉼표로 이어진 둘 이상의 단어, 그대로)',
+     '`:` 를 기준으로 값 쪽만 잘라 내고, 앞뒤 공백은 정리하세요. State 가 둘 이상의 단어로 이뤄져 있습니다.',
+     "cat /tmp/mdadm_detail.log\ngrep 'Failed Devices' /tmp/mdadm_detail.log | cut -d: -f2 | tr -d ' ' > /tmp/failed_count.txt\ngrep '^ *State :' /tmp/mdadm_detail.log | cut -d: -f2 | sed 's/^ *//' > /tmp/md_state.txt\ncat /tmp/failed_count.txt /tmp/md_state.txt\n\n# clean, degraded 는 데이터는 온전하지만 중복이 줄어든 상태다. faulty 로 표시된 디스크는 제거(--remove)한 뒤 새 디스크를 추가한다",
+     S80, [chk('Failed Devices 가 1 이다', '[ "$(cat /tmp/failed_count.txt)" = 1 ]'), chk('State 가 clean, degraded 다', '[ "$(cat /tmp/md_state.txt)" = "clean, degraded" ]')])
+# 7
+b.choice('RAID5 에서 두 번째 디스크가 고장나면', '디스크 3 개로 만든 RAID5 어레이에서 디스크 하나가 고장난 상태(degraded)로 운영 중입니다. 재구축을 마치기 전에 **다른 디스크가 또 고장나면** 어떻게 될까요?', 'RAID5 가 몇 개의 디스크 장애까지 견디는지 생각해 보세요.',
+         ['어레이가 데이터를 잃어 복구할 수 없는 상태가 된다', '남은 디스크 한 개로 정상 동작한다', '자동으로 복구되어 아무 문제가 없다', '읽기 전용으로 전환되지만 데이터는 모두 남는다'], 0,
+         'RAID5 는 디스크 하나의 장애까지만 견딥니다. degraded 상태에서 하나가 더 고장나면 데이터를 복구할 수 없습니다. 그래서 재구축은 서둘러야 하고, 용량이 큰 디스크일수록 재구축이 오래 걸려 이 위험이 커집니다. RAID 는 백업을 대신하지 않습니다.')
+# 8
+b.choice('가득 찬 스냅샷', 'LVM 스냅샷의 `Data%` 가 100 이 되어 `Attr` 에 `I`(Invalid)가 표시되었습니다. 이 상황에 대한 설명으로 가장 알맞은 것은?', '스냅샷이 원본의 변경분을 담는 공간이 가득 찼을 때를 생각해 보세요.',
+         ['스냅샷이 무효가 되어 그 시점으로 되돌릴 수 없다', '원본 LV 의 데이터가 모두 삭제된다', '스냅샷이 자동으로 더 큰 크기로 늘어난다', '원본 LV 가 읽기 전용으로 바뀐다'], 0,
+         '스냅샷은 원본이 바뀔 때 변경 전 데이터를 스냅샷 공간에 복사해 두는 방식(COW)입니다. 그 공간이 가득 차면 스냅샷을 유지할 수 없어 무효가 되고 되돌릴 수 없습니다. 원본 LV 에는 영향이 없습니다. 스냅샷 크기를 넉넉히 잡고 사용률을 감시합니다.')
+# 9
+b.fill('LV 와 파일시스템을 함께 확장', 'LV 를 10G 늘리면서 **그 위의 파일시스템도 함께** 늘리려 합니다. 빈칸에 들어갈 `lvextend` 옵션을 채우세요.', '`lvextend` 의 매뉴얼에서 파일시스템 크기 조정을 함께 하는 옵션을 찾아 보세요.',
+       'lvextend -{0} -L +10G /dev/vg0/data', ['r', 'n', 'f', 't'], [0],
+       '`-r`(`--resizefs`)은 LV 를 늘린 뒤 파일시스템도 이어서 확장합니다. `-n` 은 점검을 건너뛰는 옵션, `-f` 는 확인 없이 강제, `-t` 는 시험 실행입니다. 이 옵션이 없으면 LV 만 커지고 파일시스템은 그대로입니다.')
+# 10
+b.order('RAID 디스크 교체 절차', 'RAID1 어레이의 디스크 하나가 고장나 교체하려 합니다. 고장난 디스크를 물리적으로 빼서 새 디스크로 바꾸는 상황에서, 데이터를 지키며 교체하는 순서로 놓으세요.', '각 단계는 앞 단계의 상태를 확인한 뒤 진행합니다.',
+        ['새 디스크를 어레이에 추가한다(`--add`)', '`/proc/mdstat` 으로 재구축 진행을 확인한다', '고장난 디스크를 어레이에서 제거한다(`--remove`)', '어느 디스크가 고장인지 확인한다(mdstat·`--detail`)'], [3, 2, 0, 1],
+        '먼저 어느 디스크가 고장인지 정확히 확인하고, 그 디스크를 어레이에서 제거한 뒤 새 디스크를 추가합니다. 추가하면 재구축(resync)이 시작되므로 진행을 확인해 완료될 때까지 지켜봅니다.')
+
+if __name__ == '__main__':
+    preview(b)

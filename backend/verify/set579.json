@@ -1,0 +1,11 @@
+{
+  "setId": 579,
+  "answers": {
+    "1": "dumpe2fs -h /tmp/broken.img 2>&1 | head -5\ndumpe2fs -h /tmp/broken.img 2>&1 | grep 'Bad magic' > /tmp/err.txt\ncat /tmp/err.txt\n\n# 슈퍼블록(파일시스템의 크기·상태가 적힌 첫 구조)이 읽히지 않는 상태다. 슈퍼블록은 여러 곳에 백업이 있어서 복구할 수 있다",
+    "2": "mke2fs -n -b 1024 /tmp/broken.img 2>&1 | tail -4\nmke2fs -n -b 1024 /tmp/broken.img 2>&1 | grep -A1 'Superblock backups' | tail -1 | awk '{print $1}' | tr -d ',' > /tmp/backup_sb.txt\ncat /tmp/backup_sb.txt\n\n# 주의: -n 없이 mke2fs 를 실행하면 파일시스템이 새로 만들어져 데이터가 사라진다. 반드시 -n 을 확인한다",
+    "3": "e2fsck -b 8193 -y /tmp/broken.img\ne2fsck -fn /tmp/broken.img\ndebugfs -R 'ls -l' /tmp/broken.img | grep keep.dat\n\n# -b 를 안 줘도 e2fsck 가 백업을 자동으로 시도하는 경우가 있다. 실제 디스크에서는 먼저 dd 로 통째 복사본을 만들어 두고 복사본에서 시도하는 것이 안전하다. 복구가 잘못되면 더 망가질 수 있다",
+    "4": "debugfs -R 'dump keep.dat /tmp/restored.dat' /tmp/broken.img\ncmp /tmp/restored.dat /tmp/payload && echo same\n\n# 마운트가 안 되는 파일시스템에서도 debugfs 로 파일을 꺼낼 수 있어 복구 전 데이터부터 구출할 때 쓴다. 복구 후에는 반드시 내용을 원본과 대조한다",
+    "5": "blkid /tmp/mystery.img\nblkid -s TYPE -o value /tmp/mystery.img > /tmp/type.txt\ncat /tmp/type.txt\n\n# swap 영역은 파일시스템이 아니라 마운트가 안 된다. 같은 증상이어도 종류를 먼저 확인한다. mkfs 를 다시 하기 전에 내용이 정말 필요 없는지부터 확인한다",
+    "6": "cat /tmp/fsck_sample.log\ngrep 'has illegal block' /tmp/fsck_sample.log | awk '{print $2}' | sort -n > /tmp/bad_inodes.txt\ncat /tmp/bad_inodes.txt\n\n# 12 와 15 번 inode 의 블록 정보가 잘못되어 지웠다. 해당 파일의 내용은 일부 잃었을 수 있어 fsck 후 lost+found 와 데이터를 확인한다"
+  }
+}

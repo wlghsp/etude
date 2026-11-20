@@ -1,0 +1,12 @@
+{
+  "setId": 571,
+  "answers": {
+    "1": "cat /tmp/rules.log\ngrep '^-P INPUT' /tmp/rules.log | awk '{print $3}' > /tmp/policy.txt\ncat /tmp/policy.txt\n\n# 기본 정책이 DROP 이면 허용 규칙에 걸린 것만 들어올 수 있는 허용 목록(화이트리스트) 방식이다. ACCEPT 면 차단할 것만 적는다",
+    "2": "grep -- '-j ACCEPT' /tmp/rules.log | grep -o 'dport [0-9]*' | awk '{print $2}' | sort -n > /tmp/ports.txt\ncat /tmp/ports.txt\n\n# 22(관리망에서만) 80 443 세 포트다. 8080 은 REJECT 라서 제외다",
+    "3": "grep -- '-j DROP' /tmp/rules.log | grep -o -- '-s [0-9./]*' | awk '{print $2}' > /tmp/blocked.txt\ncat /tmp/blocked.txt\n\n# /32 는 주소 하나만 뜻한다. -s 가 없는 DROP 이면 모든 출발지를 막는 규칙이니 주의한다",
+    "4": "cat /tmp/list.log\nawk '$1 ~ /^[0-9]+$/ && $2 == 0 {print $1}' /tmp/list.log > /tmp/unused.txt\ncat /tmp/unused.txt\n\n# 5번(8080 REJECT)에 한 번도 접속이 오지 않았다. 카운터는 규칙이 실제로 쓰이는지, 어느 규칙에 걸려 막히는지 보는 첫 단서다. 초기화는 iptables -Z",
+    "5": "head -1 /tmp/list.log | grep -o '[0-9]* packets' | cut -d' ' -f1 > /tmp/dropped.txt\ncat /tmp/dropped.txt\n\n# 15 패킷. 어느 규칙도 허용하지 않은 접속 시도가 이 정도 있었다는 뜻이다. 계속 늘어나면 의도하지 않은 접속이 막히고 있는지 확인한다",
+    "6": "cat -n /tmp/rules.log\necho 80 > /tmp/leak.txt\ncat /tmp/leak.txt\n\n# 80 허용 규칙이 DROP 규칙보다 위에 있어 먼저 걸린다. 443 은 DROP 아래라 막힌다. (참고: 2번 ESTABLISHED 규칙이 위에 있어 차단 전에 맺어진 연결은 끊기지 않고 계속 통신한다.) 차단 규칙은 허용 규칙보다 위에 두어야 한다(-I 로 맨 앞에 삽입)",
+    "7": "echo 'iptables -A INPUT -s 192.0.2.0/24 -p tcp --dport 3306 -j ACCEPT' > /tmp/new_rule.txt\ncat /tmp/new_rule.txt\n\n# 순서가 중요하다. 이 규칙이 앞에 있는 DROP 규칙에 막히지 않는 위치인지 -L --line-numbers 로 확인한 뒤 필요하면 -I INPUT 번호 로 넣는다"
+  }
+}

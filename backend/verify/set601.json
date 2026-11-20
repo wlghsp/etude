@@ -1,0 +1,11 @@
+{
+  "setId": 601,
+  "answers": {
+    "1": "grep '<vcpu' /tmp/vm.xml\nsed -i \"s:\\(<vcpu[^>]*>\\)[0-9]*\\(</vcpu>\\):\\14\\2:\" /tmp/vm.xml\ngrep '<vcpu' /tmp/vm.xml\n\n# 실제로는 virsh edit web01 로 고친다(저장할 때 XML 문법을 검사해 준다). 파일을 직접 고치면 libvirt 가 모르고 덮어쓸 수 있다. XML 을 고친 값은 재정의 후 재시작해야 반영된다",
+    "2": "sed -i \"s:\\(<memory unit='KiB'>\\)[0-9]*:\\14194304:; s:\\(<currentMemory unit='KiB'>\\)[0-9]*:\\14194304:\" /tmp/vm.xml\ngrep -E 'memory' /tmp/vm.xml\n\n# currentMemory 가 memory(최대)보다 클 수 없다. memory 만 올리면 현재 메모리는 그대로라 게스트에 반영되지 않는다. 실행 중이면 setmem 으로 상한 안에서 조정한다",
+    "3": "sed -i \"s:<model type='e1000'/>:<model type='virtio'/>:\" /tmp/vm.xml\ngrep '<model' /tmp/vm.xml\n\n# 게스트에 virtio 드라이버가 있어야 한다(리눅스는 대부분 기본). 바꾼 뒤에는 VM 을 재시작해야 반영되며 NIC 이름이 바뀔 수 있어 게스트 네트워크 설정을 확인한다",
+    "4": "grep '<source file=' /tmp/vm.xml\ngrep -o \"<source file='[^']*'\" /tmp/vm.xml | cut -d\"'\" -f2 > /tmp/disk_path.txt\ncat /tmp/disk_path.txt\n\n# 이미지 경로가 바뀌거나 파일이 사라지면 VM 이 시작되지 않는다. <source network='...'> 는 네트워크 이름이라 헷갈리면 안 된다",
+    "5": "cat -n /tmp/broken.xml\nsed -i 's:</vcpu$:</vcpu>:' /tmp/broken.xml\nsed -i 's:^</domain>:  </devices>\\n</domain>:' /tmp/broken.xml\ncat /tmp/broken.xml\n\n# virsh edit 는 저장할 때 문법을 검사해 이런 파일을 거부한다. 파일을 직접 고칠 때는 virsh define 으로 검증한다. xmllint 가 있으면 xmllint --noout 도 쓴다",
+    "6": "echo 'virsh define /tmp/vm.xml' > /tmp/define.txt\ncat /tmp/define.txt\n\n# define 은 정의(영구 설정)만 바꾸고 실행 중인 VM 에는 즉시 적용되지 않는다. 적용하려면 종료 후 다시 시작한다. 임시로만 띄우려면 create 를 쓴다"
+  }
+}

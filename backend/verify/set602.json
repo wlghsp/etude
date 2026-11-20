@@ -1,0 +1,11 @@
+{
+  "setId": 602,
+  "answers": {
+    "1": "cat /tmp/vm_list.log\nawk 'NR>1 {s += $2} END {print s}' /tmp/vm_list.log > /tmp/vcpu_sum.txt\ncat /tmp/vcpu_sum.txt\n\n# 4 + 8 + 24 + 4 = 40. 호스트 논리 CPU 는 32 개라 vCPU 가 물리보다 많다(오버커밋). VM 이 동시에 꽉 쓰지 않으면 문제가 없지만 몰리면 steal 이 늘어난다",
+    "2": "S=$(grep '^Socket' /tmp/lscpu.log | awk '{print $2}')\nC=$(grep '^Core' /tmp/lscpu.log | awk '{print $4}')\nT=$(grep '^Thread' /tmp/lscpu.log | awk '{print $4}')\nV=$(awk 'NR>1 {s += $2} END {print s}' /tmp/vm_list.log)\necho $((V * 100 / (S * C * T))) > /tmp/cpu_ratio.txt\ncat /tmp/cpu_ratio.txt\n\n# 40/32 = 1.25 배. 일반 업무 서버는 3~4 배까지도 쓰지만 CPU 를 꽉 쓰는 워크로드는 1~2 배 이내로 잡는다. steal 시간으로 판단한다",
+    "3": "awk 'NR>1 {s += $3} END {print s}' /tmp/vm_list.log > /tmp/mem_sum.txt\ncat /tmp/mem_sum.txt\n\n# 8192 + 32768 + 16384 + 8192 = 65536MiB(64GiB). 호스트 메모리는 128GiB 라 절반이다",
+    "4": "cat /tmp/free.log\nT=$(grep '^Mem:' /tmp/free.log | awk '{print $2}')\nM=$(awk 'NR>1 {s += $3} END {print s}' /tmp/vm_list.log)\necho $((M * 100 / T)) > /tmp/mem_pct.txt\ncat /tmp/mem_pct.txt\n\n# 50%. 메모리는 CPU 와 달리 부족하면 스왑·OOM kill 로 이어져 오버커밋을 보수적으로 잡는다(보통 100% 이하 권장). 호스트 자신과 캐시 몫도 남겨 둔다",
+    "5": "cat /tmp/db01_info.log\nM=$(grep 'Max memory' /tmp/db01_info.log | awk '{print $3}')\nU=$(grep 'Used memory' /tmp/db01_info.log | awk '{print $3}')\necho $(( (M - U) / 1024 )) > /tmp/reclaimed.txt\ncat /tmp/reclaimed.txt\n\n# 16384MiB(16GiB)를 회수했다. 게스트가 실제로 그 메모리를 쓰고 있으면 게스트 안에서 스왑·OOM 이 발생하므로 balloon 은 여유가 있는 VM 에서만 쓴다",
+    "6": "cat /tmp/ksm.log\nA=$(grep pages_sharing /tmp/ksm.log | awk '{print $2}')\necho $(( A * 4 / 1024 )) > /tmp/ksm_mib.txt\ncat /tmp/ksm_mib.txt\n\n# 8000×4KiB = 32000KiB 로 약 31MiB 다. 같은 OS 이미지의 VM 이 많을수록 효과가 크지만 CPU 를 쓰고 보안 우려(사이드 채널)가 있어 신중히 쓴다"
+  }
+}

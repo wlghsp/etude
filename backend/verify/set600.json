@@ -1,0 +1,11 @@
+{
+  "setId": 600,
+  "answers": {
+    "1": "cat /tmp/lscpu.log\ngrep '^Virtualization:' /tmp/lscpu.log | awk '{print $2}' > /tmp/virt.txt\ncat /tmp/virt.txt\n\n# 이 줄이 없으면 CPU 가 지원하지 않거나 BIOS 에서 꺼져 있다. VM 안(중첩 가상화)에서는 다른 값이 보이기도 한다",
+    "2": "S=$(grep '^Socket' /tmp/lscpu.log | awk '{print $2}')\nC=$(grep '^Core' /tmp/lscpu.log | awk '{print $4}')\nT=$(grep '^Thread' /tmp/lscpu.log | awk '{print $4}')\necho $((S * C * T)) > /tmp/logical.txt\ncat /tmp/logical.txt\n\n# 2 × 8 × 2 = 32. vCPU 를 물리 몇 배까지 줄지(오버커밋) 계산할 때 이 값이 기준이 된다",
+    "3": "cat /tmp/validate.log\ngrep -c 'FAIL' /tmp/validate.log > /tmp/fails.txt\ncat /tmp/fails.txt\n\n# CPU 는 지원하는데 /dev/kvm 이 없다. 메시지처럼 kvm 모듈이 올라오지 않았거나 BIOS 에서 가상화가 꺼져 있는 경우가 많다. 모듈은 modprobe kvm_intel 로 올린다",
+    "4": "cat /tmp/dominfo.log\nK=$(grep 'Max memory' /tmp/dominfo.log | awk '{print $3}')\necho $((K / 1024)) > /tmp/max_mib.txt\ngrep '^State:' /tmp/dominfo.log | awk '{print $2}' > /tmp/state.txt\ncat /tmp/max_mib.txt /tmp/state.txt\n\n# 최대 2048MiB 인데 사용 중(Used memory)은 1024MiB 다. 풍선(balloon) 드라이버로 게스트에 실제 준 메모리를 줄여 둔 상태일 수 있다",
+    "5": "cat /tmp/domblklist.log\nawk 'NR>2 && $2 != \"-\" {print $2}' /tmp/domblklist.log > /tmp/image.txt\ncat /tmp/image.txt\n\n# sda 는 비어 있는 장치(CD-ROM 등)다. 이 경로의 파일이 지워지거나 권한이 바뀌면 VM 시작이 실패한다",
+    "6": "cat /tmp/domifaddr.log\necho 'virsh domifaddr web01 --source agent' > /tmp/agent_cmd.txt\ncat /tmp/agent_cmd.txt\n\n# 기본은 DHCP 임대 목록(lease)에서 찾는다. 고정 IP 나 외부 브리지에 붙으면 목록에 없어 비어 보이므로 에이전트나 ARP 로 조회한다"
+  }
+}

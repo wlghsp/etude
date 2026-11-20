@@ -1,0 +1,11 @@
+{
+  "setId": 573,
+  "answers": {
+    "1": "cat /tmp/routes.log\ngrep '^default' /tmp/routes.log | sort -k9 -n | head -1 | awk '{print $3}' > /tmp/gw.txt\ncat /tmp/gw.txt\n\n# 100 < 200 이므로 192.0.2.1(eth0) 이 우선이다. 우선 경로가 사라지면(링크 다운 등) 다음 metric 의 default 가 대신한다",
+    "2": "grep 'scope link' /tmp/routes.log | awk '{print $1}' > /tmp/direct.txt\ncat /tmp/direct.txt\n\n# 직접 연결 대역은 인터페이스에 주소를 붙이면 커널이 자동으로 만든다(proto kernel). 같은 대역끼리는 게이트웨이 없이 ARP 로 직접 통신한다",
+    "3": "cat /tmp/routes.log\necho 198.51.100.254 > /tmp/nh_a.txt\necho 192.0.2.1 > /tmp/nh_b.txt\ncat /tmp/nh_a.txt /tmp/nh_b.txt\n\n# .77 은 /25(.0~.127) 범위라 더 구체적인 /25 경로가 이긴다. .200 은 범위 밖이라 /24 경로를 쓴다. 실제 서버에서는 ip route get 으로 확인한다",
+    "4": "ip route get 127.0.0.1\nip route get 127.0.0.1 | grep -o 'dev [a-z0-9]*' | head -1 | cut -d' ' -f2 > /tmp/dev.txt\ncat /tmp/dev.txt\n\n# 자기 주소는 로컬 테이블(local)을 거쳐 lo 로 간다. 장애 때는 외부 목적지로 get 을 해 어느 인터페이스·게이트웨이로 나가는지, src 주소가 무엇인지 확인한다",
+    "5": "ip route\nip route show default | awk '{print $3}' > /tmp/mygw.txt\ncat /tmp/mygw.txt\n\n# 컨테이너의 기본 게이트웨이는 도커 브리지(호스트 쪽)다. 외부로 나가는 모든 패킷이 이 주소로 간다",
+    "6": "echo 'ip route add 203.0.113.128/26 via 198.51.100.254' > /tmp/add_route.txt\ncat /tmp/add_route.txt\n\n# 더 구체적인 /26 이 /24 보다 먼저 선택되므로 이 대역만 다른 게이트웨이로 간다. 재부팅 후에도 유지하려면 배포판의 네트워크 설정(netplan·NetworkManager 등)에 영구 경로로 넣어야 한다. 이 명령은 즉시 적용되지만 재부팅하면 사라진다"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "setId": 557,
+  "answers": {
+    "1": "mariadb -N -e 'SELECT @@global.tx_isolation' > /tmp/iso.txt\ncat /tmp/iso.txt\n\n# InnoDB 의 기본값은 REPEATABLE-READ. 세션마다 바꿀 수 있다",
+    "2": "mariadb -N bank -e 'SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; START TRANSACTION; SELECT balance FROM accounts WHERE id=1; SELECT SLEEP(12); SELECT balance FROM accounts WHERE id=1; COMMIT' > /tmp/rc.txt &\nsleep 1\nmariadb bank -e 'UPDATE accounts SET balance=1500 WHERE id=1'\nwait\ncat /tmp/rc.txt\n\n# READ COMMITTED 는 읽을 때마다 '그 순간 커밋된 최신 값'을 본다. 한 트랜잭션 안에서 1000 → 1500 으로 달라지는 현상이 반복 불가능 읽기(non-repeatable read)",
+    "3": "mariadb -N bank -e 'START TRANSACTION; SELECT balance FROM accounts WHERE id=1; SELECT SLEEP(12); SELECT balance FROM accounts WHERE id=1; COMMIT' > /tmp/rr.txt &\nsleep 1\nmariadb bank -e 'UPDATE accounts SET balance=1500 WHERE id=1'\nwait\ncat /tmp/rr.txt\n\n# REPEATABLE READ 는 트랜잭션의 첫 읽기 시점의 스냅샷을 끝까지 보여 준다(1000, 1000). 그 사이 다른 세션이 커밋해도 이 트랜잭션에는 안 보인다",
+    "4": "mariadb bank -e 'START TRANSACTION; UPDATE accounts SET balance=999 WHERE id=1; SELECT SLEEP(20); ROLLBACK' >/dev/null &\nsleep 1\nmariadb -N bank -e 'SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; SELECT balance FROM accounts WHERE id=1' > /tmp/dirty.txt\nmariadb -N bank -e 'SELECT balance FROM accounts WHERE id=1' > /tmp/clean.txt\nwait\ncat /tmp/dirty.txt /tmp/clean.txt\n\n# 더티 리드: 롤백될 값(999)을 읽었다. READ UNCOMMITTED 는 커밋 전 변경까지 보여서 거의 쓰지 않는다",
+    "5": "mariadb -N bank -e 'START TRANSACTION; SELECT COUNT(*) FROM accounts; SELECT SLEEP(12); SELECT COUNT(*) FROM accounts; SELECT COUNT(*) FROM accounts FOR UPDATE; COMMIT' > /tmp/ph.txt &\nsleep 1\nmariadb bank -e \"INSERT INTO accounts VALUES (3,'park',300)\"\nwait\ncat /tmp/ph.txt\n\n# 결과 2, 2, 3. 일반 SELECT 는 스냅샷(2)이지만 FOR UPDATE 는 최신(3)을 읽는다. 이 차이를 모르면 '분명 안 보였는데 갱신은 된다' 같은 혼란이 생긴다",
+    "6": "mariadb bank -e 'SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE; START TRANSACTION; SELECT balance FROM accounts WHERE id=1; SELECT SLEEP(8); COMMIT' >/dev/null &\nsleep 1\nmariadb bank -e 'SET SESSION innodb_lock_wait_timeout=2; UPDATE accounts SET balance=1 WHERE id=1' 2> /tmp/ser.txt\nwait\ncat /tmp/ser.txt\n\n# ERROR 1205 Lock wait timeout exceeded. SERIALIZABLE 은 읽기도 잠가서 안전하지만 동시성이 가장 낮다",
+    "7": "mariadb -e \"SET GLOBAL tx_isolation='READ-COMMITTED'\"\nmariadb -N -e 'SELECT @@tx_isolation' > /tmp/new.txt\ncat /tmp/new.txt\n\n# 새 접속부터 적용된다. 영구 적용은 my.cnf 의 [mysqld] 에 transaction-isolation=READ-COMMITTED"
+  }
+}

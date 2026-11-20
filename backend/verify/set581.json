@@ -1,0 +1,11 @@
+{
+  "setId": 581,
+  "answers": {
+    "1": "tar czf /tmp/full.tar.gz -C /tmp/src .\ntar tzf /tmp/full.tar.gz\n\n# 목록(t)으로 내용을 확인하는 습관이 중요하다. 백업 파일은 원본과 다른 디스크·서버에 보관해야 의미가 있다",
+    "2": "cd /tmp/src && find . -type f | sort | xargs sha256sum > /tmp/src.sha256\ncd /tmp/src && sha256sum -c /tmp/src.sha256\n\n# 체크섬이 맞으면 내용이 한 비트도 다르지 않다는 뜻이다. 복원 후 원본(또는 백업 시점의 목록)과 대조해 복원이 정확한지 확인한다",
+    "3": "tar --listed-incremental=/tmp/backup.snar -czf /tmp/level1.tar.gz -C /tmp/src .\ntar tzf /tmp/level1.tar.gz\n\n# 증분은 용량과 시간을 크게 줄이지만 복원할 때 전체 + 증분을 순서대로 모두 풀어야 한다. 증분 하나가 없어지면 그 뒤가 모두 쓸모없어진다",
+    "4": "mkdir -p /tmp/restore\ntar -xzf /tmp/level0.tar.gz -C /tmp/restore\ntar -xzf /tmp/level1.tar.gz -C /tmp/restore\ndiff -r /tmp/restore /tmp/src && echo same\n\n# 삭제까지 반영하는 정석 복원은 --listed-incremental=/dev/null 을 함께 준다. 반대로 풀면 최신이 옛것으로 덮인다. 증분 체인은 정해진 순서로만 의미가 있고, 복원 훈련을 해 두지 않으면 장애 때 순서를 몰라 허둥댄다",
+    "5": "mkdir -p /tmp/part\ntar tzf /tmp/backup_full.tar.gz\ntar -xzf /tmp/backup_full.tar.gz -C /tmp/part ./docs/report.txt\nfind /tmp/part -type f\n\n# 목록의 경로와 정확히 일치해야 한다. 전체를 풀어서 덮어쓰면 그 사이 바뀐 다른 파일까지 옛날로 돌아가므로 필요한 것만 꺼낸다",
+    "6": "cd /tmp/data && sha256sum -c /tmp/data.sha256 2>&1 | grep -v ': OK$'\ncd /tmp/data && sha256sum -c /tmp/data.sha256 2>/dev/null | grep FAILED | cut -d: -f1 > /tmp/corrupt.txt\ncat /tmp/corrupt.txt\n\n# 디스크 오류나 의도치 않은 변경으로 데이터가 조용히 바뀌는 것을 발견하는 방법이다. 체크섬 목록은 원본과 다른 곳에 보관해야 믿을 수 있다"
+  }
+}

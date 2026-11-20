@@ -1,0 +1,11 @@
+{
+  "setId": 583,
+  "answers": {
+    "1": "cat /tmp/start_err.log /tmp/ls_l.log\ngrep -o 'uid:[0-9]*' /tmp/start_err.log | cut -d: -f2 > /tmp/vm_uid.txt\ngrep 'web01.qcow2' /tmp/ls_l.log | awk '{print $3}' > /tmp/owner.txt\ncat /tmp/vm_uid.txt /tmp/owner.txt\n\n# 보통은 libvirt 가 시작할 때 이미지 소유자를 맞춰 주지만(NFS root squash, dynamic_ownership=0, SELinux·AppArmor 같은 경우에는 직접 맞춰야 한다). VM 은 root 가 아니라 qemu 같은 전용 사용자로 실행된다. 이미지가 root 소유 0600 이면 접근할 수 없다. 소유자를 VM 사용자로 맞춘다(chown). SELinux·AppArmor 컨텍스트도 함께 확인한다",
+    "2": "cat /tmp/ps.log\ngrep 'data.qcow2' /tmp/ps.log | grep -o 'guest=[a-z0-9-]*' | cut -d= -f2 | sort > /tmp/holders.txt\ncat /tmp/holders.txt\n\n# 같은 디스크 이미지를 두 VM 이 동시에 쓰기로 열면 파일시스템이 깨진다. qemu 가 이를 막으려고 쓰기 잠금을 건다. 이미지를 분리하거나 한쪽을 끈 뒤 시작한다",
+    "3": "cat /tmp/dmesg.log\ngrep -i 'kvm' /tmp/dmesg.log > /tmp/why.txt\ncat /tmp/why.txt\n\n# 하드웨어 가상화(VT-x/AMD-V)가 BIOS/UEFI 에서 꺼져 있다. 서버 설정에서 켠 뒤 재부팅한다. 켜졌는지는 lsmod | grep kvm 과 /dev/kvm 존재로 확인한다",
+    "4": "cat /tmp/net_list.log\nawk '$1==\"default\" {print $2}' /tmp/net_list.log > /tmp/net_state.txt\nawk '$1==\"default\" {print $3}' /tmp/net_list.log > /tmp/net_auto.txt\ncat /tmp/net_state.txt /tmp/net_auto.txt\n\n# 네트워크가 정의만 되어 있고 시작되지 않았다(inactive). Autostart 가 no 라 호스트를 재부팅할 때마다 다시 시작해야 한다",
+    "5": "cat /tmp/domstate.log\ngrep -o 'paused ([a-z]*)' /tmp/domstate.log | tr -d '()' | cut -d' ' -f2 > /tmp/reason.txt\ngrep '^/dev/' /tmp/domstate.log | awk '{print $5}' > /tmp/use.txt\ncat /tmp/reason.txt /tmp/use.txt\n\n# 호스트 디스크가 가득 차 VM 이 쓰기에 실패하면(ioerror) 게스트 손상을 막으려고 VM 이 일시 정지된다. 공간을 확보한 뒤 virsh resume 한다",
+    "6": "printf '%s\\n' 'virsh net-start default' 'virsh net-autostart default' > /tmp/net_fix.txt\ncat /tmp/net_fix.txt\n\n# net-start 는 지금만 시작하고, net-autostart 는 부팅 시 시작을 설정한다. 둘 다 해야 재부팅 후에도 유지된다"
+  }
+}

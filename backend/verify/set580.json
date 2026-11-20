@@ -1,0 +1,11 @@
+{
+  "setId": 580,
+  "answers": {
+    "1": "cat /tmp/vgs.log\ntail -1 /tmp/vgs.log | awk '{print $NF}' > /tmp/vfree.txt\ncat /tmp/vfree.txt\n\n# VSize 는 전체, VFree 는 아직 어느 LV 에도 할당하지 않은 용량이다. LV 를 늘리려면 VFree 가 있어야 하고 없으면 PV(디스크)를 추가한다(vgextend)",
+    "2": "cat /tmp/pvs.log\nawk '$NF == \"0\" {print $1}' /tmp/pvs.log > /tmp/full_pv.txt\ncat /tmp/full_pv.txt\n\n# 이 PV 는 전부 LV 에 할당됐다. pvmove 로 디스크를 비워 교체하려면 다른 PV 에 옮길 여유(여기서는 sdb 20g + sdc 100g)가 있어야 한다",
+    "3": "cat /tmp/lvs.log\nawk 'NR>1 && substr($3,5,1) == \"I\" {print $1}' /tmp/lvs.log > /tmp/invalid_lv.txt\ncat /tmp/invalid_lv.txt\n\n# 스냅샷이 변경분을 담는 공간(5g)을 다 쓰면(Data% 100) 무효가 되어 복구할 수 없다. 스냅샷은 오래 두지 말고 사용률을 감시한다",
+    "4": "cat /tmp/mdstat.log\nawk '/^md/{name=$1} /\\[[U_]*_[U_]*\\]/{print name}' /tmp/mdstat.log > /tmp/degraded_md.txt\ncat /tmp/degraded_md.txt\n\n# [3/3] [UUU] 는 3 개 중 3 개 정상, [2/1] [U_] 는 2 개 중 1 개만 동작이라는 뜻이다. 이 상태에서는 남은 디스크 하나가 또 고장나면 데이터를 잃는다",
+    "5": "grep -o '[a-z0-9]*\\[[0-9]*\\](F)' /tmp/mdstat.log | cut -d'[' -f1 > /tmp/failed_disk.txt\ncat /tmp/failed_disk.txt\n\n# 교체 절차: 장애 확인 → --remove 로 제거 → 새 디스크 --add → 재구축(resync) 진행 확인. 재구축 동안 성능이 떨어지고 남은 디스크에 부하가 몰린다",
+    "6": "cat /tmp/mdadm_detail.log\ngrep 'Failed Devices' /tmp/mdadm_detail.log | cut -d: -f2 | tr -d ' ' > /tmp/failed_count.txt\ngrep '^ *State :' /tmp/mdadm_detail.log | cut -d: -f2 | sed 's/^ *//' > /tmp/md_state.txt\ncat /tmp/failed_count.txt /tmp/md_state.txt\n\n# clean, degraded 는 데이터는 온전하지만 중복이 줄어든 상태다. faulty 로 표시된 디스크는 제거(--remove)한 뒤 새 디스크를 추가한다"
+  }
+}

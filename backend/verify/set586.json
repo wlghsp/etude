@@ -1,0 +1,12 @@
+{
+  "setId": 586,
+  "answers": {
+    "1": "cat /tmp/volumes.log\ngrep -i 'error' /tmp/volumes.log | awk -F'|' '{gsub(/ /,\"\",$3); print $3}' > /tmp/bad_volume.txt\ncat /tmp/bad_volume.txt\n\n# error 는 작업이 실패한 상태다. reset-state 는 관리자 도구라 상태만 바꿀 뿐 원인을 고치지 못한다",
+    "2": "cat /tmp/vol_del.log\ngrep -o '[0-9]* dependent snapshots' /tmp/vol_del.log | cut -d' ' -f1 > /tmp/deps.txt\ncat /tmp/deps.txt\n\n# (volume delete --purge 는 스냅샷까지 함께 지운다.) 스냅샷이 있는 볼륨은 지울 수 없다. 스냅샷을 먼저 지운 뒤 볼륨을 지운다. 상태만 보고 force 로 지우려 하지 않는다",
+    "3": "echo 'openstack volume snapshot delete snap-c1' > /tmp/snap_del.txt\ncat /tmp/snap_del.txt\n\n# 순서: 스냅샷 삭제 → 볼륨 삭제. 스냅샷이 여러 개면 모두 지워야 한다",
+    "4": "cat /tmp/services.log\ngrep ' down ' /tmp/services.log | awk -F'|' '{gsub(/ /,\"\",$4); print $4}' > /tmp/down_host.txt\ncat /tmp/down_host.txt\n\n# Updated At 이 약 두 시간 전이라 서비스가 응답을 멈췄다. 그 호스트의 서비스·로그(큐 연결)를 확인한다. 호스트가 죽었다면 위의 서버를 옮겨야(evacuate) 한다",
+    "5": "cat /tmp/auth.log\ngrep 'not authorized' /tmp/auth.log | grep -o 'HTTP [0-9]*' | cut -d' ' -f2 > /tmp/code.txt\ncat /tmp/code.txt\n\n# 401 은 토큰이 없거나 만료됐다는 뜻(다시 로그인), 403 은 인증은 됐지만 거부(역할 부족, 쿼터 초과 등)라는 뜻이라 메시지를 구분해 읽는다. identity:create_user 는 관리자 권한이 필요한 작업이다",
+    "6": "cat /tmp/events.log\ngrep CREATE_FAILED /tmp/events.log | grep -v '^| stack ' | awk -F'|' '{gsub(/ /,\"\",$2); print $2}' > /tmp/failed_res.txt\ncat /tmp/failed_res.txt\n\n# 스택의 실패는 결과이고 원인은 개별 리소스(server1)의 reason(플레이버 없음)에 있다. 템플릿의 플레이버 이름을 고치거나 플레이버를 만든다",
+    "7": "cat /tmp/images.log\ngrep -E '^\\| i[0-9]' /tmp/images.log | grep -vc ' active '> /tmp/unusable.txt\ncat /tmp/unusable.txt\n\n# queued 는 업로드가 끝나지 않았고, killed 는 업로드가 실패했고, deactivated 는 관리자가 비활성화했다. 각각 원인이 다르므로 이미지를 다시 올리거나 활성화한다"
+  }
+}

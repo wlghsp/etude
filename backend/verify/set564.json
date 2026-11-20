@@ -1,0 +1,11 @@
+{
+  "setId": 564,
+  "answers": {
+    "1": "redis-server --daemonize yes --save '' --bind 127.0.0.1 --port 6380 --replicaof 127.0.0.1 6379\nsleep 2\nredis-cli -p 6380 get greeting\nredis-cli -p 6380 role | head -1\n\n# 시작하면 primary 에서 전체 데이터를 받고(전체 동기화) 그 뒤 변경을 계속 따라 받는다",
+    "2": "redis-cli -p 6379 info replication | grep '^role:' | cut -d: -f2 | tr -d '\\r' > /tmp/role.txt\nredis-cli -p 6379 info replication | grep '^connected_slaves:' | cut -d: -f2 | tr -d '\\r' > /tmp/slaves.txt\ncat /tmp/role.txt /tmp/slaves.txt\n\n# role:master, connected_slaves:1. replica 쪽에서 보면 role:slave, master_link_status:up. 복제 점검의 첫 명령이다",
+    "3": "redis-cli -p 6380 set mykey 1 > /tmp/ro.txt\ncat /tmp/ro.txt\n\n# READONLY You can't write against a read only replica. 쓰기는 항상 primary 로 보내야 한다(replica-read-only yes 가 기본값)",
+    "4": "redis-cli -p 6380 info replication | grep '^master_link_status:' | cut -d: -f2 | tr -d '\\r' > /tmp/link.txt\nredis-cli -p 6380 info replication | grep '^master_port:' | cut -d: -f2 | tr -d '\\r' > /tmp/mport.txt\ncat /tmp/link.txt /tmp/mport.txt\n\n# master_link_status:down. replica 는 primary 가 돌아오기를 기다리며 읽기는 계속 응답한다(데이터는 마지막 동기화 시점까지)",
+    "5": "redis-cli -p 6380 replicaof no one\nredis-cli -p 6380 role | head -1\nredis-cli -p 6380 set promoted yes\nredis-cli -p 6380 get greeting\n\n# REPLICAOF NO ONE: 복제를 끊고 스스로 primary 가 된다. 이후 앱의 접속 대상을 6380 으로 바꿔야 한다(수동 failover). 자동화는 Sentinel 이 해 준다",
+    "6": "redis-cli -p 6379 replicaof 127.0.0.1 6380\nsleep 2\nredis-cli -p 6379 get new\nredis-cli -p 6379 get old\nredis-cli -p 6379 role | head -1\n\n# replica 가 되는 순간 새 primary 의 데이터로 통째로 덮어쓴다. 옛 primary 에만 있던 쓰기(old)는 유실되니, failover 전에 복제가 따라잡았는지가 중요하다"
+  }
+}

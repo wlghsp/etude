@@ -1,0 +1,109 @@
+import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..')); from gen_pilot_sets import *
+# 세트 585: OpenStack 상황집(1) 서버 ERROR·쿼터·접속 불가·DHCP·메타데이터. 명세: docs/specs/spec_gap_set585.md
+# 샌드박스 linux(비특권, OpenStack 없음). 현장 openstack CLI 출력(샘플)을 읽는 상황집이다.
+
+S85 = """rm -f /tmp/*.txt /tmp/*.log
+cat > /tmp/server_show.log <<'EOF'
++----------+-------------------------------------------------------------------+
+| Field    | Value                                                             |
++----------+-------------------------------------------------------------------+
+| name     | web01                                                             |
+| status   | ERROR                                                             |
+| flavor   | m1.xlarge (ram=16384, vcpus=8)                                    |
+| fault    | {'code': 500, 'message': 'No valid host was found.'}              |
++----------+-------------------------------------------------------------------+
+EOF
+cat > /tmp/hypervisors.log <<'EOF'
++-------+---------------------+-------------+--------------+-----------------+
+| ID    | Hypervisor Hostname | free_ram_mb | vcpus_used   | free_disk_gb    |
++-------+---------------------+-------------+--------------+-----------------+
+| 1     | compute-a.example   |        4096 |           30 |             200 |
+| 2     | compute-b.example   |        8192 |           12 |             350 |
++-------+---------------------+-------------+--------------+-----------------+
+EOF
+cat > /tmp/quota_err.log <<'EOF'
+Quota exceeded for cores: Requested 4, but already used 20 of 20 cores (HTTP 403)
+EOF
+cat > /tmp/sg.log <<'EOF'
++-----------+-------------+-----------+------------+
+| ID        | IP Protocol | Port Range| Direction  |
++-----------+-------------+-----------+------------+
+| a1        | None        |           | egress     |
+| b2        | tcp         | 80:80     | ingress    |
+| c3        | icmp        |           | ingress    |
+| d4        | tcp         | 22:22     | egress     |
++-----------+-------------+-----------+------------+
+EOF
+cat > /tmp/console.log <<'EOF'
+Starting network...
+udhcpc: sending discover
+udhcpc: sending discover
+udhcpc: sending discover
+udhcpc: no lease, failing
+failed to get http://169.254.169.254/2009-04-04/meta-data/instance-id
+EOF
+cat > /tmp/agents.log <<'EOF'
++------+--------------------+------------------+-------+-------+
+| ID   | Agent Type         | Host             | Alive | State |
++------+--------------------+------------------+-------+-------+
+| 11   | DHCP agent         | network-a.example| :-)   | UP    |
+| 12   | DHCP agent         | network-b.example| XXX   | UP    |
+| 13   | L3 agent           | network-a.example| :-)   | UP    |
++------+--------------------+------------------+-------+-------+
+EOF
+true"""
+
+b = SetBuilder(585, 'OpenStack 상황집(1): 서버 ERROR, 쿼터 초과, SSH 불가, DHCP·메타데이터 실패',
+               '"인스턴스가 안 만들어진다 / 접속이 안 된다"는 신고에서 원인을 좁히는 상황집입니다. 서버 ERROR 의 fault 와 하이퍼바이저 자원, 쿼터 초과 메시지, 보안 그룹의 SSH 규칙 유무, 콘솔 로그에서 보이는 DHCP·메타데이터 실패와 죽은 DHCP 에이전트를 현장 출력(샘플)에서 읽고, 고치는 명령을 적어 봅니다. 샌드박스에는 OpenStack 이 없어 샘플 출력을 읽는 방식입니다.',
+               'linux', 'OpenStack', 37, 845, '🧯',
+               [{"title": "OpenStack 문제 해결", "url": "https://docs.openstack.org/nova/latest/admin/support-compute.html"}, {"title": "Neutron 운영", "url": "https://docs.openstack.org/neutron/latest/admin/index.html"}], 5)
+
+# 1
+b.nt('No valid host 읽기', '`/tmp/server_show.log` 는 ERROR 상태 서버의 `openstack server show` 이고, `/tmp/hypervisors.log` 는 호스트별 `hypervisor show` 결과를 한 표로 모은 샘플로, 컴퓨트 호스트의 남은 자원입니다. 서버가 요구하는 RAM 과 가장 여유 있는 호스트의 RAM 을 비교하려 합니다. 아래 두 값을 숫자만 저장하세요.\n- `/tmp/need_ram.txt` : 서버 플레이버가 요구하는 **RAM(MB)**\n- `/tmp/max_free.txt` : 호스트들 중 **`free_ram_mb` 의 최댓값**',
+     '요구 RAM 은 `flavor` 줄의 괄호 안, 남은 RAM 은 하이퍼바이저 표의 한 열입니다.',
+     "cat /tmp/server_show.log /tmp/hypervisors.log\ngrep 'flavor' /tmp/server_show.log | grep -o 'ram=[0-9]*' | cut -d= -f2 > /tmp/need_ram.txt\ngrep 'compute' /tmp/hypervisors.log | awk -F'|' '{gsub(/ /,\"\",$4); print $4}' | sort -n | tail -1 > /tmp/max_free.txt\ncat /tmp/need_ram.txt /tmp/max_free.txt\n\n# 실제 스케줄링은 Placement 와 오버커밋 비율(ram_allocation_ratio)까지 본다. 16384 > 8192 라서 어떤 호스트에도 들어가지 못한다. 스케줄러가 조건에 맞는 호스트를 못 찾으면 No valid host 가 난다. 더 작은 플레이버를 쓰거나 호스트를 늘린다",
+     S85, [chk('요구 RAM 이 16384 다', '[ "$(cat /tmp/need_ram.txt)" = 16384 ]'), chk('최대 여유가 8192 다', '[ "$(cat /tmp/max_free.txt)" = 8192 ]')])
+# 2
+b.nt('쿼터 초과 메시지 읽기', '`/tmp/quota_err.log` 는 서버 생성이 거부된 메시지입니다. 아래 두 값을 저장하세요.\n- `/tmp/quota_res.txt` : 한도를 넘은 **자원 이름**\n- `/tmp/quota_used.txt` : **이미 사용 중인 수량**(`used` 다음 숫자)',
+     '메시지에서 `for` 다음 단어가 자원, `used` 다음 숫자가 사용량입니다.',
+     "cat /tmp/quota_err.log\ngrep -o 'for [a-z_]*' /tmp/quota_err.log | cut -d' ' -f2 > /tmp/quota_res.txt\ngrep -o 'used [0-9]*' /tmp/quota_err.log | cut -d' ' -f2 > /tmp/quota_used.txt\ncat /tmp/quota_res.txt /tmp/quota_used.txt\n\n# 쿼터 초과도 HTTP 403 으로 오지만 메시지가 권한 오류와 다르다. 프로젝트의 vCPU(cores) 한도 20 을 이미 다 썼다. 불필요한 인스턴스를 정리하거나 관리자가 한도를 늘린다(quota set). 현재 값은 quota show 로 확인한다",
+     S85, [chk('자원이 cores 다', '[ "$(cat /tmp/quota_res.txt)" = cores ]'), chk('사용량이 20 이다', '[ "$(cat /tmp/quota_used.txt)" = 20 ]')])
+# 3
+b.nt('SSH 규칙이 있는가', '`/tmp/sg.log` 는 인스턴스에 적용된 보안 그룹의 규칙 목록입니다. 플로팅 IP 로 SSH 가 되지 않습니다. **들어오는(ingress) 규칙 중 SSH(TCP 22) 를 허용하는 규칙이 몇 개**인지 숫자만 `/tmp/ssh_rules.txt` 에 저장하세요.',
+     '규칙 표에서 방향이 ingress 이고 포트 범위가 22 인 줄을 세면 됩니다.',
+     "cat /tmp/sg.log\ngrep ingress /tmp/sg.log | grep -c '22:22' > /tmp/ssh_rules.txt\ncat /tmp/ssh_rules.txt\n\n# 0 개. 보안 그룹은 기본적으로 들어오는 트래픽을 모두 막고 허용 규칙만 열어 준다. SSH 규칙이 없으면 접속이 안 된다",
+     S85, [chk('0 이다', '[ "$(cat /tmp/ssh_rules.txt)" = 0 ]')])
+# 4
+b.nt('SSH 허용 규칙 명령 적기', '`default` 보안 그룹에 **TCP 22 번 포트**로 들어오는 접속을 허용하는 `openstack` 명령 한 줄을 `/tmp/sg_fix.txt` 에 적으세요. (샌드박스에는 OpenStack 이 없어 실행하지 않습니다)',
+     '보안 그룹 규칙을 만드는 하위 명령이 있습니다. 프로토콜과 목적지 포트를 옵션으로 줍니다.',
+     "echo 'openstack security group rule create --proto tcp --dst-port 22 default' > /tmp/sg_fix.txt\ncat /tmp/sg_fix.txt\n\n# 출발지를 모든 곳(0.0.0.0/0)이 아니라 관리망 대역으로 제한하는 것이 안전하다(--remote-ip)",
+     S85, [chk('보안 그룹 규칙 생성 명령이다', 'grep -Eq "^[[:space:]]*openstack( --[a-z-]+[= ][^ ]+)* security group rule create " /tmp/sg_fix.txt'), chk('tcp 22 이다', 'grep -Eq -- "--(proto|protocol)[= ]tcp" /tmp/sg_fix.txt && grep -Eq -- "--dst-port[= ]22(:22)?( |$)" /tmp/sg_fix.txt'), chk('default 그룹이다', 'grep -q "default" /tmp/sg_fix.txt')])
+# 5
+b.nt('콘솔 로그에서 DHCP 실패', '`/tmp/console.log` 는 부팅한 인스턴스의 콘솔 로그입니다. 인스턴스가 IP 를 받지 못했습니다. 아래 두 값을 저장하세요.\n- `/tmp/discover_cnt.txt` : DHCP 주소 요청(`sending discover`)을 **보낸 횟수**\n- `/tmp/meta_ip.txt` : 메타데이터를 가져오려던 **주소**(IP 만)',
+     '`discover` 가 들어간 줄 수를 세고, `http://` 뒤 주소를 뽑으세요.',
+     "cat /tmp/console.log\ngrep -c 'sending discover' /tmp/console.log > /tmp/discover_cnt.txt\ngrep -o 'http://[0-9.]*' /tmp/console.log | cut -d/ -f3 > /tmp/meta_ip.txt\ncat /tmp/discover_cnt.txt /tmp/meta_ip.txt\n\n# 응답이 없어 포기했다(no lease). 인스턴스가 네트워크를 못 받으니 메타데이터(키 주입 등)도 실패한다. DHCP 에이전트 상태를 확인한다. 169.254.169.254 는 메타데이터 서비스의 고정 주소다",
+     S85, [chk('요청이 3번이다', '[ "$(cat /tmp/discover_cnt.txt)" = 3 ]'), chk('메타데이터 주소다', '[ "$(cat /tmp/meta_ip.txt)" = 169.254.169.254 ]')])
+# 6
+b.nt('죽은 DHCP 에이전트', '`/tmp/agents.log` 는 `openstack network agent list` 의 출력입니다. `Alive` 열이 `:-)` 이면 살아 있고 `XXX` 이면 응답이 끊긴 에이전트입니다. **`Alive` 가 `XXX` 인 에이전트가 있는 호스트 이름**을 `/tmp/dead_host.txt` 에 저장하세요.',
+     '표는 `|` 로 구분됩니다. `XXX` 가 있는 줄에서 호스트 열을 뽑고 공백을 정리하세요.',
+     "cat /tmp/agents.log\ngrep 'XXX' /tmp/agents.log | awk -F'|' '{gsub(/ /,\"\",$4); print $4}' > /tmp/dead_host.txt\ncat /tmp/dead_host.txt\n\n# 그 호스트의 DHCP 에이전트가 죽어 이 호스트를 쓰는 네트워크의 인스턴스가 주소를 못 받는다. 서비스 재시작과 로그를 확인한다. 다른 호스트의 DHCP 에이전트가 살아 있어도 해당 네트워크 담당이 아닐 수 있다",
+     S85, [chk('network-b.example 이다', '[ "$(cat /tmp/dead_host.txt)" = network-b.example ]')])
+# 7
+b.choice('No valid host 의 의미', '서버 상태가 ERROR 이고 fault 에 `No valid host was found` 가 있습니다. 이 메시지의 의미로 가장 알맞은 것은?', '이 오류는 누가 호스트를 고르다 실패했을 때 나옵니다.',
+         ['조건에 맞는 컴퓨트 호스트를 스케줄러가 못 찾았다', '컴퓨트 호스트의 서비스 계정이 만료되어 실패했다', '서버의 이미지 파일이 손상되어 부팅하지 못했다', '사용자 비밀번호가 틀려 인증에 실패했다'], 0,
+         'Nova 스케줄러가 필터(RAM·CPU·디스크·AZ·어피니티 등)를 통과하는 호스트가 없을 때 이 오류를 냅니다. 요구한 플레이버·AZ 와 하이퍼바이저의 남은 자원을 비교해 원인을 찾습니다. 호스트 접속 문제나 이미지 손상은 다른 오류입니다.')
+# 8
+b.choice('기본 보안 그룹의 동작', '새로 만든 인스턴스에 아무 규칙도 추가하지 않은 기본 보안 그룹을 적용했습니다. 외부에서 SSH 접속을 시도하면?', '보안 그룹 규칙의 기본 방향별 동작을 생각해 보세요.',
+         ['들어오는 트래픽이 기본적으로 차단되어 접속되지 않는다', '모든 포트가 열려 있어 접속된다', 'SSH 만 기본으로 허용되어 접속된다', '플로팅 IP 가 있으면 규칙과 무관하게 접속된다'], 0,
+         '보안 그룹은 허용 규칙의 목록입니다. 규칙이 없으면 들어오는 트래픽은 모두 차단되고 나가는 트래픽만 허용됩니다. 기본 보안 그룹에는 같은 그룹끼리의 허용 규칙만 있어 외부에서 오는 트래픽은 규칙이 없으면 차단됩니다. 플로팅 IP 는 주소를 연결할 뿐 보안 그룹 규칙을 대신하지 않습니다.')
+# 9
+b.fill('쿼터 확인', '프로젝트 `demo` 의 현재 **한도**를 확인하려 합니다. 빈칸에 들어갈 `quota` 하위 명령을 채우세요.', '값을 바꾸는 명령이 아니라 보여 주는 명령입니다.',
+       'openstack quota {0} demo', ['show', 'create', 'delete', 'add'], [0],
+       '`openstack quota show 프로젝트` 는 한도를 보여 줍니다(`--usage` 를 주면 사용량도 함께). 한도 변경은 `quota set` 입니다. `delete` 는 한도를 기본값으로 되돌리는 명령이고 `create`·`add` 는 quota 의 하위 명령이 아닙니다.')
+# 10
+b.order('인스턴스 접속 불가 점검 순서', '플로팅 IP 로 SSH 접속이 안 되는 인스턴스를 점검합니다. 인스턴스 자체에서 시작해 바깥(외부 주소) 쪽으로 거슬러 올라가는 순서로 놓으세요.', '각 확인은 앞 확인이 통과해야 의미가 있습니다.',
+        ['보안 그룹에 SSH 허용 규칙이 있는지 본다', '콘솔 로그로 인스턴스가 IP 를 받고 부팅을 마쳤는지 본다', '서버 상태가 ACTIVE 인지 확인한다', '플로팅 IP 와 라우터(게이트웨이) 연결을 확인한다'], [2, 1, 0, 3],
+        '인스턴스 자체(ACTIVE 상태)에서 시작해, 인스턴스 내부(콘솔 로그의 부팅·IP), 인스턴스를 감싼 방화벽(보안 그룹), 마지막으로 바깥 경로(플로팅 IP·라우터) 순서로 거슬러 올라갑니다.')
+
+if __name__ == '__main__':
+    preview(b)

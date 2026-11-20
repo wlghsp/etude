@@ -1,0 +1,11 @@
+{
+  "setId": 577,
+  "answers": {
+    "1": "du -sk /tmp/lab/* | sort -n\nbasename \"$(du -sk /tmp/lab/*/ | sort -n | tail -1 | awk '{print $2}')\" > /tmp/biggest.txt\ncat /tmp/biggest.txt\n\n# logs(약 26MB)가 가장 크다. df 로 가득 찬 파일시스템을 찾고, du 로 큰 디렉터리를 따라 내려가는 것이 첫 순서다",
+    "2": "dumpe2fs -h /tmp/small.img 2>/dev/null | grep -E 'Inode count|Free inodes|Free blocks'\ndumpe2fs -h /tmp/small.img 2>/dev/null | awk '/^Free inodes/{print $3}' > /tmp/free_inodes.txt\ncat /tmp/free_inodes.txt\n\n# inode 는 파일·디렉터리 하나당 하나다. 파일 수가 많은 작은 파일시스템에서는 블록이 남아도 inode 가 먼저 바닥난다. 일반 파일시스템에서는 df -i 로 본다",
+    "3": "dumpe2fs -h /tmp/small.img 2>/dev/null | grep -E '^(Inode count|Free inodes|Block count|Free blocks)'\necho inode > /tmp/shortage.txt\ncat /tmp/shortage.txt\n\n# 남은 inode 가 3 개뿐인데 블록은 86% 가량 남아 있다. df 는 여유가 있는데 파일을 못 만들면 df -i 를 먼저 본다. 작은 파일이 수만 개 쌓이는 캐시·세션 디렉터리가 흔한 원인이다",
+    "4": "ls -l /proc/[0-9]*/fd/* 2>/dev/null | grep deleted\nls -l /proc/[0-9]*/fd/* 2>/dev/null | grep 'held.log (deleted)' | head -1 | awk '{print $9}' | cut -d/ -f3 > /tmp/holder_pid.txt\ncat /tmp/holder_pid.txt\n\n# 같은 정보를 lsof +L1 로도 볼 수 있다(링크 수가 0 인 열린 파일). 해결은 프로세스를 재시작하거나 파일을 비우는(truncate) 것이다",
+    "5": "P=$(cat /tmp/.hp)\nls -l /proc/$P/fd/5\n: > /proc/$P/fd/5\nstat -L -c %s /proc/$P/fd/5\n\n# 재시작이 어려운 서비스(로그를 계속 쓰는 데몬)에서 쓰는 응급 방법이다. 근본 해결은 로그 로테이션(logrotate)이 서비스에 파일을 다시 열라고 알리게 하는 것이다",
+    "6": "dumpe2fs -h /tmp/small.img 2>/dev/null | grep -E 'Block count|Reserved block count'\ntune2fs -m 1 /tmp/small.img\ndumpe2fs -h /tmp/small.img 2>/dev/null | grep -E 'Block count|Reserved block count'\n\n# 예약 블록은 가득 찬 상태에서도 root 가 시스템을 복구할 수 있게 하는 안전장치다. 루트(/)나 /var 는 줄이지 말고 대용량 데이터 볼륨에서만 조정한다"
+  }
+}

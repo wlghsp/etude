@@ -1,0 +1,108 @@
+import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..')); from gen_pilot_sets import *
+# 세트 586: OpenStack 상황집(2) 볼륨·서비스·권한·Heat·이미지·호스트 복구. 명세: docs/specs/spec_gap_set586.md
+# 샌드박스 linux(비특권, OpenStack 없음). 현장 openstack CLI 출력(샘플)을 읽는 상황집이다.
+
+S86 = """rm -f /tmp/*.txt /tmp/*.log
+cat > /tmp/volumes.log <<'EOF'
++------+-----------+-----------------+------+
+| ID   | Name      | Status          | Size |
++------+-----------+-----------------+------+
+| v1   | data-a    | in-use          | 100  |
+| v2   | data-b    | error           |  50  |
+| v3   | data-c    | available       |  20  |
++------+-----------+-----------------+------+
+EOF
+cat > /tmp/vol_del.log <<'EOF'
+Failed to delete volume with name or ID 'data-c': Invalid volume: Volume still has 1 dependent snapshots. (HTTP 400)
+EOF
+cat > /tmp/services.log <<'EOF'
++----+----------------+-----------------+------+---------+-------+----------------------------+
+| ID | Binary         | Host            | Zone | Status  | State | Updated At                 |
++----+----------------+-----------------+------+---------+-------+----------------------------+
+|  1 | nova-conductor | ctrl-a.example  | int  | enabled | up    | 2026-11-20T09:00:01.000000 |
+|  2 | nova-compute   | comp-a.example  | nova | enabled | up    | 2026-11-20T09:00:03.000000 |
+|  3 | nova-compute   | comp-b.example  | nova | enabled | down  | 2026-11-20T07:12:45.000000 |
++----+----------------+-----------------+------+---------+-------+----------------------------+
+EOF
+cat > /tmp/auth.log <<'EOF'
+$ openstack server list
+The request you have made requires authentication. (HTTP 401)
+$ openstack user create tester
+You are not authorized to perform the requested action: identity:create_user. (HTTP 403)
+EOF
+cat > /tmp/events.log <<'EOF'
++---------------+-----------------+----------------------------------------+
+| Resource Name | Resource Status | Resource Status Reason                 |
++---------------+-----------------+----------------------------------------+
+| net1          | CREATE_COMPLETE | state changed                          |
+| server1       | CREATE_FAILED   | Flavor m9.huge could not be found.     |
+| stack         | CREATE_FAILED   | Resource CREATE failed: NotFound       |
++---------------+-----------------+----------------------------------------+
+EOF
+cat > /tmp/images.log <<'EOF'
++------+------------+-------------+
+| ID   | Name       | Status      |
++------+------------+-------------+
+| i1   | ubuntu-22  | active      |
+| i2   | rocky-9    | queued      |
+| i3   | debian-12  | killed      |
+| i4   | old-centos | deactivated |
++------+------------+-------------+
+EOF
+true"""
+
+b = SetBuilder(586, 'OpenStack 상황집(2): 볼륨 삭제 불가, 서비스 down, 401·403, Heat 실패, 이미지 상태',
+               '볼륨·서비스·인증·오케스트레이션 장애를 현장 출력(샘플)에서 읽고 원인을 좁히는 상황집입니다. 붙지 않는 볼륨과 스냅샷 때문에 삭제되지 않는 볼륨, State 가 down 인 컴퓨트 서비스, 인증 필요(401)와 권한 부족(403)의 구분, Heat 스택 생성 실패의 원인 리소스, 사용할 수 없는 이미지 상태를 읽고, 호스트 장애 뒤 복구 순서를 정리합니다. 샌드박스에는 OpenStack 이 없어 샘플 출력을 읽는 방식입니다.',
+               'linux', 'OpenStack', 40, 846, '🧯',
+               [{"title": "OpenStack 문제 해결", "url": "https://docs.openstack.org/nova/latest/admin/support-compute.html"}, {"title": "Heat 문서", "url": "https://docs.openstack.org/heat/latest/"}], 5)
+
+# 1
+b.nt('이상 상태의 볼륨', '`/tmp/volumes.log` 는 `openstack volume list` 의 출력입니다. `Status` 가 정상(`available`, `in-use`)이 아닌 **오류 상태인 볼륨의 이름**을 `/tmp/bad_volume.txt` 에 저장하세요.',
+     '상태 열에 `error` 가 들어간 줄을 찾고 이름 열을 뽑으세요. 표는 `|` 로 구분됩니다.',
+     "cat /tmp/volumes.log\ngrep -i 'error' /tmp/volumes.log | awk -F'|' '{gsub(/ /,\"\",$3); print $3}' > /tmp/bad_volume.txt\ncat /tmp/bad_volume.txt\n\n# error 는 작업이 실패한 상태다. reset-state 는 관리자 도구라 상태만 바꿀 뿐 원인을 고치지 못한다",
+     S86, [chk('data-b 다', '[ "$(cat /tmp/bad_volume.txt)" = data-b ]')])
+# 2
+b.nt('볼륨이 삭제되지 않는 이유', '`/tmp/vol_del.log` 는 볼륨 삭제가 실패한 메시지입니다. 볼륨 상태는 `available` 인데도 지워지지 않습니다. 메시지 끝에서 **삭제를 막는 의존 대상의 개수**(`dependent snapshots` 앞 숫자)를 `/tmp/deps.txt` 에 저장하세요. (숫자만)',
+     '메시지의 마지막 문장에서 `dependent` 앞 숫자를 뽑으세요.',
+     "cat /tmp/vol_del.log\ngrep -o '[0-9]* dependent snapshots' /tmp/vol_del.log | cut -d' ' -f1 > /tmp/deps.txt\ncat /tmp/deps.txt\n\n# (volume delete --purge 는 스냅샷까지 함께 지운다.) 스냅샷이 있는 볼륨은 지울 수 없다. 스냅샷을 먼저 지운 뒤 볼륨을 지운다. 상태만 보고 force 로 지우려 하지 않는다",
+     S86, [chk('1 이다', '[ "$(cat /tmp/deps.txt)" = 1 ]')])
+# 3
+b.nt('스냅샷 먼저 지우기', '`data-c` 볼륨에 딸린 스냅샷의 이름이 `snap-c1` 입니다. 볼륨을 지우기 전에 **이 스냅샷을 삭제**하는 `openstack` 명령 한 줄을 `/tmp/snap_del.txt` 에 적으세요. (샌드박스에는 OpenStack 이 없어 실행하지 않습니다)',
+     '볼륨의 스냅샷을 다루는 하위 명령이 있습니다. 삭제 동사를 이어 붙이세요.',
+     "echo 'openstack volume snapshot delete snap-c1' > /tmp/snap_del.txt\ncat /tmp/snap_del.txt\n\n# 순서: 스냅샷 삭제 → 볼륨 삭제. 스냅샷이 여러 개면 모두 지워야 한다",
+     S86, [chk('스냅샷 삭제 명령이다', 'grep -Eq "^[[:space:]]*openstack volume snapshot delete( --force)? snap-c1[[:space:]]*$" /tmp/snap_del.txt')])
+# 4
+b.nt('내려간 컴퓨트 서비스', '`/tmp/services.log` 는 `openstack compute service list` 의 출력입니다. `State` 가 `down` 인 서비스의 **호스트 이름**을 `/tmp/down_host.txt` 에 저장하세요. (이름만)',
+     '`State` 열 값이 down 인 줄에서 호스트 열을 뽑고 공백을 정리하세요.',
+     "cat /tmp/services.log\ngrep ' down ' /tmp/services.log | awk -F'|' '{gsub(/ /,\"\",$4); print $4}' > /tmp/down_host.txt\ncat /tmp/down_host.txt\n\n# Updated At 이 약 두 시간 전이라 서비스가 응답을 멈췄다. 그 호스트의 서비스·로그(큐 연결)를 확인한다. 호스트가 죽었다면 위의 서버를 옮겨야(evacuate) 한다",
+     S86, [chk('comp-b.example 이다', '[ "$(cat /tmp/down_host.txt)" = comp-b.example ]')])
+# 5
+b.nt('401 과 403 구분', '`/tmp/auth.log` 에 두 가지 오류가 있습니다. HTTP 401 은 **인증**(누구인지 확인) 실패, HTTP 403 은 **권한**(할 수 있는지) 부족입니다. **권한이 부족해서 거부된 쪽의 HTTP 코드**를 숫자만 `/tmp/code.txt` 에 저장하세요.',
+     '오류 문구가 "인증이 필요하다"인지 "권한이 없다"인지 읽고 괄호의 코드를 뽑으세요.',
+     "cat /tmp/auth.log\ngrep 'not authorized' /tmp/auth.log | grep -o 'HTTP [0-9]*' | cut -d' ' -f2 > /tmp/code.txt\ncat /tmp/code.txt\n\n# 401 은 토큰이 없거나 만료됐다는 뜻(다시 로그인), 403 은 인증은 됐지만 거부(역할 부족, 쿼터 초과 등)라는 뜻이라 메시지를 구분해 읽는다. identity:create_user 는 관리자 권한이 필요한 작업이다",
+     S86, [chk('403 이다', '[ "$(cat /tmp/code.txt)" = 403 ]')])
+# 6
+b.nt('Heat 스택 실패 원인', '`/tmp/events.log` 는 `openstack stack event list` 의 출력입니다. 스택 생성이 실패했습니다. **`CREATE_FAILED` 가 된 개별 리소스의 이름**(스택 자체인 `stack` 제외)을 `/tmp/failed_res.txt` 에 저장하세요.',
+     '`CREATE_FAILED` 줄이 둘 있습니다. 그중 스택 전체가 아니라 안의 개별 리소스를 가리키는 줄을 고르세요.',
+     "cat /tmp/events.log\ngrep CREATE_FAILED /tmp/events.log | grep -v '^| stack ' | awk -F'|' '{gsub(/ /,\"\",$2); print $2}' > /tmp/failed_res.txt\ncat /tmp/failed_res.txt\n\n# 스택의 실패는 결과이고 원인은 개별 리소스(server1)의 reason(플레이버 없음)에 있다. 템플릿의 플레이버 이름을 고치거나 플레이버를 만든다",
+     S86, [chk('server1 이다', '[ "$(cat /tmp/failed_res.txt)" = server1 ]')])
+# 7
+b.nt('사용할 수 없는 이미지', '`/tmp/images.log` 는 `openstack image list` 의 출력입니다. `Status` 가 `active` 가 **아닌** 이미지는 서버 생성에 쓸 수 없습니다. 그런 이미지가 **몇 개**인지 숫자만 `/tmp/unusable.txt` 에 저장하세요.',
+     '이미지 줄에서 상태가 active 가 아닌 줄만 세세요. 헤더 줄과 구분선은 제외합니다.',
+     "cat /tmp/images.log\ngrep -E '^\\| i[0-9]' /tmp/images.log | grep -vc ' active '> /tmp/unusable.txt\ncat /tmp/unusable.txt\n\n# queued 는 업로드가 끝나지 않았고, killed 는 업로드가 실패했고, deactivated 는 관리자가 비활성화했다. 각각 원인이 다르므로 이미지를 다시 올리거나 활성화한다",
+     S86, [chk('3 이다', '[ "$(cat /tmp/unusable.txt)" = 3 ]')])
+# 8
+b.choice('호스트 장애 뒤 서버 복구', '컴퓨트 호스트 하나가 하드웨어 장애로 꺼졌는데 그 위 서버들은 `ACTIVE` 로 남아 있습니다. 다른 호스트로 서버를 복구(evacuate)하기 전에 **반드시 먼저 확인할 것**은?', '두 호스트가 같은 디스크를 동시에 쓰게 되는 상황을 피해야 합니다.',
+         ['원래 호스트가 꺼졌는지 확인한다', '서버를 다시 만들 수 있는지 이름을 정한다', '남은 호스트의 이미지를 모두 삭제한다', '프로젝트 쿼터를 늘려 둔다'], 0,
+         'evacuate 는 소스 컴퓨트 서비스가 down 이어야 받아 줍니다. 원래 호스트가 살아 있는데 evacuate 하면 같은 서버가 두 곳에서 실행되어 공유 디스크가 손상될 수 있고, 공유 스토리지나 볼륨 부팅이 아니면 로컬 디스크 데이터는 이미지로 다시 만들어져 사라집니다. 호스트가 확실히 꺼져 있는지(필요하면 전원 차단) 확인한 뒤 evacuate 합니다.')
+# 9
+b.fill('스택 이벤트 목록', 'Heat 스택 `mystack` 의 생성 중 **일어난 일**(실패 이유 포함)을 시간 순서로 보려 합니다. 빈칸에 들어갈 `openstack stack` 하위 명령을 채우세요.', '무슨 일이 일어났는지의 기록을 보여 주는 명령입니다.',
+       'openstack stack {0} list mystack', ['event', 'resource', 'output', 'template'], [0],
+       '`stack event list` 는 리소스별 상태 변화와 실패 이유(`resource_status_reason`)를 시간순으로 보여 줘 실패 원인을 찾을 때 가장 먼저 봅니다. `resource list` 는 리소스의 현재 상태 목록, `output` 은 출력 값, `template show` 는 템플릿을 보여 줍니다.')
+# 10
+b.order('호스트 장애 복구 순서', '장애 신고를 받아 어느 호스트인지부터 특정해야 합니다. 컴퓨트 호스트 하나가 장애를 일으켜 그 위 서버를 다른 호스트로 옮겨야 하는 상황에서 안전한 순서로 놓으세요.', '각 단계는 앞 단계의 결과를 근거로 진행합니다.',
+        ['원래 호스트가 정말 꺼져 있는지 확인한다', '서버를 다른 호스트로 evacuate 한다', '컴퓨트 서비스 목록에서 down 인 호스트를 확인한다', '옮긴 서버가 ACTIVE 이고 접속되는지 확인한다'], [2, 0, 1, 3],
+        '서비스 목록으로 장애 호스트를 정한 뒤 그 호스트의 실제 전원 상태를 확인하고(두 곳에서 동시에 실행되지 않도록), evacuate 한 다음 마지막으로 서버가 정상인지 확인합니다.')
+
+if __name__ == '__main__':
+    preview(b)

@@ -1,0 +1,11 @@
+{
+  "setId": 585,
+  "answers": {
+    "1": "cat /tmp/server_show.log /tmp/hypervisors.log\ngrep 'flavor' /tmp/server_show.log | grep -o 'ram=[0-9]*' | cut -d= -f2 > /tmp/need_ram.txt\ngrep 'compute' /tmp/hypervisors.log | awk -F'|' '{gsub(/ /,\"\",$4); print $4}' | sort -n | tail -1 > /tmp/max_free.txt\ncat /tmp/need_ram.txt /tmp/max_free.txt\n\n# 실제 스케줄링은 Placement 와 오버커밋 비율(ram_allocation_ratio)까지 본다. 16384 > 8192 라서 어떤 호스트에도 들어가지 못한다. 스케줄러가 조건에 맞는 호스트를 못 찾으면 No valid host 가 난다. 더 작은 플레이버를 쓰거나 호스트를 늘린다",
+    "2": "cat /tmp/quota_err.log\ngrep -o 'for [a-z_]*' /tmp/quota_err.log | cut -d' ' -f2 > /tmp/quota_res.txt\ngrep -o 'used [0-9]*' /tmp/quota_err.log | cut -d' ' -f2 > /tmp/quota_used.txt\ncat /tmp/quota_res.txt /tmp/quota_used.txt\n\n# 쿼터 초과도 HTTP 403 으로 오지만 메시지가 권한 오류와 다르다. 프로젝트의 vCPU(cores) 한도 20 을 이미 다 썼다. 불필요한 인스턴스를 정리하거나 관리자가 한도를 늘린다(quota set). 현재 값은 quota show 로 확인한다",
+    "3": "cat /tmp/sg.log\ngrep ingress /tmp/sg.log | grep -c '22:22' > /tmp/ssh_rules.txt\ncat /tmp/ssh_rules.txt\n\n# 0 개. 보안 그룹은 기본적으로 들어오는 트래픽을 모두 막고 허용 규칙만 열어 준다. SSH 규칙이 없으면 접속이 안 된다",
+    "4": "echo 'openstack security group rule create --proto tcp --dst-port 22 default' > /tmp/sg_fix.txt\ncat /tmp/sg_fix.txt\n\n# 출발지를 모든 곳(0.0.0.0/0)이 아니라 관리망 대역으로 제한하는 것이 안전하다(--remote-ip)",
+    "5": "cat /tmp/console.log\ngrep -c 'sending discover' /tmp/console.log > /tmp/discover_cnt.txt\ngrep -o 'http://[0-9.]*' /tmp/console.log | cut -d/ -f3 > /tmp/meta_ip.txt\ncat /tmp/discover_cnt.txt /tmp/meta_ip.txt\n\n# 응답이 없어 포기했다(no lease). 인스턴스가 네트워크를 못 받으니 메타데이터(키 주입 등)도 실패한다. DHCP 에이전트 상태를 확인한다. 169.254.169.254 는 메타데이터 서비스의 고정 주소다",
+    "6": "cat /tmp/agents.log\ngrep 'XXX' /tmp/agents.log | awk -F'|' '{gsub(/ /,\"\",$4); print $4}' > /tmp/dead_host.txt\ncat /tmp/dead_host.txt\n\n# 그 호스트의 DHCP 에이전트가 죽어 이 호스트를 쓰는 네트워크의 인스턴스가 주소를 못 받는다. 서비스 재시작과 로그를 확인한다. 다른 호스트의 DHCP 에이전트가 살아 있어도 해당 네트워크 담당이 아닐 수 있다"
+  }
+}

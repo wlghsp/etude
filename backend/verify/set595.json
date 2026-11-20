@@ -1,0 +1,11 @@
+{
+  "setId": 595,
+  "answers": {
+    "1": "cat /tmp/iscsi_session.log\ngrep -o 'iqn[^ ]*' /tmp/iscsi_session.log | sort -u > /tmp/iqn.txt\ncat /tmp/iqn.txt\n\n# IQN 은 iSCSI 타깃·이니시에이터의 고유 이름이다(iqn.연월.도메인:이름). 같은 타깃에 경로 두 개(두 포털 주소)로 연결된 것은 멀티패스 구성이다",
+    "2": "grep -o '[0-9][0-9.]*:3260' /tmp/iscsi_session.log | cut -d: -f1 | sort > /tmp/portals.txt\ncat /tmp/portals.txt\n\n# 3260 은 iSCSI 의 기본 포트다. 서버(타깃)가 경로마다 다른 IP 를 가지면 한 네트워크가 끊겨도 다른 경로로 접근할 수 있다",
+    "3": "cat /tmp/multipath.log\ngrep 'failed' /tmp/multipath.log | awk '{print $3}' > /tmp/failed_path.txt\ncat /tmp/failed_path.txt\n\n# 경로 하나가 끊겨도 다른 경로(sdb, active ready)로 I/O 가 계속된다. 하지만 이제 중복이 없으니 끊긴 경로를 빨리 복구해야 한다",
+    "4": "cat /tmp/showmount.log\ngrep '^/backup' /tmp/showmount.log | awk '{print $2}' > /tmp/allowed.txt\ncat /tmp/allowed.txt\n\n# 192.0.2.0/24 는 이 대역 전체, 호스트 하나만 허용(198.51.100.10), * 는 모두 허용이다. access denied 는 접속하는 클라이언트 주소가 이 목록에 없을 때 난다",
+    "5": "cat /tmp/nfs_errors.log\ngrep -B1 'Stale file handle' /tmp/nfs_errors.log | head -1 | awk '{print $3}' > /tmp/stale_path.txt\ncat /tmp/stale_path.txt\n\n# Stale 은 서버에서 파일이나 디렉터리가 지워지거나 export 가 바뀌어 클라이언트가 가진 핸들이 무효가 된 것이다. 보통 언마운트 후 다시 마운트하면 해결된다",
+    "6": "echo 'iscsiadm -m node -T iqn.2026-11.com.example:storage.disk1 -p 192.0.2.50 --login' > /tmp/login.txt\ncat /tmp/login.txt\n\n# 로그인하면 서버의 LUN 이 새 블록 장치(sdX)로 보인다. 그 뒤 파티션·파일시스템은 클라이언트가 직접 만든다. 같은 LUN 을 여러 서버가 동시에 마운트하면 안 된다"
+  }
+}

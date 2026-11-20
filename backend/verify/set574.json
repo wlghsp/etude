@@ -1,0 +1,11 @@
+{
+  "setId": 574,
+  "answers": {
+    "1": "cat /tmp/cap_http.log\nhead -1 /tmp/cap_http.log | awk '{print $3}' > /tmp/client.txt\ncat /tmp/client.txt\n\n# 요청을 처음 보낸 쪽이 클라이언트다. 클라이언트 포트(51000)는 임시 포트이고 서버 포트(80)는 서비스 포트다",
+    "2": "grep '^[0-9:.]* IP 203.0.113.10.80 >' /tmp/cap_http.log | grep 'length [1-9]' | grep -o 'length [0-9]*' | awk '{print $2}' > /tmp/resp_len.txt\ncat /tmp/resp_len.txt\n\n# 길이 0 패킷은 ACK 같은 제어 패킷이다. 실제 데이터가 오가는 것은 P(push) 패킷이다",
+    "3": "cat /tmp/cap_syn.log\nN=$(grep -c 'Flags \\[S\\]' /tmp/cap_syn.log)\necho $((N - 1)) > /tmp/retrans.txt\ncat /tmp/retrans.txt\n\n# 간격이 1, 2, 4 초로 두 배씩 늘어난다(지수 백오프). 응답(SYN-ACK 나 RST)이 전혀 없는 것이 특징이고 접속하는 쪽은 결국 시간 초과를 본다",
+    "4": "cat /tmp/cap_rst.log\ngrep 'Flags \\[R' /tmp/cap_rst.log | awk '{print $3}' | sed 's/\\.[0-9]*$//' > /tmp/rst_from.txt\ncat /tmp/rst_from.txt\n\n# SYN 에 RST 가 즉시 돌아오면 그 서버는 살아 있지만 그 포트에 듣는 프로세스가 없거나 방화벽이 REJECT 한 것이다. 재전송만 반복되는 경우와 구별된다",
+    "5": "cat /tmp/cap_dns.log\nID=$(grep NXDomain /tmp/cap_dns.log | grep -o '> [0-9.]*: [0-9]*' | awk '{print $3}')\ngrep \"$ID+\" /tmp/cap_dns.log | grep -o 'A? [^ ]*' | awk '{print $2}' > /tmp/nx_name.txt\ncat /tmp/nx_name.txt\n\n# + 는 재귀 질의를 요청했다는 표시다. 응답의 숫자 2/0/0 은 답·권한·추가 레코드 수이고, NXDomain 응답의 0/1/0 은 답이 없고 권한(SOA) 레코드만 있다는 뜻이다",
+    "6": "echo 'tcpdump -nn -i any -c 10 -w /tmp/cap.pcap host 192.0.2.50 and tcp port 8080' > /tmp/cmd.txt\ncat /tmp/cmd.txt\n\n# 필터 없이 전체를 잡으면 양이 너무 많고 서버에 부담이 된다. 반드시 호스트·포트로 좁히고 -c 나 시간 제한을 둔다. 저장한 파일은 tcpdump -r 로 읽는다"
+  }
+}

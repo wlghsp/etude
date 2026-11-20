@@ -1,0 +1,11 @@
+{
+  "setId": 568,
+  "answers": {
+    "1": "ping -c 1 127.0.0.1\nping -c 1 127.0.0.1 | grep -o 'ttl=[0-9]*' | cut -d= -f2 > /tmp/ttl.txt\ncat /tmp/ttl.txt\n\n# 리눅스가 처음 정하는 TTL 은 보통 64. 라우터를 하나 지날 때마다 1 씩 줄어 0 이 되면 버려진다. 응답 TTL 로 상대까지의 홉 수를 대략 짐작한다",
+    "2": "ping -c 1 -s 1000 127.0.0.1\nping -c 1 -s 1000 127.0.0.1 | grep 'bytes from' | cut -d' ' -f1 > /tmp/bytes.txt\ncat /tmp/bytes.txt\n\n# 1008 = 데이터 1000 + ICMP 헤더 8. IP 헤더 20 까지 더하면 실제 패킷은 1028 바이트다. MTU 점검에서 이 계산이 쓰인다",
+    "3": "traceroute -n 127.0.0.1\ntraceroute -n 127.0.0.1 | tail -n +2 > /tmp/hop.txt\ncat /tmp/hop.txt\n\n# 자기 자신은 한 홉이다. 외부로 나가면 줄이 여러 개 생기며 각 줄이 라우터 하나(TTL 을 1,2,3... 로 늘려 가며 알아낸 것)다",
+    "4": "grep -o '[0-9.]*% packet loss' /tmp/ping_sample.log | cut -d' ' -f1 > /tmp/loss.txt\ngrep '^rtt' /tmp/ping_sample.log | cut -d= -f2 | cut -d/ -f2 > /tmp/avg.txt\ncat /tmp/loss.txt /tmp/avg.txt\n\n# 20% 손실은 5개 중 1개 유실(icmp_seq=3 이 없다). 손실이 조금이라도 있으면 회선·장비 상태를 의심한다. 평균 12.350 ms",
+    "5": "cat /tmp/trace_sample.log\ngrep '\\* \\* \\*' /tmp/trace_sample.log | awk '{print $1}' > /tmp/star_hop.txt\necho 5 > /tmp/jump_hop.txt\ncat /tmp/star_hop.txt /tmp/jump_hop.txt\n\n# 4번 홉은 응답을 안 줬지만 뒤 홉(5, 6)이 정상 응답하니 그 장비가 ICMP 응답만 막은 것이다. 지연은 4→5 구간에서 2 ms 대에서 88 ms 대로 뛴다(먼 거리 회선·구간 혼잡 의심)",
+    "6": "cat /tmp/mtr_sample.log\necho 5 > /tmp/real_loss.txt\ncat /tmp/real_loss.txt\n\n# 5번 홉부터 5, 6번이 계속 30% 손실이고 목적지(6)도 30% 이므로 5번 홉 구간에서 실제 유실이 시작된다. 3번(50%)은 뒤가 0% 라서 응답 제한"
+  }
+}

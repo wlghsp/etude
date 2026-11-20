@@ -1,0 +1,90 @@
+import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..')); from gen_pilot_sets import *
+# 세트 569: HTTP 한 줄씩: curl 로 요청·응답 읽기. 명세: docs/specs/spec_gap_set569.md
+# 샌드박스 linux(비특권). 연습 서버(/tmp/webd.pl, 127.0.0.1:8081)는 setup 이 perl 로 만든다. 선행: 156·268(curl 기본 옵션).
+
+S69 = """pkill -x perl >/dev/null 2>&1; sleep 0.5; rm -f /tmp/*.txt
+cat > /tmp/webd.pl <<'EOF'
+use strict; use IO::Socket::INET; $SIG{CHLD}='IGNORE'; $SIG{PIPE}='IGNORE';
+my $s=IO::Socket::INET->new(Listen=>20,LocalAddr=>'127.0.0.1',LocalPort=>$ARGV[0],ReuseAddr=>1,Proto=>'tcp') or die "bind: $!";
+while(my $c=$s->accept){
+  my $pid=fork; if($pid){close $c;next}
+  my $req=<$c>//''; my($m,$p)=split ' ',$req; $m//='';$p//='/';
+  my %h; while(my $l=<$c>){$l=~s/\\r?\\n$//; last if $l eq ''; $h{lc $1}=$2 if $l=~/^([^:]+):\\s*(.*)$/}
+  my $b=''; read($c,$b,$h{'content-length'}) if ($h{'content-length'}||0)>0;
+  my($code,$text,$body,$extra)=(200,'OK','welcome',"X-Env: prod\\r\\n");
+  if($p eq '/old'){($code,$text,$body,$extra)=(301,'Moved Permanently','',"Location: /new\\r\\n")}
+  elsif($p eq '/new'){$body='new page'}
+  elsif($p eq '/health'){($code,$text,$body)=(503,'Service Unavailable','down')}
+  elsif($p eq '/echo'){$body="host=".($h{host}//'')}
+  elsif($p eq '/slow'){sleep 3;$body='slow done'}
+  elsif($p eq '/submit' && $m eq 'POST'){($code,$text,$body)=(201,'Created',"got:$b")}
+  elsif($p ne '/'){($code,$text,$body)=(404,'Not Found','not found')}
+  my $len=length $body;
+  print $c "HTTP/1.1 $code $text\\r\\nContent-Type: text/plain\\r\\n${extra}Content-Length: $len\\r\\nConnection: close\\r\\n\\r\\n";
+  print $c $body unless $m eq 'HEAD';
+  close $c; exit 0;
+}
+EOF
+nohup perl /tmp/webd.pl 8081 >/dev/null 2>&1 &
+sleep 1"""
+U = "http://127.0.0.1:8081"
+
+b = SetBuilder(569, 'HTTP 한 줄씩: curl 로 상태 코드·헤더·리다이렉트·Host·POST·타임아웃 읽기',
+               'HTTP 요청과 응답을 curl 로 직접 읽어 봅니다. 상태 코드(404·503)만 뽑는 -w, 응답 헤더만 보는 -I, 리다이렉트(301)의 Location 과 -L 로 따라가기, Host 헤더를 바꾸는 -H 와 DNS 없이 이름을 지정하는 --resolve, POST 로 데이터 보내기, 느린 응답을 끊는 -m 과 종료 코드 28, -v 출력에서 요청 줄과 응답 줄 읽기를 연습합니다.',
+               'linux', '네트워크', 47, 829, '🌐',
+               [{"title": "curl 매뉴얼", "url": "https://curl.se/docs/manpage.html"}, {"title": "HTTP 상태 코드(MDN)", "url": "https://developer.mozilla.org/docs/Web/HTTP/Status"}], 3)
+
+# 1
+b.nt('상태 코드만 뽑기', '`http://127.0.0.1:8081` 에 연습용 웹 서버가 떠 있습니다. 요청이 어떻게 처리됐는지는 **상태 코드**(200 성공, 404 없음, 503 서버 불가 등)가 알려 줍니다. 본문은 버리고 상태 코드만 출력하게 하여 아래를 저장하세요. (숫자만)\n- `/tmp/code_a.txt` : 없는 주소 `/missing` 의 상태 코드\n- `/tmp/code_b.txt` : 상태 확인 주소 `/health` 의 상태 코드',
+     '`curl` 의 출력 서식 옵션(`-w`)에 상태 코드 변수가 있습니다. `man curl` 의 write-out 변수 목록에서 찾고, 본문은 버리세요.',
+     "curl -s -o /dev/null -w '%{http_code}' " + U + "/missing > /tmp/code_a.txt\ncurl -s -o /dev/null -w '%{http_code}' " + U + "/health > /tmp/code_b.txt\ncat /tmp/code_a.txt; echo; cat /tmp/code_b.txt; echo\n\n# 404 는 클라이언트가 요청한 대상이 없음(4xx), 503 은 서버가 지금 처리할 수 없음(5xx). 모니터링은 이 숫자로 정상 여부를 판단한다",
+     S69, [chk('404 가 저장됐다', '[ "$(cat /tmp/code_a.txt)" = 404 ]'), chk('503 이 저장됐다', '[ "$(cat /tmp/code_b.txt)" = 503 ]')])
+# 2
+b.nt('응답 헤더만 보기', '응답에는 본문 앞에 **헤더**(부가 정보)가 붙습니다. 서버 `/` 주소의 응답 헤더 중 **`X-Env`** 의 **값**을 `/tmp/xenv.txt` 에 저장하세요. (값만, 줄 끝의 공백·개행 문자 제외)',
+     '`curl -I` 는 본문 없이 헤더만 가져옵니다(HEAD 요청). 출력에서 해당 헤더 줄의 값만 뽑되, 줄 끝에 캐리지 리턴이 붙어 있다는 점을 기억하세요.',
+     "curl -sI " + U + "/\ncurl -sI " + U + "/ | grep -i '^x-env:' | cut -d' ' -f2 | tr -d '\\r' > /tmp/xenv.txt\ncat /tmp/xenv.txt\n\n# 헤더 이름은 대소문자를 구분하지 않는다. X-Env 처럼 서버가 붙인 사용자 정의 헤더로 어느 환경·서버가 답했는지 확인하는 일이 많다",
+     S69, [chk('값이 prod 다', '[ "$(cat /tmp/xenv.txt)" = prod ]')])
+# 3
+b.nt('리다이렉트: Location 과 -L', '`/old` 주소는 **301(영구 이동)** 으로 새 주소를 알려 줍니다. 응답의 `Location` 헤더에 새 위치가 있습니다.\n1. 리다이렉트를 따라가지 않고 응답 헤더의 **`Location` 값**을 `/tmp/loc.txt` 에 저장\n2. 리다이렉트를 **따라가서 최종 본문**을 `/tmp/final.txt` 에 저장\n\n(값만, 줄 끝 문자 제외)',
+     '앞쪽은 `curl -I` 로 헤더를 보고 `Location:` 줄을 뽑습니다. 뒤쪽은 curl 의 "따라가기" 옵션(`-L`)을 쓰면 됩니다. 옵션 설명은 `curl --help all | grep -i location` 으로 찾아 보세요.',
+     "curl -sI " + U + "/old | grep -i '^location:' | cut -d' ' -f2 | tr -d '\\r' > /tmp/loc.txt\ncurl -sL " + U + "/old > /tmp/final.txt\ncat /tmp/loc.txt; echo; cat /tmp/final.txt; echo\n\n# 301/302 는 Location 을 따라가야 최종 내용을 얻는다. 무한 리다이렉트는 -L 이 기본 50번까지만 따라가다 멈춘다(--max-redirs)",
+     S69, [chk('Location 이 /new 다', '[ "$(cat /tmp/loc.txt)" = /new ]'), chk('최종 본문이 맞다', '[ "$(cat /tmp/final.txt)" = "new page" ]')])
+# 4
+b.nt('Host 헤더 바꾸기와 --resolve', '웹 서버 한 대가 `Host` 헤더의 이름을 보고 여러 사이트를 구분하는 경우가 많습니다. `/echo` 주소는 **서버가 받은 Host 헤더**를 `host=...` 로 돌려줍니다.\n1. 같은 주소(`127.0.0.1:8081`)로 접속하되 **Host 헤더를 `api.example.com`** 으로 바꿔 요청한 본문을 `/tmp/vhost.txt` 에 저장\n2. DNS 에 없는 이름 `api.example.com` 을 **`127.0.0.1` 로 해석하도록 지정**(`--resolve`)해 `http://api.example.com:8081/echo` 에 요청한 본문을 `/tmp/resolved.txt` 에 저장',
+     '앞쪽은 `-H \'Host: 이름\'`. 뒤쪽은 `--resolve 호스트:포트:주소` 형식으로 이름을 임시로 연결합니다. 두 방식은 서버가 받는 Host 값이 포트까지 같은지 결과를 비교해 보세요.',
+     "curl -s -H 'Host: api.example.com' " + U + "/echo > /tmp/vhost.txt\ncurl -s --resolve api.example.com:8081:127.0.0.1 http://api.example.com:8081/echo > /tmp/resolved.txt\ncat /tmp/vhost.txt; echo; cat /tmp/resolved.txt; echo\n\n# -H 는 접속 대상은 그대로 두고 헤더만 바꾼다. --resolve 는 이름→IP 변환만 대신해 줘서 실제 이름으로 접속한 것처럼(TLS 의 SNI 포함) 보낸다. 새 서버를 DNS 전환 전에 시험할 때 쓴다",
+     S69, [chk('Host 헤더가 api.example.com 이다', '[ "$(cat /tmp/vhost.txt)" = "host=api.example.com" ]'), chk('--resolve 결과에는 포트가 붙는다', '[ "$(cat /tmp/resolved.txt)" = "host=api.example.com:8081" ]')])
+# 5
+b.nt('POST 로 데이터 보내기', '`/submit` 주소는 POST 로 받은 본문을 `got:본문` 으로 돌려주고, 성공하면 **201(생성됨)** 을 응답합니다. `name=etude` 를 POST 로 보내 아래를 저장하세요.\n- `/tmp/post_body.txt` : 응답 본문\n- `/tmp/post_code.txt` : 응답 **상태 코드**(숫자만)',
+     '`curl -d \'데이터\' 주소` 는 POST 로 보냅니다(자동으로 POST). 본문과 상태 코드는 한 번에 `-w` 로 함께 얻거나 두 번 요청해도 됩니다.',
+     "curl -s -d 'name=etude' " + U + "/submit > /tmp/post_body.txt\ncurl -s -o /dev/null -w '%{http_code}' -d 'name=etude' " + U + "/submit > /tmp/post_code.txt\ncat /tmp/post_body.txt; echo; cat /tmp/post_code.txt; echo\n\n# -d 를 쓰면 메서드가 POST 로 바뀌고 Content-Type 은 form 형식이다. JSON 은 -H 'Content-Type: application/json' 을 함께 준다",
+     S69, [chk('본문이 맞다', '[ "$(cat /tmp/post_body.txt)" = "got:name=etude" ]'), chk('상태 코드가 201 이다', '[ "$(cat /tmp/post_code.txt)" = 201 ]')])
+# 6
+b.nt('느린 응답은 -m 으로 끊고 종료 코드 보기', '`/slow` 주소는 응답에 **3초**가 걸립니다. 운영 스크립트가 무한정 기다리지 않도록 **최대 시간(`-m` 초)** 을 줍니다.\n1. 제한 시간을 **1초**로 주고 `/slow` 를 요청한 뒤, curl 의 **종료 코드**를 `/tmp/rc_slow.txt` 에 저장\n2. 제한 시간을 **5초**로 주고 요청해 나온 **본문**을 `/tmp/slow_ok.txt` 에 저장',
+     '종료 코드는 직전 명령 뒤에 `echo $?` 로 읽습니다(출력은 `/dev/null` 로 버려도 됩니다). 시간 초과의 종료 코드가 몇인지는 `man curl` 의 EXIT CODES 에서 찾아 보세요.',
+     "curl -s -m 1 " + U + "/slow > /dev/null; echo $? > /tmp/rc_slow.txt\ncurl -s -m 5 " + U + "/slow > /tmp/slow_ok.txt\ncat /tmp/rc_slow.txt /tmp/slow_ok.txt; echo\n\n# 28 = Operation timed out. 스크립트·모니터링에서 -m(전체 시간)과 --connect-timeout(연결만)을 꼭 지정해 멈춰 있는 서버에 매달리지 않게 한다",
+     S69, [chk('종료 코드가 28 이다', '[ "$(cat /tmp/rc_slow.txt)" = 28 ]'), chk('5초 제한에서는 본문을 받았다', '[ "$(cat /tmp/slow_ok.txt)" = "slow done" ]')])
+# 7
+b.nt('-v 출력에서 요청 줄과 응답 줄 읽기', '`curl -v` 는 오가는 내용을 모두 보여 줍니다. 줄 맨 앞의 `>` 는 **보낸 것**, `<` 는 **받은 것**, `*` 는 curl 의 진행 메시지입니다. `/` 주소를 요청하며 아래 두 줄을 저장하세요.\n- `/tmp/reqline.txt` : 보낸 **요청 줄** (`> GET / HTTP/1.1` 형태 그대로)\n- `/tmp/respline.txt` : 받은 **응답 줄** (`< HTTP/1.1 200 OK` 형태 그대로, 줄 끝 문자 제외)',
+     '`-v` 출력은 표준 에러로 나옵니다. 어느 쪽이 보낸 줄이고 받은 줄인지 접두 기호로 구분해 해당 줄만 고르세요. 응답 줄 끝의 캐리지 리턴에 주의합니다.',
+     "curl -sv " + U + "/ 2>&1 >/dev/null | grep '^> GET' > /tmp/reqline.txt\ncurl -sv " + U + "/ 2>&1 >/dev/null | grep '^< HTTP' | tr -d '\\r' > /tmp/respline.txt\ncat /tmp/reqline.txt /tmp/respline.txt\n\n# 요청 줄은 메서드·경로·버전, 응답 줄은 버전·상태 코드·사유. -v 로 보면 내가 어떤 Host·헤더를 보냈는지도 바로 확인된다",
+     S69, [chk('요청 줄이 맞다', '[ "$(cat /tmp/reqline.txt | tr -d \'\\r\')" = "> GET / HTTP/1.1" ]'), chk('응답 줄이 맞다', '[ "$(cat /tmp/respline.txt)" = "< HTTP/1.1 200 OK" ]')])
+# 8
+b.choice('4xx 와 5xx 의 차이', '서비스 점검 중 `404`, `403`, `500`, `503` 응답을 봤습니다. 상태 코드 범위에 대한 설명으로 가장 알맞은 것은?', '첫 자리 숫자가 누구의 문제인지를 알려 줍니다.',
+         ['4xx 는 요청 쪽, 5xx 는 서버 쪽 문제다', '4xx 는 서버 오류이고 5xx 는 클라이언트 오류이다', '4xx 와 5xx 는 둘 다 성공을 뜻한다', '4xx 와 5xx 는 둘 다 리다이렉트를 뜻한다'], 0,
+         '2xx 는 성공, 3xx 는 이동(리다이렉트), 4xx 는 요청 쪽 문제(없는 주소 404, 권한 없음 403), 5xx 는 서버 쪽 문제(내부 오류 500, 일시 불가 503)입니다. 장애 알림은 보통 5xx 비율을 기준으로 삼고, 4xx 급증은 클라이언트 오류나 잘못된 링크를 의심합니다.')
+# 9
+b.choice('502 와 504 의 차이', '로드 밸런서(리버스 프록시) 뒤의 서비스(프록시 뒤의 실제 서버를 업스트림이라 부릅니다)에서 어떤 때는 `502`, 어떤 때는 `504` 가 납니다. 가장 알맞은 설명은?', '프록시가 업스트림 서버에서 무엇을 받았는지를 구분해 보세요.',
+         ['502 는 업스트림의 잘못된 응답·거부, 504 는 응답 시간 초과', '502 는 클라이언트의 오류, 504 는 DNS 오류', '502 는 성공을 뜻하고 504 는 리다이렉트를 뜻한다', '둘 다 클라이언트가 잘못된 주소를 요청했을 때 난다'], 0,
+         '502 Bad Gateway 는 프록시가 업스트림에서 유효하지 않은 응답을 받거나 연결에 실패한 경우, 504 Gateway Timeout 은 업스트림이 시간 안에 응답하지 않은 경우입니다. 502 는 업스트림이 죽었거나 포트가 닫힌 쪽, 504 는 업스트림이 느린 쪽을 먼저 봅니다.')
+# 10
+b.fill('리다이렉트를 따라가는 옵션', '`curl` 이 `301`/`302` 응답의 `Location` 을 따라가 최종 본문을 받게 하는 옵션을 채우세요.', '`curl --help all` 에서 "따라간다(follow)"는 설명이 붙은 짧은 옵션을 찾으세요.',
+       'curl -s -{0} http://127.0.0.1:8081/old', ['L', 'I', 'o', 'v'], [0],
+       '`-L` 은 Location 을 따라갑니다. `-I` 는 헤더만(HEAD), `-o` 는 출력 파일 지정, `-v` 는 자세한 출력입니다.')
+# 11
+b.order('웹 요청 하나가 처리되는 순서', '브라우저나 curl 이 `http://example.com/` 을 요청해 응답을 받기까지의 큰 순서입니다. 각 단계는 앞 단계의 결과가 있어야 할 수 있습니다. 올바른 순서로 놓으세요.', '앞 단계의 결과가 없으면 다음 단계를 할 수 없다는 점을 보세요.',
+        ['서버가 상태 코드와 헤더, 본문을 응답한다', '이름(example.com)을 IP 주소로 해석한다(DNS)', '해당 IP 의 80 포트로 TCP 연결을 맺는다', '연결된 소켓으로 GET / 요청과 헤더를 보낸다'], [1, 2, 3, 0],
+        '먼저 DNS 로 이름을 IP 로 바꾸고, 그 주소로 TCP 연결을 맺은 뒤 HTTP 요청을 보내면 서버가 상태 코드·헤더·본문으로 응답합니다. HTTPS 라면 TCP 연결과 요청 사이에 TLS 핸드셰이크가 들어갑니다. 각 단계의 실패가 서로 다른 오류(이름 해석 실패, refused/timeout, 4xx/5xx)로 나타납니다.')
+
+if __name__ == '__main__':
+    preview(b)

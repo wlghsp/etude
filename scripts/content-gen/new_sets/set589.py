@@ -1,0 +1,69 @@
+import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..')); from gen_pilot_sets import *
+# 세트 589: ssh 터널링과 점프 호스트. 명세: docs/specs/spec_gap_set589.md
+# 샌드박스 linux(비특권, sshd 없음). ssh-keygen·ssh -G 로 키와 설정 해석을 실제로 확인하고, 터널 명령은 파일에 적고, 소켓 출력은 샘플을 읽는다.
+
+S89 = """rm -f /tmp/id_lab /tmp/id_lab.pub /tmp/lab_key /tmp/lab_key.pub /tmp/*.txt /tmp/*.log /tmp/ssh_config
+ssh-keygen -q -t ed25519 -N '' -f /tmp/lab_key -C lab@example.com
+cat > /tmp/ss.log <<'EOF'
+State   Recv-Q  Send-Q  Local Address:Port   Peer Address:Port  Process
+LISTEN  0       128     127.0.0.1:15432      0.0.0.0:*          users:(("ssh",pid=4120,fd=5))
+LISTEN  0       128     0.0.0.0:2222         0.0.0.0:*          users:(("sshd",pid=900,fd=3))
+LISTEN  0       128     127.0.0.1:1080       0.0.0.0:*          users:(("ssh",pid=4188,fd=6))
+LISTEN  0       128     0.0.0.0:9999         0.0.0.0:*          users:(("ssh",pid=4200,fd=7))
+EOF
+true"""
+
+b = SetBuilder(589, 'ssh 터널링과 점프 호스트: 키 만들기, -L·-R·-D, ProxyJump 설정 읽기',
+               '사내망 서버에 접근할 때 자주 쓰는 ssh 의 키와 포트 포워딩, 점프 호스트 경유를 다룹니다. 키 쌍을 만들고 지문을 읽고, 로컬 포워딩(-L)·원격 포워딩(-R)·SOCKS(-D) 명령을 적고, ProxyJump 설정 파일을 쓰고 ssh -G 로 해석 결과를 확인하며, 터널이 열려 있는지 ss 출력에서 읽습니다. 샌드박스에는 ssh 서버가 없어 터널 자체는 만들지 않습니다.',
+               'linux', '네트워크', 47, 849, '🚇',
+               [{"title": "ssh 매뉴얼", "url": "https://man7.org/linux/man-pages/man1/ssh.1.html"}, {"title": "ssh_config 매뉴얼", "url": "https://man7.org/linux/man-pages/man5/ssh_config.5.html"}], 5)
+
+# 1
+b.nt('접속용 키 쌍 만들기', '서버에 비밀번호 없이 접속하려고 새 키 쌍을 만듭니다. **ed25519** 방식으로, **암호(passphrase)는 비워서** `/tmp/id_lab`(개인키)와 `/tmp/id_lab.pub`(공개키)를 만드세요.',
+     'ssh 키를 만드는 도구에 키 종류·저장 위치·암호를 정하는 옵션이 있습니다. 도구의 `-h` 로 찾아보세요.',
+     "ssh-keygen -t ed25519 -N '' -f /tmp/id_lab\nssh-keygen -l -f /tmp/id_lab.pub\n\n# 개인키는 절대 공유하지 않고 공개키(.pub)만 서버의 ~/.ssh/authorized_keys 에 넣는다. 개인키 권한은 600 이어야 한다. 운영에서는 passphrase 를 두는 것이 안전하다",
+     S89, [chk('ed25519 키가 만들어졌다', 'ssh-keygen -l -f /tmp/id_lab.pub 2>/dev/null | grep -q "ED25519"'), chk('개인키가 있다', '[ -s /tmp/id_lab ]'), chk('개인키 권한이 600 이다', '[ "$(stat -c %a /tmp/id_lab)" = 600 ]'), chk('암호가 비어 있다', 'ssh-keygen -y -P "" -f /tmp/id_lab >/dev/null 2>&1')])
+# 2
+b.nt('공개키 지문 읽기', '`/tmp/lab_key.pub` 는 어떤 공개키입니다. 키를 서로 확인할 때는 전체 대신 **지문(fingerprint)** 을 비교합니다. 이 공개키의 **SHA256 지문**(`SHA256:` 로 시작하는 문자열)을 `/tmp/fp.txt` 에 저장하세요.',
+     '키 정보를 읽는 도구에 지문을 출력하는 옵션이 있습니다. 출력에서 `SHA256:` 로 시작하는 칸만 남기세요.',
+     "ssh-keygen -l -f /tmp/lab_key.pub\nssh-keygen -l -f /tmp/lab_key.pub | awk '{print $2}' > /tmp/fp.txt\ncat /tmp/fp.txt\n\n# 처음 접속할 때 나오는 호스트 키 지문을 서버 관리자에게 받은 값과 비교하면 중간자 공격을 막을 수 있다",
+     S89, [chk('실제 지문과 같다', '[ "$(cat /tmp/fp.txt)" = "$(ssh-keygen -l -f /tmp/lab_key.pub | awk \'{print $2}\')" ]'), chk('SHA256 형식이다', 'grep -q "^SHA256:" /tmp/fp.txt')])
+# 3
+b.nt('로컬 포워딩 명령 적기', '내 PC 에서 직접 접근할 수 없는 DB 서버 `db.example.com:5432` 에 **점프 호스트 `bastion.example.com`**(사용자 `ops`)을 거쳐 접속하려 합니다. 내 PC 의 **15432 포트**로 접속하면 DB 로 전달되게 하는 `ssh` 명령 한 줄을 `/tmp/ssh_L.txt` 에 적으세요. (샌드박스에는 ssh 서버가 없어 실행하지 않습니다)',
+     '로컬 포워딩 옵션은 `-L` 이고 `포트:목적지:포트` 세 칸을 콜론으로 잇습니다. 어디서 포트가 열리는지 생각하세요.',
+     "echo 'ssh -N -L 15432:db.example.com:5432 ops@bastion.example.com' > /tmp/ssh_L.txt\ncat /tmp/ssh_L.txt\n\n# 이후 내 PC 에서 psql -h 127.0.0.1 -p 15432 로 접속하면 점프 호스트가 db.example.com:5432 로 중계한다. -N 은 원격 명령 없이 터널만 만든다",
+     S89, [chk('-L 15432 이 있다', 'grep -Eq -- "-L[ ]?(127\\.0\\.0\\.1:|localhost:)?15432:db\\.example\\.com:5432" /tmp/ssh_L.txt'), chk('점프 호스트로 접속한다', 'grep -q "ops@bastion.example.com" /tmp/ssh_L.txt'), chk('ssh 명령이다', 'grep -Eq "^[[:space:]]*ssh " /tmp/ssh_L.txt')])
+# 4
+b.nt('ProxyJump 설정 쓰기', '`app.example.com` 서버는 점프 호스트 `bastion` 을 거쳐야만 접속됩니다. 매번 옵션을 쓰지 않도록 **ssh 설정 파일 `/tmp/ssh_config`** 를 만들어 아래를 적으세요.\n- `Host bastion` : 실제 주소(`HostName`) `bastion.example.com`, 사용자(`User`) `ops`\n- `Host app` : 실제 주소 `app.example.com`, 점프 호스트(`ProxyJump`) `bastion`',
+     '`Host 별칭` 아래에 들여쓴 설정을 적습니다. 완성 후 `ssh -F /tmp/ssh_config -G app` 로 해석 결과를 볼 수 있습니다.',
+     "cat > /tmp/ssh_config <<'EOF'\nHost bastion\n    HostName bastion.example.com\n    User ops\nHost app\n    HostName app.example.com\n    ProxyJump bastion\nEOF\nssh -F /tmp/ssh_config -G app | grep -iE '^(hostname|proxyjump)'\n\n# 이후 ssh app 한 번으로 bastion 을 거쳐 접속한다. -G 는 접속하지 않고 설정을 해석해서 보여 준다",
+     S89, [chk('app 의 호스트가 app.example.com 이다', 'ssh -F /tmp/ssh_config -G app 2>/dev/null | grep -qix "hostname app.example.com"'), chk('app 이 bastion 을 거친다', 'ssh -F /tmp/ssh_config -G app 2>/dev/null | grep -qix "proxyjump bastion"'), chk('bastion 의 사용자가 ops 이다', 'ssh -F /tmp/ssh_config -G bastion 2>/dev/null | grep -qix "user ops"')])
+# 5
+b.nt('열려 있는 터널 찾기', '`/tmp/ss.log` 는 내 PC 에서 `ss -ltnp` 를 실행한 결과입니다. `ssh` 프로세스가 **자기 PC 안에서 포트를 열어 둔 것**은 포트 포워딩 터널입니다. `ssh` 프로세스가 **127.0.0.1 에서 LISTEN 하는 포트 번호**를 **한 줄에 하나씩, 숫자 오름차순으로** `/tmp/tunnels.txt` 에 저장하세요. (`sshd` 는 서버 프로세스라 제외)',
+     '프로세스 이름이 정확히 `ssh` 인 줄만 고르세요(`sshd` 와 구분). 주소 칸의 포트만 뽑습니다.',
+     "cat /tmp/ss.log\ngrep 'users:((\"ssh\"' /tmp/ss.log | awk '{print $4}' | grep '^127[.]0[.]0[.]1:' | awk -F: '{print $NF}' | sort -n > /tmp/tunnels.txt\ncat /tmp/tunnels.txt\n\n# 15432 는 -L 터널, 1080 은 -D(SOCKS) 터널이다. 127.0.0.1 에만 열리므로 다른 PC 에서는 못 쓴다. 0.0.0.0 으로 열면 누구나 접속할 수 있어 위험하다",
+     S89, [chk('1080 과 15432 다', '[ "$(tr "\\n" " " < /tmp/tunnels.txt | xargs)" = "1080 15432" ]')])
+# 6
+b.nt('원격 포워딩 명령 적기', '내 PC 에서만 접근되는 개발 서버(**내 PC 의 3000 포트**)를 외부 서버 `pub.example.com` 의 **8080 포트**로 열어 동료가 접근하게 하려 합니다. 내 PC 에서 서버로 연결을 만들어 서버 쪽 포트를 여는 `ssh` 명령 한 줄을 `/tmp/ssh_R.txt` 에 적으세요. (사용자 `ops`)',
+     '원격(Remote)에서 포트를 여는 옵션입니다. 로컬 포워딩과 포트를 여는 쪽이 반대입니다.',
+     "echo 'ssh -N -R 8080:localhost:3000 ops@pub.example.com' > /tmp/ssh_R.txt\ncat /tmp/ssh_R.txt\n\n# 서버 쪽 sshd 가 기본으로 127.0.0.1 에만 포트를 여므로 외부에 공개하려면 GatewayPorts 설정이 필요하다. 보안상 신중히 쓴다",
+     S89, [chk('-R 8080 이 있다', 'grep -Eq -- "-R[ ]?((\\*|0\\.0\\.0\\.0|127\\.0\\.0\\.1|localhost|\\[::\\]):)?8080:(localhost|127\\.0\\.0\\.1):3000" /tmp/ssh_R.txt'), chk('서버로 접속한다', 'grep -q "ops@pub.example.com" /tmp/ssh_R.txt')])
+# 7
+b.choice('-L 과 -R 의 방향', '`ssh -L` 과 `ssh -R` 의 차이로 가장 알맞은 것은?', '포트를 어느 쪽에서 여는지가 다릅니다.',
+         ['-L 은 내 PC 쪽에서, -R 은 서버 쪽에서 포트를 열어 전달한다', '-L 은 읽기 전용 터널이고 -R 은 읽고 쓰기가 되는 터널이다', '-L 은 로그인용이고 -R 은 원격 명령 실행용이다', '둘은 이름만 다를 뿐 동작은 완전히 같다'], 0,
+         '-L(Local)은 내 PC 에 포트를 열어 점프 호스트 너머의 목적지로 보내고, -R(Remote)은 서버에 포트를 열어 내 PC(또는 내 PC 너머)로 되돌려 보냅니다. -D 는 내 PC 에 SOCKS 프록시를 엽니다.')
+# 8
+b.choice('터널을 모든 주소에 열었을 때', '`ssh -L 0.0.0.0:15432:db.example.com:5432 ...` 처럼 로컬 포트를 모든 주소에 열었습니다. 가장 알맞은 평가는?', '같은 네트워크의 다른 PC 가 그 포트에 접속하면 무슨 일이 생기는지 생각해 보세요.',
+         ['같은 네트워크의 누구나 내 인증을 빌려 DB 에 접근해 위험하다', '문제없이 안전하며 오히려 권장되는 설정이다', '0.0.0.0 은 무시되어 127.0.0.1 로만 열리게 된다', '암호화가 되므로 인증이 없어도 안전하다'], 0,
+         '기본은 127.0.0.1 에만 열리지만 0.0.0.0 을 지정하면 같은 네트워크의 누구나 터널로 들어와 내 점프 호스트 인증으로 DB 에 접근합니다. 꼭 필요하면 접근 제어를 함께 걸고, 보통은 기본(루프백)으로 둡니다.')
+# 9
+b.fill('SOCKS 프록시 터널', '내 PC 의 **1080 포트**에 SOCKS 프록시를 열어 브라우저가 점프 호스트를 거쳐 접속하게 하려 합니다. 빈칸에 들어갈 ssh 옵션을 채우세요.', 'SOCKS 프록시를 여는 포워딩은 목적지가 고정이 아닌 방식입니다.',
+       'ssh -N -{0} 1080 ops@bastion.example.com', ['D', 'L', 'R', 'J'], [0],
+       '`-D 포트` 는 동적(Dynamic) 포워딩으로 로컬에 SOCKS 프록시를 엽니다. `-L` 은 고정 목적지 로컬 포워딩, `-R` 은 원격 포워딩, `-J` 는 점프 호스트 지정 옵션입니다.')
+# 10
+b.order('점프 호스트 경유 접속이 안 될 때 점검 순서', '`ssh app` 이 실패합니다(설정은 점프 호스트 경유). 바깥에서 안쪽으로 확인해 나가려 합니다. 올바른 순서로 놓으세요.', '점프 호스트까지 가지 못하면 그 뒤는 볼 수 없습니다.',
+        ['점프 호스트에서 목적지(app)로 직접 접속해 본다', '위 확인으로도 원인이 안 보이면 `ssh -v` 로 어느 단계에서 멈추는지 본다', '내 PC 에서 점프 호스트에 직접 접속해 본다', '접속하기 전에 `ssh -G app` 으로 설정이 의도대로 해석되는지 본다'], [3, 2, 0, 1],
+        '먼저 설정 해석(-G)이 맞는지 확인하고, 내 PC 에서 점프 호스트까지 접속되는지, 점프 호스트에서 목적지까지 접속되는지 순서대로 확인합니다. 그래도 원인이 안 보이면 -v 로 멈추는 단계를 자세히 봅니다.')
+
+if __name__ == '__main__':
+    preview(b)

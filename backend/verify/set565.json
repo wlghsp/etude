@@ -1,0 +1,11 @@
+{
+  "setId": 565,
+  "answers": {
+    "1": "nohup nc -l 9000 >/dev/null 2>&1 &\nsleep 1\nss -ltn | grep 9000\nss -ltn | grep ':9000' | awk '{print $4}' > /tmp/listen.txt\ncat /tmp/listen.txt\n\n# 0.0.0.0:9000 은 모든 주소의 9000 번에서 받겠다는 뜻이다. 127.0.0.1:9000 이면 같은 서버 안에서만 접속된다",
+    "2": "nc -zv 127.0.0.1 9999 2> /tmp/refused.txt\nnohup nc -l 9999 >/dev/null 2>&1 &\nsleep 1\nnc -zv 127.0.0.1 9999 2> /tmp/ok.txt\ncat /tmp/refused.txt /tmp/ok.txt\n\n# Connection refused: 그 주소에는 닿았지만 포트에서 기다리는 프로그램이 없어 즉시 거절(RST)당했다. 방화벽이 패킷을 버리면 거절이 아니라 한참 뒤 timed out 이 난다",
+    "3": "ss -tn state established '( sport = :9100 )'\nss -tn state established '( sport = :9100 )' | tail -n +2 | awk '{print $4}' | sed 's/.*://' > /tmp/cport.txt\ncat /tmp/cport.txt\n\n# 서버는 고정 포트(9100), 클라이언트는 매번 달라지는 임시 포트를 쓴다. 연결은 (주소, 포트) 네 값의 조합으로 구별된다",
+    "4": "echo hi | nc -N 127.0.0.1 9101\nsleep 1\nss -tan state time-wait\nss -tan state time-wait | tail -n +2 | grep -c ':9101' > /tmp/tw.txt\ncat /tmp/tw.txt\n\n# 먼저 close 한 쪽(여기서는 클라이언트)에 TIME-WAIT 이 남는다. 짧은 연결이 많은 서버에서 수천 개 보이는 것은 대개 정상이다",
+    "5": "ss -tanp state close-wait\nss -tanp state close-wait | tail -n +2 | grep -o 'pid=[0-9]*' | head -1 | cut -d= -f2 > /tmp/pid.txt\ncat /tmp/pid.txt\n\n# CLOSE-WAIT 이 계속 쌓이면 그 앱이 소켓을 닫지 않는 것(연결 누수). 원인은 상대 서버가 아니라 이 프로세스의 코드다",
+    "6": "ss -tanp state close-wait\nkill $(ss -tanp state close-wait | tail -n +2 | grep -o 'pid=[0-9]*' | head -1 | cut -d= -f2)\nsleep 1\nss -tanp state close-wait\n\n# 프로세스가 끝나면 운영체제가 소켓을 정리한다. 재시작은 증상 완화일 뿐 같은 버그가 다시 쌓는다"
+  }
+}

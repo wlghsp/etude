@@ -1,0 +1,11 @@
+{
+  "setId": 594,
+  "answers": {
+    "1": "cat /tmp/ceph_s.log\ngrep 'health:' /tmp/ceph_s.log | awk '{print $2}' > /tmp/health.txt\ncat /tmp/health.txt\n\n# HEALTH_WARN 은 서비스는 되지만 주의가 필요한 상태다. 원인은 그 아래 줄(osds down, degraded)과 ceph health detail 에 나온다",
+    "2": "grep 'osd:' /tmp/ceph_s.log\ngrep 'osd:' /tmp/ceph_s.log | grep -o '[0-9]* up' | cut -d' ' -f1 > /tmp/up.txt\ngrep 'osd:' /tmp/ceph_s.log | grep -o '[0-9]* in' | cut -d' ' -f1 > /tmp/in.txt\ncat /tmp/up.txt /tmp/in.txt\n\n# 9 개 중 8 개만 up 이고 9 개는 in 이다. 한 OSD 가 내려갔지만 아직 in 이라 데이터를 다른 곳에 옮기지 않은 상태다. 일정 시간 뒤에는 out 으로 바뀌어 재분배(backfill)가 시작된다",
+    "3": "grep -o '([0-9.]*%)' /tmp/ceph_s.log | head -1 | tr -d '()' > /tmp/degraded.txt\ncat /tmp/degraded.txt\n\n# 복제본(3개)이 일부 없어진 객체의 비율이다. 내려간 OSD 가 돌아오거나 재분배가 끝나면 줄어든다. 이 상태에서 추가 장애가 나면 데이터 손실 위험이 커진다",
+    "4": "grep -E '[0-9]+ active\\+clean$' /tmp/ceph_s.log | awk '{print $1}' > /tmp/clean.txt\ncat /tmp/clean.txt\n\n# 전체 64 개 중 52 개가 정상이고 12 개는 복제본이 모자란(undersized+degraded) 상태다. 모든 PG 가 active+clean 이 되어야 완전히 정상이다",
+    "5": "cat /tmp/ceph_df.log\nawk '/^--- POOLS/{f=1; next} f && /^(rbd|meta)/ {print $1, $(NF-2)}' /tmp/ceph_df.log | sort -k2 -n -r | head -1 | awk '{print $1}' > /tmp/top_pool.txt\ncat /tmp/top_pool.txt\n\n# rbd 풀이 1.84% 로 가장 많이 쓴다(%USED 는 끝에서 셋째 칸, MAX AVAIL 값과 단위 앞). 풀의 USED 는 복제본까지 포함한 값(STORED 의 약 3 배)이고 MAX AVAIL 은 복제를 고려한 사용 가능 용량이다",
+    "6": "cat /tmp/osd_dump.log\ngrep '^nearfull_ratio' /tmp/osd_dump.log | awk '{print $2}' > /tmp/nearfull.txt\ncat /tmp/nearfull.txt\n\n# 기본은 nearfull 0.85 → backfillfull 0.90 → full 0.95 순이다. full 에 도달하면 쓰기가 막히므로 nearfull 경고 때 바로 용량을 늘리거나 정리한다"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "setId": 566,
+  "answers": {
+    "1": "openssl x509 -in /tmp/pki/server.pem -noout -enddate > /tmp/end.txt\ncat /tmp/end.txt\n\n# 시작 시각은 -startdate, 둘 다 보려면 -dates. 서버 인증서는 갱신 날짜를 달력에 걸어 두고 만료 전에 교체한다",
+    "2": "openssl x509 -in /tmp/pki/server.pem -noout -ext subjectAltName\nopenssl x509 -in /tmp/pki/server.pem -noout -ext subjectAltName | grep -o 'DNS:www[^,]*' | sed 's/DNS://' > /tmp/san.txt\ncat /tmp/san.txt\n\n# 요즘 브라우저는 CN 이 아니라 SAN 만 본다. 접속 이름(www.shop.example.com)이 SAN 에 없으면 CN 이 맞아도 '이름 불일치' 오류가 난다",
+    "3": "for f in a b c; do if ! openssl x509 -in /tmp/pki/certs/$f.pem -noout -checkend 0 >/dev/null; then echo $f.pem; fi; done > /tmp/expired.txt\ncat /tmp/expired.txt\n\n# 모니터링은 보통 -checkend 604800(7일)처럼 만료 임박을 미리 알린다",
+    "4": "openssl verify -CAfile /tmp/pki/ca.pem /tmp/pki/server.pem > /tmp/ok.txt 2>&1\nopenssl verify -CAfile /tmp/pki/other-ca.pem /tmp/pki/server.pem > /tmp/bad.txt 2>&1\ncat /tmp/ok.txt /tmp/bad.txt\n\n# 'unable to get local issuer certificate' 는 이 인증서를 서명한 CA 를 내 신뢰 목록에서 못 찾았다는 뜻이다. 사설 CA 인증서를 신뢰 목록에 넣지 않았을 때 자주 본다",
+    "5": "openssl s_client -connect 127.0.0.1:8443 -servername shop.example.com -CAfile /tmp/pki/ca.pem </dev/null 2>&1 | grep 'Verify return code' > /tmp/rc_ok.txt\nopenssl s_client -connect 127.0.0.1:8443 -servername shop.example.com </dev/null 2>&1 | grep 'Verify return code' > /tmp/rc_bad.txt\ncat /tmp/rc_ok.txt /tmp/rc_bad.txt\n\n# 0 (ok) 면 검증 성공. 0 이 아니면 괄호 안 설명(unable to verify the first certificate 등)이 원인의 단서다",
+    "6": "openssl s_client -connect 127.0.0.1:8443 -servername shop.example.com -CAfile /tmp/pki/ca.pem -verify_hostname api.example.com </dev/null 2>&1 | grep 'Verify return code' > /tmp/host_bad.txt\nopenssl s_client -connect 127.0.0.1:8443 -servername shop.example.com -CAfile /tmp/pki/ca.pem -verify_hostname www.shop.example.com </dev/null 2>&1 | grep 'Verify return code' > /tmp/host_ok.txt\ncat /tmp/host_bad.txt /tmp/host_ok.txt\n\n# 62 (hostname mismatch): 인증서는 믿을 수 있어도 접속한 이름이 SAN 에 없다. 해결은 접속 이름을 SAN 에 있는 것으로 바꾸거나 SAN 에 이름을 넣은 인증서로 교체",
+    "7": "openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/my.key -out /tmp/my.pem -days 30 -subj '/CN=test.example.com' -addext 'subjectAltName=DNS:test.example.com' 2>/dev/null\nopenssl x509 -in /tmp/my.pem -noout -subject -enddate -ext subjectAltName\n\n# 자체 서명 인증서는 발급자=주체라서 브라우저가 믿지 않는다. 시험용으로만 쓰고 운영은 신뢰하는 CA 에서 발급받는다"
+  }
+}

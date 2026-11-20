@@ -1,0 +1,12 @@
+{
+  "setId": 569,
+  "answers": {
+    "1": "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8081/missing > /tmp/code_a.txt\ncurl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8081/health > /tmp/code_b.txt\ncat /tmp/code_a.txt; echo; cat /tmp/code_b.txt; echo\n\n# 404 는 클라이언트가 요청한 대상이 없음(4xx), 503 은 서버가 지금 처리할 수 없음(5xx). 모니터링은 이 숫자로 정상 여부를 판단한다",
+    "2": "curl -sI http://127.0.0.1:8081/\ncurl -sI http://127.0.0.1:8081/ | grep -i '^x-env:' | cut -d' ' -f2 | tr -d '\\r' > /tmp/xenv.txt\ncat /tmp/xenv.txt\n\n# 헤더 이름은 대소문자를 구분하지 않는다. X-Env 처럼 서버가 붙인 사용자 정의 헤더로 어느 환경·서버가 답했는지 확인하는 일이 많다",
+    "3": "curl -sI http://127.0.0.1:8081/old | grep -i '^location:' | cut -d' ' -f2 | tr -d '\\r' > /tmp/loc.txt\ncurl -sL http://127.0.0.1:8081/old > /tmp/final.txt\ncat /tmp/loc.txt; echo; cat /tmp/final.txt; echo\n\n# 301/302 는 Location 을 따라가야 최종 내용을 얻는다. 무한 리다이렉트는 -L 이 기본 50번까지만 따라가다 멈춘다(--max-redirs)",
+    "4": "curl -s -H 'Host: api.example.com' http://127.0.0.1:8081/echo > /tmp/vhost.txt\ncurl -s --resolve api.example.com:8081:127.0.0.1 http://api.example.com:8081/echo > /tmp/resolved.txt\ncat /tmp/vhost.txt; echo; cat /tmp/resolved.txt; echo\n\n# -H 는 접속 대상은 그대로 두고 헤더만 바꾼다. --resolve 는 이름→IP 변환만 대신해 줘서 실제 이름으로 접속한 것처럼(TLS 의 SNI 포함) 보낸다. 새 서버를 DNS 전환 전에 시험할 때 쓴다",
+    "5": "curl -s -d 'name=etude' http://127.0.0.1:8081/submit > /tmp/post_body.txt\ncurl -s -o /dev/null -w '%{http_code}' -d 'name=etude' http://127.0.0.1:8081/submit > /tmp/post_code.txt\ncat /tmp/post_body.txt; echo; cat /tmp/post_code.txt; echo\n\n# -d 를 쓰면 메서드가 POST 로 바뀌고 Content-Type 은 form 형식이다. JSON 은 -H 'Content-Type: application/json' 을 함께 준다",
+    "6": "curl -s -m 1 http://127.0.0.1:8081/slow > /dev/null; echo $? > /tmp/rc_slow.txt\ncurl -s -m 5 http://127.0.0.1:8081/slow > /tmp/slow_ok.txt\ncat /tmp/rc_slow.txt /tmp/slow_ok.txt; echo\n\n# 28 = Operation timed out. 스크립트·모니터링에서 -m(전체 시간)과 --connect-timeout(연결만)을 꼭 지정해 멈춰 있는 서버에 매달리지 않게 한다",
+    "7": "curl -sv http://127.0.0.1:8081/ 2>&1 >/dev/null | grep '^> GET' > /tmp/reqline.txt\ncurl -sv http://127.0.0.1:8081/ 2>&1 >/dev/null | grep '^< HTTP' | tr -d '\\r' > /tmp/respline.txt\ncat /tmp/reqline.txt /tmp/respline.txt\n\n# 요청 줄은 메서드·경로·버전, 응답 줄은 버전·상태 코드·사유. -v 로 보면 내가 어떤 Host·헤더를 보냈는지도 바로 확인된다"
+  }
+}

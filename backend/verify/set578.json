@@ -1,0 +1,11 @@
+{
+  "setId": 578,
+  "answers": {
+    "1": "truncate -s 32M /tmp/disk.img\nmke2fs -q -F -t ext4 -L data /tmp/disk.img\nblkid /tmp/disk.img\n\n# 실제 디스크에서는 /dev/sdb1 같은 장치에 한다. 파일시스템을 만들면 그 장치의 기존 데이터는 사라지므로 대상 확인이 가장 중요하다",
+    "2": "blkid /tmp/pre.img\nblkid -s UUID -o value /tmp/pre.img > /tmp/uuid.txt\ncat /tmp/uuid.txt\n\n# fstab 에는 UUID=... 로 적으면 디스크 순서가 바뀌어도 올바른 파일시스템이 마운트된다. nofail 옵션으로 없어도 부팅이 막히지 않게 한다",
+    "3": "blkid /tmp/old.img\ne2label /tmp/old.img archive 2>/dev/null || tune2fs -L archive /tmp/old.img\nblkid -s LABEL -o value /tmp/old.img\n\n# mke2fs 는 새로 만들어 데이터가 사라진다. tune2fs 는 기존 파일시스템의 레이블·예약 블록·점검 주기 같은 속성만 바꾼다",
+    "4": "dumpe2fs -h /tmp/pre.img 2>/dev/null | grep -E 'Block size|Block count|Inode count'\ndumpe2fs -h /tmp/pre.img 2>/dev/null | awk '/^Block size/{print $3}' > /tmp/bs.txt\ncat /tmp/bs.txt\n\n# 파일시스템의 최소 할당 단위다. 1 바이트 파일도 블록 하나를 쓴다. 작은 파일이 많으면 낭비가 커서 블록 크기를 줄이기도 한다",
+    "5": "truncate -s 64M /tmp/grow.img\ne2fsck -f -p /tmp/grow.img\nresize2fs /tmp/grow.img\ndumpe2fs -h /tmp/grow.img 2>/dev/null | grep -E 'Block count|Block size'\n\n# 실제로는 디스크·LV 를 먼저 키우고 그 위의 파일시스템을 확장하는 순서다. ext4 는 마운트한 채로도 확장할 수 있다(온라인 확장)",
+    "6": "e2fsck -f -p /tmp/shrink.img\nresize2fs /tmp/shrink.img 24M\ndumpe2fs -h /tmp/shrink.img 2>/dev/null | grep -E 'Block count|Block size'\ndebugfs -R 'ls -l' /tmp/shrink.img 2>/dev/null | grep keep.dat\n\n# ext4 는 언마운트한 상태에서만 줄일 수 있다(오프라인). 순서가 중요하다: 파일시스템을 먼저 줄이고 그다음 LV·파티션을 줄여야 한다. 반대로 하면 데이터가 잘린다. XFS 는 줄일 수 없다"
+  }
+}

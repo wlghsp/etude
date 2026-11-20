@@ -1,0 +1,11 @@
+{
+  "setId": 597,
+  "answers": {
+    "1": "cat /tmp/smart_hdd.log\ngrep 'overall-health' /tmp/smart_hdd.log | awk '{print $NF}' > /tmp/overall.txt\ncat /tmp/overall.txt\n\n# PASSED 여도 안심하면 안 된다. 이 판정은 속성이 한계(THRESH)를 넘었을 때만 FAILED 가 되어 징후가 나타나기 전에는 통과로 나온다. 개별 속성의 추세를 함께 본다",
+    "2": "grep Reallocated_Sector_Ct /tmp/smart_hdd.log | awk '{print $NF}' > /tmp/realloc.txt\ncat /tmp/realloc.txt\n\n# 0 이 정상이고 0 이 아니면 이미 불량 섹터가 생겼다는 신호다. 숫자가 계속 늘어나면 교체를 준비한다",
+    "3": "grep Current_Pending_Sector /tmp/smart_hdd.log | awk '{print $NF}' > /tmp/pending.txt\ncat /tmp/pending.txt\n\n# 대기 섹터가 0 보다 크면 곧 불량이 될 수 있어 위험하다. 이 섹터에 다시 쓰면 재할당되어 재할당 수로 옮겨 가거나 회복되기도 한다",
+    "4": "H=$(grep Power_On_Hours /tmp/smart_hdd.log | awk '{print $NF}')\necho $((H / 8760)) > /tmp/years.txt\ncat /tmp/years.txt\n\n# 25300 시간은 약 2.9 년이다. 가동 시간 자체보다 불량 섹터 증가 같은 속성의 변화를 함께 본다. HDD 는 보통 3~5 년 사용 뒤 교체를 계획한다",
+    "5": "cat /tmp/smart_nvme.log\ngrep 'Percentage Used' /tmp/smart_nvme.log | awk '{print $NF}' | tr -d '%' > /tmp/used.txt\ncat /tmp/used.txt\n\n# 87% 는 수명의 대부분을 썼다는 뜻이다. 100% 를 넘어도 바로 고장나지는 않지만 보증과 안정성이 끝나는 구간이라 교체를 준비한다",
+    "6": "grep -E 'Available Spare' /tmp/smart_nvme.log\nS=$(grep '^Available Spare:' /tmp/smart_nvme.log | awk '{print $3}' | tr -d '%')\nT=$(grep 'Threshold' /tmp/smart_nvme.log | awk '{print $4}' | tr -d '%')\nif [ \"$S\" -gt \"$T\" ]; then echo ok > /tmp/spare.txt; else echo low > /tmp/spare.txt; fi\ncat /tmp/spare.txt\n\n# 여분 셀이 줄어 기준 아래가 되면 장치가 위험 경고를 내고 곧 읽기 전용이 될 수 있다. 사용률(Percentage Used)과 함께 본다"
+  }
+}

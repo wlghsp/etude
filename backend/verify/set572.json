@@ -1,0 +1,11 @@
+{
+  "setId": 572,
+  "answers": {
+    "1": "cat /tmp/nat.log\ngrep -- '-j MASQUERADE' /tmp/nat.log | grep -o -- '-s [0-9./]*' | awk '{print $2}' > /tmp/inside.txt\ncat /tmp/inside.txt\n\n# 내부 대역의 사설 주소는 외부에서 되돌아올 수 없어 장비의 바깥 주소로 바꿔 나간다. 응답이 오면 conntrack 이 기억해 둔 원래 주소로 되돌린다",
+    "2": "grep 'dport 8443' /tmp/nat.log | grep -o 'to-destination [0-9.:]*' | awk '{print $2}' > /tmp/fwd.txt\ncat /tmp/fwd.txt\n\n# DNAT 는 PREROUTING 에서 목적지를 바꾼다. 바깥 8443 이 내부 서버의 443 으로 가므로 바깥 포트와 내부 포트가 달라도 된다",
+    "3": "grep '^net.ipv4.ip_forward' /tmp/sysctl.log | awk '{print $3}' > /tmp/fwd_val.txt\ncat /tmp/fwd_val.txt\n\n# 0 이면 이 서버는 라우터·NAT 장비로 동작하지 못한다. 포트포워딩 규칙이 있어도 패킷이 전달되지 않아 접속이 안 된다",
+    "4": "echo 'net.ipv4.ip_forward = 1' > /tmp/99-forward.conf\ncat /tmp/99-forward.conf\n\n# 적용은 sysctl --system. 확인은 sysctl net.ipv4.ip_forward 또는 cat /proc/sys/net/ipv4/ip_forward 다",
+    "5": "head -1 /tmp/conn.log | grep -o 'src=[0-9.]*' | head -1 | cut -d= -f2 > /tmp/client.txt\ncat /tmp/client.txt\n\n# 응답 방향의 dst 도 같은 클라이언트다. 응답 방향의 src(192.0.2.20)가 실제 내부 서버이고, 원래 방향의 dst(203.0.113.10)는 클라이언트가 접속한 NAT 장비의 바깥 주소다",
+    "6": "grep -c ESTABLISHED /tmp/conn.log > /tmp/est.txt\ncat /tmp/est.txt\n\n# 3 개. 테이블이 가득 차면 새 연결이 버려진다(nf_conntrack: table full, dropping packet). 개수는 conntrack -C 로 센다"
+  }
+}

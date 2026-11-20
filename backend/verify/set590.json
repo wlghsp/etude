@@ -1,0 +1,11 @@
+{
+  "setId": 590,
+  "answers": {
+    "1": "ip -6 addr show lo\nip -6 addr show lo | grep inet6 | awk '{print $2}' | head -1 > /tmp/lo6.txt\ncat /tmp/lo6.txt\n\n# IPv6 루프백은 ::1 이고 접두어는 /128(주소 하나)이다. IPv4 의 127.0.0.1 에 해당한다",
+    "2": "ping -6 -c 3 ::1\nping -6 -c 3 ::1 | grep -o '[0-9]* received' | cut -d' ' -f1 > /tmp/recv.txt\ncat /tmp/recv.txt\n\n# ping6 도 같은 동작이다. IPv6 에서는 ICMPv6 가 이웃 탐색(NDP) 등에 필수라 무조건 차단하면 통신이 깨진다",
+    "3": "echo '2001:db8::1' > /tmp/short.txt\ncat /tmp/short.txt\n\n# 0 묶음이 두 군데 이상 있으면 가장 긴 쪽을 ::로 줄이고 :: 는 주소 안에 한 번만 쓸 수 있다. 2001:db8::/32 는 문서용 대역이다",
+    "4": "cat /tmp/ip6.log\ngrep 'scope link' /tmp/ip6.log | awk '{print $2}' | cut -d/ -f1 > /tmp/ll.txt\ncat /tmp/ll.txt\n\n# link-local 은 인터페이스를 켜면 자동으로 생긴다. 이웃 탐색과 라우터 광고, 기본 게이트웨이 지정에 쓰인다. 다른 대역으로는 전달되지 않는다",
+    "5": "grep -c 'scope global' /tmp/ip6.log > /tmp/global.txt\ncat /tmp/global.txt\n\n# 한 인터페이스에 IPv6 주소가 여러 개인 것은 정상이다. dynamic 은 라우터 광고(SLAAC)로 자동 생성된 주소다",
+    "6": "cat /tmp/route6.log\ngrep '^default' /tmp/route6.log | awk '{print $3}' > /tmp/gw6.txt\ncat /tmp/gw6.txt\n\n# fe80::1 은 같은 링크의 라우터다. link-local 주소는 인터페이스마다 겹칠 수 있어 dev eth0 와 함께 읽어야 의미가 정해진다"
+  }
+}

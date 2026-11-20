@@ -1,0 +1,53 @@
+-- 세트 591. 여러 번 실행해도 안전하다 (NOT EXISTS 가드). 원본: 02_quest_set.sql, 03_quest_set591.sql, 05·06·08. docs/specs/spec_pilot_gap_sets.md
+INSERT INTO quest_set (id, title, description, sandbox_type, category)
+SELECT 591, '부하 분산과 VIP 개념: L4 와 L7, 분산 방식, 헬스체크, VRRP 이중화', '서비스 앞단 구성의 기본 개념입니다. L4 와 L7 부하 분산의 차이, 분산 방식(라운드 로빈·최소 연결·해시), 헬스체크, 세션 유지, TLS 종료와 원래 클라이언트 IP 전달, VIP 와 VRRP 로 이중화할 때의 동작과 split-brain 위험을 문제로 풀어 봅니다.', 'linux', '네트워크'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest_set WHERE id = 591);
+UPDATE quest_set SET display_order = 851, unit_id = (SELECT id FROM unit WHERE id = 47), icon = '⚖️' WHERE id = 591;
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 591, 1, 'L4 와 L7 부하 분산', 'L4 부하 분산기와 L7 부하 분산기의 가장 큰 차이로 알맞은 것은?', 'L4 는 전송 계층, L7 은 응용 계층을 봅니다.', NULL, NULL, '[]', 'choice', '["L4 는 IP·포트로, L7 은 URL·헤더 같은 요청 내용을 보고 분산한다", "L4 는 요청 내용을 보고 분산하고 L7 은 IP·포트만 본다", "L4 는 암호화된 요청 전용이고 L7 은 평문 요청 전용이다", "둘은 같은 기능이며 부르는 이름만 서로 다를 뿐이다"]', 0, 'L4 는 TCP/UDP 수준(IP·포트)에서 연결을 나눠 빠르고 단순하며, L7 은 HTTP 요청의 경로·호스트·쿠키·헤더를 보고 분산(경로별 라우팅, 쿠키 고정 등)할 수 있어 기능이 풍부한 대신 처리 비용이 큽니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 591 AND order_index = 1);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 591, 2, '분산 방식 고르기', '요청마다 처리 시간이 크게 다르고 일부 요청이 오래 걸리는 서비스입니다. 서버 간 부하를 고르게 맞추기에 가장 알맞은 방식은?', '요청마다 처리 시간이 다를 때 순서대로 나누면 어떤 일이 생길지 생각해 보세요.', NULL, NULL, '[]', 'choice', '["라운드 로빈(서버에 순서대로 한 번씩 보냄)", "출발지 IP 해시(같은 IP 는 같은 서버로)", "항상 첫 번째 서버로만 모두 보내기", "최소 연결(least connections)"]', 3, '최소 연결은 현재 연결이 가장 적은 서버로 보내 처리 시간이 들쭉날쭉할 때 부하를 고르게 합니다. 라운드 로빈은 요청 비용이 비슷할 때 적합하고, 출발지 IP 해시는 같은 클라이언트를 같은 서버로 보내야 할 때 씁니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 591 AND order_index = 2);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 591, 3, '헬스체크의 목적', '부하 분산기가 백엔드 서버에 주기적으로 요청을 보내 응답을 확인합니다. 이 동작의 목적은?', '응답하지 않는 서버로 사용자 요청을 보내면 어떻게 될지 생각해 보세요.', NULL, NULL, '[]', 'choice', '["서버의 디스크 공간을 주기적으로 정리해 준다", "서버의 소프트웨어를 자동으로 최신 버전으로 업데이트한다", "죽은 서버를 분산 대상에서 빼서 요청이 실패하지 않게 한다", "서버에 쌓인 접속 로그를 주기적으로 삭제해 준다"]', 2, '헬스체크는 서버가 요청을 처리할 수 있는지 확인해 비정상 서버를 자동으로 제외하고, 복구되면 다시 넣습니다. 확인 대상은 포트 연결(L4)이나 `/health` 같은 HTTP 응답(L7)입니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 591 AND order_index = 3);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 591, 4, '헬스체크 깊이', '백엔드 포트에 TCP 연결만 되면 정상으로 보는 헬스체크를 쓰고 있습니다. 앱이 DB 연결을 잃어 모든 요청에 503 을 돌려주는데 서버가 계속 분산 대상에 남아 있습니다. 가장 알맞은 개선은?', '프로세스가 떠 있는 것과 요청을 제대로 처리하는 것은 다릅니다.', NULL, NULL, '[]', 'choice', '["헬스체크 주기를 지금보다 훨씬 더 길게 늘린다", "앱 상태를 반영하는 HTTP 헬스체크 경로의 응답 코드를 확인한다", "헬스체크를 끄고 모든 서버를 계속 분산 대상으로 쓴다", "서버 수를 지금의 두 배로 늘려 장애를 가린다"]', 1, 'TCP 연결 확인은 프로세스가 포트를 열고 있는지만 봅니다. 앱의 실제 상태(DB 연결 등)를 반영하는 HTTP 헬스체크 엔드포인트의 응답 코드로 확인해야 비정상 서버가 제외됩니다. 헬스체크를 너무 무겁게 만들면 오히려 부하가 되므로 가볍게 유지합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 591 AND order_index = 4);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 591, 5, '세션 유지', '로그인 상태를 서버 메모리에 저장하는 앱을 라운드 로빈으로 분산했더니 사용자가 요청마다 로그아웃됩니다. 가장 알맞은 대응은?', '같은 사용자의 요청이 같은 서버로 가야 하거나, 서버 밖에 상태를 두어야 합니다.', NULL, NULL, '[]', 'choice', '["같은 사용자를 한 서버에 고정하거나 세션을 공유 저장소로 옮긴다", "서버를 한 대만 남기고 나머지는 모두 꺼 둔다", "브라우저 쿠키를 모두 삭제하도록 사용자에게 안내한다", "라운드 로빈의 순환 간격을 훨씬 더 길게 조정한다"]', 0, '서버 메모리의 세션은 서버마다 따로입니다. 쿠키·IP 해시로 같은 서버에 고정(스티키 세션)하거나, 세션을 Redis 같은 공유 저장소로 옮기면 어느 서버로 가도 동작합니다. 고정은 서버 장애 시 세션이 사라지는 한계가 있습니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 591 AND order_index = 5);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 591, 6, '원래 클라이언트 IP 전달', 'L7 부하 분산기 뒤의 앱 로그에 모든 요청의 출발지 IP 가 부하 분산기 주소로 찍힙니다. 실제 사용자 IP 를 얻는 일반적인 방법은?', '프록시는 요청에 원래 주소를 알려 주는 헤더를 붙일 수 있습니다.', NULL, NULL, '[]', 'choice', '["DNS 에 질의해서 사용자 IP 를 거꾸로 조회한다", "서버의 시간을 정확하게 맞춰 로그에 기록한다", "네트워크 카드를 최신 장비로 교체해 본다", "`X-Forwarded-For` 헤더로 원래 IP 를 받는다"]', 3, 'L7 프록시는 서버와 새 연결을 맺기 때문에 출발지가 프록시 주소입니다. `X-Forwarded-For`(또는 PROXY protocol)로 원래 IP 를 전달하고 앱이 신뢰할 수 있는 프록시에서 온 값만 읽도록 설정합니다. 헤더는 위조될 수 있어 신뢰 경계가 중요합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 591 AND order_index = 6);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 591, 7, 'TLS 종료', '부하 분산기에서 HTTPS 를 풀고(TLS 종료) 백엔드로는 HTTP 로 보내는 구성의 장점으로 알맞은 것은?', '인증서와 암호 연산을 어디서 처리하는지 생각해 보세요.', NULL, NULL, '[]', 'choice', '["분산기와 백엔드 사이 구간도 자동으로 암호화된다", "인증서가 전혀 필요 없는 구성이 된다", "인증서 관리를 한 곳에 모으고 백엔드 부담을 줄인다", "모든 요청이 L4 단계에서만 처리되게 된다"]', 2, 'TLS 종료는 인증서를 분산기에만 두어 관리가 쉽고 백엔드 부담이 줄지만, 분산기와 백엔드 구간은 평문이므로 신뢰할 수 없는 망이라면 재암호화(끝까지 TLS)를 고려해야 합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 591 AND order_index = 7);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 591, 8, 'VIP 와 VRRP', 'keepalived 로 서버 두 대를 이중화했습니다. 가상 IP(VIP)는 평소 마스터 서버에 붙어 있고, 마스터가 죽으면 백업 서버가 VIP 를 가져갑니다. 이 동작을 가능하게 하는 프로토콜은?', '여러 장비가 하나의 가상 주소를 나눠 맡는 프로토콜입니다.', NULL, NULL, '[]', 'choice', '["ARP 스푸핑(위조 응답으로 주소를 가로챔)", "VRRP (가상 라우터 이중화 프로토콜)", "NAT64(IPv6 와 IPv4 사이 주소 변환)", "DHCP 릴레이(다른 망의 DHCP 요청 중계)"]', 1, 'VRRP 는 마스터가 주기적으로 알림(advertisement)을 보내고, 알림이 끊기면 우선순위(priority)가 높은 백업이 마스터가 되어 VIP 를 차지합니다. 이때 gratuitous ARP 로 스위치·이웃에게 새 MAC 을 알립니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 591 AND order_index = 8);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 591, 9, 'split-brain', 'VRRP 이중화에서 두 서버 사이의 알림 통신만 끊기고 서버는 둘 다 살아 있습니다. 어떤 일이 생길 위험이 있을까요?', '서로가 죽었다고 판단하면 각자 무엇을 할까요?', NULL, NULL, '[]', 'choice', '["둘 다 마스터가 되어 VIP 를 동시에 주장하는 split-brain", "두 서버가 모두 백업이 되어 VIP 가 사라지고 서비스가 멈춘다", "자동으로 새 서버가 만들어져 마스터를 대신한다", "알림이 끊겨도 아무 일도 생기지 않고 그대로 유지된다"]', 0, '백업이 알림을 못 받으면 마스터가 죽었다고 보고 스스로 마스터가 되는데, 마스터도 살아 있으면 VIP 를 둘이 가져 트래픽이 불규칙하게 나뉩니다. 알림 경로를 이중화하고 인증·모니터링을 두며 데이터가 있는 서비스는 특히 주의합니다.', NULL, NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 591 AND order_index = 9);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 591, 10, '최소 연결 분산', 'HAProxy 에서 현재 연결이 가장 적은 서버로 보내는 분산 방식을 설정하는 줄입니다. 빈칸을 채우세요.', 'HAProxy 의 `balance` 뒤에 알고리즘 이름을 적습니다.', NULL, NULL, '[]', 'fill', '["leastconn", "roundrobin", "source", "static-rr"]', NULL, '`leastconn` 은 연결 수가 가장 적은 서버를 고릅니다. `roundrobin` 은 순서대로, `source` 는 출발지 IP 해시로 같은 클라이언트를 같은 서버에 보내고, `static-rr` 은 가중치 기반 정적 라운드 로빈입니다.', '[0]', 'balance {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 591 AND order_index = 10);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 591, 11, '헬스체크 옵션', 'HAProxy 서버 정의에서 **헬스체크를 켜는** 옵션을 채우세요.', '서버 줄 끝에 붙이는 한 단어 옵션입니다.', NULL, NULL, '[]', 'fill', '["check", "backup", "maxconn", "weight"]', NULL, '`check` 는 그 서버에 주기적으로 헬스체크를 합니다. `backup` 은 다른 서버가 모두 죽었을 때만 쓰는 예비 서버, `maxconn` 은 동시 연결 상한, `weight` 는 분산 비율입니다.', '[0]', 'server web1 192.0.2.11:80 {0}', NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 591 AND order_index = 11);
+
+INSERT INTO quest (quest_set_id, order_index, title, description, hint, solution, setup_cmd, grade_cmd, kind, choices, answer_index, explanation, answer_spec, template, checks, docs)
+SELECT 591, 12, '이중화 서비스 점검 순서', '이중화된 웹 서비스(VIP + 부하 분산기 + 백엔드)에 접속이 안 됩니다. 사용자에게 가까운 쪽에서 안쪽으로 확인해 나가려 합니다. 올바른 순서로 놓으세요.', '앞단이 응답하지 않으면 그 뒤를 볼 수 없습니다.', NULL, NULL, '[]', 'order', '["백엔드 서버 자체(프로세스·로그·직접 접속)를 확인한다", "VIP 가 어느 서버에 붙어 있는지, 그 서버가 응답하는지 확인한다", "부하 분산기의 설정과 백엔드 목록(UP/DOWN)을 확인한다", "클라이언트에서 VIP 로 접속이 되는지 확인한다"]', NULL, '클라이언트에서 VIP 접속 여부를 보고, VIP 를 가진 노드와 그 응답을 확인한 뒤, 부하 분산기가 백엔드를 UP 으로 보는지 확인하고, 마지막으로 백엔드 자체와 헬스체크를 확인합니다.', '[3, 1, 2, 0]', NULL, NULL, NULL
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM quest WHERE quest_set_id = 591 AND order_index = 12);

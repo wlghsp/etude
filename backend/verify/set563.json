@@ -1,0 +1,12 @@
+{
+  "setId": 563,
+  "answers": {
+    "1": "redis-cli config get '*pass*'\nredis-cli config set requirepass S3cretPw\nredis-cli ping                 # NOAUTH Authentication required.\nredis-cli -a S3cretPw ping     # PONG\n\n# requirepass 는 기본 사용자(default)의 비밀번호다. CONFIG SET 은 재시작하면 사라지니 영구 적용은 설정 파일에 적는다",
+    "2": "redis-cli get secret > /tmp/noauth.txt\nREDISCLI_AUTH=S3cretPw redis-cli get secret > /tmp/val.txt\ncat /tmp/noauth.txt /tmp/val.txt\n\n# 오류는 NOAUTH Authentication required. 환경 변수 방식은 ps 목록과 셸 기록에 비밀번호가 안 남는다",
+    "3": "REDISCLI_AUTH=S3cretPw redis-cli acl setuser reader on '>readpw' '~*' +@read\nredis-cli --user reader --pass readpw get app:name 2>/dev/null\nredis-cli --user reader --pass readpw set a 1 2>/dev/null     # NOPERM\n\n# ~* 모든 키, +@read 읽기 명령 묶음. 쓰기·관리 명령은 허용하지 않은 것이라 거절된다(허용 목록 방식)",
+    "4": "REDISCLI_AUTH=S3cretPw redis-cli acl setuser cacheapp on '>cachepw' '~cache:*' +@all -@dangerous\nredis-cli --user cacheapp --pass cachepw set cache:x 1 2>/dev/null     # OK\nredis-cli --user cacheapp --pass cachepw set other:x 1 2>/dev/null     # NOPERM (키 범위)\nredis-cli --user cacheapp --pass cachepw flushall 2>/dev/null          # NOPERM (위험 명령)\n\n# 앱 계정은 필요한 키와 명령만 허용한다(최소 권한). 키 범위 위반과 명령 위반은 NOPERM 메시지가 다르다",
+    "5": "redis-cli config get bind | tail -1 > /tmp/bind.txt\nredis-cli config get protected-mode | tail -1 > /tmp/pm.txt\ncat /tmp/bind.txt /tmp/pm.txt\n\n# bind 127.0.0.1 은 같은 서버 안에서만 접속된다. 외부에서 쓰려면 bind 를 바꾸되 반드시 비밀번호·ACL·방화벽과 함께 한다",
+    "6": "printf 'port 6380\\nbind 127.0.0.1\\nrequirepass FilePw1\\ndaemonize yes\\n' > /tmp/redis.conf\nredis-server /tmp/redis.conf\nsleep 1\nredis-cli -p 6380 ping                    # NOAUTH\nredis-cli -p 6380 -a FilePw1 ping 2>/dev/null   # PONG\n\n# 설정 파일은 재시작 후에도 유지된다. 운영에서는 이 파일의 권한(600)도 제한한다. 비밀번호가 평문으로 들어 있기 때문",
+    "7": "REDISCLI_AUTH=S3cretPw redis-cli acl deluser tmpuser\nREDISCLI_AUTH=S3cretPw redis-cli acl users > /tmp/users.txt\ncat /tmp/users.txt\n\n# 퇴사·종료된 계정은 비활성화(off)하거나 삭제한다. 쓰지 않는 계정이 남아 있으면 그 비밀번호가 유출됐을 때 공격 통로가 된다"
+  }
+}

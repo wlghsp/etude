@@ -1,0 +1,69 @@
+import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..')); from gen_pilot_sets import *
+# 세트 573: 라우팅 테이블 읽기. 명세: docs/specs/spec_gap_set573.md
+# 샌드박스 linux(비특권, NET_ADMIN 없음). 경로를 바꿀 수 없어 ip route 샘플을 읽는 문제, 이 컨테이너의 실제 경로를 조회하는 문제, 추가할 명령을 파일에 적는 문제로 구성한다.
+
+S73 = """rm -f /tmp/*.txt /tmp/*.log
+cat > /tmp/routes.log <<'EOF'
+default via 198.51.100.1 dev eth1 proto static metric 200
+default via 192.0.2.1 dev eth0 proto static metric 100
+192.0.2.0/24 dev eth0 proto kernel scope link src 192.0.2.50
+198.51.100.0/24 dev eth1 proto kernel scope link src 198.51.100.50
+203.0.113.0/25 via 198.51.100.254 dev eth1 proto static metric 50
+203.0.113.0/24 via 192.0.2.1 dev eth0 proto static
+EOF
+true"""
+
+b = SetBuilder(573, '라우팅 테이블 읽기: default·최장 일치·직접 연결·ip route get',
+               '리눅스 서버가 패킷을 어디로 보낼지 정하는 라우팅 테이블(ip route)을 읽는 연습입니다. 기본 게이트웨이, 직접 연결된 대역, 목적지에 맞는 경로를 고르는 최장 일치 규칙을 샘플에서 확인하고, 이 컨테이너의 실제 경로를 조회하며, 경로를 추가하는 명령을 직접 적어 봅니다. 샌드박스에서는 경로를 바꿀 권한이 없어 읽기와 명령 작성 위주입니다.',
+               'linux', '네트워크', 47, 833, '🧭',
+               [{"title": "ip-route 매뉴얼", "url": "https://man7.org/linux/man-pages/man8/ip-route.8.html"}, {"title": "ip 매뉴얼", "url": "https://man7.org/linux/man-pages/man8/ip.8.html"}], 5)
+
+# 1
+b.nt('기본 게이트웨이 찾기', '`/tmp/routes.log` 는 어떤 서버의 `ip route` 결과입니다. `default` 는 어느 경로에도 맞지 않는 모든 목적지가 가는 길입니다. `default` 가 둘이면 **`metric` 값이 낮은 쪽**이 우선합니다. 우선 쓰이는 기본 게이트웨이(`via` 다음 주소)를 `/tmp/gw.txt` 에 저장하세요. (주소만)',
+     'default 줄이 두 개 있습니다. 숫자 비교는 metric 값이 작은 쪽입니다.',
+     "cat /tmp/routes.log\ngrep '^default' /tmp/routes.log | sort -k9 -n | head -1 | awk '{print $3}' > /tmp/gw.txt\ncat /tmp/gw.txt\n\n# 100 < 200 이므로 192.0.2.1(eth0) 이 우선이다. 우선 경로가 사라지면(링크 다운 등) 다음 metric 의 default 가 대신한다",
+     S73, [chk('192.0.2.1 이다', '[ "$(cat /tmp/gw.txt)" = 192.0.2.1 ]')])
+# 2
+b.nt('직접 연결된 대역', '게이트웨이(`via`)를 거치지 않고 **같은 링크에 바로 붙어 있는 대역**은 `via` 없이 `proto kernel scope link` 로 나옵니다. `/tmp/routes.log` 에서 이런 대역(`default` 제외)을 **한 줄에 하나씩** `/tmp/direct.txt` 에 저장하세요.',
+     '직접 연결된 대역은 게이트웨이 표기가 없는 줄입니다. 그런 줄의 첫 칸을 모으세요.',
+     "grep 'scope link' /tmp/routes.log | awk '{print $1}' > /tmp/direct.txt\ncat /tmp/direct.txt\n\n# 직접 연결 대역은 인터페이스에 주소를 붙이면 커널이 자동으로 만든다(proto kernel). 같은 대역끼리는 게이트웨이 없이 ARP 로 직접 통신한다",
+     S73, [chk('두 대역이 저장됐다', '[ "$(sort /tmp/direct.txt | tr "\\n" " " | xargs)" = "192.0.2.0/24 198.51.100.0/24" ]')])
+# 3
+b.nt('목적지에 맞는 경로 고르기', '경로가 겹치면 **더 구체적인(접두어가 더 긴) 경로**가 이깁니다(최장 일치). `/tmp/routes.log` 로 다음 두 목적지가 **어느 게이트웨이(`via`)로 나갈지** 저장하세요. (주소만)\n- `/tmp/nh_a.txt` : 목적지 `203.0.113.77`\n- `/tmp/nh_b.txt` : 목적지 `203.0.113.200`',
+     '/25 가 포함하는 주소 범위를 직접 계산해 목적지가 그 안에 드는지 따져 보세요.',
+     "cat /tmp/routes.log\necho 198.51.100.254 > /tmp/nh_a.txt\necho 192.0.2.1 > /tmp/nh_b.txt\ncat /tmp/nh_a.txt /tmp/nh_b.txt\n\n# .77 은 /25(.0~.127) 범위라 더 구체적인 /25 경로가 이긴다. .200 은 범위 밖이라 /24 경로를 쓴다. 실제 서버에서는 ip route get 으로 확인한다",
+     S73, [chk('.77 은 198.51.100.254 다', '[ "$(cat /tmp/nh_a.txt)" = 198.51.100.254 ]'), chk('.200 은 192.0.2.1 이다', '[ "$(cat /tmp/nh_b.txt)" = 192.0.2.1 ]')])
+# 4
+b.nt('ip route get 으로 확인', '목적지를 주면 **실제로 선택될 경로**를 보여 주는 명령이 있습니다. 이 컨테이너에서 자기 자신 `127.0.0.1` 로 가는 경로를 조회하고, 그 결과에 나온 **나가는 인터페이스 이름**(`dev` 다음 값)을 `/tmp/dev.txt` 에 저장하세요. (값만)',
+     '`ip route` 의 하위 명령 중 목적지를 인자로 받아 선택된 경로를 보여 주는 것을 찾으세요. 결과의 `dev` 다음 단어를 뽑습니다.',
+     "ip route get 127.0.0.1\nip route get 127.0.0.1 | grep -o 'dev [a-z0-9]*' | head -1 | cut -d' ' -f2 > /tmp/dev.txt\ncat /tmp/dev.txt\n\n# 자기 주소는 로컬 테이블(local)을 거쳐 lo 로 간다. 장애 때는 외부 목적지로 get 을 해 어느 인터페이스·게이트웨이로 나가는지, src 주소가 무엇인지 확인한다",
+     S73, [chk('lo 다', '[ "$(cat /tmp/dev.txt)" = lo ]')])
+# 5
+b.nt('이 컨테이너의 기본 게이트웨이', '이 컨테이너의 **실제 기본 게이트웨이 주소**를 `ip route` 에서 찾아 `/tmp/mygw.txt` 에 저장하세요. (주소만)',
+     '`default` 로 시작하는 경로의 `via` 다음 주소입니다. 경로를 `default` 만 골라 보여 주는 방법도 있습니다.',
+     "ip route\nip route show default | awk '{print $3}' > /tmp/mygw.txt\ncat /tmp/mygw.txt\n\n# 컨테이너의 기본 게이트웨이는 도커 브리지(호스트 쪽)다. 외부로 나가는 모든 패킷이 이 주소로 간다",
+     S73, [chk('실제 게이트웨이와 같다', '[ -n "$(cat /tmp/mygw.txt)" ] && [ "$(cat /tmp/mygw.txt)" = "$(ip route show default | awk \'{print $3}\' | head -1)" ]')])
+# 6
+b.nt('경로 추가 명령 적기', '203.0.113.128/26 대역으로 가는 패킷만 게이트웨이 `198.51.100.254` 를 거치도록 바꾸려 합니다. (지금은 더 넓은 /24 경로를 따라 다른 게이트웨이로 갑니다) 샌드박스에서는 실제로 경로를 바꿀 수 없으니 적용할 **`ip route` 명령 한 줄**을 `/tmp/add_route.txt` 에 적으세요.',
+     '새 경로를 더하는 하위 명령, 대상 대역, 게이트웨이를 지정하는 키워드 순서로 적습니다.',
+     "echo 'ip route add 203.0.113.128/26 via 198.51.100.254' > /tmp/add_route.txt\ncat /tmp/add_route.txt\n\n# 더 구체적인 /26 이 /24 보다 먼저 선택되므로 이 대역만 다른 게이트웨이로 간다. 재부팅 후에도 유지하려면 배포판의 네트워크 설정(netplan·NetworkManager 등)에 영구 경로로 넣어야 한다. 이 명령은 즉시 적용되지만 재부팅하면 사라진다",
+     S73, [chk('경로 추가 명령이다', 'grep -Eq "^[[:space:]]*(sudo )?ip( -4)? r(oute)? (add|replace|append) (to )?203\\.0\\.113\\.128/26( |$)" /tmp/add_route.txt'), chk('게이트웨이가 198.51.100.254 이다', 'grep -Eq "via 198\\.51\\.100\\.254( |$)" /tmp/add_route.txt')])
+# 7
+b.choice('Network is unreachable', '서버에서 외부 주소로 접속하자 곧바로 `Network is unreachable` 오류가 납니다. `ip route` 를 보니 직접 연결된 대역 경로만 있고 `default` 가 없습니다. 가장 알맞은 해석은?', '이 오류는 패킷을 보내기 전에 발생합니다.',
+         ['그 목적지로 보낼 경로가 없어 패킷을 내보내지 못한다', '게이트웨이가 패킷을 받고 응답하지 않았다', '목적지 서버의 방화벽이 패킷을 차단했다', '패킷은 나갔지만 응답이 돌아오지 못했다'], 0,
+         '`Network is unreachable` 는 로컬 라우팅 테이블에 목적지에 맞는 경로가 없을 때 커널이 즉시 돌려주는 오류입니다. 게이트웨이·방화벽 문제라면 패킷이 나간 뒤 시간 초과(timeout)나 `No route to host`(ARP 실패) 같은 다른 증상이 납니다.')
+# 8
+b.choice('ip_forward 가 꺼진 라우터', '서버 R 을 두 대역 사이의 라우터로 쓰려고 두 인터페이스에 주소를 붙이고 양쪽 서버의 게이트웨이를 R 로 맞췄는데 서로 통신이 안 됩니다. R 의 `net.ipv4.ip_forward` 가 0 입니다. 이때 일어나는 일은?', '다른 곳이 목적지인 패킷을 받았을 때 커널이 어떻게 하는지 생각해 보세요.',
+         ['R 이 자기 앞이 아닌 패킷을 전달하지 않고 버린다', 'R 이 패킷을 전달하지만 속도가 느려진다', 'R 이 패킷을 전달하되 출발지 주소를 자기 것으로 바꾼다', 'R 이 두 대역의 패킷을 모두 자기 앞으로 받아 처리한다'], 0,
+         'ip_forward 가 0 이면 리눅스는 자기 주소로 온 패킷만 처리하고 다른 곳이 목적지인 패킷은 전달하지 않고 버립니다. 라우터·NAT 장비로 쓰려면 1 로 켜야 합니다. 출발지 변환은 NAT 규칙이 따로 하는 일입니다.')
+# 9
+b.fill('선택될 경로 조회', '203.0.113.77 로 패킷을 보낼 때 **실제로 선택될 경로**(게이트웨이·인터페이스·출발지 주소)를 확인하려 합니다. 빈칸에 들어갈 `ip route` 하위 명령을 채우세요.', '목적지를 인자로 주면 선택된 경로 한 줄을 보여 주는 명령입니다.',
+       'ip route {0} 203.0.113.77', ['get', 'add', 'show', 'flush'], [0],
+       '`ip route get 목적지` 는 라우팅 테이블을 최장 일치로 따져 실제로 선택될 경로를 한 줄로 보여 줍니다. `show` 는 테이블 전체(또는 필터)를 보여 주고, `add` 는 추가, `flush` 는 경로를 지웁니다.')
+# 10
+b.order('경로를 추가하고 검증하기', '새 대역으로 가는 경로를 서버에 추가하는 작업입니다. 먼저 경로표만 보는 확인을 하고, 실제 패킷을 보내는 확인은 그 뒤에 합니다. 올바른 순서로 놓으세요.', '경로표만 보는 확인이 실제로 패킷을 보내는 확인보다 먼저입니다.',
+        ['`ip route add` 로 새 경로를 추가한다', '`ip route get` 으로 새 경로가 선택되는지 확인한다', '`ping`·`traceroute` 로 실제로 도달하는지 확인한다', '추가하기 전에 `ip route` 로 현재 경로표에 이미 있는지 확인한다'], [3, 0, 1, 2],
+        '이미 있는 경로와 충돌하지 않는지 현재 상태를 먼저 보고, 경로를 추가한 뒤, 경로표 수준에서 선택을 확인하고, 마지막으로 실제 패킷으로 도달을 확인합니다. 경로표가 맞아도 상대·방화벽 문제로 도달하지 못할 수 있어 마지막 확인이 필요합니다.')
+
+if __name__ == '__main__':
+    preview(b)
