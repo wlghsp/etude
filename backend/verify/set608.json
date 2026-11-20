@@ -1,0 +1,11 @@
+{
+  "setId": 608,
+  "answers": {
+    "1": "echo 'openstack image create --file ubuntu-22.04.qcow2 --disk-format qcow2 --container-format bare ubuntu-22.04' > /tmp/img_create.txt\ncat /tmp/img_create.txt\n\n# 올린 형식이 실제 파일 형식과 다르면 부팅이 안 된다. qemu-img info 로 실제 형식을 먼저 확인한다. 공개하려면 --public, 프로젝트별 공유는 image add project 를 쓴다",
+    "2": "echo 'openstack image set --property hw_disk_bus=virtio ubuntu-22.04' > /tmp/img_prop.txt\ncat /tmp/img_prop.txt\n\n# hw_ 로 시작하는 속성은 서버를 만들 때 하이퍼바이저가 장치 모델을 고르는 힌트다(hw_vif_model, hw_scsi_model, hw_qemu_guest_agent 등). 이미 만든 서버에는 적용되지 않는다",
+    "3": "cat /tmp/image_show.log\ngrep '| status' /tmp/image_show.log | awk -F'|' '{gsub(/ /,\"\",$3); print $3}' > /tmp/status.txt\ngrep '| size' /tmp/image_show.log | awk -F'|' '{gsub(/ /,\"\",$3); print $3}' > /tmp/size.txt\ncat /tmp/status.txt /tmp/size.txt\n\n# queued 에 size 0 이면 이미지 메타데이터만 만들어지고 데이터 업로드가 시작되지 않았거나 중단되었다. 업로드가 실패하면 killed 가 된다. active 가 되어야 서버를 만들 수 있다",
+    "4": "cat /tmp/hypervisors.log\ngrep 'comp-' /tmp/hypervisors.log | grep -v 'comp-b' | grep ' enabled ' | grep ' up ' | awk -F'|' '{gsub(/ /,\"\",$3); gsub(/ /,\"\",$7); print $7, $3}' | sort -n | head -1 | awk '{print $2}' > /tmp/dest.txt\ncat /tmp/dest.txt\n\n# comp-c 는 사용 메모리가 가장 적지만 disabled 라 받을 수 없다. comp-a 로 옮긴다. 실제로는 스케줄러가 고르게 두는 것도 가능하지만 대상 지정이 필요하면 --host 를 준다",
+    "5": "echo 'openstack compute service set --disable comp-b.example nova-compute' > /tmp/disable.txt\ncat /tmp/disable.txt\n\n# 비활성화하면 새 서버가 오지 않지만 이미 있는 서버는 계속 실행된다. --disable-reason 으로 이유를 남기면 좋다. 점검 뒤에는 --enable 로 되돌린다",
+    "6": "echo 'openstack server migrate --live-migration --host comp-a.example web01' > /tmp/migrate.txt\ncat /tmp/migrate.txt\n\n# 공유 스토리지가 없으면 --block-migration 이 필요하다. --live-migration 은 중단이 거의 없지만 --live-migration 없이 migrate 하면 서버를 멈추고 옮기는 콜드 마이그레이션이다"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "setId": 604,
+  "answers": {
+    "1": "cat /tmp/snap_list.log\nawk 'NR>2 && NF>0' /tmp/snap_list.log | wc -l | tr -d ' ' > /tmp/snap_cnt.txt\nawk 'NR>2 && NF>0 {print $2\" \"$3\" \"$1}' /tmp/snap_list.log | sort | tail -1 | awk '{print $3}' > /tmp/snap_last.txt\ncat /tmp/snap_cnt.txt /tmp/snap_last.txt\n\n# 스냅샷이 쌓일수록 디스크 체인이 길어져 읽기가 느려지고 관리가 어려워진다. 필요 없는 스냅샷은 snapshot-delete 로 정리한다",
+    "2": "cat /tmp/qinfo.log\ngrep '^virtual size' /tmp/qinfo.log | awk '{print $3}' > /tmp/vsize.txt\ngrep '^disk size' /tmp/qinfo.log | awk '{print $3}' > /tmp/dsize.txt\ncat /tmp/vsize.txt /tmp/dsize.txt\n\n# 20GiB 짜리 디스크지만 실제로는 3.2GiB 만 쓴다(thin provisioning). 게스트가 쓰면 점점 늘어나 호스트 풀이 가득 찰 수 있다. backing file 이 있으면 이 파일은 base.qcow2 위의 변경분만 담는 오버레이다",
+    "3": "grep '^backing file' /tmp/qinfo.log | awk '{print $3}' > /tmp/backing.txt\ncat /tmp/backing.txt\n\n# base.qcow2 가 지워지거나 옮겨지면 이 이미지는 읽을 수 없다. 체인이 길어지면 commit 으로 합치거나 rebase 로 정리한다",
+    "4": "echo 'virsh snapshot-create-as web01 before-patch' > /tmp/snap_create.txt\ncat /tmp/snap_create.txt\n\n# --disk-only 를 붙이면 메모리 상태 없이 디스크만 외부 스냅샷으로 만든다. 메모리를 포함하면 되돌릴 때 실행 상태까지 복원된다",
+    "5": "echo 'virsh snapshot-revert web01 before-patch' > /tmp/snap_revert.txt\ncat /tmp/snap_revert.txt\n\n# 되돌리면 그 시점 이후의 변경은 사라진다. 필요한 데이터는 먼저 꺼내 둔다. 외부(디스크 전용) 스냅샷은 되돌리기가 제한될 수 있어 만들 때 방식을 정한다",
+    "6": "printf '%s\\n' 'qemu-img resize disk.qcow2 +10G' 'qemu-img convert -f raw -O qcow2 disk.raw disk.qcow2' > /tmp/img_cmds.txt\ncat /tmp/img_cmds.txt\n\n# resize 만으로는 이미지만 커지고 게스트 안의 파티션·파일시스템은 그대로다. 게스트에서 growpart 와 resize2fs 로 확장해야 한다. 줄일 때는 데이터 손상 위험이 커 반드시 파일시스템을 먼저 줄이고 백업한다"
+  }
+}

@@ -1,0 +1,76 @@
+import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..')); from gen_pilot_sets import *
+# 세트 607: OpenStack CLI 환경과 REST API 호출. 명세: docs/specs/spec_gap_set607.md
+# 샌드박스 linux(OpenStack 없음). openrc 환경 파일은 실제로 작성·검사하고, 토큰·카탈로그·응답은 샘플을 읽고, curl 명령은 파일에 적는다.
+
+S107 = """rm -f /tmp/*.txt /tmp/*.log /tmp/*.json /tmp/openrc
+cat > /tmp/token.log <<'EOF'
++------------+--------------------------------------+
+| Field      | Value                                |
++------------+--------------------------------------+
+| expires    | 2026-11-20T12:00:00+0000             |
+| id         | gAAAAABexampletokenvalue             |
+| project_id | 0123456789abcdef0123456789abcdef     |
+| user_id    | fedcba9876543210fedcba9876543210     |
++------------+--------------------------------------+
+EOF
+cat > /tmp/catalog.log <<'EOF'
++----------+----------+-------------------------------------------+
+| Name     | Type     | Endpoints                                 |
++----------+----------+-------------------------------------------+
+| keystone | identity | RegionOne                                 |
+|          |          |   public: http://ctrl.example.com:5000/v3 |
+| nova     | compute  | RegionOne                                 |
+|          |          |   public: http://ctrl.example.com:8774/v2.1 |
+| glance   | image    | RegionOne                                 |
+|          |          |   public: http://ctrl.example.com:9292    |
++----------+----------+-------------------------------------------+
+EOF
+cat > /tmp/servers.json <<'EOF'
+{"servers": [{"id": "a1b2", "name": "web01"}, {"id": "c3d4", "name": "db01"}, {"id": "e5f6", "name": "batch01"}]}
+EOF
+true"""
+
+b = SetBuilder(607, 'OpenStack CLI 환경과 REST API: openrc, 토큰·카탈로그, curl 로 직접 호출',
+               'openstack 명령이 어떻게 동작하는지 한 단계 아래를 봅니다. 인증 정보를 담는 openrc 환경 파일을 직접 작성해 보고(비밀번호는 파일에 적지 않습니다), 토큰의 만료 시각과 카탈로그에서 서비스 엔드포인트를 읽고, 토큰을 헤더에 실어 curl 로 서버 목록을 요청하는 명령과 인증 요청의 경로·응답 헤더를 정리하며, JSON 응답에서 서버를 세어 봅니다. 샌드박스에는 OpenStack 이 없어 샘플 출력을 읽고 명령은 파일에 적는 방식입니다.',
+               'linux', 'OpenStack', 40, 867, '🔑',
+               [{"title": "OpenStack 클라이언트 환경 변수", "url": "https://docs.openstack.org/python-openstackclient/latest/cli/man/openstack.html"}, {"title": "Keystone API", "url": "https://docs.openstack.org/api-ref/identity/v3/"}], 5)
+
+b.nt('openrc 환경 파일 작성', 'openstack 명령은 `OS_` 로 시작하는 환경 변수로 접속 정보를 받습니다. `/tmp/openrc` 를 만들어 아래 변수를 **`export` 로** 설정하세요. 이 파일을 `source`(`.`) 하면 변수가 자식 프로세스(openstack 명령)에 전달되어야 합니다. **비밀번호(`OS_PASSWORD`)는 파일에 적지 않습니다**(실행 때 입력하거나 비밀 저장소에서 읽습니다).\n- `OS_AUTH_URL` = `http://ctrl.example.com:5000/v3`\n- `OS_USERNAME` = `demo`\n- `OS_PROJECT_NAME` = `demo`\n- `OS_USER_DOMAIN_NAME` = `Default`\n- `OS_PROJECT_DOMAIN_NAME` = `Default`',
+     '쉘 변수를 자식 프로세스에 전달하려면 `export` 가 필요합니다. 한 줄에 `export 이름=값` 형태로 적으세요.',
+     "cat > /tmp/openrc <<'EOF'\nexport OS_AUTH_URL=http://ctrl.example.com:5000/v3\nexport OS_USERNAME=demo\nexport OS_PROJECT_NAME=demo\nexport OS_USER_DOMAIN_NAME=Default\nexport OS_PROJECT_DOMAIN_NAME=Default\nEOF\n. /tmp/openrc && env | grep ^OS_\n\n# 비밀번호는 openrc 에 평문으로 두지 않는다. read -s OS_PASSWORD; export OS_PASSWORD 처럼 실행할 때 입력하거나 clouds.yaml 과 비밀 관리 도구를 쓴다. 파일 권한도 600 으로 둔다",
+     S107, [chk('source 하면 변수가 전달된다', '(. /tmp/openrc; [ "$(env | grep "^OS_AUTH_URL=")" = "OS_AUTH_URL=http://ctrl.example.com:5000/v3" ] && [ "$(env | grep "^OS_USERNAME=")" = "OS_USERNAME=demo" ] && [ "$(env | grep "^OS_PROJECT_NAME=")" = "OS_PROJECT_NAME=demo" ])'), chk('도메인 변수가 맞다', '(. /tmp/openrc; [ "$(env | grep "^OS_USER_DOMAIN_NAME=")" = "OS_USER_DOMAIN_NAME=Default" ] && [ "$(env | grep "^OS_PROJECT_DOMAIN_NAME=")" = "OS_PROJECT_DOMAIN_NAME=Default" ])'), chk('비밀번호를 파일에 적지 않았다', '! grep -Eq "^[[:space:]]*(export )?OS_PASSWORD=" /tmp/openrc')])
+b.nt('토큰 만료 시각', '`/tmp/token.log` 는 `openstack token issue` 의 출력입니다. 토큰은 유효 기간이 있어 지나면 요청이 401 로 거부됩니다. **만료 시각(`expires` 값)** 을 `/tmp/expires.txt` 에 저장하세요. (값만)',
+     '`expires` 줄의 값 칸입니다. 표는 `|` 로 구분됩니다.',
+     "cat /tmp/token.log\ngrep '| expires' /tmp/token.log | awk -F'|' '{gsub(/ /,\"\",$3); print $3}' > /tmp/expires.txt\ncat /tmp/expires.txt\n\n# 만료되면 다시 token issue 로 새로 받는다. 장시간 스크립트는 토큰을 매번 받거나 만료 전에 갱신한다. 토큰 값(id)은 비밀번호와 같으므로 로그에 남기지 않는다",
+     S107, [chk('만료 시각이 맞다', '[ "$(cat /tmp/expires.txt)" = "2026-11-20T12:00:00+0000" ]')])
+b.nt('compute 엔드포인트 찾기', '`/tmp/catalog.log` 는 `openstack catalog list` 의 출력입니다. 서버를 다루는 **compute 서비스(nova)의 공개(public) 엔드포인트 URL** 을 `/tmp/nova_url.txt` 에 저장하세요. (URL 만)',
+     'nova 줄 바로 아래 줄에 `public:` 으로 시작하는 URL 이 있습니다.',
+     "cat /tmp/catalog.log\ngrep -A1 '| nova' /tmp/catalog.log | grep -o 'http://[^ ]*' > /tmp/nova_url.txt\ncat /tmp/nova_url.txt\n\n# 카탈로그는 토큰을 받을 때 함께 오는 서비스 주소록이다. 서비스마다 public·internal·admin 엔드포인트가 있다. CLI 는 이 카탈로그로 주소를 찾아 호출한다",
+     S107, [chk('nova 엔드포인트가 맞다', '[ "$(cat /tmp/nova_url.txt)" = "http://ctrl.example.com:8774/v2.1" ]')])
+b.nt('서버 목록 curl 명령', '앞에서 찾은 nova 엔드포인트의 **`/servers`** 경로로 서버 목록을 요청하는 `curl` 명령 한 줄을 `/tmp/curl_cmd.txt` 에 적으세요. 인증은 환경 변수 `$TOKEN` 에 든 토큰을 **`X-Auth-Token` 헤더**로 보냅니다. 파일에는 `$TOKEN` 이라는 글자가 그대로 남아야 합니다(쉘이 미리 값으로 바꾸지 않게 하세요). (실행하지 않습니다)',
+     '`curl -H "헤더이름: 값" URL` 형태입니다. 토큰 값은 변수로 넣습니다.',
+     "echo 'curl -s -H \"X-Auth-Token: $TOKEN\" http://ctrl.example.com:8774/v2.1/servers' > /tmp/curl_cmd.txt\ncat /tmp/curl_cmd.txt\n\n# 토큰이 없거나 만료되면 401, 권한이 없으면 403 이 온다. 응답은 JSON 이고 jq 로 가공한다. CLI 의 openstack server list 가 내부적으로 하는 일과 같다",
+     S107, [chk('curl 명령이다', 'grep -Eq "^[[:space:]]*curl( |$)" /tmp/curl_cmd.txt'), chk('X-Auth-Token 헤더를 $TOKEN 으로 보낸다', r'''grep -Eiq -- '(-H|--header)[ =]*"?X-Auth-Token:[[:space:]]*[$][{]?TOKEN[}]?' /tmp/curl_cmd.txt'''), chk('작은따옴표로 변수 전개를 막지 않았다', r'''! grep -Eq -- "'X-Auth-Token:[^']*[$]TOKEN" /tmp/curl_cmd.txt'''), chk('servers 경로를 요청한다', 'grep -q "http://ctrl.example.com:8774/v2.1/servers" /tmp/curl_cmd.txt')])
+b.nt('Keystone 인증 요청', 'Keystone 에서 토큰을 받는 REST 요청은 `POST` 로 보냅니다. 아래 두 값을 저장하세요.\n- `/tmp/auth_path.txt` : 요청 **URL 경로**(Keystone v3 의 토큰 발급 경로, `/` 로 시작)\n- `/tmp/hdr.txt` : 응답에서 **토큰 값이 실려 오는 헤더 이름**',
+     'Keystone v3 API 문서에서 토큰을 발급하는 POST 요청의 경로를 찾아보세요. 토큰은 응답 본문이 아니라 헤더에 들어 있습니다.',
+     "echo /v3/auth/tokens > /tmp/auth_path.txt\necho X-Subject-Token > /tmp/hdr.txt\ncat /tmp/auth_path.txt /tmp/hdr.txt\n\n# 요청 본문에 사용자·비밀번호·프로젝트를 JSON 으로 보내면 응답 헤더 X-Subject-Token 에 토큰이 오고 본문에는 카탈로그와 만료 시각이 온다",
+     S107, [chk('경로가 /v3/auth/tokens 다', '[ "$(cat /tmp/auth_path.txt)" = /v3/auth/tokens ]'), chk('헤더가 X-Subject-Token 이다', '[ "$(tr "[:upper:]" "[:lower:]" < /tmp/hdr.txt)" = x-subject-token ]')])
+b.nt('JSON 응답에서 서버 세기', '`/tmp/servers.json` 은 서버 목록 API 의 JSON 응답입니다. **서버의 개수**를 숫자만 `/tmp/count.txt` 에, **이름들을 이름순으로 한 줄에 하나씩** `/tmp/names.txt` 에 저장하세요.',
+     '`"name"` 키가 서버마다 하나씩 있습니다. `grep -o` 로 값만 뽑고 따옴표를 정리하세요.',
+     "cat /tmp/servers.json\ngrep -o '\"name\": \"[^\"]*\"' /tmp/servers.json | cut -d'\"' -f4 | sort > /tmp/names.txt\nwc -l < /tmp/names.txt | tr -d ' ' > /tmp/count.txt\ncat /tmp/count.txt /tmp/names.txt\n\n# 실제로는 jq '.servers[].name' 같은 도구를 쓴다. 응답은 사용자가 속한 프로젝트의 서버만 보여 준다. 관리자는 all_tenants 옵션으로 전체를 본다",
+     S107, [chk('3 개다', '[ "$(cat /tmp/count.txt)" = 3 ]'), chk('이름이 맞다', '[ "$(tr "\\n" " " < /tmp/names.txt | xargs)" = "batch01 db01 web01" ]')])
+b.choice('CLI 와 API 의 관계', 'openstack 명령(CLI)과 REST API 의 관계로 가장 알맞은 것은?', 'CLI 는 사람이 쓰기 편한 껍데기입니다.',
+         ['CLI 는 내부적으로 REST API 를 호출하는 클라이언트이다', 'CLI 와 API 는 서로 다른 데이터베이스를 쓴다', 'API 는 CLI 가 설치된 서버에서만 호출할 수 있다', 'CLI 는 API 와 달리 인증이 필요 없다'], 0,
+         'openstack CLI 는 Keystone 에서 토큰을 받아 각 서비스의 REST API 를 호출하는 클라이언트입니다. 같은 일을 curl 로도 할 수 있어 CLI 가 안 될 때 API 로 원인을 좁히기도 합니다.')
+b.choice('401 이 나올 때', '스크립트가 아침에는 잘 동작했는데 저녁에 같은 토큰으로 요청하자 `401 Unauthorized` 가 납니다. 가장 알맞은 원인은?', '토큰에는 수명이 있습니다.',
+         ['토큰이 만료되어 새 토큰을 받아야 한다', '사용자의 역할이 모두 삭제되어 403 이 나야 한다', 'API 서버가 저녁에는 요청을 거부하도록 설정되어 있다', '토큰은 하루에 한 번만 쓸 수 있다'], 0,
+         '401 은 인증 실패(토큰 없음·만료·위조)이고 403 은 인증은 됐지만 권한이 없는 경우입니다. 토큰이 만료됐으니 다시 발급받아 사용합니다.')
+b.fill('토큰 발급', '현재 인증 정보로 **새 토큰을 발급해 출력**하는 openstack 명령의 대상 이름을 채우세요.', '인증 토큰을 뜻하는 영어 단어입니다.',
+       'openstack {0} issue', ['token', 'catalog', 'endpoint', 'project'], [0],
+       '`openstack token issue` 는 토큰과 만료 시각, 프로젝트·사용자 ID 를 보여 줍니다. `catalog list` 는 서비스 카탈로그, `endpoint list` 는 엔드포인트 목록, `project` 는 프로젝트를 다루는 명령이라 issue 하위 명령이 없습니다.')
+b.order('API 로 서버 목록 얻기', 'curl 로 직접 서버 목록을 얻는 흐름입니다. 올바른 순서로 놓으세요.', '주소와 인증 수단을 먼저 얻어야 요청을 보낼 수 있습니다.',
+        ['토큰을 `X-Auth-Token` 헤더에 실어 compute 엔드포인트의 `/servers` 를 요청한다', '카탈로그에서 compute 서비스의 엔드포인트 주소를 찾는다', 'Keystone 에 인증 요청을 보내 토큰과 카탈로그를 받는다', '응답 JSON 에서 서버 이름과 ID 를 읽는다'], [2, 1, 0, 3],
+        '먼저 Keystone 에서 토큰과 카탈로그를 받고, 카탈로그에서 compute 엔드포인트를 찾아, 토큰을 헤더에 실어 요청하고, 응답 JSON 을 읽습니다.')
+
+if __name__ == '__main__':
+    preview(b)
