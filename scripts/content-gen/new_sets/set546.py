@@ -1,6 +1,6 @@
 import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..')); from gen_pilot_sets import *
 # 세트 546 로그 체계 한눈에: /var/log·rsyslog·logrotate. 명세: docs/specs/spec_gap_set546.md
-# linux-systemd(Rocky 9 ubi-init)에는 logrotate·rsyslog 가 기본으로 없어(직접 확인) setup 이 dnf 로 설치한다(약 8초).
+# linux-systemd 는 전용 이미지(etude-linux-systemd)에 logrotate·rsyslog 가 들어 있다. 옛 공식 이미지로 돌아가도 되도록 setup 은 없을 때만 dnf 로 설치한다.
 # rsyslogd 는 띄우지 않고(컨테이너에 journal 소켓 없음) 설정 파일 읽기·`rsyslogd -N1` 검증만 쓴다. logrotate 는 실제로 돈다.
 
 INST = "rpm -q logrotate rsyslog >/dev/null 2>&1 || dnf -y -q install logrotate rsyslog >/dev/null 2>&1; mkdir -p /var/lib/logrotate; "

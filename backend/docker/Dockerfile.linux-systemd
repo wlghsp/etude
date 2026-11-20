@@ -1,0 +1,4 @@
+# systemd 실습용 (sandbox 타입 linux-systemd). Rocky 9 ubi-init 위에 로그 실습(세트 546)에 필요한 logrotate·rsyslog 를 미리 넣는다.
+# 샌드박스에서 외부 접속 없이도 세트가 동작하도록 퀘스트 setup 에서 dnf 로 설치하지 않게 하려는 이미지다.
+FROM rockylinux/rockylinux:9-ubi-init
+RUN dnf -y -q install logrotate rsyslog && dnf clean all && rm -rf /var/cache/dnf

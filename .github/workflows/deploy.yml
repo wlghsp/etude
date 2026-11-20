@@ -25,6 +25,7 @@ jobs:
             docker build -q -f backend/docker/Dockerfile.linux-db -t etude-linux-db:latest backend
             docker build -q -f backend/docker/Dockerfile.k8s -t etude-k8s:latest backend
             docker build -q -f backend/docker/Dockerfile.ssh -t etude-ssh:latest backend
+            docker build -q -f backend/docker/Dockerfile.linux-systemd -t etude-linux-systemd:latest backend
             scripts/migrate.sh
             cd frontend
             npm ci

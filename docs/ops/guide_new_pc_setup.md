@@ -44,6 +44,7 @@ docker build -q -f backend/docker/Dockerfile.linux    -t etude-linux:latest    b
 docker build -q -f backend/docker/Dockerfile.linux-db -t etude-linux-db:latest backend   # MariaDB 포함 (DB 실습 세트용, 약 +280MB)
 docker build -q -f backend/docker/Dockerfile.k8s      -t etude-k8s:latest      backend   # kubectl, helm
 docker build -q -f backend/docker/Dockerfile.ssh      -t etude-ssh:latest      backend   # SSH 서버 실습
+docker build -q -f backend/docker/Dockerfile.linux-systemd -t etude-linux-systemd:latest backend   # systemd 실습(Rocky 9 + logrotate·rsyslog, 약 +20MB)
 ```
 
 `mariadb:11`(DB 컨테이너)과 `docker:dind`(도커 실습)는 처음 쓸 때 자동으로 받는다. `linux-db` 이미지는 `etude-linux` 위에 쌓이므로 **linux 를 먼저** 빌드한다.
