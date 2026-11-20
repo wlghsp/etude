@@ -1,0 +1,87 @@
+import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..')); from gen_pilot_sets import *
+# 세트 617: 연결 장애 상황집 (L2·MTU·성능). 명세: docs/specs/spec_gap_set617.md
+# 샌드박스 linux(NET_ADMIN 없음). 증상 출력은 샘플 파일로 읽고 원인을 가려낸다.
+
+S117 = """rm -f /tmp/*.txt /tmp/*.log
+cat > /tmp/arping.log <<'EOF'
+ARPING 192.0.2.10 from 192.0.2.50 eth0
+Unicast reply from 192.0.2.10 [52:54:00:aa:00:01]  0.812ms
+Unicast reply from 192.0.2.10 [52:54:00:aa:00:02]  0.903ms
+Unicast reply from 192.0.2.10 [52:54:00:aa:00:01]  0.795ms
+EOF
+cat > /tmp/ip_s.log <<'EOF'
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP mode DEFAULT group default qlen 1000
+    link/ether 52:54:00:aa:00:50 brd ff:ff:ff:ff:ff:ff
+    RX:  bytes packets errors dropped  missed   mcast
+    123456789  100000   2500       0       0       0
+    TX:  bytes packets errors dropped carrier collsns
+     98765432   90000      0       0       0       0
+EOF
+cat > /tmp/mtu_probe.log <<'EOF'
+1200 ok
+1400 ok
+1422 ok
+1423 fail
+1472 fail
+EOF
+cat > /tmp/ss_s.log <<'EOF'
+Total: 29060
+TCP:   28610 (estab 200, closed 27960, orphaned 0, timewait 27940)
+
+Transport Total     IP        IPv6
+RAW	  0         0         0
+UDP	  3         2         1
+TCP	  650       640       10
+INET	  653       642       11
+FRAG	  0         0         0
+EOF
+cat > /tmp/ping.log <<'EOF'
+--- 192.0.2.20 ping statistics ---
+100 packets transmitted, 92 received, 8% packet loss, time 99120ms
+rtt min/avg/max/mdev = 0.412/0.610/1.204/0.098 ms
+EOF
+true"""
+
+b = SetBuilder(617, '연결 장애 상황집: 중복 IP, 오류 카운터, MTU, 포트 고갈, 지연과 손실',
+               '"접속이 안 된다"는 신고에도 원인은 층마다 다릅니다. 같은 IP 에 응답하는 장비가 둘인 경우, 링크 오류 카운터, 큰 패킷만 막히는 MTU 문제, 포트 고갈과 TIME_WAIT 폭증, 손실과 지연 구분을 샘플 출력에서 읽어 원인을 가립니다. 샌드박스에는 네트워크 설정 권한이 없어 출력은 샘플 파일로 읽습니다.',
+               'linux', '네트워크', 43, 877, '🚨',
+               [{"title": "arping 매뉴얼", "url": "https://man7.org/linux/man-pages/man8/arping.8.html"}, {"title": "ss 매뉴얼", "url": "https://man7.org/linux/man-pages/man8/ss.8.html"}], 17)
+
+b.nt('같은 IP 에 응답한 장비', '`/tmp/arping.log` 는 `192.0.2.10` 을 대상으로 한 `arping` 결과입니다. 한 IP 에 **MAC 주소가 둘 이상** 응답하면 IP 중복입니다. 응답한 **MAC 주소를 중복 없이 정렬해** 한 줄에 하나씩 `/tmp/macs.txt` 에 저장하세요.',
+     '`[` 와 `]` 사이의 값입니다. 같은 값이 여러 번 나옵니다.',
+     "grep 'Unicast reply' /tmp/arping.log | grep -o '\\[[0-9a-f:]*\\]' | tr -d '[]' | sort -u > /tmp/macs.txt\ncat /tmp/macs.txt\n\n# MAC 이 둘이므로 IP 중복이다. 두 장비가 번갈아 응답해 접속이 됐다 안 됐다 한다. arp -n 에서 항목이 바뀌는지로도 확인한다",
+     S117, [chk('MAC 이 두 개다', '[ "$(cat /tmp/macs.txt | tr "\\n" " " | xargs)" = "52:54:00:aa:00:01 52:54:00:aa:00:02" ]')])
+b.nt('수신 오류 개수', '`/tmp/ip_s.log` 는 `ip -s link` 의 출력입니다. `RX:` 줄 다음 줄에 수신 바이트, 패킷, **errors**, dropped… 순으로 값이 있습니다. **수신(RX) 오류 수**를 숫자만 `/tmp/rx_err.txt` 에 저장하세요.',
+     '`RX:` 제목 줄의 다음 줄에서 `errors` 칸을 찾으세요.',
+     "awk '/RX:/ {getline; print $3}' /tmp/ip_s.log > /tmp/rx_err.txt\ncat /tmp/rx_err.txt\n\n# 오류가 쌓이면 케이블·SFP·duplex 불일치를 의심한다. 오류율은 errors ÷ packets 로 본다(여기서는 2.5%로 매우 높다)",
+     S117, [chk('2500 이다', '[ "$(tr -d " \\n" < /tmp/rx_err.txt)" = 2500 ]')])
+b.nt('경로 MTU 구하기', '`/tmp/mtu_probe.log` 는 `ping -M do -s 크기` 로 단편화를 금지하고 보낸 결과입니다. 형식은 `페이로드크기 ok|fail` 입니다. **성공한 가장 큰 페이로드에 28(IP 20 + ICMP 8)을 더해** 경로 MTU 를 구하고 숫자만 `/tmp/path_mtu.txt` 에 저장하세요.',
+     'ok 인 줄 가운데 가장 큰 크기를 찾아 헤더 크기를 더합니다.',
+     "grep ' ok' /tmp/mtu_probe.log | awk '{print $1}' | sort -n | tail -1 | awk '{print $1+28}' > /tmp/path_mtu.txt\ncat /tmp/path_mtu.txt\n\n# 1422 + 28 = 1450. 경로 어딘가의 MTU 가 1450 이라는 뜻이다(예: VXLAN 오버레이). 양쪽 MTU 를 이 값에 맞춘다",
+     S117, [chk('1450 이다', '[ "$(tr -d " \\n" < /tmp/path_mtu.txt)" = 1450 ]')])
+b.nt('TIME_WAIT 개수', '`/tmp/ss_s.log` 는 `ss -s` 의 출력입니다. 짧은 연결을 초당 수천 번 맺는 클라이언트에서 접속 실패가 납니다. **`timewait` 연결 수**를 숫자만 `/tmp/tw.txt` 에 저장하세요.',
+     '`TCP:` 줄의 괄호 안에서 `timewait` 항목을 찾으세요.',
+     "grep -o 'timewait [0-9]*' /tmp/ss_s.log | awk '{print $2}' > /tmp/tw.txt\ncat /tmp/tw.txt\n\n# TIME_WAIT 가 2만 8천 가까이면 한 목적지로 쓸 수 있는 임시 포트(기본 약 28000개)가 거의 소진된 상태다. 연결 재사용(keep-alive, 풀)이 우선 해결책이다",
+     S117, [chk('27940 이다', '[ "$(tr -d " \\n" < /tmp/tw.txt)" = 27940 ]')])
+b.nt('손실률 읽기', '`/tmp/ping.log` 는 `ping` 의 요약입니다. **패킷 손실률**(퍼센트 기호 없이 숫자만)을 `/tmp/ploss.txt` 에 저장하세요.',
+     '`packet loss` 가 적힌 부분에서 손실률을 찾으세요.',
+     "grep -o '[0-9.]*% packet loss' /tmp/ping.log | grep -o '^[0-9.]*' > /tmp/ploss.txt\ncat /tmp/ploss.txt\n\n# 지연(rtt avg 0.6ms)은 정상인데 손실이 8%다. 느린 것이 아니라 일부가 사라지는 문제라서 링크 오류, 혼잡, 중간 장비 큐 같은 쪽을 본다",
+     S117, [chk('8 이다', 'awk "NR==1{v=\\$1+0} END{exit !(NR==1 && v==8)}" /tmp/ploss.txt')])
+b.choice('같은 IP 에 MAC 이 둘', '`arping` 에 한 IP 의 응답 MAC 이 둘입니다. 증상으로 가장 알맞은 것은?', '두 장비가 같은 주소를 주장하면 ARP 캐시가 바뀝니다.',
+         ['접속이 됐다 안 됐다 하고 다른 장비가 응답하기도 한다', '항상 정상 접속되지만 속도만 반으로 줄어든다', '모든 패킷이 두 번씩 전달되어 중복 처리된다', '해당 IP 의 열린 포트가 모두 자동으로 닫힌다'], 0,
+         'IP 가 중복되면 요청마다 응답하는 장비와 ARP 캐시 항목이 바뀌어 접속이 불안정해지고 엉뚱한 장비에 닿기도 합니다. DHCP 범위와 고정 IP 할당이 겹치지 않는지 확인합니다.')
+b.choice('오류 카운터가 오를 때', '`ip -s link` 에서 RX errors 가 계속 오릅니다. 가장 먼저 점검할 것으로 알맞은 것은?', '오류는 보통 물리 계층의 문제입니다.',
+         ['케이블·광모듈 상태와 속도·duplex 협상 결과', '애플리케이션 로그에 오타가 있는지 여부', 'DNS 캐시의 크기가 충분한지 여부', '게스트의 스왑 영역 크기가 충분한지 여부'], 0,
+         'errors 는 CRC·프레임 오류 같은 물리 계층 문제가 대부분입니다. ethtool 로 협상 속도와 duplex, 오류 카운터를 확인하고 케이블·모듈을 교체해 봅니다.')
+b.choice('TIME_WAIT 폭증', '짧은 연결을 반복하는 클라이언트에서 TIME_WAIT 가 수만 개이고 새 연결이 간헐적으로 실패합니다. 가장 알맞은 해결은?', '연결을 매번 새로 맺지 않는 방법을 생각해 보세요.',
+         ['연결을 재사용(keep-alive·풀)해 새 연결을 줄인다', 'TCP 를 끄고 모든 통신을 UDP 로만 바꿔서 쓴다', '증상이 날 때마다 서버를 재부팅해서 정리한다', '방화벽 규칙을 모두 내리고 다시 시험해 본다'], 0,
+         'TIME_WAIT 는 정상적인 종료 상태이고 짧은 연결을 많이 만들면 쌓입니다. 연결 재사용이 근본 해결이며, 임시 포트 범위 확대 등은 보조 수단입니다. 재부팅은 일시적일 뿐입니다.')
+b.fill('큰 패킷 시험', '단편화를 금지하고 크기를 지정해 보내는 `ping` 옵션 중 크기를 정하는 옵션을 채우세요.', '옵션 이름은 매뉴얼의 한 글자 옵션 표에서 찾아 보세요.',
+       'ping -M do -{0} 1472 192.0.2.20', ['s', 'c', 'i', 'W'], [0],
+       '`-s` 는 페이로드 크기, `-c` 는 횟수, `-i` 는 간격, `-W` 는 응답 대기 시간입니다. 1472 + 28 = 1500 으로 일반 이더넷 MTU 시험에 씁니다.')
+b.order('연결 장애 좁혀 가기', '"서버에 접속이 안 된다"는 신고가 왔습니다. 가까운 층부터 확인하는 올바른 순서로 놓으세요.', '접속 주소로 쓸 IP 는 이미 알고 있고, 이름 풀이는 IP 도달이 확인된 뒤 이름 문제를 따로 가려내는 단계입니다. 아래 층이 안 되면 위 층은 볼 필요가 없습니다.',
+        ['포트가 열려 있고 연결이 되는지 확인한다', '링크가 올라와 있고 오류가 없는지 확인한다', 'IP 로 ping 이 되는지 확인한다', '이름이 IP 로 풀리는지 확인한다'], [1, 2, 3, 0],
+        '링크(L1·L2), IP 도달(L3), 이름 풀이(DNS), 포트·연결(L4) 순으로 가까운 층부터 확인해야 원인 층을 빨리 좁힙니다.')
+
+if __name__ == '__main__':
+    preview(b)

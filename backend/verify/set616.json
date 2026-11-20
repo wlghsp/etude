@@ -1,0 +1,11 @@
+{
+  "setId": 616,
+  "answers": {
+    "1": "cat /tmp/underlay_mtu.txt\necho $(( $(cat /tmp/underlay_mtu.txt) - 50 )) > /tmp/overlay_mtu.txt\ncat /tmp/overlay_mtu.txt\n\n# 1500 - 50 = 1450. 언더레이가 점보 프레임(9000)이면 8950 이다. 이 계산을 빼먹으면 작은 패킷은 되는데 큰 패킷만 사라지는 장애가 난다",
+    "2": "echo $(( $(cat /tmp/underlay_mtu.txt) - 60 )) > /tmp/wg_mtu.txt\ncat /tmp/wg_mtu.txt\n\n# 1440. wg-quick 의 기본값 1420 은 IPv6 위에서도 안전하도록 80바이트를 잡은 값이다",
+    "3": "echo 'ip link add vxlan100 type vxlan id 100 dstport 4789 remote 192.0.2.2' > /tmp/vxlan.txt\ncat /tmp/vxlan.txt\n\n# 만든 뒤 ip link set vxlan100 up 으로 올리고 브리지에 붙인다. 상대가 여럿이면 remote 대신 멀티캐스트 그룹이나 FDB 로 상대를 알려 준다",
+    "4": "cat /tmp/wg0.conf\ngrep AllowedIPs /tmp/wg0.conf | cut -d= -f2 | tr -d ' ' > /tmp/allowed.txt\ncat /tmp/allowed.txt\n\n# /32 는 피어 한 대의 주소만 허용한다는 뜻이다. 0.0.0.0/0 이면 모든 트래픽을 그 피어로 보낸다(전체 터널링)",
+    "5": "echo 'PersistentKeepalive = 25' >> /tmp/wg0.conf\ncat /tmp/wg0.conf\n\n# 25초마다 빈 패킷을 보내 NAT 매핑을 유지한다. NAT 뒤의 호스트가 공인 서버 피어 쪽 설정에 넣는 것이 표준이고, 공인 주소를 가진 쪽에는 보통 필요하지 않다",
+    "6": "echo 'wg genkey | tee privatekey | wg pubkey > publickey' > /tmp/keygen.txt\ncat /tmp/keygen.txt\n\n# privatekey 는 절대 공유하지 않고 파일 권한을 600 으로 한다. 상대에게는 publickey 만 전달한다"
+  }
+}

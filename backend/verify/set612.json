@@ -1,0 +1,10 @@
+{
+  "setId": 612,
+  "answers": {
+    "1": "cat /tmp/domiflist.log\nawk 'NR>2 && $4!=\"virtio\" {print $1}' /tmp/domiflist.log | sort > /tmp/slow_nics.txt\ncat /tmp/slow_nics.txt\n\n# e1000 같은 에뮬레이션 모델은 실제 하드웨어를 흉내 내느라 호스트 CPU 를 더 쓴다. 게스트에 virtio 드라이버가 있으면 virtio 로 바꾼다(재부팅 필요)",
+    "2": "cat /tmp/ethtool_l.log\nawk '/Combined/ {v=$2} END {print v}' /tmp/ethtool_l.log > /tmp/queues.txt\ncat /tmp/queues.txt\n\n# 최대 4 인데 1 만 쓰고 있다. vCPU 가 여러 개여도 큐가 1개면 수신 처리가 한 CPU 에 몰린다",
+    "3": "echo 'ethtool -L eth0 combined 4' > /tmp/set_queues.txt\ncat /tmp/set_queues.txt\n\n# 호스트에서 VM 의 NIC 에 queues 를 지정해 둬야 4 까지 올릴 수 있다. 재부팅하면 풀리므로 영구 설정은 네트워크 설정 파일에 넣는다",
+    "4": "sed -i \"s:<model type='e1000'/>:<model type='virtio'/>:\" /tmp/vm_net.xml\nsed -i \"/<model type='virtio'\\/>/a\\\\      <driver name='vhost' queues='4'/>\" /tmp/vm_net.xml\ncat /tmp/vm_net.xml\n\n# queues 를 쓰려면 모델이 virtio 여야 한다. 게스트는 ethtool -L 로 큐를 늘려야 실제로 쓴다",
+    "5": "echo 'lsmod | grep vhost_net' > /tmp/vhost_check.txt\ncat /tmp/vhost_check.txt\n\n# 출력이 없으면 modprobe vhost_net 으로 올린다. /dev/vhost-net 장치가 있어야 libvirt 가 vhost 를 쓴다"
+  }
+}

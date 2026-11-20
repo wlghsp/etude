@@ -1,0 +1,8 @@
+{
+  "setId": 614,
+  "answers": {
+    "1": "cat /tmp/audit.log\ngrep -o 'tcontext=[^ ]*' /tmp/audit.log | cut -d= -f2 | cut -d: -f3 > /tmp/tcontext.txt\ncat /tmp/tcontext.txt\n\n# default_t 는 라벨 규칙이 없는 곳에 새로 만든 파일에 붙는 기본 타입이다. VM 이미지가 virt_image_t 로 라벨돼 있어야 정책이 VM 의 접근을 허용한다(libvirt 는 시작할 때 VM 별 svirt_image_t 로 바꿨다가 끝나면 되돌린다)",
+    "2": "grep -o 'name=\"[^\"]*\"' /tmp/syslog.log | cut -d'\"' -f2 > /tmp/denied_path.txt\ncat /tmp/denied_path.txt\n\n# Ubuntu 계열은 SELinux 대신 AppArmor 를 쓴다. libvirt 가 VM 마다 profile=libvirt-UUID 프로파일을 만들고 허용 경로는 디스크 목록에서 자동으로 넣는다",
+    "3": "printf '%s\\n' \"semanage fcontext -a -t virt_image_t '/data/images(/.*)?'\" 'restorecon -Rv /data/images' > /tmp/fix.txt\ncat /tmp/fix.txt\n\n# chcon 으로 바꾸면 재라벨링 때 되돌아간다. semanage 로 규칙을 등록해야 영구 반영된다"
+  }
+}

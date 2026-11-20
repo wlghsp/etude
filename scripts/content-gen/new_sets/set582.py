@@ -49,7 +49,7 @@ b.nt('지연이 큰 디스크', '`await` 는 요청 하나가 끝나기까지 �
 b.nt('CPU 가 디스크를 기다린 비율', '`/tmp/iostat.log` 맨 위 `avg-cpu` 줄에서 **`%iowait`**(CPU 가 디스크 I/O 완료를 기다리느라 놀고 있던 비율) 값을 읽어 `/tmp/iowait.txt` 에 저장하세요. (숫자만)',
      '맨 앞의 `avg-cpu:` 는 값 줄에 대응하는 칸이 없어 열 번호가 한 칸 어긋납니다. 열 이름의 순서를 세어 값 줄의 어느 칸인지 맞춰 보세요.',
      "head -3 /tmp/iostat.log\nsed -n '2p' /tmp/iostat.log | awk '{print $4}' > /tmp/iowait.txt\ncat /tmp/iowait.txt\n\n# iowait 가 높으면 CPU 는 한가한데 디스크를 기다리는 중이라 디스크가 병목이라는 신호다. 다만 iowait 자체는 CPU 를 쓰지 않는 대기 시간이다",
-     S82, [chk('42.50 이다', 'awk \'{exit !($1+0==42.5)}\' /tmp/iowait.txt')])
+     S82, [chk('42.50 이다', 'awk \'NR==1{v=$1+0} END{exit !(NR==1 && v==42.5)}\' /tmp/iowait.txt')])
 # 4
 b.nt('블록된 프로세스 수', '`/tmp/vmstat.log` 는 `vmstat` 의 출력입니다. `b` 열은 **I/O 완료를 기다리느라 멈춰 있는(블록된) 프로세스 수**, `wa` 열은 CPU 의 iowait 비율입니다. 마지막 줄(가장 최근)의 `b` 값과 `wa` 값을 저장하세요. (숫자만)\n- `/tmp/blocked.txt` : `b`\n- `/tmp/wa.txt` : `wa`',
      '마지막 줄을 열 번호로 뽑으세요. 헤더의 두 번째 줄에서 열 이름의 순서를 확인하세요.',

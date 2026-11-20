@@ -1,0 +1,10 @@
+{
+  "setId": 611,
+  "answers": {
+    "1": "cat /tmp/ovs_show.log\nawk '$1==\"Port\" {p=$2} $1==\"tag:\" {print p}' /tmp/ovs_show.log > /tmp/tagged.txt\ncat /tmp/tagged.txt\n\n# 같은 브리지의 포트라도 태그가 다르면 서로 L2 로 통신하지 못한다. 태그가 없는 포트는 trunk 나 untagged 로 동작한다",
+    "2": "awk '$1==\"Bridge\" {print $2}' /tmp/ovs_show.log | sort > /tmp/bridges.txt\ncat /tmp/bridges.txt\n\n# br-int 는 VM 포트가 모이는 통합 브리지, br-ex 는 물리 NIC(eth1)로 외부와 이어지는 브리지다(OpenStack 의 관례)",
+    "3": "printf '%s\\n' 'ovs-vsctl add-br br0' 'ovs-vsctl add-port br0 eth1' > /tmp/ovs_cmds.txt\ncat /tmp/ovs_cmds.txt\n\n# ip link 로 만든 브리지와 달리 ovsdb 에 저장돼 재부팅 뒤에도 유지된다. 단 서버로 접속 중인 NIC 를 포트로 넣으면 IP 가 사라져 접속이 끊길 수 있다",
+    "4": "echo 'ovs-vsctl set port vnet0 tag=200' > /tmp/vlan.txt\ncat /tmp/vlan.txt\n\n# 태그 200 인 포트끼리만 서로 통신한다. 태그를 지우려면 ovs-vsctl remove port vnet0 tag 200 로 지운다",
+    "5": "sed -i \"/<source bridge='br0'\\/>/a\\\\      <virtualport type='openvswitch'/>\" /tmp/vm_net.xml\ncat /tmp/vm_net.xml\n\n# br0 는 OVS 브리지여야 한다. virtualport 가 없으면 libvirt 가 리눅스 브리지로 보고 brctl 방식으로 붙인다"
+  }
+}

@@ -58,7 +58,7 @@ b.nt('traceroute 한 줄 읽기', '`traceroute` 는 목적지까지 **거치는 
 b.nt('ping 요약에서 손실률과 평균 지연 뽑기', '`/tmp/ping_sample.log` 는 어떤 서버에 5번 ping 한 결과를 저장한 것입니다. 맨 아래 요약에서 아래 두 값을 저장하세요. (값만)\n- `/tmp/loss.txt` : **패킷 손실률** (`20%` 처럼 퍼센트 기호 포함)\n- `/tmp/avg.txt` : **평균 지연(avg, ms)** 숫자',
      '손실률은 `packet loss` 가 들어간 줄에서 `%` 가 붙은 단어를 뽑습니다. 평균은 `rtt min/avg/max/mdev` 줄에서 `/` 로 나눈 두 번째 값입니다. `grep -o` 와 `cut -d/` 를 쓰세요.',
      "grep -o '[0-9.]*% packet loss' /tmp/ping_sample.log | cut -d' ' -f1 > /tmp/loss.txt\ngrep '^rtt' /tmp/ping_sample.log | cut -d= -f2 | cut -d/ -f2 > /tmp/avg.txt\ncat /tmp/loss.txt /tmp/avg.txt\n\n# 20% 손실은 5개 중 1개 유실(icmp_seq=3 이 없다). 손실이 조금이라도 있으면 회선·장비 상태를 의심한다. 평균 12.350 ms",
-     S68, [chk('손실률이 20% 다', '[ "$(cat /tmp/loss.txt)" = "20%" ]'), chk('평균이 12.35 다', 'awk \'{exit !($1+0==12.35)}\' /tmp/avg.txt')])
+     S68, [chk('손실률이 20% 다', '[ "$(cat /tmp/loss.txt)" = "20%" ]'), chk('평균이 12.35 다', 'awk \'NR==1{v=$1+0} END{exit !(NR==1 && v==12.35)}\' /tmp/avg.txt')])
 # 5
 b.nt('traceroute 에서 * * * 와 지연이 튀는 홉', '`/tmp/trace_sample.log` 는 어떤 서버까지의 traceroute 결과입니다. 줄의 `* * *` 는 그 홉이 응답하지 않았다는 뜻입니다(꼭 장애는 아닙니다). 아래 두 가지를 번호로 저장하세요. (번호만)\n- `/tmp/star_hop.txt` : `* * *` 로 나온 **홉 번호**\n- `/tmp/jump_hop.txt` : 앞 홉보다 응답 시간이 **크게 뛰기 시작한 홉 번호** (10 ms 이상 급증)',
      '첫 번째는 `grep` 으로 `* * *` 가 있는 줄의 첫 칸을 보면 됩니다. 두 번째는 줄마다 첫 번째 시간 값을 눈으로 비교해 처음 크게 늘어난 줄을 찾으세요.',

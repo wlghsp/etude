@@ -1,0 +1,7 @@
+{
+  "setId": 613,
+  "answers": {
+    "1": "cat /tmp/lspci.log\ngrep 'Virtual Function' /tmp/lspci.log | awk '{print $1}' | sort > /tmp/vfs.txt\ncat /tmp/vfs.txt\n\n# 03:00.0 이 물리 기능(PF), 03:10.x 가 VF 다. VF 하나를 VM 하나에 직접 줄 수 있다",
+    "2": "echo 'echo 4 > /sys/class/net/eth1/device/sriov_numvfs' > /tmp/vf_create.txt\ncat /tmp/vf_create.txt\n\n# 이미 0 이 아닌 값이면 먼저 0 으로 되돌린 뒤 바꿔야 한다. 장치·드라이버가 SR-IOV 를 지원해야 하고 BIOS 에서 켜져 있어야 한다"
+  }
+}

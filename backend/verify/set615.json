@@ -1,0 +1,10 @@
+{
+  "setId": 615,
+  "answers": {
+    "1": "cat /tmp/tcp.log\ngrep receiver /tmp/tcp.log | grep -o '[0-9.]* Mbits/sec' | awk '{print $1}' > /tmp/rx.txt\ncat /tmp/rx.txt\n\n# sender 945 와 receiver 941 의 차이는 재전송(Retr 12)과 버퍼링 때문이다. 판단 기준은 받은 쪽 값이다",
+    "2": "grep receiver /tmp/udp.log | grep -o '([0-9.]*%)' | tr -d '()%' > /tmp/loss.txt\ncat /tmp/loss.txt\n\n# TCP 는 손실을 재전송으로 감추지만 UDP 는 그대로 보여 준다. 손실률과 jitter 가 같이 높으면 경로의 혼잡이나 버퍼 부족을 의심한다",
+    "3": "echo 'iperf3 -c 192.0.2.10 -t 20 -P 4' > /tmp/client.txt\ncat /tmp/client.txt\n\n# 상대 서버에서는 iperf3 -s 로 먼저 서버를 띄워 둔다. -P 로 여러 연결을 쓰면 연결 하나의 한계(창 크기, 지연)를 넘어 회선 전체 처리량에 가깝게 잴 수 있다",
+    "4": "echo 'iperf3 -c 192.0.2.10 -u -b 100M' > /tmp/udp_cmd.txt\ncat /tmp/udp_cmd.txt\n\n# UDP 는 보내는 속도를 정해 주고, 받는 쪽에서 얼마나 잃는지를 본다. 목표를 회선 속도보다 크게 잡으면 손실이 나는 것이 당연하다",
+    "5": "echo 'iperf3 -c 192.0.2.10 -R' > /tmp/reverse.txt\ncat /tmp/reverse.txt\n\n# 업로드와 다운로드가 비대칭으로 나오면 한쪽 방향의 경로(방화벽, 대역 제한)를 의심한다. --bidir 로 양방향을 동시에 재기도 한다"
+  }
+}

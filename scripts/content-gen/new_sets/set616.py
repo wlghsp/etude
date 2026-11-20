@@ -1,0 +1,66 @@
+import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..')); from gen_pilot_sets import *
+# 세트 616: VXLAN 과 WireGuard 기본. 명세: docs/specs/spec_gap_set616.md
+# 샌드박스 linux(NET_ADMIN·wg 없음). MTU 계산과 설정 파일 편집은 실제로 하고, 터널 생성 명령은 파일에 적는다.
+
+S116 = """rm -f /tmp/*.txt /tmp/*.log /tmp/*.conf
+echo 1500 > /tmp/underlay_mtu.txt
+cat > /tmp/wg0.conf <<'EOF'
+[Interface]
+Address = 10.8.0.1/24
+ListenPort = 51820
+PrivateKey = AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+
+[Peer]
+PublicKey = BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=
+AllowedIPs = 10.8.0.2/32
+Endpoint = 198.51.100.7:51820
+EOF
+true"""
+
+b = SetBuilder(616, '오버레이 네트워크 기본: VXLAN 의 MTU 계산과 구성, WireGuard 설정',
+               '터널(오버레이)은 원래 패킷을 다시 포장해 보내므로 헤더만큼 MTU 가 줄어듭니다. VXLAN 은 UDP 로 L2 프레임을 실어 나르고 WireGuard 는 키 쌍으로 암호화된 L3 터널을 만듭니다. 오버레이 MTU 를 계산하고, VXLAN 인터페이스를 만드는 명령을 적고, WireGuard 설정 파일에서 허용 대역을 읽고 NAT 뒤 피어용 keepalive 를 추가하며 키 생성 명령을 적고, VXLAN 의 이점과 키 관리 원칙을 정리합니다. 샌드박스에는 터널 생성 권한과 wg 도구가 없어 명령은 파일에 적습니다.',
+               'linux', '네트워크', 69, 876, '🕳️',
+               [{"title": "VXLAN (커널 문서)", "url": "https://docs.kernel.org/networking/vxlan.html"}, {"title": "WireGuard 빠른 시작", "url": "https://www.wireguard.com/quickstart/"}], 16)
+
+b.nt('VXLAN 오버레이 MTU', '`/tmp/underlay_mtu.txt` 에는 물리 네트워크(언더레이)의 MTU 가 있습니다. VXLAN 은 내부 이더넷(14)·VXLAN(8)·UDP(8)·외부 IP(20) 헤더로 **50바이트**를 더 쓰므로, 그 위의 가상 네트워크(오버레이)의 MTU 는 그만큼 작아야 합니다. **오버레이 MTU** 를 계산해 숫자만 `/tmp/overlay_mtu.txt` 에 저장하세요.',
+     '언더레이 MTU 에서 헤더 크기를 뺍니다.',
+     "cat /tmp/underlay_mtu.txt\necho $(( $(cat /tmp/underlay_mtu.txt) - 50 )) > /tmp/overlay_mtu.txt\ncat /tmp/overlay_mtu.txt\n\n# 1500 - 50 = 1450. 언더레이가 점보 프레임(9000)이면 8950 이다. 이 계산을 빼먹으면 작은 패킷은 되는데 큰 패킷만 사라지는 장애가 난다",
+     S116, [chk('1450 이다', '[ "$(tr -d " \\n" < /tmp/overlay_mtu.txt)" = 1450 ]')])
+b.nt('WireGuard 터널 MTU', 'WireGuard 터널은 IPv4 위에서 **60바이트**(IP 20 + UDP 8 + WireGuard 32)를 더 씁니다. 같은 언더레이 MTU(`/tmp/underlay_mtu.txt`)에서 **터널 인터페이스의 MTU** 를 계산해 숫자만 `/tmp/wg_mtu.txt` 에 저장하세요.',
+     '언더레이 MTU 에서 오버헤드를 뺍니다. 이번 오버헤드는 60 입니다.',
+     "echo $(( $(cat /tmp/underlay_mtu.txt) - 60 )) > /tmp/wg_mtu.txt\ncat /tmp/wg_mtu.txt\n\n# 1440. wg-quick 의 기본값 1420 은 IPv6 위에서도 안전하도록 80바이트를 잡은 값이다",
+     S116, [chk('1440 이다', '[ "$(tr -d " \\n" < /tmp/wg_mtu.txt)" = 1440 ]')])
+b.nt('VXLAN 인터페이스 만들기', '`ip` 명령으로 **VNI 100, UDP 포트 4789** 를 쓰고 상대 `192.0.2.2` 로 터널을 맺는 VXLAN 인터페이스 `vxlan100` 을 만드는 명령 한 줄을 `/tmp/vxlan.txt` 에 적으세요. (실행하지 않습니다)',
+     '링크 종류는 `vxlan` 이고, VNI·포트·상대 주소는 각각 이름 있는 옵션입니다.',
+     "echo 'ip link add vxlan100 type vxlan id 100 dstport 4789 remote 192.0.2.2' > /tmp/vxlan.txt\ncat /tmp/vxlan.txt\n\n# 만든 뒤 ip link set vxlan100 up 으로 올리고 브리지에 붙인다. 상대가 여럿이면 remote 대신 멀티캐스트 그룹이나 FDB 로 상대를 알려 준다",
+     S116, [chk('vxlan100 을 vxlan 종류로 만든다', 'grep -Eq "^[[:space:]]*(sudo[[:space:]]+)?ip( -4)? link add( name)? vxlan100 type vxlan( |$)" /tmp/vxlan.txt'), chk('VNI 가 100 이다', 'grep -Eq "(^|[[:space:]])id 100([[:space:]]|$)" /tmp/vxlan.txt'), chk('포트가 4789 다', 'grep -Eq "(^|[[:space:]])dstport 4789([[:space:]]|$)" /tmp/vxlan.txt'), chk('상대가 192.0.2.2 다', 'grep -Eq "(^|[[:space:]])remote 192\\.0\\.2\\.2([[:space:]]|$)" /tmp/vxlan.txt')])
+b.nt('허용 대역 읽기', '`/tmp/wg0.conf` 는 WireGuard 설정 파일입니다. `[Peer]` 구역의 `AllowedIPs` 는 이 피어로 **보낼 수 있고 받을 수 있는 주소 대역**입니다. 그 값(예: `10.9.0.0/24`)만 `/tmp/allowed.txt` 에 저장하세요.',
+     '`AllowedIPs =` 뒤의 값입니다. 앞뒤 공백을 정리하세요.',
+     "cat /tmp/wg0.conf\ngrep AllowedIPs /tmp/wg0.conf | cut -d= -f2 | tr -d ' ' > /tmp/allowed.txt\ncat /tmp/allowed.txt\n\n# /32 는 피어 한 대의 주소만 허용한다는 뜻이다. 0.0.0.0/0 이면 모든 트래픽을 그 피어로 보낸다(전체 터널링)",
+     S116, [chk('10.8.0.2/32 이다', '[ "$(cat /tmp/allowed.txt)" = 10.8.0.2/32 ]')])
+b.nt('NAT 뒤 피어를 위한 keepalive', '이 호스트는 NAT 뒤에 있어, 공인 주소를 가진 피어(`Endpoint`)로 보낸 연결 정보가 한동안 통신이 없으면 사라집니다. `/tmp/wg0.conf` 의 `[Peer]` 구역 **맨 끝에 `PersistentKeepalive = 25`** 줄을 추가하세요. (기존 줄은 그대로)',
+     '피어 구역은 파일 끝에 있습니다. 파일 끝에 줄을 덧붙이면 됩니다.',
+     "echo 'PersistentKeepalive = 25' >> /tmp/wg0.conf\ncat /tmp/wg0.conf\n\n# 25초마다 빈 패킷을 보내 NAT 매핑을 유지한다. NAT 뒤의 호스트가 공인 서버 피어 쪽 설정에 넣는 것이 표준이고, 공인 주소를 가진 쪽에는 보통 필요하지 않다",
+     S116, [chk('keepalive 줄이 있다', 'grep -Eq "^PersistentKeepalive[[:space:]]*=[[:space:]]*25[[:space:]]*$" /tmp/wg0.conf'), chk('Peer 구역 안에 있다', '[ "$(grep -n "^PersistentKeepalive" /tmp/wg0.conf | head -1 | cut -d: -f1)" -gt "$(grep -n "^\\[Peer\\]" /tmp/wg0.conf | head -1 | cut -d: -f1)" ]'), chk('AllowedIPs 가 그대로다', 'grep -Fq "AllowedIPs = 10.8.0.2/32" /tmp/wg0.conf')])
+b.nt('키 쌍 만들기', 'WireGuard 는 비밀키와 공개키 한 쌍을 씁니다. 비밀키를 만들어 `privatekey` 파일에 저장하는 동시에 그 비밀키로 공개키를 만들어 `publickey` 파일에 저장하는 **파이프 한 줄**을 `/tmp/keygen.txt` 에 적으세요. (실행하지 않습니다)',
+     '`wg` 의 하위 명령 두 개를 파이프로 잇습니다. 중간에 `tee` 로 비밀키를 파일에 남깁니다.',
+     "echo 'wg genkey | tee privatekey | wg pubkey > publickey' > /tmp/keygen.txt\ncat /tmp/keygen.txt\n\n# privatekey 는 절대 공유하지 않고 파일 권한을 600 으로 한다. 상대에게는 publickey 만 전달한다",
+     S116, [chk('genkey 에서 비밀키를 파일에 남기고 pubkey 로 잇는다', r'''grep -Eq "^[[:space:]]*wg[[:space:]]+genkey[[:space:]]*[|][[:space:]]*(sudo[[:space:]]+)?tee[^|]*privatekey[^|]*[|][[:space:]]*wg[[:space:]]+pubkey" /tmp/keygen.txt'''), chk('공개키를 파일에 쓴다', r'''grep -Eq "(>|tee[[:space:]]+(-a[[:space:]]+)?)[[:space:]]*[^ ]*publickey" /tmp/keygen.txt''')])
+b.choice('VXLAN 을 쓰는 이유', 'VLAN 대신 VXLAN 을 쓰는 가장 큰 이유로 알맞은 것은?', 'VLAN ID 는 12비트라 약 4천 개가 한계이고, L2 는 한 L2 도메인 안에서만 이어집니다.',
+         ['L3 망 위에 L2 를 펼치고 약 1600만 개의 ID 를 쓴다', '추가 헤더가 없어서 MTU 가 오히려 더 늘어난다', '암호화가 기본으로 적용되어 별도 설정 없이 보안이 강해진다', '주소 할당이 자동이라서 DHCP 서버가 더는 필요 없어진다'], 0,
+         'VXLAN 은 UDP 로 L2 프레임을 실어 L3 네트워크 위에 가상 L2 를 만들고 24비트 VNI 로 약 1600만 개를 구분합니다. 헤더 때문에 MTU 는 줄고 암호화는 기본이 아닙니다.')
+b.choice('작은 것만 되는 장애', '오버레이 위의 VM 끼리 `ping` 은 되고 SSH 접속도 되는데 큰 파일을 전송하면 멈춥니다. 오버레이를 구성한 직후 생긴 문제입니다. 가장 먼저 의심할 것은?', '작은 패킷은 통과하는데 큰 패킷만 막힙니다.',
+         ['오버레이 MTU 를 줄이지 않아 큰 패킷이 잘린다', '게스트의 시계가 몇 분 틀어져 인증이 어긋났다', 'DNS 서버가 응답하지 않아 이름을 찾지 못한다', '키보드 입력이 지연되어 세션이 끊어지고 있다'], 0,
+         '터널 헤더 때문에 오버레이 MTU 를 줄이지 않으면 큰 패킷이 언더레이에서 단편화·폐기돼 작은 패킷만 통과합니다. `ping -M do -s` 로 크기를 찾고 MTU 를 낮춥니다.')
+b.choice('키 관리', 'WireGuard 로 두 서버를 연결합니다. 서로에게 전달해야 하는 것으로 알맞은 것은?', '비밀키는 서버 밖으로 나가서는 안 됩니다.',
+         ['각자의 공개키만 서로에게 전달한다', '각자의 비밀키를 서로에게 전달한다', '비밀키와 공개키를 모두 이메일로 보낸다', '아무것도 전달하지 않아도 자동으로 연결된다'], 0,
+         '각 서버는 자신의 비밀키를 보관하고 상대의 공개키만 설정에 넣습니다. 비밀키가 유출되면 누구나 그 서버를 사칭할 수 있으므로 어디에도 보내지 않습니다.')
+b.fill('VXLAN 표준 포트', 'IANA 가 VXLAN 에 지정한 UDP 포트 번호를 채우세요.', '4 로 시작하는 네 자리 수입니다.',
+       'ip link add vxlan100 type vxlan id 100 dstport {0}', ['4789', '8472', '4790', '4788'], [0],
+       'IANA 표준은 4789 입니다. 8472 는 포트를 지정하지 않았을 때 리눅스 커널이 쓰던 옛 기본값이라 장비마다 다르면 통신이 안 됩니다.')
+b.order('WireGuard 터널 구성', '두 서버를 WireGuard 로 연결하는 올바른 순서로 놓으세요.', '키가 있어야 설정을 쓸 수 있고, 설정이 있어야 올릴 수 있습니다.',
+        ['핸드셰이크가 되었는지 확인한다', '설정 파일에 내 비밀키와 상대 공개키를 적는다', '각 서버에서 키 쌍을 만든다', '터널 인터페이스를 올린다'], [2, 1, 3, 0],
+        '키 쌍을 만들고, 설정 파일에 키와 피어를 적고, 인터페이스를 올린 뒤, 핸드셰이크 여부로 연결을 확인합니다.')
+
+if __name__ == '__main__':
+    preview(b)

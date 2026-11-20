@@ -1,0 +1,10 @@
+{
+  "setId": 617,
+  "answers": {
+    "1": "grep 'Unicast reply' /tmp/arping.log | grep -o '\\[[0-9a-f:]*\\]' | tr -d '[]' | sort -u > /tmp/macs.txt\ncat /tmp/macs.txt\n\n# MAC 이 둘이므로 IP 중복이다. 두 장비가 번갈아 응답해 접속이 됐다 안 됐다 한다. arp -n 에서 항목이 바뀌는지로도 확인한다",
+    "2": "awk '/RX:/ {getline; print $3}' /tmp/ip_s.log > /tmp/rx_err.txt\ncat /tmp/rx_err.txt\n\n# 오류가 쌓이면 케이블·SFP·duplex 불일치를 의심한다. 오류율은 errors ÷ packets 로 본다(여기서는 2.5%로 매우 높다)",
+    "3": "grep ' ok' /tmp/mtu_probe.log | awk '{print $1}' | sort -n | tail -1 | awk '{print $1+28}' > /tmp/path_mtu.txt\ncat /tmp/path_mtu.txt\n\n# 1422 + 28 = 1450. 경로 어딘가의 MTU 가 1450 이라는 뜻이다(예: VXLAN 오버레이). 양쪽 MTU 를 이 값에 맞춘다",
+    "4": "grep -o 'timewait [0-9]*' /tmp/ss_s.log | awk '{print $2}' > /tmp/tw.txt\ncat /tmp/tw.txt\n\n# TIME_WAIT 가 2만 8천 가까이면 한 목적지로 쓸 수 있는 임시 포트(기본 약 28000개)가 거의 소진된 상태다. 연결 재사용(keep-alive, 풀)이 우선 해결책이다",
+    "5": "grep -o '[0-9.]*% packet loss' /tmp/ping.log | grep -o '^[0-9.]*' > /tmp/ploss.txt\ncat /tmp/ploss.txt\n\n# 지연(rtt avg 0.6ms)은 정상인데 손실이 8%다. 느린 것이 아니라 일부가 사라지는 문제라서 링크 오류, 혼잡, 중간 장비 큐 같은 쪽을 본다"
+  }
+}

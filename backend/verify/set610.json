@@ -1,0 +1,11 @@
+{
+  "setId": 610,
+  "answers": {
+    "1": "cat /tmp/top_one.log\nawk -F, '{print $NF}' /tmp/top_one.log | awk '{print $1}' > /tmp/steal.txt\ncat /tmp/steal.txt\n\n# steal 이 높으면 게스트 안의 프로세스 문제가 아니라 호스트가 CPU 를 모자라게 준 것이다(오버커밋)",
+    "2": "cat /tmp/top_vms.log\nawk '{ if ($(NF-1) >= 10) print $1 }' /tmp/top_vms.log > /tmp/steal_vms.txt\ncat /tmp/steal_vms.txt\n\n# 이런 VM 은 게스트를 손봐도 소용이 없다. 호스트의 vCPU 오버커밋을 줄이거나 VM 을 다른 호스트로 옮긴다",
+    "3": "awk '{ if ($11 >= 20) print $1 }' /tmp/top_vms.log > /tmp/wa_vms.txt\ncat /tmp/wa_vms.txt\n\n# wa 가 높으면 CPU 가 일하지 않고 디스크 응답을 기다리는 것이다. 게스트 안의 디스크 사용량과 호스트 스토리지 지연을 함께 본다",
+    "4": "echo 'virsh domstats db01 --block' > /tmp/domstats_block.txt\ncat /tmp/domstats_block.txt\n\n# CPU 는 --cpu-total, 메모리는 --balloon, 네트워크는 --interface 로 그룹을 바꿔 본다. 옵션 없이 쓰면 모든 그룹이 나온다",
+    "5": "echo 'virsh blkdeviotune db01 vda --total-iops-sec 500' > /tmp/iotune.txt\ncat /tmp/iotune.txt\n\n# 옵션 없이 쓰면 현재 제한을 보여 준다. 제한은 다른 VM 을 보호하는 장치지만 너무 낮으면 그 VM 이 느려진다. --live 와 --config 로 반영 범위를 정한다",
+    "6": "grep 'balloon.current' /tmp/balloon.log | awk -F= '{print $2/1024}' > /tmp/mem_mib.txt\ncat /tmp/mem_mib.txt\n\n# maximum(4096 MiB)보다 current 가 작은 것은 balloon 이 호스트로 메모리를 돌려받은 상태다. 게스트 안에서 메모리가 빠듯해져 스왑이 늘면 느려진다"
+  }
+}

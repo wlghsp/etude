@@ -1,0 +1,10 @@
+{
+  "setId": 609,
+  "answers": {
+    "1": "cat /tmp/pool_list.log\nawk '$2==\"active\" && $3==\"no\" {print $1}' /tmp/pool_list.log > /tmp/pool_noauto.txt\ncat /tmp/pool_noauto.txt\n\n# images 는 이미 꺼져 있고(inactive) default 는 자동 시작이 켜져 있다. backup 은 재부팅 뒤 꺼진 채로 남아, 그 풀의 볼륨을 쓰는 VM 이 시작에 실패한다",
+    "2": "printf '%s\\n' 'virsh pool-define-as images dir --target /data/images' 'virsh pool-start images' 'virsh pool-autostart images' > /tmp/pool_cmds.txt\ncat /tmp/pool_cmds.txt\n\n# 정의만 하면 풀은 inactive 다. 시작(pool-start)과 자동 시작(pool-autostart)은 별개의 설정이다. 디렉터리가 없으면 pool-build 가 먼저 필요하다",
+    "3": "echo 'virsh vol-create-as images web01.qcow2 20G --format qcow2' > /tmp/vol_create.txt\ncat /tmp/vol_create.txt\n\n# 용량만 주면 기본 형식은 raw 다. qcow2 로 쓰려면 --format 을 명시한다. 만든 볼륨은 vol-list images 로 확인한다",
+    "4": "echo 'virsh attach-disk db01 /data/images/web01.qcow2 vdb --persistent --subdriver qcow2' > /tmp/attach.txt\ncat /tmp/attach.txt\n\n# --subdriver qcow2 를 빼면 qcow2 파일이 raw 로 붙어 게스트가 읽지 못한다. --persistent 가 없으면 실행 중인 VM 에만 붙고 재부팅하면 사라진다. 여러 VM 이 한 이미지를 동시에 쓰면 데이터가 깨지므로 붙이기 전에 다른 VM 이 쓰는지 확인한다",
+    "5": "for p in $(awk 'NR>2 {print $2}' /tmp/vol_list.log); do grep -q \"$p\" /tmp/blk.log || basename \"$p\"; done > /tmp/unused.txt\ncat /tmp/unused.txt\n\n# 실제 정리 전에는 VM 정의 XML 과 스냅샷 백킹 체인도 확인한다. 목록에 없어도 다른 호스트의 VM 이 쓸 수 있다"
+  }
+}
